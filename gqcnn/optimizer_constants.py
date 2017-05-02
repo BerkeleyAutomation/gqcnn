@@ -2,25 +2,25 @@
 Class for storing constants/enums for the DeepOptimizer
 Author: Vishal Satish
 """
-
 import tensorflow as tf
 
-# templates for file reading
-binary_im_tensor_template = 'binary_ims_raw'
-depth_im_tensor_template = 'depth_ims_raw'
-binary_im_tf_tensor_template = 'binary_ims_tf'
-color_im_tf_tensor_template = 'color_ims_tf'
-gray_im_tf_tensor_template = 'gray_ims_tf'
-depth_im_tf_tensor_template = 'depth_ims_tf'
-depth_im_tf_table_tensor_template = 'depth_ims_tf_table'
-table_mask_template = 'table_mask'
-hand_poses_template = 'hand_poses'
-
 # other constants
-SEED = 95417238
-timeout_option = tf.RunOptions(timeout_in_ms=1000000)
+class GeneralConstants:
+    SEED = 95417238
+    timeout_option = tf.RunOptions(timeout_in_ms=1000000)
 
-# enums
+# enum for templates for file reading
+class ImageFileTemplates:
+    binary_im_tensor_template = 'binary_ims_raw'
+    depth_im_tensor_template = 'depth_ims_raw'
+    binary_im_tf_tensor_template = 'binary_ims_tf'
+    color_im_tf_tensor_template = 'color_ims_tf'
+    gray_im_tf_tensor_template = 'gray_ims_tf'
+    depth_im_tf_tensor_template = 'depth_ims_tf'
+    depth_im_tf_table_tensor_template = 'depth_ims_tf_table'
+    table_mask_template = 'table_mask'
+    hand_poses_template = 'hand_poses'
+
 # enum for image modalities
 class ImageMode:
     BINARY = 'binary'
