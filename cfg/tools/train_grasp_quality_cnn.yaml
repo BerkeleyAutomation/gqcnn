@@ -1,7 +1,7 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /home/autolab/Public/drive/projects/dex-net/data/grasp_quality/mini_dexnet_all_trans_01_20_17
-output_dir: /home/autolab/Public/drive/projects/dex-net/data/models/grasp_quality
+dataset_dir: /home/vsatish/Data/dexnet/data/grasp_quality/mini_dexnet_all_trans_01_20_17
+output_dir: /home/vsatish/Data/dexnet/data/models/grasp_quality
 
 # general optimization parameters
 train_batch_size: 64
