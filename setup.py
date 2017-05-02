@@ -13,7 +13,9 @@ requirements = [
 	'scipy',
 	'cpickle',
 	'skimage',
-	'core'
+	'core',
+	'skimage',
+	'sklearn'
 ]
 
 setup(name='gqcnn', 
