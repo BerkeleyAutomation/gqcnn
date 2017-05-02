@@ -16,10 +16,9 @@ import scipy.misc as sm
 import sys
 import time
 
-from dexnet.grasping import GQCNN
-from dexnet.learning import ClassificationResult
+from gqcnn import GQCNN
+from learning_analysis import ClassificationResult
 
-import optimizer_constants
 from optimizer_constants import InputDataMode, ImageMode
 
 binary_im_tf_tensor_template = 'binary_ims_tf'
