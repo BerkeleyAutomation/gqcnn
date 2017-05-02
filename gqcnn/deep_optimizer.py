@@ -30,12 +30,8 @@ from core import YamlConfig
 import core.utils as utils
 import collections
 
-from dexnet.learning import ClassificationResult, RegressionResult
-
-import optimizer_constants
-from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode
-
-import train_stats_logger
+from learning_analysis import ClassificationResult, RegressionResult
+from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 
 class DeepOptimizer(object):
@@ -210,7 +206,7 @@ class DeepOptimizer(object):
 
                 # run optimization
                 _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, pose_node = self.sess.run(
-                        [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=optimizer_constants.timeout_option)
+                        [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
                 
                 ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
                 softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
@@ -633,23 +629,23 @@ class DeepOptimizer(object):
         logging.info('Reading filenames')
         all_filenames = [os.path.join(self.data_dir, f) for f in os.listdir(self.data_dir)]
         if self.image_mode== ImageMode.BINARY:
-            self.im_filenames = [f for f in all_filenames if f.find(optimizer_constants.binary_im_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.binary_im_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH:
-            self.im_filenames = [f for f in all_filenames if f.find(optimizer_constants.depth_im_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tensor_template) > -1]
         elif self.image_mode== ImageMode.BINARY_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(optimizer_constants.binary_im_tf_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.binary_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.COLOR_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(optimizer_constants.color_im_tf_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.color_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.GRAY_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(optimizer_constants.gray_im_tf_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.gray_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(optimizer_constants.depth_im_tf_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH_TF_TABLE:
-            self.im_filenames = [f for f in all_filenames if f.find(optimizer_constants.depth_im_tf_table_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tf_table_tensor_template) > -1]
         else:
             raise ValueError('Image mode %s not supported.' %(self.image_mode))
 
-        self.pose_filenames = [f for f in all_filenames if f.find(optimizer_constants.hand_poses_template) > -1]
+        self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find('/' + self.target_metric_name) > -1]
 
         if self.debug:
@@ -732,8 +728,8 @@ class DeepOptimizer(object):
 
         # set random seed for deterministic execution
         if self.debug:
-            np.random.seed(optimizer_constants.SEED)
-            random.seed(optimizer_constants.SEED)
+            np.random.seed(GeneralConstants.SEED)
+            random.seed(GeneralConstants.SEED)
             self.debug_num_files = self.cfg['debug_num_files']
 
         # setup output directories
