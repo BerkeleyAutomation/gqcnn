@@ -6,12 +6,10 @@ from setuptools import setup
 
 requirements = [
 	'tensorflow>=1.0',
-	'ipython',
 	'numpy',
 	'matplotlib',
 	'cv2',
 	'scipy',
-	'cpickle',
 	'skimage',
 	'core',
 	'skimage',
