@@ -2,7 +2,6 @@
 Helper classes for analyzing machine learning output
 Author: Jeff Mahler
 """
-import IPython
 import matplotlib.pyplot as plt
 import numpy as np
 import os
