@@ -1,5 +1,5 @@
-model_dir: /home/autolab/Public/drive/projects/dex-net/data/models/grasp_quality
-output_dir: /home/autolab/Public/drive/projects/dex-net/analyses/gqcnn_training_performance
+model_dir: /home/vsatish/Data/dexnet/data/models/grasp_quality
+output_dir: /home/vsatish/Data/dexnet/data/analyses/gqcnn_training_performance
 
 out_rate: 1
 font_size: 15
