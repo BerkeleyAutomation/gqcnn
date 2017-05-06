@@ -496,15 +496,19 @@ class GQCNN(object):
         return self._denoised_tensor is not None
 
     def open_session(self):
-        """ Open session """
+        """ Open tensorflow session """
         with self._graph.as_default():
             init = tf.global_variables_initializer()
-            self._sess = tf.Session()
+            # create custom config that tells tensorflow to allocate GPU memory 
+            # as needed so it is possible to run multiple tf sessions on the same GPU
+            self.tf_config = tf.ConfigProto()
+            self.tf_config.gpu_options.allow_growth = True
+            self._sess = tf.Session(config = self.tf_config)
             self._sess.run(init)
         return self._sess
 
     def close_session(self):
-        """ Close session """
+        """ Close tensorflow session """
         with self._graph.as_default():
             self._sess.close()
             self._sess = None
@@ -520,6 +524,13 @@ class GQCNN(object):
         self._im_mean = im_mean
     
     def get_im_mean(self):
+        """ Get the current image mean to be used for normalization when predicting
+
+        Returns
+        -------
+        : float
+            image mean
+        """
         return self.im_mean
 
     def update_im_std(self, im_std):
@@ -533,6 +544,13 @@ class GQCNN(object):
         self._im_std = im_std
 
     def get_im_std(self):
+        """ Get the current image standard deviation to be used for normalization when predicting
+
+        Returns
+        -------
+        : float
+            image standard deviation
+        """
         return self.im_std
 
     def update_pose_mean(self, pose_mean):
@@ -540,12 +558,19 @@ class GQCNN(object):
         
         Parameters
         ----------
-        pose_mean : float
+        pose_mean :obj:`tensorflow Tensor`
             pose mean to be used
         """
         self._pose_mean = pose_mean
 
     def get_pose_mean(self):
+        """ Get the current pose mean to be used for normalization when predicting
+
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            pose mean
+        """
         return self._pose_mean
 
     def update_pose_std(self, pose_std):
@@ -553,12 +578,19 @@ class GQCNN(object):
         
         Parameters
         ----------
-        pose_std : float
+        pose_std :obj:`tensorflow Tensor`
             pose standard deviation to be used
         """
         self._pose_std = pose_std
 
     def get_pose_std(self):
+        """ Get the current pose standard deviation to be used for normalization when predicting
+
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            pose standard deviation
+        """
         return self._pose_std
         
     def add_softmax_to_predict(self):
