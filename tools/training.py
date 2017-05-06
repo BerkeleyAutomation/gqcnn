@@ -19,17 +19,17 @@ model_dir = '/home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_v
 # gqcnn.close_session()
 
 # Use Case 2-Training from Scratch
-train_gqcnn = GQCNN(gqcnn_config)
-deepOptimizer = DeepOptimizer(train_gqcnn, train_config)
-with train_gqcnn.get_tf_graph().as_default():
-    deepOptimizer.optimize()
+# gqcnn = GQCNN(gqcnn_config)
+# deepOptimizer = DeepOptimizer(gqcnn, train_config)
+# with gqcnn.get_tf_graph().as_default():
+#     deepOptimizer.optimize()
 
 # Use Case 3-Fine Tuning
-# train_gqcnn = GQCNN.load(model_dir)
-# deepOptimizer = DeepOptimizer(train_gqcnn, train_config)
-# with train_gqcnn._graph.as_default():
+# gqcnn = GQCNN.load(model_dir)
+# deepOptimizer = DeepOptimizer(gqcnn, train_config)
+# with gqcnn._graph.as_default():
     # deepOptimizer.optimize()
 
 # Analysis
-# my_analyzer = GQCNNAnalyzer(analysis_config)
-# my_analyzer.analyze()
+analyzer = GQCNNAnalyzer(analysis_config)
+analyzer.analyze()
