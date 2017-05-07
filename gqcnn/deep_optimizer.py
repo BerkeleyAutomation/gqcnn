@@ -298,7 +298,7 @@ class DeepOptimizer(object):
         logging.info('Exiting Optimization')
         exit(0)
 
-    def read_pose_data(self, pose_arr, input_data_mode):
+    def _read_pose_data(self, pose_arr, input_data_mode):
         """ Read the pose data and slice it according to the specified input_data_mode
 
         Parameters
@@ -835,7 +835,7 @@ class DeepOptimizer(object):
 
                 # enqueue training data batch
                 train_data[start_i:end_i, ...] = self.train_data_arr
-                train_poses[start_i:end_i,:] = self.read_pose_data(self.train_poses_arr, self.input_data_mode)
+                train_poses[start_i:end_i,:] = self._read_pose_data(self.train_poses_arr, self.input_data_mode)
                 label_data[start_i:end_i] = self.train_label_arr
 
                 del self.train_data_arr
@@ -1015,7 +1015,7 @@ class DeepOptimizer(object):
             labels = np.load(label_filename)['arr_0']
 
             data = data[self.val_index_map[data_filename],...]
-            poses = self.read_pose_data(poses[self.val_index_map[data_filename],:], self.input_data_mode)
+            poses = self._read_pose_data(poses[self.val_index_map[data_filename],:], self.input_data_mode)
             labels = labels[self.val_index_map[data_filename],...]
 
             if self.training_mode == TrainingMode.REGRESSION:
