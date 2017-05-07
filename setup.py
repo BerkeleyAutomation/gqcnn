@@ -8,12 +8,11 @@ requirements = [
 	'tensorflow>=1.0',
 	'numpy',
 	'matplotlib',
-	'cv2',
+	'opencv-python',
 	'scipy',
-	'skimage',
 	'core',
-	'skimage',
-	'sklearn'
+	'scikit-image',
+	'scikit-learn'
 ]
 
 setup(name='gqcnn', 
