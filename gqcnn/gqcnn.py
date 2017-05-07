@@ -45,7 +45,7 @@ class GQCNN(object):
         """
         Parameters
         ----------
-        config : dict
+        config :obj: dict
             python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
             im_height, im_width, ...
         """
@@ -59,7 +59,7 @@ class GQCNN(object):
 
         Parameters
         ----------
-        model_dir : str
+        model_dir :obj: str
             path to model directory where weights and architecture are stored
 
         Returns
@@ -106,7 +106,7 @@ class GQCNN(object):
 
         Parameters
         ----------
-        model_dir : str
+        model_dir :obj: str
             path to model directory where means and standard deviations are stored
         """
         # load in means and stds for all 7 possible pose variables
@@ -140,11 +140,11 @@ class GQCNN(object):
 
         Parameters
         ----------
-        model_filename : str
+        model_filename :obj: str
             path to model to be loaded into weights
-        reinit_fc3 : bool
+        reinit_fc3 :obj: bool
             whether to re-initialize fc3
-        reinit_fc4 : bool
+        reinit_fc4 :obj: bool
             whether to re-initialize fc4
         reinit_fc5 : bool
             whether to re-initialize fc5
