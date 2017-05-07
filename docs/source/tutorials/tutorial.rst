@@ -38,7 +38,7 @@ There are two main steps to training a network from scratch:
 2) Train the GQCNN::
 	
 	with gqcnn.get_tf_graph().as_default():
-	    deepOptimizer.optimize()
+	     deepOptimizer.optimize()
 
 Fine-Tuning a Network
 +++++++++++++++++++++
@@ -47,7 +47,7 @@ Fine tuning a network is similar to training one from scratch. The only differen
 	gqcnn = GQCNN.load(model_dir)
 	deepOptimizer = DeepOptimizer(gqcnn, train_config)
 	with gqcnn.get_tf_graph().as_default():
-    	deepOptimizer.optimize()
+	     deepOptimizer.optimize()
 
 Prediction
 ++++++++++
