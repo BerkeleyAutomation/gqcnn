@@ -30,7 +30,7 @@ module is designed this way because architecture and training are closely linked
 
 Dataset
 +++++++
-A sample dataset can be downloaded from `download_link`. This dataset is contains approximately x objects, y images, and z grasps. The overall size is approximately 1GB. A script is provided to facilitate downloading the dataset. Simply run `tools/download_dexnet_dataset.py` in the location in which you would like to store the dataset. Once you have downloaded the dataset, you must modify the `dataset_dir` parameter in the training configuration file::
+A small sample dataset can be downloaded from `https://berkeley.app.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb/1/26259154857`. The overall size is approximately 75MB. A script is provided to facilitate downloading the dataset. Simply run `tools/download_dexnet_dataset.py` in the location in which you would like to store the dataset. Once you have downloaded the dataset, you must modify the `dataset_dir` parameter in the training configuration file::
 
 	dataset_dir: /path/to/dataset
 
@@ -83,7 +83,7 @@ The analysis_config contains a list of models to analyze at once along with many
 Visualizing Training with Tensorboard
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The DeepOptimizer is designed with support for Tensorboard to allow for visualization of various training 
-parameters such as learning rate, validation error, and minibatch error. These tensorboard summaries are 
+parameters such as learning rate, validation error, minibatch loss, and minibatch error. These tensorboard summaries are 
 saved in a folder labeled `tensorboard_summaries` in the specified model directory. To visualize these parameters
 in a browser navigate to the model directory and run::
 
