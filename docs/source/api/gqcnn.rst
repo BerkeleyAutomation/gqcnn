@@ -1,4 +1,4 @@
-Grasp Quality Neural Network
+GQCNN
 ============================
 
 GQCNN

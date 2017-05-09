@@ -17,16 +17,16 @@ This module is designed to be useful for building, training, and testing Grasp Q
 
 .. toctree::
    :maxdepth: 2
+   :caption: Tutorial
+
+   tutorials/tutorial.rst
+
+.. toctree::
+   :maxdepth: 2
    :caption: API Documentation
    :glob:
 
    api/*
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Tutorial
-
-   tutorials/tutorial.rst
 
 Indices and tables
 ==================

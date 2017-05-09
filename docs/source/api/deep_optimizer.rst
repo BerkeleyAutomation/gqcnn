@@ -1,4 +1,4 @@
-GQCNN Training
+Training
 ==============
 
 DeepOptimizer
