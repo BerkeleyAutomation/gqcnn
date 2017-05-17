@@ -5,7 +5,6 @@ Author: Vishal Satish
 import argparse
 import copy
 import cv2
-import IPython
 import json
 import logging
 import numpy as np

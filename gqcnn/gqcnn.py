@@ -4,7 +4,6 @@ Author: Jeff Mahler
 """
 
 import copy
-import IPython
 import json
 import logging
 import numpy as np
