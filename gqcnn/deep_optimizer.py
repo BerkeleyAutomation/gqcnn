@@ -108,7 +108,6 @@ class DeepOptimizer(object):
                 del layer_weights
             del self.saver
             del self.sess
-            exit(0)
 
     def optimize(self):
         """ Perform optimization """
@@ -186,8 +185,8 @@ class DeepOptimizer(object):
 
         # begin optimization loop
         try:
-            t = threading.Thread(target=self._load_and_enqueue)
-            t.start()
+            self.queue_thread = threading.Thread(target=self._load_and_enqueue)
+            self.queue_thread.start()
 
             # init and run tf self.sessions
             init = tf.global_variables_initializer()
@@ -219,7 +218,7 @@ class DeepOptimizer(object):
                 if step % self.log_frequency == 0:
                     elapsed_time = time.time() - start_time
                     start_time = time.time()
-                    logging.info('Step %d (epoch %.2f), %.1f ms' %
+                    logging.info('Step %d (epoch %.2f), %.1f s' %
                           (step, float(step) * self.train_batch_size / self.num_train,
                            1000 * elapsed_time / self.eval_frequency))
                     logging.info('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
@@ -284,7 +283,14 @@ class DeepOptimizer(object):
 
         # close sessions
         self.term_event.set()
-        logging.info('Cleaning and Exiting')
+
+        # pause and wait for queue thread to exit before continueing
+        self.queue_thread_exited = False
+        logging.info('Waiting for Queue Thread to Exit')
+        while not self.queue_thread_exited:
+            pass
+
+        logging.info('Cleaning and Preparing to Exit Optimization')
         self.sess.close()
             
         # cleanup
@@ -295,7 +301,6 @@ class DeepOptimizer(object):
 
         # exit
         logging.info('Exiting Optimization')
-        exit(0)
 
     def _read_pose_data(self, pose_arr, input_data_mode):
         """ Read the pose data and slice it according to the specified input_data_mode
@@ -857,8 +862,8 @@ class DeepOptimizer(object):
         del train_poses
         del label_data
         self.dead_event.set()
-        logging.info('Queue thread exit')
-        exit(0)
+        logging.info('Queue Thread Exiting')
+        self.queue_thread_exited = True
 
     def _distort(self, num_loaded):
         """ Adds noise to a batch of images """
