@@ -11,6 +11,7 @@ requirements = [
 	'opencv-python',
 	'scipy',
 	'core',
+	'perception',
 	'scikit-image',
 	'scikit-learn'
 ]
