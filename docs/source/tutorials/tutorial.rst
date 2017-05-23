@@ -30,9 +30,9 @@ module is designed this way because architecture and training are closely linked
 
 Dataset
 +++++++
-A small sample dataset can be downloaded from `https://berkeley.app.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb/1/26259154857`. The overall size is approximately 75MB. A script is provided to facilitate downloading the dataset. Simply run `tools/download_dexnet_dataset.py` in the location in which you would like to store the dataset. Once you have downloaded the dataset, you must modify the `dataset_dir` parameter in the training configuration file::
+A small sample dataset can be downloaded from `https://berkeley.app.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb/1/27311630602/` as `dexnet_2.0_adversarial.zip`. The overall download size is approximately 70MB. Once you have downloaded the dataset, unzipped it, and moved it to where you want, you `must` modify the `dataset_dir` parameter in the training configuration file(ex. train_grasp_quality_cnn.yaml)::
 
-	dataset_dir: /path/to/dataset
+	dataset_dir: /your/path/to/dataset
 
 Training a Network from Scratch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,14 +79,11 @@ Fine tuning a network is similar to training one from scratch. The only differen
 	deepOptimizer = DeepOptimizer(gqcnn, train_config)
 	with gqcnn.get_tf_graph().as_default():
 	     deepOptimizer.optimize()
-	     
+
 Visualizing Training with Tensorboard
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The DeepOptimizer is designed with support for Tensorboard to allow for visualization of various training 
 parameters such as learning rate, validation error, minibatch loss, and minibatch error. These tensorboard summaries are 
-saved in a folder labeled `tensorboard_summaries` in the specified model directory. To visualize these parameters
-in a browser navigate to the model directory and run::
+saved in a folder labeled `tensorboard_summaries` in the model directory. For example, if the model directory where the model is being saved is `/home/user/Data/models/grasp_quality/model_qwueio`, the summaries will be stored in `/home/user/Data/models/grasp_quality/model_qwueio/tensorboard_summaries`. 
 
-	$ tensorboard --logdir=tensorboard_summaries
-
-This will start a local server on `localhost:6006`. Now simply open up `localhost:6006` in your browser to start visualizing.
+The DeepOptimizer will automatically start a local server to feed these summaries. Once you see this output message, `Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries`, simply navigate to `localhost:6006` in your favorite web-browser to start visualizing.
