@@ -48,15 +48,6 @@ There are two main steps to training a network from scratch:
 	with gqcnn.get_tf_graph().as_default():
 	     deepOptimizer.optimize()
 
-Fine-Tuning a Network
-~~~~~~~~~~~~~~~~~~~~~
-Fine tuning a network is similar to training one from scratch. The only difference is that we load a GQCNN from a model directory instead of creating one from scratch::
-
-	gqcnn = GQCNN.load(model_dir)
-	deepOptimizer = DeepOptimizer(gqcnn, train_config)
-	with gqcnn.get_tf_graph().as_default():
-	     deepOptimizer.optimize()
-
 Prediction
 ~~~~~~~~~~
 Once we have trained a model predicting is simply a matter of instantiating a GQCNN with that model and running predictions::
@@ -80,6 +71,15 @@ Finally we can analyze models we have trained using the GQCNNAnalyzer::
 
 The analysis_config contains a list of models to analyze at once along with many analysis parameters.
 
+Fine-Tuning a Network
+~~~~~~~~~~~~~~~~~~~~~
+Fine tuning a network is similar to training one from scratch. The only difference is that we load a GQCNN from a model directory instead of creating one from scratch::
+
+	gqcnn = GQCNN.load(model_dir)
+	deepOptimizer = DeepOptimizer(gqcnn, train_config)
+	with gqcnn.get_tf_graph().as_default():
+	     deepOptimizer.optimize()
+	     
 Visualizing Training with Tensorboard
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The DeepOptimizer is designed with support for Tensorboard to allow for visualization of various training 
