@@ -113,7 +113,13 @@ class DeepOptimizer(object):
     def _launch_tensorboard(self):
         """ Launches Tensorboard to visualize training """
         logging.info("Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
-        os.system('tensorboard --logdir=' + self.summary_dir)
+        os.system('tensorboard --logdir=' + self.summary_dir + " &>/dev/null &")
+
+    def _close_tensorboard(self):
+        """ Closes Tensorboard """
+        logging.info('Closing Tensorboard')
+        tensorboard_pid = os.popen('pgrep tensorboard').read()
+        os.system('kill ' + tensorboard_pid)
 
     def optimize(self):
         """ Perform optimization """
@@ -215,10 +221,10 @@ class DeepOptimizer(object):
                 ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
                 softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 		        
-                logging.info('Max ' +  str(np.max(softmax[:,1])))
-                logging.info('Min ' + str(np.min(softmax[:,1])))
-                logging.info('Pred nonzero ' + str(np.sum(np.argmax(predictions, axis=1))))
-                logging.info('True nonzero ' + str(np.sum(batch_labels)))
+                logging.debug('Max ' +  str(np.max(softmax[:,1])))
+                logging.debug('Min ' + str(np.min(softmax[:,1])))
+                logging.debug('Pred nonzero ' + str(np.sum(np.argmax(predictions, axis=1))))
+                logging.debug('True nonzero ' + str(np.sum(batch_labels)))
 
                 # log output
                 if step % self.log_frequency == 0:
@@ -289,14 +295,18 @@ class DeepOptimizer(object):
             del self.sess
             raise
 
+        self.queue_thread_exited = False
+        
         # check for dead queue
         self._check_dead_queue()
 
         # close sessions
         self.term_event.set()
 
+        # close tensorboard
+        self._close_tensorboard()
+
         # pause and wait for queue thread to exit before continueing
-        self.queue_thread_exited = False
         logging.info('Waiting for Queue Thread to Exit')
         while not self.queue_thread_exited:
             pass
