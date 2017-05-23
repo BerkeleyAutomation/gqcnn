@@ -1,0 +1,8 @@
+<launch>
+  <!-- Namespace for the node and services -->
+  <arg name="ns"  default="gqcnn" />
+  
+  <group ns="$(arg ns)">
+    <node name="gqcnn_listener"  pkg="gqcnn" type="gqcnn_listener.py" />
+  </group>
+</launch>
