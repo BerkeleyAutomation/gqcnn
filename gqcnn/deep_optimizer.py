@@ -47,6 +47,7 @@ class DeepOptimizer(object):
         """
         self.gqcnn = gqcnn
         self.cfg = config
+        self.tensorboard_has_launched = False
 
     def _create_loss(self):
         """ Creates a loss based on config file
@@ -108,6 +109,11 @@ class DeepOptimizer(object):
                 del layer_weights
             del self.saver
             del self.sess
+
+    def _launch_tensorboard(self):
+        """ Launches Tensorboard to visualize training """
+        logging.info("Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
+        os.system('tensorboard --logdir=' + self.summary_dir)
 
     def optimize(self):
         """ Perform optimization """
@@ -256,6 +262,11 @@ class DeepOptimizer(object):
                 # save the model
                 if step % self.save_frequency == 0 and step > 0:
                     self.saver.save(self.sess, os.path.join(self.experiment_dir, 'model_%05d.ckpt' %(step)))
+
+                # launch tensorboard only after the first iteration
+                if not self.tensorboard_has_launched:
+                    self.tensorboard_has_launched = True
+                    self._launch_tensorboard()
 
             # get final logs
             val_error = self._error_rate_in_batches()
