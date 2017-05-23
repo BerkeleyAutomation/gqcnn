@@ -30,7 +30,7 @@ This will install `gqcnn` in your current Python environment.
 
 Dependencies
 ~~~~~~~~~~~~
-The `GQCNN` module depends on the Berkeley AutoLab's `core`_ module, which can be installed using the instructions `here`_.
+The `GQCNN` module depends directly on the Berkeley AutoLab's `core`_ and `perception`_ modules, which can be installed using the instructions `here for core`_ and `here for perception`_.
 
 The `gqcnn` module's other dependencies are on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `skimage`_, and `sklearn`_ and should be installed automatically.
 You can install these manually if you wish with
@@ -50,7 +50,9 @@ However, installing our repo using `pip` will install these automatically.
 .. _scipy: https://www.scipy/org/
 .. _matplotlib: http://www.matplotlib.org/
 .. _core: https://github.com/BerkeleyAutomation/core
-.. _here: https://BerkeleyAutomation.github.io/core
+.. _perception: https://github.com/BerkeleyAutomation/perception
+.. _here for core: https://BerkeleyAutomation.github.io/core
+.. _here for perception: https://BerkeleyAutomation.github.io/perception
 .. _tensorflow: https://www.tensorflow.org/
 .. _cv2: http://opencv.org/
 .. _skimage: http://scikit-learn.org/stable/
