@@ -6,11 +6,11 @@ project(gqcnn)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -42,17 +42,16 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+ add_message_files(
+   FILES
+   GQCNNOutput.msg
+   DetectorOuptut.msg
+ )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  GQCNNListener.srv
-)
+# add_service_files(
+#  FILES
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -62,9 +61,9 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
+ generate_messages(
+   DEPENDENCIES
+   std_msgs  # Or other packages containing msgs
 )
 
 ################################################
@@ -101,6 +100,7 @@ catkin_package(
 #  LIBRARIES yumipy
 #  CATKIN_DEPENDS rospy
 #  DEPENDS system_lib
+  CATKIN_DEPENDS message_runtime
 )
 
 ###########

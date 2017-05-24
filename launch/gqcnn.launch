@@ -3,6 +3,6 @@
   <arg name="ns"  default="gqcnn" />
   
   <group ns="$(arg ns)">
-    <node name="gqcnn_listener"  pkg="gqcnn" type="gqcnn_listener.py" />
+    <node name="gqcnn_node"  pkg="gqcnn" type="gqcnn_node.py" />
   </group>
 </launch>
