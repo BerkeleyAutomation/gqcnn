@@ -48,7 +48,7 @@ logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_t
 # deepOptimizer = DeepOptimizer(gqcnn, train_config)
 # with gqcnn._graph.as_default():
     # deepOptimizer.optimize()
-# print 'Total Fine Tuning Time:', get_elapsed_time(time.time() - start_time)
+# logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
 
 # Analysis
 start_time = time.time()
