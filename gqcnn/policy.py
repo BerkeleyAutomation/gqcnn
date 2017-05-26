@@ -444,6 +444,22 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                 vis.subplot(d,d,i+1)
                 vis.imshow(DepthImage(image_tf))
                 vis.title('Image %d: d=%.3f' %(i, depth))
+
+            # display grasp transformed images
+            vis.figure(size=(FIGSIZE,FIGSIZE))
+            for i in range(d):
+                image_tf = image_tensor[i,...]
+                depth = pose_tensor[i][0]
+                grasp = grasps[i]
+
+                vis.subplot(d,2,2*i+1)
+                vis.imshow(rgbd_im.depth)
+                vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True)
+                vis.title('Grasp %d: d=%.3f' %(i, depth))
+
+                vis.subplot(d,2,2*i+2)
+                vis.imshow(DepthImage(image_tf))
+                vis.title('TF image %d: d=%.3f' %(i, depth))
             vis.show()
 
         # iteratively refit and sample
