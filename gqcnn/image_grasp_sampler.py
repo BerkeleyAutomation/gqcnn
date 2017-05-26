@@ -49,21 +49,6 @@ class ImageGraspSampler(object):
         a dictionary-like object containing the parameters of the sampler
     gripper_width : float
         width of the gripper in 3D space
-
-    Notes
-    -----
-    Required configuration paramters are specified in Other Parameters
-
-    Other Parameters
-    ----------------
-    min_depth_offset : float
-        offset from the minimum depth at the grasp center pixel to use in depth sampling
-    max_depth : float
-        maximum possible depth used in sampling
-    depth_sample_win_height : float
-        height of a window around the grasp center pixel used to determine min depth
-    depth_sample_win_height : float
-        width of a window around the grasp center pixel used to determine min depth
     """
     __metaclass__ = ABCMeta
 
@@ -140,8 +125,41 @@ class ImageGraspSampler(object):
         pass
         
 class AntipodalDepthImageGraspSampler(ImageGraspSampler):
-    """ Grasp sampler for antipodal point pairs from depth image gradients. """
+    """ Grasp sampler for antipodal point pairs from depth image gradients.
 
+    Notes
+    -----
+    Required configuration paramters are specified in Other Parameters
+
+    Other Parameters
+    ----------------
+    friction_coef : float
+        friction coefficient for 2D force closure
+    depth_grad_thresh : float
+        threshold for depth image gradients to determine edge points for sampling
+    depth_grad_gaussian_sigma : float
+        sigma used for pre-smoothing the depth image for better gradients
+    downsample_rate : float
+        factor to downsample the depth image by before sampling grasps
+    max_num_attempts : int
+        ceiling on the number of grasps to check in antipodal grasp rejection sampling
+    max_dist_from_center : int
+        maximum allowable distance of a grasp from the image center
+    min_grasp_dist : float
+        threshold on the grasp distance
+    angle_dist_weight : float
+        amount to weight the angle difference in grasp distance computation
+    depth_samples_per_grasp : int
+        number of depth samples to take per grasp
+    min_depth_offset : float
+        offset from the minimum depth at the grasp center pixel to use in depth sampling
+    max_depth : float
+        maximum possible depth used in sampling
+    depth_sample_win_height : float
+        height of a window around the grasp center pixel used to determine min depth
+    depth_sample_win_height : float
+        width of a window around the grasp center pixel used to determine min depth
+    """
     def __init__(self, config, gripper_width=np.inf):
         # init superclass
         ImageGraspSampler.__init__(self, config, gripper_width)
@@ -187,7 +205,6 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                 visualize=False):
         """
         Sample a set of 2D grasp candidates from a depth image.
-        Subclasses must override.
 
         Parameters
         ----------
@@ -214,6 +231,29 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
     def _sample_antipodal_grasps(self, rgbd_im, camera_intr, num_samples,
                                  segmask=None, visualize=False):
+        """
+        Sample a set of 2D grasp candidates from a depth image by finding depth
+        edges, then uniformly sampling point pairs and keeping only antipodal
+        grasps with width less than the maximum allowable.
+
+        Parameters
+        ----------
+        rgbd_im : :obj:`perception.RgbdImage`
+            RGB-D image to sample from
+        camera_intr : :obj:`perception.CameraIntrinsics`
+            intrinsics of the camera that captured the images
+        num_samples : int
+            number of grasps to sample
+        segmask : :obj:`perception.BinaryImage`
+            binary image segmenting out the object of interest
+        visualize : bool
+            whether or not to show intermediate samples (for debugging)
+ 
+        Returns
+        -------
+        :obj:`list` of :obj:`Grasp2D`
+            list of 2D grasp candidates
+        """
         # compute edge pixels
         edge_start = time()
         depth_im = rgbd_im.depth
@@ -318,3 +358,12 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                                                       camera_intr=camera_intr)
                             grasps.append(candidate_grasp)
         return grasps
+
+class ImageGraspSamplerFactory(object):
+    """ Factory for image grasp samplers. """
+    @staticmethod
+    def sampler(sampler_type, config, gripper_width):
+        if sampler_type == 'antipodal_depth':
+            return AntipodalDepthImageGraspSampler(config, gripper_width)
+        else:
+            raise ValueError('Image grasp sampler type %s not supported!' %(sampler_type))

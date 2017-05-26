@@ -7,7 +7,9 @@ from learning_analysis import ClassificationResult, RegressionResult, ConfusionM
 
 from grasp import Grasp2D
 from visualizer import Visualizer
-from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler
+from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
+from gripper import RobotGripper
+from policy import GraspingPolicy, AntipodalGraspingPolicy, RgbdImageState
 
 __all__ = ['GQCNN', 
            'DeepOptimizer',
@@ -16,6 +18,6 @@ __all__ = ['GQCNN',
            'TrainStatsLogger',
            'ClassificationResult', 'RegressionResult', 'ConfusionMatrix',
            'Grasp2D',
-           'ImageGraspSampler',
-           'AntipodalDepthImageGraspSampler',
-           'Visualizer']
+           'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'ImageGraspSamplerFactory'
+           'Visualizer', 'RobotGripper',
+           'GraspingPolicy', 'AntipodalGraspingPolicy', 'RgbdImageState']

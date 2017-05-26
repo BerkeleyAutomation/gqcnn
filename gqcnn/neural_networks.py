@@ -512,6 +512,26 @@ class GQCNN(object):
             self._sess.close()
             self._sess = None
 
+    @property
+    def im_height(self):
+        return self._im_height
+
+    @property
+    def im_width(self):
+        return self._im_width
+
+    @property
+    def num_channels(self):
+        return self._num_channels
+
+    @property
+    def pose_dim(self):
+        return self._pose_dim
+
+    @property
+    def input_data_mode(self):
+        return self._input_data_mode
+
     def update_im_mean(self, im_mean):
         """ Updates image mean to be used for normalization when predicting 
         
