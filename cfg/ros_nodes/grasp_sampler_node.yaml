@@ -1,0 +1,6 @@
+ros_topics:
+  camera_intrinsics: /primesense_overhead/rgb/camera_info
+  object_detector:
+    bounding_boxes: /yumi_primesense_object_detector/bounding_boxes
+    rgb_image: /yumi_primesense_object_detector/image/rgb
+    depth_image: /yumi_primesense_object_detector/image/depth

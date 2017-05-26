@@ -3,6 +3,6 @@
   <arg name="ns"  default="gqcnn" />
   
   <group ns="$(arg ns)">
-    <node name="gqcnn_node"  pkg="gqcnn" type="gqcnn_node.py" />
+    <node name="grasp_sampler_node"  pkg="gqcnn" type="grasp_sampler_node.py" />
   </group>
 </launch>
