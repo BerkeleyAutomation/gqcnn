@@ -13,7 +13,7 @@ import time
 from core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory
 
-from gqcnn import AntipodalGraspingPolicy, RgbdImageState
+from gqcnn import CrossEntropyAntipodalGraspingPolicy, RgbdImageState
 from gqcnn import Visualizer as vis
 
 if __name__ == '__main__':
@@ -50,9 +50,22 @@ if __name__ == '__main__':
     state = RgbdImageState(rgbd_im, camera_intr)
 
     # init policy
-    policy = AntipodalGraspingPolicy(policy_config)
+    policy = CrossEntropyAntipodalGraspingPolicy(policy_config)
     policy.gqcnn.open_session()
     policy_start = time.time()
-    grasp = policy(state)
+    action = policy(state)
     logging.info('Planning took %.3f sec' %(time.time() - policy_start))
     policy.gqcnn.close_session()
+
+    # vis final grasp
+    if policy_config['vis']['final_grasp']:
+        vis.figure(size=(10,10))
+        vis.subplot(1,2,1)
+        vis.imshow(color_im)
+        vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
+        vis.title('Planned grasp on color (Q=%.3f)' %(action.p_success))
+        vis.subplot(1,2,2)
+        vis.imshow(depth_im)
+        vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
+        vis.title('Planned grasp on depth (Q=%.3f)' %(action.p_success))
+        vis.show()

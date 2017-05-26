@@ -2,6 +2,7 @@
 Classes to encapsulate parallel-jaw grasps in image space
 Author: Jeff
 """
+import IPython
 import numpy as np
 
 from core import Point
@@ -55,6 +56,49 @@ class Grasp2D(object):
         u1 = self.camera_intr.project(p1)
         u2 = self.camera_intr.project(p2)
         return np.linalg.norm(u1.data - u2.data)
+
+    @property
+    def endpoints(self):
+        """ Returns the grasp endpoints """
+        p1 = self.center.data - (float(self.width_px) / 2) * self.axis
+        p2 = self.center.data + (float(self.width_px) / 2) * self.axis
+        return p1, p2
+
+    @property
+    def feature_vec(self):
+        """ Returns the feature vector for the grasp.
+        v = [p1, p2, depth]
+        where p1 and p2 are the jaw locations in image space
+        """
+        p1, p2 = self.endpoints
+        return np.r_[p1, p2, self.depth]
+
+    @staticmethod
+    def from_feature_vec(v, width=0.0, camera_intr=None):
+        """ Creates a Grasp2D obj from a feature vector and additional parameters.
+
+        Parameters
+        ----------
+        v : :obj:`numpy.ndarray`
+            feature vector, see Grasp2D.feature_vec
+        width : float
+            grasp opening width, in meters
+        camera_intr : :obj:`perception.CameraIntrinsics`
+            frame of reference for camera that the grasp corresponds to
+        """
+        # read feature vec
+        p1 = v[:2]
+        p2 = v[2:4]
+        depth = v[4]
+
+        # compute center and angle
+        center_px = (p1 + p2) / 2
+        center = Point(center_px, camera_intr.frame)
+        axis = p2 - p1
+        if np.linalg.norm(axis) > 0:
+            axis = axis / np.linalg.norm(axis)
+        angle = np.arccos(axis[0])
+        return Grasp2D(center, angle, depth, width=width, camera_intr=camera_intr)
 
     def pose(self, grasp_approach_dir=None):
         """ Computes the 3D pose of the grasp relative to the camera.
