@@ -515,9 +515,20 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
 
             # fit elite set
             num_refit = max(int(np.ceil(self._gmm_refit_p * num_grasps)), 1)
+            elite_p_successes = [i[0] for i in p_successes_and_indices[:num_refit]]
             elite_grasp_indices = [i[1] for i in p_successes_and_indices[:num_refit]]
             elite_grasps = [grasps[i] for i in elite_grasp_indices]
             elite_grasp_arr = np.array([g.feature_vec for g in elite_grasps])
+
+            if self.config['vis']['elite_grasps']:
+                # display each grasp on the original image, colored by predicted success
+                vis.figure(size=(FIGSIZE,FIGSIZE))
+                vis.imshow(rgbd_im.depth)
+                for grasp, q in zip(elite_grasps, elite_p_successes):
+                    vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
+                              color=plt.cm.RdYlBu(q))
+                vis.title('Elite grasps iter %d' %(j))
+                vis.show()
 
             # normalize elite set
             elite_grasp_mean = np.mean(elite_grasp_arr, axis=0)
@@ -541,6 +552,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             grasp_vecs = elite_grasp_std * grasp_vecs + elite_grasp_mean
             sample_duration = time() - sample_start
             logging.debug('GMM sampling took %.3f sec' %(sample_duration))
+
 
             # convert features to grasps
             grasps = []

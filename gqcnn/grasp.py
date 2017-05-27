@@ -97,7 +97,10 @@ class Grasp2D(object):
         axis = p2 - p1
         if np.linalg.norm(axis) > 0:
             axis = axis / np.linalg.norm(axis)
-        angle = np.arccos(axis[0])
+        if axis[1] > 0:
+            angle = np.arccos(axis[0])
+        else:
+            angle = -np.arccos(axis[0])
         return Grasp2D(center, angle, depth, width=width, camera_intr=camera_intr)
 
     def pose(self, grasp_approach_dir=None):

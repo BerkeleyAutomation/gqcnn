@@ -7,7 +7,7 @@ sensor:
   type: virtual_primesense
   frame: primesense_overhead
   auto_white_balance: 0
-  image_dir: /home/autolab/Public/data/dex-net/data/gqcnn/test/detection_000
+  image_dir: /home/autolab/Public/data/dex-net/data/gqcnn/test/detection_002
 
 # policy params
 policy:
@@ -57,6 +57,7 @@ policy:
     grasp_sampling : 0
     tf_images: 0
     grasp_candidates: 0
+    elite_grasps: 0
     grasp_ranking: 0
     grasp_plan: 0
     final_grasp: 1
