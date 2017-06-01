@@ -141,7 +141,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         sigma used for pre-smoothing the depth image for better gradients
     downsample_rate : float
         factor to downsample the depth image by before sampling grasps
-    max_num_attempts : int
+    max_rejection_samples : int
         ceiling on the number of grasps to check in antipodal grasp rejection sampling
     max_dist_from_center : int
         maximum allowable distance of a grasp from the image center
@@ -170,7 +170,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         self._depth_grad_gaussian_sigma = self._config['depth_grad_gaussian_sigma']
         self._downsample_rate = self._config['downsample_rate']
         self._rescale_factor = 1.0 / self._downsample_rate
-        self._max_num_attempts = self._config['max_num_attempts']
+        self._max_rejection_samples = self._config['max_rejection_samples']
 
         # distance thresholds for rejection sampling
         self._max_dist_from_center = self._config['max_dist_from_center']
@@ -307,9 +307,9 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # iteratively sample grasps
         k = 0
         grasps = []
-        candidate_pair_indices = np.random.choice(num_pairs, size=self._max_num_attempts,
+        candidate_pair_indices = np.random.choice(num_pairs, size=self._max_rejection_samples,
                                                   replace=False)
-        while k < self._max_num_attempts and len(grasps) < num_samples:
+        while k < self._max_rejection_samples and len(grasps) < num_samples:
             # sample a random pair without replacement
             j = candidate_pair_indices[k]
             pair_ind = valid_indices[j,:]

@@ -192,8 +192,8 @@ class Visualizer:
             
         # compute axis and jaw locations
         axis = grasp.axis
-        g1 = grasp.center.data - (grasp.width_px / 2) * axis
-        g2 = grasp.center.data + (grasp.width_px / 2) * axis
+        g1 = grasp.center.data - (float(grasp.width_px) / 2) * axis
+        g2 = grasp.center.data + (float(grasp.width_px) / 2) * axis
         g1p = g1 - scale * arrow_len * axis # start location of grasp jaw 1
         g2p = g2 + scale * arrow_len * axis # start location of grasp jaw 2
 

@@ -9,7 +9,7 @@ from grasp import Grasp2D
 from visualizer import Visualizer
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
 from gripper import RobotGripper
-from policy import GraspingPolicy, AntipodalGraspingPolicy, RgbdImageState
+from policy import GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, RgbdImageState
 
 __all__ = ['GQCNN', 
            'DeepOptimizer',
@@ -20,4 +20,5 @@ __all__ = ['GQCNN',
            'Grasp2D',
            'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'ImageGraspSamplerFactory'
            'Visualizer', 'RobotGripper',
-           'GraspingPolicy', 'AntipodalGraspingPolicy', 'RgbdImageState']
+           'GraspingPolicy', 'AntipodalGraspingPolicy', 'CrossEntropyAntipodalGraspingPolicy',
+           'RgbdImageState']

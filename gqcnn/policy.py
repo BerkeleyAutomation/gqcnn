@@ -519,8 +519,10 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             elite_grasp_indices = [i[1] for i in p_successes_and_indices[:num_refit]]
             elite_grasps = [grasps[i] for i in elite_grasp_indices]
             elite_grasp_arr = np.array([g.feature_vec for g in elite_grasps])
+
             for g in elite_grasps:
                 print(g.feature_vec)
+
 
             if self.config['vis']['elite_grasps']:
                 # display each grasp on the original image, colored by predicted success
@@ -535,11 +537,12 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             # normalize elite set
             elite_grasp_mean = np.mean(elite_grasp_arr, axis=0)
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
+
             print(elite_grasp_arr)
             print (elite_grasp_std)
             print (elite_grasp_mean)
-            if len(elite_grasp_arr) > 1:
-                elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
+            elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
+
 
             # fit a GMM to the top samples
             num_components = max(int(np.ceil(self._gmm_component_frac * num_refit)), 1)
@@ -548,7 +551,9 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                                   weights_init=uniform_weights,
                                   reg_covar=self._gmm_reg_covar)
             train_start = time()
+
             print(elite_grasp_arr)
+
             gmm.fit(elite_grasp_arr)
             train_duration = time() - train_start
             logging.debug('GMM fitting with %d components took %.3f sec' %(num_components, train_duration))
