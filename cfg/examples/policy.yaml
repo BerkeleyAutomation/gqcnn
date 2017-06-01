@@ -7,18 +7,27 @@ sensor:
   type: virtual_primesense
   frame: primesense_overhead
   auto_white_balance: 0
-  image_dir: /home/autolab/Public/data/dex-net/data/gqcnn/test/detection_001
+  image_dir: /home/autolab/Public/data/dex-net/data/gqcnn/test/detection_002
 
 # policy params
 policy:
-  num_grasp_samples: 100
-  gripper_width: 0.05
-  crop_height: 96
-  crop_width: 96
+  # optimization params
+  num_seed_samples: 100
+  num_gmm_samples: 50
+  num_iters: 3
+  gmm_refit_p: 0.25
+  gmm_component_frac: 0.4
+  gmm_reg_covar: 0.01
 
   # gqcnn params
   gqcnn_model: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_test_network
   
+  # general params
+  deterministic: 1
+  gripper_width: 0.05
+  crop_height: 96
+  crop_width: 96
+
   # sampling params
   sampling:
     # type
@@ -29,10 +38,10 @@ policy:
     depth_grad_thresh: 0.005
     depth_grad_gaussian_sigma: 1.0
     downsample_rate: 4
-    max_num_attempts: 1000
+    max_rejection_samples: 2500
 
     # distance
-    max_dist_from_center: 120
+    max_dist_from_center: 150
     min_grasp_dist: 0.025
     angle_dist_weight: 0.025
 
@@ -45,7 +54,12 @@ policy:
 
   # visualization
   vis:
-    sampling : 0
-    tf: 0
-    candidates: 0
-    plan: 0
+    grasp_sampling : 0
+    tf_images: 0
+    grasp_candidates: 0
+    elite_grasps: 0
+    grasp_ranking: 0
+    grasp_plan: 0
+    final_grasp: 1
+
+    k: 25
