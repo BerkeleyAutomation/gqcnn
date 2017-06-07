@@ -7,6 +7,7 @@ from learning_analysis import ClassificationResult, RegressionResult, ConfusionM
 
 from grasp import Grasp2D
 from visualizer import Visualizer
+from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
 from gripper import RobotGripper
 from policy import GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, RgbdImageState
@@ -21,4 +22,5 @@ __all__ = ['GQCNN',
            'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'ImageGraspSamplerFactory'
            'Visualizer', 'RobotGripper',
            'GraspingPolicy', 'AntipodalGraspingPolicy', 'CrossEntropyAntipodalGraspingPolicy',
-           'RgbdImageState']
+           'RgbdImageState',
+           'NoValidGraspsException', 'NoAntipodalPairsFoundException']

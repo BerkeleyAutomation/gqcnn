@@ -1,13 +1,18 @@
 #!/usr/bin/env python
+""" 
+ROS Node for sampling grasps 
+Author: Vishal Satish
+"""
 import rospy
+import time
+import perception as per
 from core import YamlConfig
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Quaternion
-from gqcnn.msg import GQCNNGrasp
-import perception as per
+from gqcnn.msg import GQCNNGrasp, BoundingBox
 from cv_bridge import CvBridge, CvBridgeError
 from visualization import Visualizer2D as vis
 from gqcnn import CrossEntropyAntipodalGraspingPolicy, RgbdImageState
+from gqcnn import NoValidGraspsException, NoAntipodalPairsFoundException
 
 grasp_publisher = None
 camera_intrinsics = None
@@ -15,7 +20,6 @@ rgb_image = None
 depth_image = None
 cv_bridge = None
 rgbd_image = None
-grasping_policy = None
 
 def camera_intrinsics_callback(data):
     """ Callback for Camera Intrinsics """    
@@ -27,49 +31,55 @@ def bounding_box_callback(data):
     global camera_intrinsics
     global rgbd_image
 
-    # make sure camera intrinsics, rgb image and depth image are not None, then generate RGBD image
+    # make sure camera intrinsics, rgb image and depth image are not None, then generate RGBD image and proceed
     if camera_intrinsics is not None and rgb_image is not None and depth_image is not None:
         rgbd_image = per.RgbdImage.from_color_and_depth(per.ColorImage(rgb_image), per.DepthImage(depth_image))
     
-    # find crop parameters
-    minX = data.x
-    minY = data.y
-    maxX = data.z
-    maxY = data.w
-    centroidX = (maxX + minX) / 2
-    centroidY = (maxY + minY) / 2
-    width = (maxX - minX)
-    height = (maxY - minY)
-
-    if rgbd_image is not None:
+        # find crop parameters
+        minX = data.minX
+        minY = data.minY
+        maxX = data.maxX
+        maxY = data.maxY
+        centroidX = (maxX + minX) / 2
+        centroidY = (maxY + minY) / 2
+        width = (maxX - minX)
+        height = (maxY - minY)
+    
         # crop camera intrinsics and rgbd image
         camera_intrinsics = camera_intrinsics.crop(height, width, centroidX, centroidY)
-        rospy.loginfo('Crop height: ' + str(height) + 'Crop Width: ' + str(width) + 'CenterX: ' + str(centroidX) + 'CenterY: ' + str(centroidY))
         rgbd_image = rgbd_image.crop(height, width, centroidX, centroidY)
-
-    # visualize
-    vis.imshow(per.ColorImage(rgb_image))
-    vis.show()
-    vis.imshow(per.DepthImage(depth_image))
-    vis.show()
-    vis.imshow(rgbd_image)
-    vis.show()
-
-    # execute policy
-    execute_policy()
+    
+        # visualize
+        if cfg['vis_cropped_images']:
+            vis.imshow(per.ColorImage(rgb_image))
+            vis.show()
+            vis.imshow(per.DepthImage(depth_image))
+            vis.show()
+            vis.imshow(rgbd_image)
+            vis.show()
+   
+        # execute policy
+        try:
+            execute_policy()
+        except NoValidGraspsException:
+            rospy.logerr('While executing policy found no valid grasps from sampled antipodal point pairs. Aborting Policy!')
+        except NoAntipodalPairsFoundException:
+            rospy.logerr('While executing policy could not sample any antipodal point pairs from input image. Aborting Policy! Please check if there is an object in the workspace or if the output of the object detector is reasonable.')
 
 def execute_policy():
+
     # execute the policy's action
     rospy.loginfo('Planning Grasp')
+    grasp_planning_start_time = time.time()
     grasp = grasping_policy(RgbdImageState(rgbd_image, camera_intrinsics))
 
     # create GQCNNGrasp return msg and populate it
     gqcnn_grasp = GQCNNGrasp()
-    gqcnn_grasp.grasp_success_prob = grasp.p_success
-    gqcnn_grasp.pose = grasp.pose().pose_msg
+    gqcnn_grasp.grasp_success_prob = grasp.p_success[0]
+    gqcnn_grasp.pose = grasp.grasp.pose().pose_msg
 
     # publish GQCNNGrasp
-    rospy.loginfo('Publishing Grasp')
+    rospy.loginfo('Publishing Grasp, Total planning time: ' + str(time.time() - grasp_planning_start_time) + ' secs.')
     grasp_publisher.publish(gqcnn_grasp)
 
 def rgb_im_callback(data):
@@ -98,7 +108,7 @@ if __name__ == '__main__':
     cv_bridge = CvBridge()
 
     # get configs
-    cfg = YamlConfig('/home/autolab/Workspace/vishal_working/catkin_ws/src/gqcnn/cfg/ros_nodes/grasp_sampler_node.yaml')
+    cfg = YamlConfig('cfg/ros_nodes/grasp_sampler_node.yaml')
     topics = cfg['ros_topics']
     policy_cfg = cfg['policy_cfg']['policy']
 
@@ -106,7 +116,7 @@ if __name__ == '__main__':
     rospy.Subscriber(topics['camera_intrinsics'], CameraInfo, camera_intrinsics_callback)
 
     # create a subscriber to get bounding boxes from object_detector
-    rospy.Subscriber(topics['object_detector']['bounding_boxes'], Quaternion, bounding_box_callback)
+    rospy.Subscriber(topics['object_detector']['bounding_boxes'], BoundingBox, bounding_box_callback)
 
     # create a subscriber to get depth image from object detector
     rospy.Subscriber(topics['object_detector']['depth_image'], Image, depth_im_callback)
@@ -120,6 +130,5 @@ if __name__ == '__main__':
     # create a policy 
     rospy.loginfo('Creating Grasp Policy')
     grasping_policy = CrossEntropyAntipodalGraspingPolicy(policy_cfg)
-    # grasping_policy.gqcnn.open_session()
 
     rospy.spin()

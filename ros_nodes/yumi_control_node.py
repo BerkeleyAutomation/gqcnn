@@ -1,27 +1,50 @@
 #!/usr/bin/env python
 import rospy
 from gqcnn.msg import GQCNNGrasp
+from sensor_msgs.msg import Image, CameraInfo
 from core import RigidTransform
 from gqcnn import RobotGripper
 from core import YamlConfig
 from yumipy import YuMiRobot, YuMiCommException, YuMiControlException, YuMiSubscriber
 from yumipy import YuMiConstants as YMC
+import logging
+import numpy as np
+from visualization import Visualizer3D as vis3d
+import perception as per
+from cv_bridge import CvBridge, CvBridgeError
 
 robot = None
 arm = None
 subscriber = None
 config = None
 home_pose = None
+gripper = None
+T_camera_world = None
+depth_im = None
+ir_intrinsics = None
+cv_bridge = None
 
 def grasp_callback(data):
-    ropsy.loginfo('Received grasp from GQCNN')
-    quaternion = np.array([data.orientation.x, data.orientation.y, data.orientation.z, data.orientation.w]) 
-    position = np.array([data.position.x, data.position.y, data.position.z])
-    T_grasp_world = RigidTransform(orientation, position)
-    T_gripper_grasp = RobotGripper.load('yumi_metal_spline')
-    T_gripper_world = T_grasp_world * T_gripper_grasp
-    execute_grasp(T_gripper_world, robot, arm, subscriber, config)
-    arm.goto_pose(home_pose)
+    rospy.loginfo('Received grasp from GQCNN')
+
+    rotation_quaternion = np.asarray([data.pose.orientation.w, data.pose.orientation.x, data.pose.orientation.y, data.pose.orientation.z]) 
+    translation = np.asarray([data.pose.position.x, data.pose.position.y, data.pose.position.z])
+    T_grasp_world = RigidTransform(rotation_quaternion, translation, 'grasp', 'world')
+    
+    T_gripper_world = T_grasp_world * gripper.T_grasp_gripper
+
+
+    point_cloud_camera = ir_intrinsics.deproject(depth_im)
+    point_cloud_world = T_camera_world * point_cloud_camera
+    vis3d.figure()
+    vis3d.points(point_cloud_world, subsample=10)
+    vis3d.pose(T_gripper_world, alpha=0.1)
+    vis3d.show()
+    
+    # execute_grasp(T_gripper_world, robot, arm, subscriber, config)
+
+    # bring arm back to home pose 
+    # arm.goto_pose(home_pose)
 
 def execute_grasp(T_gripper_world, robot, arm, subscriber, config):
     """ Executes a single grasp for the hand pose T_gripper_world up to the point of lifting the object """
@@ -143,16 +166,7 @@ def init_robot(config):
     initialized = False
     while not initialized:
         try:
-            tcp = YMC.TCP_DEFAULT_GRIPPER
-            if 'tcp' in config['control'].keys():
-                if config['control']['tcp'] == 'standard':
-                    tcp = YMC.TCP_ABB_GRIPPER
-                elif config['control']['tcp'] == 'gecko':
-                    tcp = YMC.TCP_GECKO_GRIPPER                
-
-            robot = YuMiRobot(debug=config['robot_off'],
-                              arm_type=config['control']['arm_type'],
-                              tcp=tcp)
+            robot = YuMiRobot(debug=config['robot_off'])
             robot.set_v(config['control']['standard_velocity'])
             robot.set_z(config['control']['standard_zoning'])
             if config['control']['use_left']:
@@ -178,13 +192,47 @@ def init_robot(config):
             human_input = raw_input('Hit [ENTER] when YuMi is ready')
     return robot, subscriber, arm, home_pose
 
+def depth_im_callback(data):
+    global depth_im
+    # rospy.loginfo('Received Depth Image')
+    try:
+        depth_image = cv_bridge.imgmsg_to_cv2(data, desired_encoding = "passthrough")
+    except CvBridgeError as cv_bridge_exception:
+        rospy.logerr(cv_bridge_exception)
+    depth_im = per.DepthImage(depth_image, 'primesense_overhead')
+
+def camera_intrinsics_callback(data):
+    """ Callback for Camera Intrinsics """    
+    global ir_intrinsics
+    ir_intrinsics = per.CameraIntrinsics('primesense_overhead', data.K[0], data.K[4], data.K[2], data.K[5], data.K[1], data.height, data.width)
+
 if __name__ == '__main__':
     
     # initialize the ROS node
-    rospy.init_node('yumi_control_node')
+    rospy.init_node('Yumi_Control_Node')
     
     # create a subscriber to get GQCNN Grasp 
-    ropsy.loginfo('Subscribing to GQCNN Grasp Topic')
+    rospy.loginfo('Subscribing to GQCNN Grasp Topic')
     rospy.Subscriber('/gqcnn_grasp', GQCNNGrasp, grasp_callback)
 
-    robot, subscriber, arm, home_pose = init_robot(YamlConfig('/home/autolab/Workspace/vishal_workin
+    # create a subscirber to get primesense depth image
+    rospy.loginfo('Subscribing to Primesense Depth Topic')
+    rospy.Subscriber('/primesense_overhead/depth_registered/hw_registered/image_rect_raw', Image, depth_im_callback)
+
+    # create a subscriber to get camera intrinsics
+    rospy.loginfo('Subscribing to Camera Intrinsics') 
+    rospy.Subscriber('/primesense_overhead/rgb/camera_info', CameraInfo, camera_intrinsics_callback)
+
+    # initialize cv_bridge
+    cv_bridge = CvBridge()
+
+    # rospy.loginfo('Initializing YuMi')
+    # robot, subscriber, arm, home_pose = init_robot(YamlConfig('/home/autolab/Workspace/vishal_working/catkin_ws/src/gqcnn/cfg/ros_nodes/yumi_control_node.yaml'))
+
+    rospy.loginfo('Loading Gripper')
+    gripper = RobotGripper.load('yumi_metal_spline')
+
+    rospy.loginfo('Loading T_camera_world')
+    T_camera_world = RigidTransform.load('/home/autolab/Public/alan/calib/primesense_overhead/primesense_overhead_to_world.tf')
+
+    rospy.spin()

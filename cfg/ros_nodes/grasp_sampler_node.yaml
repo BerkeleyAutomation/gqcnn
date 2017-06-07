@@ -5,6 +5,8 @@ ros_topics:
     rgb_image: /yumi_primesense_object_detector/image/rgb
     depth_image: /yumi_primesense_object_detector/image/depth
 
+vis_cropped_images: 0
+
 policy_cfg:
   # grasping params
   inpaint_rescale_factor: 0.5
@@ -28,8 +30,8 @@ policy_cfg:
     gmm_reg_covar: 0.01
 
     # gqcnn params
-    gqcnn_model: /home/autolab/Public/data/dex-net/data/models/gqcnn_test_network  
-    
+    gqcnn_model: /home/autolab/Public/drive/projects/dex-net/data/models/grasp_quality/gqcnn_test_network
+
     # general params
     deterministic: 1
     gripper_width: 0.05
@@ -71,3 +73,4 @@ policy_cfg:
       final_grasp: 1
 
       k: 25
+
