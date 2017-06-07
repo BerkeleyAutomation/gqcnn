@@ -20,6 +20,7 @@ from perception import DepthImage
 
 from gqcnn import Grasp2D, RobotGripper, ImageGraspSamplerFactory, GQCNN, InputDataMode
 from gqcnn import Visualizer as vis
+from gqcnn import NoValidGraspsException
 
 FIGSIZE = 16
 SEED = 5234709
@@ -98,7 +99,10 @@ class GraspingPolicy(Policy):
         
         # init GQ-CNN
         self._gqcnn = GQCNN.load(self._gqcnn_model_dir)
-        
+
+        # open tensorflow session for gqcnn
+        self._gqcnn.open_session()
+
     @property
     def config(self):
         """ Returns the policy parameters. """
@@ -326,7 +330,6 @@ class AntipodalGraspingPolicy(GraspingPolicy):
 
         # return action
         return ParallelJawGrasp(grasp, p_success, image)
-        
 
 class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 
@@ -430,6 +433,9 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                                             seed=self._seed)
         num_grasps = len(grasps)
 
+        if num_grasps == 0:
+            raise NoValidGraspsException('No Valid Grasps Could be Found')
+
         # form tensors
         image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
         if self.config['vis']['tf_images']:
@@ -520,9 +526,6 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             elite_grasps = [grasps[i] for i in elite_grasp_indices]
             elite_grasp_arr = np.array([g.feature_vec for g in elite_grasps])
 
-            for g in elite_grasps:
-                print(g.feature_vec)
-
 
             if self.config['vis']['elite_grasps']:
                 # display each grasp on the original image, colored by predicted success
@@ -538,10 +541,17 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             elite_grasp_mean = np.mean(elite_grasp_arr, axis=0)
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
 
-            print(elite_grasp_arr)
-            print (elite_grasp_std)
-            print (elite_grasp_mean)
-            elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
+            std_contains_zero = False
+            for val in elite_grasp_std:
+                if val == 0:
+                    std_contains_zero = True
+
+            if len(elite_grasp_arr) > 1 and not std_contains_zero:
+                # print (elite_grasp_arr - elite_grasp_mean)
+                # print (elite_grasp_arr)
+                # print (elite_grasp_mean)
+                # print (elite_grasp_std)
+                elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
 
 
             # fit a GMM to the top samples
@@ -551,8 +561,6 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                                   weights_init=uniform_weights,
                                   reg_covar=self._gmm_reg_covar)
             train_start = time()
-
-            print(elite_grasp_arr)
 
             gmm.fit(elite_grasp_arr)
             train_duration = time() - train_start

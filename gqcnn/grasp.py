@@ -5,7 +5,7 @@ Author: Jeff
 import IPython
 import numpy as np
 
-from core import Point
+from core import Point, RigidTransform
 
 class Grasp2D(object):
     """
@@ -124,7 +124,7 @@ class Grasp2D(object):
 
         # compute 3D grasp center in camera basis
         grasp_center_im = self.center.data
-        center_px_im = Point(grasp_center_im, frame=ir_intrinsics.frame)
+        center_px_im = Point(grasp_center_im, frame=self.camera_intr.frame)
         grasp_center_camera = self.camera_intr.deproject_pixel(self.depth, center_px_im)
         grasp_center_camera = grasp_center_camera.data
 

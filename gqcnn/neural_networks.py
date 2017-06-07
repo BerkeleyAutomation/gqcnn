@@ -650,7 +650,6 @@ class GQCNN(object):
             if self._sess is None:
                 close_sess = True
                 self.open_session()
-
             i = 0
             while i < num_images:
                 logging.debug('Predicting file %d' % (i))
