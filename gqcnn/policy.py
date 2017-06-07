@@ -103,6 +103,10 @@ class GraspingPolicy(Policy):
         # open tensorflow session for gqcnn
         self._gqcnn.open_session()
 
+    def __del__(self):
+        self._gqcnn.close_session()
+        del self
+
     @property
     def config(self):
         """ Returns the policy parameters. """
@@ -540,19 +544,8 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             # normalize elite set
             elite_grasp_mean = np.mean(elite_grasp_arr, axis=0)
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
-
-            std_contains_zero = False
-            for val in elite_grasp_std:
-                if val == 0:
-                    std_contains_zero = True
-
-            if len(elite_grasp_arr) > 1 and not std_contains_zero:
-                # print (elite_grasp_arr - elite_grasp_mean)
-                # print (elite_grasp_arr)
-                # print (elite_grasp_mean)
-                # print (elite_grasp_std)
-                elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
-
+            elite_grasp_std[elite_grasp_std == 0] = 1.0
+            elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
 
             # fit a GMM to the top samples
             num_components = max(int(np.ceil(self._gmm_component_frac * num_refit)), 1)
@@ -572,7 +565,6 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             grasp_vecs = elite_grasp_std * grasp_vecs + elite_grasp_mean
             sample_duration = time() - sample_start
             logging.debug('GMM sampling took %.3f sec' %(sample_duration))
-
 
             # convert features to grasps
             grasps = []

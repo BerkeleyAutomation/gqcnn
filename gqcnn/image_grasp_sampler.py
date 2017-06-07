@@ -131,7 +131,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
     Notes
     -----
-    Required configuration paramters are specified in Other Parameters
+    Required configuration parameters are specified in Other Parameters
 
     Other Parameters
     ----------------
@@ -176,6 +176,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         # distance thresholds for rejection sampling
         self._max_dist_from_center = self._config['max_dist_from_center']
+        self._min_dist_from_boundary = self._config['min_dist_from_boundary']
         self._min_grasp_dist = self._config['min_grasp_dist']
         self._angle_dist_weight = self._config['angle_dist_weight']
 
@@ -197,8 +198,9 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             dx = grad[1][pix[0], pix[1]]
             dy = grad[0][pix[0], pix[1]]
             normal_vec = np.array([dy, dx])
-            if np.linalg.norm(normal_vec) > 0:
-                normal_vec = normal_vec / np.linalg.norm(normal_vec)
+            if np.linalg.norm(normal_vec) == 0:
+                normal_vec = np.array([1,0])
+            normal_vec = normal_vec / np.linalg.norm(normal_vec)
             normals[i,:] = normal_vec
 
         return normals
@@ -306,24 +308,17 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         num_pairs = valid_indices.shape[0]
         logging.info('Normal pruning %.3f sec' %(time() - sample_start))
 
+        # raise exception if no antipodal pairs
+        if num_pairs == 0:
+            raise NoAntipodalPairsFoundException('No Antipodal Point Pairs could be sampled.')
+
         # iteratively sample grasps
         k = 0
         grasps = []
-
-        # if self._max_rejection_samples > num_pairs:
-            # temp_max = self.max
-            # self._max_rejection_samples = num_pairs
-
-        if num_pairs == 0:
-            raise NoAntipodalPairsFoundException('No Antipodal Point Pairs could be sampled.')
-        if self._max_rejection_samples > num_pairs:
-            sample_size = num_pairs
-        else:
-            sample_size = self._max_rejection_samples
+        sample_size = min(self._max_rejection_samples, num_pairs)
         candidate_pair_indices = np.random.choice(num_pairs, size=sample_size,
                                                   replace=False)
         while k < sample_size and len(grasps) < num_samples:
-            # print ('Going through while loop')
             # sample a random pair without replacement
             j = candidate_pair_indices[k]
             pair_ind = valid_indices[j,:]
@@ -340,13 +335,18 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                 grasp_center = (p1 + p2) / 2
                 grasp_axis = p2 - p1
                 grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
-                if grasp_axis[1] == 0:
-                    break
-                grasp_theta = np.arctan(grasp_axis[0] / grasp_axis[1])
+                grasp_theta = 0
+                if grasp_axis[1] != 0:
+                    grasp_theta = np.arctan(grasp_axis[0] / grasp_axis[1])
                     
                 # compute distance from image center
                 dist_from_center = np.linalg.norm(grasp_center - depth_im.center)
-                if dist_from_center < self._max_dist_from_center:
+                dist_from_boundary = min(np.abs(depth_im.height - grasp_center[0]),
+                                         np.abs(depth_im.width - grasp_center[1]),
+                                         grasp_center[0],
+                                         grasp_center[1])
+                if dist_from_center < self._max_dist_from_center and \
+                   dist_from_boundary > self._min_dist_from_boundary:
                     # form grasp object
                     grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
                     grasp = Grasp2D(grasp_center_pt, grasp_theta, 0.0)
@@ -365,10 +365,14 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
                         # sample depths
                         for i in range(self._depth_samples_per_grasp):
-                            temp = depth_im.data[grasp_center[0]-self._h:grasp_center[0]+self._h, grasp_center[1]-self._w:grasp_center[1]+self._w]
-                            if len(temp) == 0 or np.isnan(temp).any():
+                            # get depth in the neighborhood of the center pixel
+                            depth_win = depth_im.data[grasp_center[0]-self._h:grasp_center[0]+self._h, grasp_center[1]-self._w:grasp_center[1]+self._w]
+                            center_depth = np.min(depth_win)
+                            if center_depth == 0 or np.isnan(center_depth):
                                 continue
-                            min_depth = np.min(temp) + self._min_depth_offset
+
+                            # sample depth between the min and max
+                            min_depth = np.min(center_depth) + self._min_depth_offset
                             sample_depth = min_depth + (self._max_depth - min_depth) * np.random.rand()
                             candidate_grasp = Grasp2D(grasp_center_pt,
                                                       grasp_theta,
@@ -376,6 +380,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                                                       width=self._gripper_width,
                                                       camera_intr=camera_intr)
                             grasps.append(candidate_grasp)
+
+        # return sampled grasps
         return grasps
 
 class ImageGraspSamplerFactory(object):

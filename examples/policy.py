@@ -51,11 +51,9 @@ if __name__ == '__main__':
 
     # init policy
     policy = CrossEntropyAntipodalGraspingPolicy(policy_config)
-    policy.gqcnn.open_session()
     policy_start = time.time()
     action = policy(state)
     logging.info('Planning took %.3f sec' %(time.time() - policy_start))
-    policy.gqcnn.close_session()
 
     # vis final grasp
     if policy_config['vis']['final_grasp']:

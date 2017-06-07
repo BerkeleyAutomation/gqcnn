@@ -42,6 +42,7 @@ policy:
 
     # distance
     max_dist_from_center: 150
+    min_dist_from_boundary: 45
     min_grasp_dist: 0.025
     angle_dist_weight: 0.025
 
