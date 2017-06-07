@@ -29,9 +29,9 @@ def grasp_callback(data):
 
     rotation_quaternion = np.asarray([data.pose.orientation.w, data.pose.orientation.x, data.pose.orientation.y, data.pose.orientation.z]) 
     translation = np.asarray([data.pose.position.x, data.pose.position.y, data.pose.position.z])
-    T_grasp_world = RigidTransform(rotation_quaternion, translation, 'grasp', 'world')
+    T_grasp_world = RigidTransform(rotation_quaternion, translation, 'grasp', T_camera_world.from_frame)
     
-    T_gripper_world = T_grasp_world * gripper.T_grasp_gripper
+    T_gripper_world = T_camera_world * T_grasp_world * gripper.T_grasp_gripper
 
 
     point_cloud_camera = ir_intrinsics.deproject(depth_im)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ 
-ROS Node for sampling grasps 
+ROS Node for planning GQCNN grasps 
 Author: Vishal Satish
 """
 import rospy
@@ -20,6 +20,7 @@ rgb_image = None
 depth_image = None
 cv_bridge = None
 rgbd_image = None
+cfg = None
 
 def camera_intrinsics_callback(data):
     """ Callback for Camera Intrinsics """    
@@ -42,8 +43,8 @@ def bounding_box_callback(data):
         maxY = data.maxY
         centroidX = (maxX + minX) / 2
         centroidY = (maxY + minY) / 2
-        width = (maxX - minX)
-        height = (maxY - minY)
+        width = (maxX - minX) + cfg['width_pad']
+        height = (maxY - minY) + cfg['height_pad']
     
         # crop camera intrinsics and rgbd image
         camera_intrinsics = camera_intrinsics.crop(height, width, centroidX, centroidY)
@@ -108,9 +109,9 @@ if __name__ == '__main__':
     cv_bridge = CvBridge()
 
     # get configs
-    cfg = YamlConfig('cfg/ros_nodes/grasp_sampler_node.yaml')
+    cfg = YamlConfig('cfg/ros_nodes/grasp_planner_node.yaml')
     topics = cfg['ros_topics']
-    policy_cfg = cfg['policy_cfg']['policy']
+    policy_cfg = cfg['policy']
 
     # create a subscriber to get camera intrinsics 
     rospy.Subscriber(topics['camera_intrinsics'], CameraInfo, camera_intrinsics_callback)
