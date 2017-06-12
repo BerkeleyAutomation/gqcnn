@@ -729,7 +729,7 @@ class DeepOptimizer(object):
 
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
-        # self.obj_id_filenames = [f for f in all_filenames if f.find('object_labels') > -1]
+        self.obj_id_filenames = [f for f in all_filenames if f.find('object_labels') > -1]
 
         if self.debug:
             random.shuffle(self.im_filenames)
@@ -744,13 +744,10 @@ class DeepOptimizer(object):
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
-        # self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
+        self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        # if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0:
-        #     raise ValueError('No training files found')
-
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0:
+        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0:
             raise ValueError('No training files found')
 
         # subsample files
@@ -761,7 +758,7 @@ class DeepOptimizer(object):
         self.im_filenames = [self.im_filenames[k] for k in filename_indices]
         self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
         self.label_filenames = [self.label_filenames[k] for k in filename_indices]
-        # self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
+        self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
 
     def _setup_output_dirs(self):
         """ Setup output directories """
@@ -796,7 +793,6 @@ class DeepOptimizer(object):
         """ Keep a copy of original config files """
 
         out_config_filename = os.path.join(self.experiment_dir, 'config.json')
-        # shutil.copyfile(self.cfg['file_path'], out_config_filename)
         tempOrderedDict = collections.OrderedDict()
         for key in self.cfg.keys():
             tempOrderedDict[key] = self.cfg[key]
