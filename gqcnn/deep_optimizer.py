@@ -28,6 +28,7 @@ import yaml
 from core import YamlConfig
 import core.utils as utils
 import collections
+import IPython
 
 from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
@@ -585,19 +586,19 @@ class DeepOptimizer(object):
         self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
         last_file_object_ids = np.load(os.path.join(self.data_dir, self.obj_id_filenames[len(self.obj_id_filenames) - 1]))['arr_0']
         num_unique_objs = last_file_object_ids[len(last_file_object_ids) - 1]
+        self.num_train_obj = int(self.train_pct * num_unique_objs)
         logging.debug('There are: ' + str(num_unique_objs) + ' in this dataset.')
 
         # get training and validation indices
-        all_object_ids = np.arange(num_unique_objs)
+        all_object_ids = np.arange(num_unique_objs + 1)
         np.random.shuffle(all_object_ids)
-        train_object_ids = np.sort(all_object_ids[:self.num_train])
-        val_object_ids = np.sort(all_object_ids[self.num_train:])
-
+        train_object_ids = np.sort(all_object_ids[:self.num_train_obj])
+        val_object_ids = np.sort(all_object_ids[self.num_train_obj:])
 
         # make a map of the train and test indices for each file
         logging.info('Computing indices object-wise')
-        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_objec_wise.pkl')
-        self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_wise.pkl')
+        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_object_wise.pkl')
+        self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_object_wise.pkl')
         if os.path.exists(train_index_map_filename):
             self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
             self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
@@ -1105,6 +1106,10 @@ class DeepOptimizer(object):
             poses = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
             labels = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
 
+            # if no datapoints from this file are in validation then just continue
+            if len(self.val_index_map[data_filename]) == 0:
+                continue
+                 
             data = data[self.val_index_map[data_filename],...]
             poses = self._read_pose_data(poses[self.val_index_map[data_filename],:], self.input_data_mode)
             labels = labels[self.val_index_map[data_filename],...]
