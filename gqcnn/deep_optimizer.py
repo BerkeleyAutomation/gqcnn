@@ -28,7 +28,6 @@ import yaml
 from core import YamlConfig
 import core.utils as utils
 import collections
-import IPython
 
 from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
@@ -1109,7 +1108,7 @@ class DeepOptimizer(object):
             # if no datapoints from this file are in validation then just continue
             if len(self.val_index_map[data_filename]) == 0:
                 continue
-                 
+
             data = data[self.val_index_map[data_filename],...]
             poses = self._read_pose_data(poses[self.val_index_map[data_filename],:], self.input_data_mode)
             labels = labels[self.val_index_map[data_filename],...]
