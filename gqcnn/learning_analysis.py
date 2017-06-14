@@ -146,7 +146,13 @@ class ClassificationResult(object):
 		
 	@property
 	def predictions(self):
-		""""""
+		""" Get the final predicted probability for each datapoint
+
+		Returns
+		------
+		:obj: ndarray
+			ndarray of final probabilities for each datapoint
+		"""
 		return np.argmax(self.pred_probs, 1)
 
 	def top_k_predictions(self, k):
@@ -178,7 +184,13 @@ class ClassificationResult(object):
 		return cm
 
 	def convert_labels(self, mapping):
-		"""  """
+		"""  Converts this ClassificationResult to a new ClassificationResult with different labels using the specified mapping
+
+		Returns
+		------
+		:obj: ClassificationResult
+			ClassificationResult containing new labels
+		"""
 		new_num_categories = len(set(mapping.values()))
 		new_probs = np.zeros([self.num_datapoints, new_num_categories])
 		new_labels = np.zeros(self.num_datapoints)
@@ -188,10 +200,28 @@ class ClassificationResult(object):
 			new_labels[i] = mapping[self.labels[i]]
 		return ClassificationResult([new_probs], [new_labels])
 
-    def label_vectors(self):
-        return self.pred_probs[:,1], self.labels
+	def label_vectors(self):
+		""" Get label vectors for this ClassificationResult 
+		
+		Returns
+		-------
+		:obj: ndarray
+			ndarray of predicted probabilities
+		:obj: ndarray
+			ndarray of labels
+		"""
+		return self.pred_probs[:,1], self.labels
 
 	def multiclass_label_vectors(self):
+		""" Get multiclass label vectors for this ClassificationResult
+
+		Returns
+		-------
+		:obj: ndarray
+			ndarray of predicted probabilities
+		:obj: ndarray
+			ndarray of labels
+		"""
 		label_mat = np.zeros(self.pred_probs.shape)
 		for i in range(self.num_datapoints):
 			label_mat[i, self.labels[i]] = 1
