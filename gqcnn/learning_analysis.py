@@ -188,6 +188,9 @@ class ClassificationResult(object):
 			new_labels[i] = mapping[self.labels[i]]
 		return ClassificationResult([new_probs], [new_labels])
 
+    def label_vectors(self):
+        return self.pred_probs[:,1], self.labels
+
 	def multiclass_label_vectors(self):
 		label_mat = np.zeros(self.pred_probs.shape)
 		for i in range(self.num_datapoints):
@@ -227,7 +230,7 @@ class ClassificationResult(object):
 		thresholds :obj: ndarray
 			ndarray of thresholds
 		"""
-		pred_probs_vec, labels_vec = self.multiclass_label_vectors()
+		pred_probs_vec, labels_vec = self.label_vectors()
 		precision, recall, thresholds = sm.precision_recall_curve(labels_vec, pred_probs_vec)
 		if plot:
 			plt.plot(recall, precision, linewidth=line_width, color=color, linestyle=style, label=label, marker=marker)
