@@ -1,7 +1,7 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /home/vsatish/Data/dexnet/data/grasp_quality/mini_dexnet_05_08_17
-output_dir: /home/vsatish/Data/dexnet/data/models/grasp_quality
+dataset_dir: /home/autolab/Public/drive/projects/dex-net/data/grasp_quality/mini_dexnet_05_08_17
+output_dir: /home/autolab/Public/drive/projects/dex-net/data/models/grasp_quality
 
 # general optimization parameters
 train_batch_size: 64
@@ -94,7 +94,7 @@ drop_fc4: 0
 fc4_drop_rate: 0
 
 # debugging params
-debug: 0
+debug: 1
 debug_num_files: 300
 
 ### GQCNN CONFIG ###

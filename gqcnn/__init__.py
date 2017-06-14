@@ -11,6 +11,7 @@ from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundExcep
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
 from gripper import RobotGripper
 from policy import GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, RgbdImageState
+from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 
            'DeepOptimizer',
@@ -23,4 +24,5 @@ __all__ = ['GQCNN',
            'Visualizer', 'RobotGripper',
            'GraspingPolicy', 'AntipodalGraspingPolicy', 'CrossEntropyAntipodalGraspingPolicy',
            'RgbdImageState',
-           'NoValidGraspsException', 'NoAntipodalPairsFoundException']
+           'NoValidGraspsException', 'NoAntipodalPairsFoundException',
+           'GQCNNPredictionVisualizer']
