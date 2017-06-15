@@ -586,7 +586,7 @@ class DeepOptimizer(object):
         last_file_object_ids = np.load(os.path.join(self.data_dir, self.obj_id_filenames[len(self.obj_id_filenames) - 1]))['arr_0']
         num_unique_objs = last_file_object_ids[len(last_file_object_ids) - 1]
         self.num_train_obj = int(self.train_pct * num_unique_objs)
-        logging.debug('There are: ' + str(num_unique_objs) + ' in this dataset.')
+        logging.debug('There are: ' + str(num_unique_objs) + 'unique objects in this dataset.')
 
         # get training and validation indices
         all_object_ids = np.arange(num_unique_objs + 1)
@@ -625,6 +625,58 @@ class DeepOptimizer(object):
             pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
             pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
 
+
+    def _compute_indices_pose_wise(self):
+        """ Compute train and validation indices based on an image-stable-pose-wise split"""
+
+        # get total number of training datapoints and set the decay_step
+        num_datapoints = self.images_per_file * self.num_files
+        self.num_train = int(self.train_pct * num_datapoints)
+        self.decay_step = self.decay_step_multiplier * self.num_train
+        
+        # get number of unique stable poses by taking last stable pose id of last stable pose id file
+        self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
+        last_file_pose_ids = np.load(os.path.join(self.data_dir, self.stable_pose_filenames[len(self.stable_pose_filenames) - 1]))['arr_0']
+        num_unique_stable_poses = last_file_pose_ids[len(last_file_pose_ids) - 1]
+        self.num_train_poses = int(self.train_pct * num_unique_stable_poses)
+        logging.debug('There are: ' + str(num_unique_stable_poses) + 'unique stable poses in this dataset.')
+
+        # get training and validation indices
+        all_pose_ids = np.arange(num_unique_stable_poses + 1)
+        np.random.shuffle(all_pose_ids)
+        train_pose_ids = np.sort(all_pose_ids[:self.num_train_poses])
+        val_pose_ids = np.sort(all_pose_ids[self.num_train_poses:])
+
+        # make a map of the train and test indices for each file
+        logging.info('Computing indices stable-pose-wise')
+        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_stable_pose_wise.pkl')
+        self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_stable_pose_wise.pkl')
+        if os.path.exists(train_index_map_filename):
+            self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
+            self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
+        else:
+            self.train_index_map = {}
+            self.val_index_map = {}
+            for im_filename in self.im_filenames:
+                # open up the corresponding obj_id file
+                pose_ids = np.load(os.path.join(self.data_dir, 'pose_labels_' + im_filename[-9:-4] + '.npz'))['arr_0']
+
+                train_indices = []
+                val_indices = []
+                # for each obj_id if it is in train_object_ids then add it to train_indices else add it to val_indices
+                for i, pose_id in enumerate(pose_ids):
+                    if pose_id in train_pose_ids:
+                        train_indices.append(i)
+                    else:
+                        val_indices.append(i)
+
+                self.train_index_map[im_filename] = np.asarray(train_indices, dtype=np.intc)
+                self.val_index_map[im_filename] = np.asarray(val_indices, dtype=np.intc)
+                train_indices = []
+                val_indices = []
+
+            pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
+            pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
 
     def _read_training_params(self):
         """ Read training parameters from configuration file """
@@ -730,6 +782,7 @@ class DeepOptimizer(object):
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
         self.obj_id_filenames = [f for f in all_filenames if f.find('object_labels') > -1]
+        self.stable_pose_filenames = [f for f in all_filenames if f.find('pose_labels') > -1]
 
         if self.debug:
             random.shuffle(self.im_filenames)
@@ -740,15 +793,17 @@ class DeepOptimizer(object):
             self.pose_filenames = self.pose_filenames[:self.debug_num_files]
             self.label_filenames = self.label_filenames[:self.debug_num_files]
             self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
+            self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
 
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
+        self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0:
-            raise ValueError('No training files found')
+        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 len(self.stable_pose_filenames) == 0:
+            raise ValueError('One or more required training files in the dataset could not be found.')
 
         # subsample files
         self.num_files = len(self.im_filenames)
@@ -759,6 +814,7 @@ class DeepOptimizer(object):
         self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
         self.label_filenames = [self.label_filenames[k] for k in filename_indices]
         self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
+        self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
     def _setup_output_dirs(self):
         """ Setup output directories """
@@ -841,6 +897,8 @@ class DeepOptimizer(object):
             self._compute_indices_image_wise()
         elif self.data_split_mode == 'object_wise':
             self._compute_indices_object_wise()
+        elif self.data_split_mode == 'image_stable_pose_wise':
+            self._compute_indices_pose_wise()
         else:
             logging.error('Data Split Mode Not Supported')
 
