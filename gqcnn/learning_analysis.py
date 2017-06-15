@@ -123,6 +123,22 @@ class ClassificationResult(object):
 		return float(np.sum((self.predictions == 1) & (self.labels == 1))) / np.sum(self.predictions == 1)
 
 	@property
+	def recall(self):
+		""" Get the recall
+
+		Returns
+		------
+		:float
+			the recall
+		"""
+		if np.sum(self.predictions == 1) == 0:
+			return 1.0
+		try:
+			return float(np.sum((self.predictions == 1) & (self.labels == 1))) / np.sum(self.labels == 1)
+		except ZeroDivisionError:
+			return 0.0		
+
+	@property
 	def num_datapoints(self):
 		""" Get the number of datapoints
 
@@ -155,6 +171,27 @@ class ClassificationResult(object):
 		"""
 		return np.argmax(self.pred_probs, 1)
 
+	def mispredicted_indices(self):
+		""" Return the set of indices mis-predicted
+
+		Returns
+		------
+		:obj: ndarray
+			ndarray of the mispredicted indices
+		"""    	
+		return np.where(self.predictions != self.labels)[0]
+
+	def correct_indices(self):
+		""" Return the set of indices correctly predicted
+
+		Returns
+		------
+		:obj: ndarray
+			ndarray of the correctly predicted indices
+
+		"""
+		return np.where(self.predictions == self.labels)[0]
+	
 	def top_k_predictions(self, k):
 		""" Get the top k predictions 
 
