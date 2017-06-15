@@ -802,7 +802,7 @@ class DeepOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 len(self.stable_pose_filenames) == 0:
+        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 or len(self.stable_pose_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
 
         # subsample files
