@@ -4,7 +4,7 @@ dataset_dir: /home/autolab/Public/drive/projects/dex-net/data/grasp_quality/3dne
 image_mode: depth_tf_table
 data_format: tf_image
 metric_name: robust_ferrari_canny
-metric_thresh: 0.5
+metric_thresh: 0.002
 gripper_width_px: 13.5
 
 # gqcnn params

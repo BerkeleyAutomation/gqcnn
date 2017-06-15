@@ -17,6 +17,7 @@ from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode
 from visualization import Visualizer2D as vis2d
 from visualization import Visualizer3D as vis3d
 
+
 class GQCNNPredictionVisualizer(object):
     """ Class to visualize predictions of GQCNN on a specified dataset. Visualizes TP, TN, FP, FN. """
 
@@ -63,6 +64,7 @@ class GQCNNPredictionVisualizer(object):
             # compute results
             classification_result = ClassificationResult([pred_p_success_tensor],
                                                          [label_tensor])
+
             logging.info('Error rate on files: %.3f' %(classification_result.error_rate))
             logging.info('Precision on files: %.3f' %(classification_result.precision))
             logging.info('Recall on files: %.3f' %(classification_result.recall))
@@ -90,7 +92,7 @@ class GQCNNPredictionVisualizer(object):
                 elif self.datapoint_type == 'false_negative':
                     if classification_result.labels[ind] == 0:
                         continue
-                        
+
                 logging.info('Datapoint %d of files for %s' %(ind, im_filename))
                 logging.info('Depth: %.3f' %(hand_poses_tensor[ind, 2]))
 
@@ -154,7 +156,7 @@ class GQCNNPredictionVisualizer(object):
         self.font_size = self.cfg['font_size']
 
         # analysis params
-        self.datapoint_type = self.cfg('datapoint_type')
+        self.datapoint_type = self.cfg['datapoint_type']
         self.image_mode = self.cfg['image_mode']
         self.input_data_mode = self.cfg['data_format']
         self.target_metric_name = self.cfg['metric_name']
