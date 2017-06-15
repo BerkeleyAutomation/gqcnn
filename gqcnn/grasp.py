@@ -6,6 +6,7 @@ import IPython
 import numpy as np
 
 from core import Point, RigidTransform
+from perception import CameraIntrinsics
 
 class Grasp2D(object):
     """
@@ -29,7 +30,11 @@ class Grasp2D(object):
         self.angle = angle
         self.depth = depth
         self.width = width
-        self.camera_intr = camera_intr
+        # if camera_intr is none use default primesense camera intrinsics
+        if not camera_intr:
+            self.camera_intr = CameraIntrinsics('primesense_overhead', fx=525, fy=525, cx=319.5, cy=239.5, width=640, height=480)
+        else: 
+            self.camera_intr = camera_intr
 
     @property
     def axis(self):
