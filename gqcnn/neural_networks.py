@@ -471,8 +471,14 @@ class GQCNN(object):
         self._pose_mean = np.zeros(self._pose_dim)
         self._pose_std = np.ones(self._pose_dim)
 
-    def initialize_network(self):
-        """ Set up input nodes and builds network """
+    def initialize_network(self, add_softmax=True):
+        """ Set up input nodes and builds network.
+
+        Parameters
+        ----------
+        add_softmax : float
+            whether or not to add a softmax layer
+        """
 
         with self._graph.as_default():
             # setup tf input placeholders and build network
@@ -483,7 +489,8 @@ class GQCNN(object):
 
             # build network
             self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node)
-            self.add_softmax_to_predict()
+            if add_softmax:
+                self.add_softmax_to_predict()
 
     def open_session(self):
         """ Open tensorflow session """
@@ -676,14 +683,15 @@ class GQCNN(object):
                 self._input_pose_arr[:dim, :] = (
                     pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
 
-                output_arr[cur_ind:end_ind,:] = self._sess.run(self._output_tensor,
-                                                               feed_dict={self._input_im_node: self._input_im_arr,
-                                                                          self._input_pose_node: self._input_pose_arr})
+                gqcnn_output = self._sess.run(self._output_tensor,
+                                              feed_dict={self._input_im_node: self._input_im_arr,
+                                                         self._input_pose_node: self._input_pose_arr})
+                output_arr[cur_ind:end_ind, :] = gqcnn_output[:dim, :]
 
                 i = end_ind
             if close_sess:
                 self.close_session()
-        return output_arr[:num_images, ...]
+        return output_arr
 		
     @property
     def filters(self):

@@ -376,7 +376,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
     """
     def __init__(self, config):
         GraspingPolicy.__init__(self, config)
-        self._parse_config()
+        CrossEntropyAntipodalGraspingPolicy._parse_config(self)
 
     def _parse_config(self):
         """ Parses the parameters of the policy. """
@@ -701,7 +701,7 @@ class QFunctionAntipodalGraspingPolicy(CrossEntropyAntipodalGraspingPolicy):
         self.gqcnn.reinitialize_layers(self._reinit_fc3,
                                        self._reinit_fc4,
                                        self._reinit_fc5)
-        self.gqcnn.initialize_network()
+        self.gqcnn.initialize_network(add_softmax=False)
         
 class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space 
@@ -750,9 +750,11 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         """
         # take the greedy action with prob 1 - epsilon
         if np.random.rand() > self.epsilon:
+            logging.info('Taking greedy action')
             return CrossEntropyAntipodalGraspingPolicy.action(self, state)
 
         # otherwise take a random action
+        logging.info('Taking random action')
 
         # check valid input
         if not isinstance(state, RgbdImageState):
@@ -769,6 +771,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
                                             seed=self._seed)
+        
         num_grasps = len(grasps)
         if num_grasps == 0:
             raise NoValidGraspsException('No Valid Grasps Could be Found')
@@ -776,6 +779,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         # choose a grasp uniformly at random
         grasp_ind = np.random.choice(num_grasps, size=1)[0]
         grasp = grasps[grasp_ind]
+        depth = grasp.depth
 
         # create transformed image
         image_tensor, pose_tensor = self.grasps_to_tensors([grasp], state)
@@ -785,6 +789,19 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
         p_success = output_arr[0,-1]
         
+        # visualize planned grasp
+        if self.config['vis']['grasp_plan']:
+            scale_factor = float(self.gqcnn.im_width) / float(self._crop_width)
+            scaled_camera_intr = camera_intr.resize(scale_factor)
+            vis_grasp = Grasp2D(Point(image.center), 0.0, depth,
+                                width=self._gripper_width,
+                                camera_intr=scaled_camera_intr)
+            vis.figure()
+            vis.imshow(image)
+            vis.grasp(vis_grasp, scale=1.5, show_center=False, show_axis=True)
+            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, p_success))
+            vis.show()
+
         # return action
         return ParallelJawGrasp(grasp, p_success, image)
 
