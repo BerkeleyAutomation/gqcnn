@@ -10,8 +10,8 @@ ros_topics:
 vis_cropped_images: 0
 
 # padding for the cropped images so when they are rotated to be centered on the grasp point there will not be any gaps where there is no part of the image
-width_pad: 40
-height_pad: 40
+width_pad: 60
+height_pad: 60
 
 # inpaint
 inpaint_rescale_factor: 0.5
@@ -53,6 +53,7 @@ policy:
 
     # distance
     max_dist_from_center: 150
+    min_dist_from_boundary: 80
     min_grasp_dist: 0.025
     angle_dist_weight: 0.025
 
