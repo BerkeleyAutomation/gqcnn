@@ -4,8 +4,6 @@ Author: Jeff Mahler
 """
 import numpy as np
 
-import IPython
-
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
@@ -189,7 +187,7 @@ class Visualizer:
         # plot grasp center
         if show_center:
             plt.plot(grasp.center.x, grasp.center.y, c=color, marker=grasp_center_style, mew=scale*grasp_center_thickness, ms=scale*grasp_center_size)
-            
+        
         # compute axis and jaw locations
         axis = grasp.axis
         g1 = grasp.center.data - (float(grasp.width_px) / 2) * axis
@@ -211,6 +209,7 @@ class Visualizer:
         g1_line = np.c_[g1p, g1 - scale*arrow_head_len*axis].T
         plt.arrow(g1p[0], g1p[1], alpha*axis[0], alpha*axis[1], width=scale*arrow_width, head_width=scale*arrow_head_width, head_length=scale*arrow_head_len, fc=color, ec=color)
         jaw_line1 = np.c_[g1 + jaw_dir, g1 - jaw_dir].T
+
         plt.plot(jaw_line1[:,0], jaw_line1[:,1], linewidth=scale*jaw_width, c=color) 
 
         # plot second jaw

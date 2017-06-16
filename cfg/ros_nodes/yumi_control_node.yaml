@@ -83,11 +83,25 @@ sensor:
 
 # control params
 control:
+  arm_type: local
+
   use_left: 1
   approach_velocity: 200
   approach_zoning: z50
   standard_velocity: 500
   standard_zoning: fine
+
+  shake_test: 0
+  shake_drop: 1
+  shake_velocity: 1000
+  shake_zoning: z50
+  shake_radius: 0.2
+  shake_angle: 0.03
+  num_shakes: 3
+
+  gripper_close_force: 20
+
+  test_collision: 0
 
 # grasping params
 grasping:
