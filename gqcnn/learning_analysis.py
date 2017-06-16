@@ -123,6 +123,22 @@ class ClassificationResult(object):
 		return float(np.sum((self.predictions == 1) & (self.labels == 1))) / np.sum(self.predictions == 1)
 
 	@property
+	def recall(self):
+		""" Get the recall
+
+		Returns
+		------
+		:float
+			the recall
+		"""
+		if np.sum(self.predictions == 1) == 0:
+			return 1.0
+		try:
+			return float(np.sum((self.predictions == 1) & (self.labels == 1))) / np.sum(self.labels == 1)
+		except ZeroDivisionError:
+			return 0.0		
+
+	@property
 	def num_datapoints(self):
 		""" Get the number of datapoints
 
@@ -146,9 +162,36 @@ class ClassificationResult(object):
 		
 	@property
 	def predictions(self):
-		""""""
+		""" Get the final predicted probability for each datapoint
+
+		Returns
+		------
+		:obj: ndarray
+			ndarray of final probabilities for each datapoint
+		"""
 		return np.argmax(self.pred_probs, 1)
 
+	def mispredicted_indices(self):
+		""" Return the set of indices mis-predicted
+
+		Returns
+		------
+		:obj: ndarray
+			ndarray of the mispredicted indices
+		"""    	
+		return np.where(self.predictions != self.labels)[0]
+
+	def correct_indices(self):
+		""" Return the set of indices correctly predicted
+
+		Returns
+		------
+		:obj: ndarray
+			ndarray of the correctly predicted indices
+
+		"""
+		return np.where(self.predictions == self.labels)[0]
+	
 	def top_k_predictions(self, k):
 		""" Get the top k predictions 
 
@@ -178,7 +221,13 @@ class ClassificationResult(object):
 		return cm
 
 	def convert_labels(self, mapping):
-		"""  """
+		"""  Converts this ClassificationResult to a new ClassificationResult with different labels using the specified mapping
+
+		Returns
+		------
+		:obj: ClassificationResult
+			ClassificationResult containing new labels
+		"""
 		new_num_categories = len(set(mapping.values()))
 		new_probs = np.zeros([self.num_datapoints, new_num_categories])
 		new_labels = np.zeros(self.num_datapoints)
@@ -188,7 +237,28 @@ class ClassificationResult(object):
 			new_labels[i] = mapping[self.labels[i]]
 		return ClassificationResult([new_probs], [new_labels])
 
+	def label_vectors(self):
+		""" Get label vectors for this ClassificationResult 
+		
+		Returns
+		-------
+		:obj: ndarray
+			ndarray of predicted probabilities
+		:obj: ndarray
+			ndarray of labels
+		"""
+		return self.pred_probs[:,1], self.labels
+
 	def multiclass_label_vectors(self):
+		""" Get multiclass label vectors for this ClassificationResult
+
+		Returns
+		-------
+		:obj: ndarray
+			ndarray of predicted probabilities
+		:obj: ndarray
+			ndarray of labels
+		"""
 		label_mat = np.zeros(self.pred_probs.shape)
 		for i in range(self.num_datapoints):
 			label_mat[i, self.labels[i]] = 1
@@ -227,7 +297,7 @@ class ClassificationResult(object):
 		thresholds :obj: ndarray
 			ndarray of thresholds
 		"""
-		pred_probs_vec, labels_vec = self.multiclass_label_vectors()
+		pred_probs_vec, labels_vec = self.label_vectors()
 		precision, recall, thresholds = sm.precision_recall_curve(labels_vec, pred_probs_vec)
 		if plot:
 			plt.plot(recall, precision, linewidth=line_width, color=color, linestyle=style, label=label, marker=marker)

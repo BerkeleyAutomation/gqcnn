@@ -231,7 +231,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'GQCNN.tex', u'GQCNN Documentation',
-     u'Vishal Satish, Jeff Mahler', 'manual'),
+     u'Jeff Mahler, Vishal Satish', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

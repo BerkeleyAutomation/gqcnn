@@ -11,19 +11,20 @@ import logging
 logging.getLogger().setLevel(logging.INFO)
 
 # train_config = YamlConfig('cfg/tools/train_grasp_quality_cnn_dexnet_large.yaml')
-train_config = YamlConfig('cfg/tools/train_micro_dex-net.yaml')
+train_config = YamlConfig('cfg/tools/train_dexnet_adversarial.yaml')
 gqcnn_config = train_config['gqcnn_config']
 analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
 model_dir = '/home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_vgg_mini_dexnet_robust_eps_replication_01_23_17'
 
 def get_elapsed_time(time_in_seconds):
 	""" Helper function to get elapsed time """
+	print (time_in_seconds)
 	if time_in_seconds < 60:
 		return '%.1f seconds' % (time_in_seconds)
-	elif time_in_seconds < 360:
+	elif time_in_seconds < 3600:
 		return '%.1f minutes' % (time_in_seconds / 60)
 	else:
-		return '%.1f hours' % (time_in_seconds / 360)
+		return '%.1f hours' % (time_in_seconds / 3600)
 
 ###Possible Use-Cases###
 
