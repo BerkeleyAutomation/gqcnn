@@ -35,13 +35,14 @@ class TrainStatsLogger(object):
 		np.save(os.path.join(self.experiment_dir, 'learning_rates.npy'), self.learning_rates)
 
 	def update(self, **stats):
-		""" Update optimization statistics 
+		""" Update optimization statistics
 		NOTE: Any statistic that is None in the argument dict will not be updated
 
 		Parameters
-        ----------
-        stats : dict
-            dict of statistics and values to be updated
+		----------
+		stats : dict
+			dict of statistics and values to be updated
+
 		"""
 		for statistic in stats:
 			if statistic == "train_eval_iter":
