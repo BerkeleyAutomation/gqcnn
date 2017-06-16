@@ -36,11 +36,15 @@ class RgbdImageState(object):
         intrinsics of the RGB-D camera
     segmask : :obj:`perception.BinaryImage`
         segmentation mask for the binary image
+    full_observed : :obj:`object`
+        representation of the fully observed state
     """
-    def __init__(self, rgbd_im, camera_intr, segmask=None):
+    def __init__(self, rgbd_im, camera_intr, segmask=None,
+                 fully_observed=None):
         self.rgbd_im = rgbd_im
         self.camera_intr = camera_intr
         self.segmask = segmask
+        self.fully_observed = fully_observed
 
 class ParallelJawGrasp(object):
     """ Action to encapsulate parallel jaw grasps.
@@ -73,7 +77,7 @@ class GraspingPolicy(Policy):
 
     Notes
     -----
-    Required configuration paramters are specified in Other Parameters
+    Required configuration parameters are specified in Other Parameters
 
     Other Parameters
     ----------------
@@ -182,7 +186,7 @@ class AntipodalGraspingPolicy(GraspingPolicy):
 
     Notes
     -----
-    Required configuration paramters are specified in Other Parameters
+    Required configuration parameters are specified in Other Parameters
 
     Other Parameters
     ----------------
@@ -247,7 +251,7 @@ class AntipodalGraspingPolicy(GraspingPolicy):
                                             self._num_grasp_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
-                                            seed=999)
+                                            seed=None)
         num_grasps = len(grasps)
 
         # form tensors
@@ -269,7 +273,7 @@ class AntipodalGraspingPolicy(GraspingPolicy):
         # predict grasps
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        p_successes = output_arr[:,1]
+        p_successes = output_arr[:,-1]
         logging.debug('Prediction took %.3f sec' %(time()-predict_start))
 
         if self.config['vis']['grasp_candidates']:
@@ -347,7 +351,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
 
     Notes
     -----
-    Required configuration paramters are specified in Other Parameters
+    Required configuration parameters are specified in Other Parameters
 
     Other Parameters
     ----------------
@@ -402,6 +406,8 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         """
         # sort
         num_grasps = len(grasps)
+        if num_grasps == 0:
+            raise ValueError('Zero grasps')
         grasps_and_predictions = zip(np.arange(num_grasps), p_success)
         grasps_and_predictions.sort(key = lambda x : x[1], reverse=True)
         return grasps_and_predictions[0][0]
@@ -479,7 +485,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             # predict grasps
             predict_start = time()
             output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-            p_successes = output_arr[:,1]
+            p_successes = output_arr[:,-1]
             logging.debug('Prediction took %.3f sec' %(time()-predict_start))
 
             # sort grasps
@@ -593,7 +599,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         # predict final set of grasps
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        p_successes = output_arr[:,1]
+        p_successes = output_arr[:,-1]
         logging.debug('Final prediction took %.3f sec' %(time()-predict_start))
 
         if self.config['vis']['grasp_candidates']:
@@ -628,3 +634,157 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         # return action
         return ParallelJawGrasp(grasp, p_success, image)
         
+class QFunctionAntipodalGraspingPolicy(CrossEntropyAntipodalGraspingPolicy):
+    """ Optimizes a set of antipodal grasp candidates in image space using the 
+    cross entropy method with a GQ-CNN that estimates the Q-function
+    for use in Q-learning.
+
+    Notes
+    -----
+    Required configuration parameters are specified in Other Parameters
+
+    Other Parameters
+    ----------------
+    reinit_pc1 : bool
+        whether or not to reinitialize the pc1 layer of the GQ-CNN
+    reinit_fc3: bool
+        whether or not to reinitialize the fc3 layer of the GQ-CNN
+    reinit_fc4: bool
+        whether or not to reinitialize the fc4 layer of the GQ-CNN
+    reinit_fc5: bool
+        whether or not to reinitialize the fc5 layer of the GQ-CNN
+    num_seed_samples : int
+        number of candidate to sample in the initial set
+    num_gmm_samples : int
+        number of candidates to sample on each resampling from the GMMs
+    num_iters : int
+        number of sample-and-refit iterations of CEM
+    gmm_refit_p : float
+        top p-% of grasps used for refitting
+    gmm_component_frac : float
+        percentage of the elite set size used to determine number of GMM components
+    gmm_reg_covar : float
+        regularization parameters for GMM covariance matrix, enforces diversity of fitted distributions
+    deterministic : bool, optional
+        whether to set the random seed to enforce deterministic behavior
+    gripper_width : float, optional
+        width of the gripper in meters
+    gripper_name : str, optional
+        name of the gripper
+    """
+    def __init__(self, config):
+        CrossEntropyAntipodalGraspingPolicy.__init__(self, config)
+        QFunctionAntipodalGraspingPolicy._parse_config(self)
+        self._setup_gqcnn()
+
+    def _parse_config(self):
+        """ Parses the parameters of the policy. """
+        self._reinit_pc1 = self.config['reinit_pc1']
+        self._reinit_fc3 = self.config['reinit_fc3']
+        self._reinit_fc4 = self.config['reinit_fc4']
+        self._reinit_fc5 = self.config['reinit_fc5']
+
+    def _setup_gqcnn(self):
+        """ Sets up the GQ-CNN. """
+        # close existing session (from superclass initializer)
+        self.gqcnn.close_session()
+
+        # check valid output size
+        if self.gqcnn.fc5_out_size != 1 and not self._reinit_fc5:
+            raise ValueError('Q function must return scalar values')
+
+        # reinitialize layers
+        if self._reinit_fc5:
+            self.gqcnn.fc5_out_size = 1
+
+        # TODO: implement reinitialization of pc0
+        self.gqcnn.reinitialize_layers(self._reinit_fc3,
+                                       self._reinit_fc4,
+                                       self._reinit_fc5)
+        self.gqcnn.initialize_network()
+        
+class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPolicy):
+    """ Optimizes a set of antipodal grasp candidates in image space 
+    using the cross entropy method with a GQ-CNN that estimates the
+    Q-function for use in Q-learning, and chooses a random antipodal
+    grasp with probability epsilon.
+
+    Notes
+    -----
+    Required configuration parameters are specified in Other Parameters
+
+    Other Parameters
+    ----------------
+    epsilon : float
+    """
+    def __init__(self, config):
+        QFunctionAntipodalGraspingPolicy.__init__(self, config)
+        self._parse_config()
+
+    def _parse_config(self):
+        """ Parses the parameters of the policy. """
+        self._epsilon = self.config['epsilon']
+
+    @property
+    def epsilon(self):
+        return self._epsilon
+
+    @epsilon.setter
+    def epsilon(self, val):
+        self._epsilon = val
+
+    
+    def action(self, state):
+        """ Plans the grasp with the highest probability of success on
+        the given RGB-D image.
+
+        Attributes
+        ----------
+        state : :obj:`RgbdImageState`
+            image to plan grasps on
+
+        Returns
+        -------
+        :obj:`ParallelJawGrasp`
+            grasp to execute
+        """
+        # take the greedy action with prob 1 - epsilon
+        if np.random.rand() > self.epsilon:
+            return CrossEntropyAntipodalGraspingPolicy.action(self, state)
+
+        # otherwise take a random action
+
+        # check valid input
+        if not isinstance(state, RgbdImageState):
+            raise ValueError('Must provide an RGB-D image state.')
+
+        # parse state
+        rgbd_im = state.rgbd_im
+        camera_intr = state.camera_intr
+        segmask = state.segmask
+
+        # sample random antipodal grasps
+        grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
+                                            self._num_seed_samples,
+                                            segmask=segmask,
+                                            visualize=self.config['vis']['grasp_sampling'],
+                                            seed=self._seed)
+        num_grasps = len(grasps)
+        if num_grasps == 0:
+            raise NoValidGraspsException('No Valid Grasps Could be Found')
+
+        # choose a grasp uniformly at random
+        grasp_ind = np.random.choice(num_grasps, size=1)[0]
+        grasp = grasps[grasp_ind]
+
+        # create transformed image
+        image_tensor, pose_tensor = self.grasps_to_tensors([grasp], state)
+        image = DepthImage(image_tensor[0,...])
+
+        # predict prob success
+        output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
+        p_success = output_arr[0,-1]
+        
+        # return action
+        return ParallelJawGrasp(grasp, p_success, image)
+

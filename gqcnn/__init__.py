@@ -10,7 +10,7 @@ from visualizer import Visualizer
 from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
 from gripper import RobotGripper
-from policy import GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, RgbdImageState
+from policy import GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, QFunctionAntipodalGraspingPolicy, EpsilonGreedyQFunctionAntipodalGraspingPolicy, RgbdImageState
 
 __all__ = ['GQCNN', 
            'DeepOptimizer',

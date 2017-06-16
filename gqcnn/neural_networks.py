@@ -70,6 +70,7 @@ class GQCNN(object):
         config_file = os.path.join(model_dir, 'config.json')
         with open(config_file) as data_file:    
             train_config = json.load(data_file)
+
         gqcnn_config = train_config['gqcnn_config']
 
         # create GQCNN object and initialize weights and network
@@ -141,12 +142,6 @@ class GQCNN(object):
         ----------
         model_filename :obj: str
             path to model to be loaded into weights
-        reinit_fc3 :obj: bool
-            whether to re-initialize fc3
-        reinit_fc4 :obj: bool
-            whether to re-initialize fc4
-        reinit_fc5 : bool
-            whether to re-initialize fc5
         """
 
         # read the input image
@@ -204,19 +199,20 @@ class GQCNN(object):
         reinit_fc5 : bool
             whether to re-initialize fc5
         """
-        if reinit_fc3:
-            fc3_std = np.sqrt(2.0 / (self.fc3_in_size))
-            self._weights.fc3W = tf.Variable(tf.truncated_normal([self.fc3_in_size, self.fc3_out_size], stddev=fc3_std))
-            self._weights.fc3b = tf.Variable(tf.truncated_normal([self.fc3_out_size], stddev=fc3_std))  
-        if reinit_fc4:
-            fc4_std = np.sqrt(2.0 / (self.fc4_in_size))
-            self._weights.fc4W_im = tf.Variable(tf.truncated_normal([self.fc4_in_size, self.fc4_out_size], stddev=fc4_std))
-            self._weights.fc4W_pose = tf.Variable(tf.truncated_normal([self.fc4_pose_in_size, self.fc4_out_size], stddev=fc4_std))
-            self._weights.fc4b = tf.Variable(tf.truncated_normal([self.fc4_out_size], stddev=fc4_std))
-        if reinit_fc5:
-            fc5_std = np.sqrt(2.0 / (self.fc5_in_size))
-            self._weights.fc5W = tf.Variable(tf.truncated_normal([self.fc5_in_size, self.fc5_out_size], stddev=fc5_std))
-            self._weights.fc5b = tf.Variable(tf.constant(0.0, shape=[self.fc5_out_size]))
+        with self._graph.as_default():
+            if reinit_fc3:
+                fc3_std = np.sqrt(2.0 / (self.fc3_in_size))
+                self._weights.fc3W = tf.Variable(tf.truncated_normal([self.fc3_in_size, self.fc3_out_size], stddev=fc3_std))
+                self._weights.fc3b = tf.Variable(tf.truncated_normal([self.fc3_out_size], stddev=fc3_std))  
+            if reinit_fc4:
+                fc4_std = np.sqrt(2.0 / (self.fc4_in_size))
+                self._weights.fc4W_im = tf.Variable(tf.truncated_normal([self.fc4_in_size, self.fc4_out_size], stddev=fc4_std))
+                self._weights.fc4W_pose = tf.Variable(tf.truncated_normal([self.fc4_pose_in_size, self.fc4_out_size], stddev=fc4_std))
+                self._weights.fc4b = tf.Variable(tf.truncated_normal([self.fc4_out_size], stddev=fc4_std))
+            if reinit_fc5:
+                fc5_std = np.sqrt(2.0 / (self.fc5_in_size))
+                self._weights.fc5W = tf.Variable(tf.truncated_normal([self.fc5_in_size, self.fc5_out_size], stddev=fc5_std))
+                self._weights.fc5b = tf.Variable(tf.constant(0.0, shape=[self.fc5_out_size]))
     
     def init_weights_gaussian(self):
         """ Initializes weights for network from scratch using Gaussian Distribution """
@@ -447,7 +443,6 @@ class GQCNN(object):
         self._use_pc2 = False
         if self._architecture['pc2']['out_size'] > 0:
             self._use_pc2 = True
-        self._denoised_tensor = None
 
         # get in and out sizes of fully-connected layer for possible re-initialization
         self.pc2_out_size = self._architecture['pc2']['out_size']
@@ -490,10 +485,6 @@ class GQCNN(object):
             self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node)
             self.add_softmax_to_predict()
 
-    @property
-    def is_denoising(self):
-        return self._denoised_tensor is not None
-
     def open_session(self):
         """ Open tensorflow session """
         with self._graph.as_default():
@@ -511,6 +502,10 @@ class GQCNN(object):
         with self._graph.as_default():
             self._sess.close()
             self._sess = None
+
+    @property
+    def batch_size(self):
+        return self._batch_size
 
     @property
     def im_height(self):
@@ -531,6 +526,26 @@ class GQCNN(object):
     @property
     def input_data_mode(self):
         return self._input_data_mode
+
+    @property
+    def input_im_node(self):
+        return self._input_im_node
+
+    @property
+    def input_pose_node(self):
+        return self._input_pose_node
+
+    @property
+    def output(self):
+        return self._output_tensor
+
+    @property
+    def weights(self):
+        return self._weights
+
+    @property
+    def graph(self):
+        return self._graph
 
     def update_im_mean(self, im_mean):
         """ Updates image mean to be used for normalization when predicting 
@@ -640,7 +655,7 @@ class GQCNN(object):
         # setup prediction
         num_images = image_arr.shape[0]
         num_poses = pose_arr.shape[0]
-        output_arr = None
+        output_arr = np.zeros([num_images, self.fc5_out_size])
         if num_images != num_poses:
             raise ValueError('Must provide same number of images and poses')
 
@@ -661,71 +676,15 @@ class GQCNN(object):
                 self._input_pose_arr[:dim, :] = (
                     pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
 
-                output = self._sess.run(self._output_tensor,
-                                       feed_dict={self._input_im_node: self._input_im_arr,
-                                                   self._input_pose_node: self._input_pose_arr})
-
-                if output_arr is None:
-                    output_arr = output
-                else:
-                    output_arr = np.r_[output_arr, output]
+                output_arr[cur_ind:end_ind,:] = self._sess.run(self._output_tensor,
+                                                               feed_dict={self._input_im_node: self._input_im_arr,
+                                                                          self._input_pose_node: self._input_pose_arr})
 
                 i = end_ind
             if close_sess:
                 self.close_session()
         return output_arr[:num_images, ...]
 		
-    def denoise(self, image_arr):
-        """ Denoise a set of images in batches 
-            
-        Parameters
-        ----------
-        image_arr : :obj:`tensorflow Tensor`
-            4D Tensor of images to be denoised
-
-
-        Returns
-        -------
-        :obj:`tensorflow Tensor`
-            denoised images
-        """
-
-        if not self.is_denoising:
-            raise ValueError(
-                'Denoising not avaliable for current architecture')
-
-        # setup prediction
-        num_images = image_arr.shape[0]
-        output_arr = None
-
-        # predict by filling in image array in batches
-        close_sess = False
-        with self._graph.as_default():
-            if self._sess is None:
-                close_sess = True
-                self.open_session()
-
-            i = 0
-            while i < num_images:
-                logging.debug('Predicting file %d' % (i))
-                dim = min(self._batch_size, num_images - i)
-                cur_ind = i
-                end_ind = cur_ind + dim
-                self._input_im_arr[:dim, :, :, :] = (
-                    image_arr[cur_ind:end_ind, :, :, :] - self._im_mean) / self._im_std
-                output = self._sess.run(self._denoised_tensor,
-                                        feed_dict={self._input_im_node: self._input_im_arr})
-                output = output * self._im_std + self._im_mean
-                if output_arr is None:
-                    output_arr = output
-                else:
-                    output_arr = np.r_[output_arr, output]
-
-                i = end_ind
-            if close_sess:
-                self.close_session()
-        return output_arr[:num_images, ...]
-
     @property
     def filters(self):
         """ Returns the set of conv1_1 filters 

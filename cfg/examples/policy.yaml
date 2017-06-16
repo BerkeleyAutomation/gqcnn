@@ -57,7 +57,7 @@ policy:
   vis:
     grasp_sampling : 0
     tf_images: 0
-    grasp_candidates: 0
+    grasp_candidates: 1
     elite_grasps: 0
     grasp_ranking: 0
     grasp_plan: 0

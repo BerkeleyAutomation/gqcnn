@@ -48,7 +48,15 @@ if __name__ == '__main__':
     color_im = color_im.inpaint(rescale_factor=inpaint_rescale_factor)
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
-    state = RgbdImageState(rgbd_im, camera_intr)
+
+    # test! crop
+    center_i = color_im.center[0] + 20
+    center_j = color_im.center[1] + 30
+    crop_height = 150
+    crop_width = 200
+    cropped_rgbd_im = rgbd_im.crop(center_i, center_j, crop_height, crop_width)
+    cropped_camera_intr = camera_intr.crop(center_i, center_j, crop_height, crop_width)
+    state = RgbdImageState(cropped_rgbd_im, cropped_camera_intr)
 
     # init policy
     policy = CrossEntropyAntipodalGraspingPolicy(policy_config)
@@ -60,11 +68,11 @@ if __name__ == '__main__':
     if policy_config['vis']['final_grasp']:
         vis.figure(size=(10,10))
         vis.subplot(1,2,1)
-        vis.imshow(color_im)
+        vis.imshow(cropped_rgbd_im.color)
         vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
         vis.title('Planned grasp on color (Q=%.3f)' %(action.p_success))
         vis.subplot(1,2,2)
-        vis.imshow(depth_im)
+        vis.imshow(cropped_rgbd_im.depth)
         vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
         vis.title('Planned grasp on depth (Q=%.3f)' %(action.p_success))
         vis.show()
