@@ -6,7 +6,7 @@ font_size: 15
 dpi: 100
 
 models:
-  model_eaieremnrz:
+  model_aedbmlhhrg :
     tag: GQCNN (N=100)
     type: gqcnn
     batch_size: 64

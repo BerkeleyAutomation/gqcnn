@@ -20,6 +20,7 @@ class ImageFileTemplates:
     depth_im_tf_table_tensor_template = 'depth_ims_tf_table'
     table_mask_template = 'table_mask'
     hand_poses_template = 'hand_poses'
+    object_labels_template = 'object_labels'
 
 # enum for image modalities
 class ImageMode:
@@ -41,7 +42,7 @@ class PreprocMode:
     NORMALIZATION = 'normalized'
     NONE = 'none'
 
-# enum for input data modes
+# enum for input data formats
 class InputDataMode:
     TF_IMAGE = 'tf_image'
     TF_IMAGE_PERSPECTIVE = 'tf_image_with_perspective'
