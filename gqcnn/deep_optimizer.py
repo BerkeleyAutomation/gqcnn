@@ -781,8 +781,8 @@ class DeepOptimizer(object):
 
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
-        self.obj_id_filenames = [f for f in all_filenames if f.find('object_labels') > -1]
-        self.stable_pose_filenames = [f for f in all_filenames if f.find('pose_labels') > -1]
+        self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
+        self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
 
         if self.debug:
             random.shuffle(self.im_filenames)
