@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   message_generation
   geometry_msgs
+  sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,9 +51,10 @@ catkin_python_setup()
  )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#  FILES
-# )
+ add_service_files(
+  FILES
+  GraspPlanner.srv
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -65,6 +67,7 @@ catkin_python_setup()
  generate_messages(
    DEPENDENCIES
    geometry_msgs
+   sensor_msgs
 )
 
 ################################################
