@@ -90,6 +90,12 @@ saved in a folder labeled `tensorboard_summaries` in the model directory. For ex
 
 The DeepOptimizer will automatically start a local server to feed these summaries. Once you see this output message, `Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries`, simply navigate to `localhost:6006` in your favorite web-browser to start visualizing.
 
+.. image:: ../images/tensorboard.png
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
+   :align: center
+
 Visualizing Specific GQCNN Predictions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The `GQCNN` module also has the ability to visualize specific predictions of a GQCNN on a dataset. This can be done through use of the GQCNNPredictionVisualizer. The GQCNNPredictionVisualizer can visualize false positives, false negatives, true positives, and true negatives. This paramemeter can be toggled in the provided configuration file.
@@ -113,7 +119,7 @@ Finally we can create a GQCNNPredictionVisualizer and visualize::
 This will start the visualization. Data will be loaded from the dataset in batches by file and metrics will be calculated and printed out. For the specified datapoints(FP/TP/FN/TN) a visualization window will show up showing the object and predicting grasp like so:
 
 .. image:: ../images/sample_grasp.png
-   :height: 200px
-   :width: 200 px
-   :scale: 50 %
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
    :align: center
