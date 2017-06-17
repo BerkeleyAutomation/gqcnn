@@ -28,11 +28,30 @@ Alternatively, you can run ::
 to install `gqcnn` from anywhere.
 This will install `gqcnn` in your current Python environment.
 
+ROS Installation
+~~~~~~~~~~~~~~~~
+
+1. Clone the repository
+"""""""""""""""""""""""
+Clone or download our source code from `Github`_. ::
+
+    $ cd {PATH_TO_YOUR_CATKIN_WORKSPACE}/src
+    $ git clone https://github.com/BerkeleyAutomation/gqcnn.git
+
+2. Build the catkin package
+"""""""""""""""""""""""""""
+Build the catkin pacakge by running ::
+
+    $ cd {PATH_TO_YOUR_CATKIN_WORKSPACE}
+    $ catkin_make
+
+Then re-source devel/setup.bash for the module to be available through Python.
+
 Dependencies
 ~~~~~~~~~~~~
-The `GQCNN` module depends directly on the Berkeley AutoLab's `core`_ and `perception`_ modules, which can be installed using the instructions `here for core`_ and `here for perception`_.
+The `GQCNN` module depends directly on the Berkeley AutoLab's `core`_ , `perception`_, `visualization`_, and `meshpy`_ modules, which can be installed using the instructions `here for core`_, `here for perception`_, `here for visualization`_, and `here for meshpy`_.
 
-The `gqcnn` module's other dependencies are on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `skimage`_, and `sklearn`_ and should be installed automatically.
+The `gqcnn` module's other dependencies are on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `skimage`_, `sklearn`_, and `PIL`_ and should be installed automatically.
 You can install these manually if you wish with
 pip. ::
 
@@ -43,6 +62,7 @@ pip. ::
     $ pip install opencv-python
     $ pip install scikit-image
     $ pip install scikit-learn
+    $ pip install pillow
 
 However, installing our repo using `pip` will install these automatically.
 
@@ -53,6 +73,8 @@ However, installing our repo using `pip` will install these automatically.
 .. _perception: https://github.com/BerkeleyAutomation/perception
 .. _here for core: https://BerkeleyAutomation.github.io/core
 .. _here for perception: https://BerkeleyAutomation.github.io/perception
+.. _here for visualization: https://BerkeleyAutomation.github.io/visualization
+.. _here for meshpy: https://BerkeleyAutomation.github.io/meshpy
 .. _tensorflow: https://www.tensorflow.org/
 .. _cv2: http://opencv.org/
 .. _skimage: http://scikit-learn.org/stable/
@@ -92,4 +114,5 @@ and then run ::
 from the `docs` folder. This script will automatically checkout the
 ``gh-pages`` branch, build the documentation from source, and push it
 to Github.
+
 
