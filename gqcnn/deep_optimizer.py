@@ -939,7 +939,7 @@ class DeepOptimizer(object):
                 num_remaining = self.train_batch_size - num_queued
 
                 # gen file index uniformly at random
-                file_num = np.random.choice(self.num_files, size=1)[0]
+                file_num = np.random.choice(len(self.im_filenames), size=1)[0]
                 train_data_filename = self.im_filenames[file_num]
 
                 self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
