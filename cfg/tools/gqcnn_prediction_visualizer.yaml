@@ -5,7 +5,7 @@ image_mode: depth_tf_table
 data_format: tf_image
 metric_name: robust_ferrari_canny
 metric_thresh: 0.002
-gripper_width_px: 13.5
+gripper_width_m: .05
 
 # gqcnn params
 model_dir: /home/autolab/Public/drive/projects/dex-net/data/models/grasp_quality/gqcnn_test_network

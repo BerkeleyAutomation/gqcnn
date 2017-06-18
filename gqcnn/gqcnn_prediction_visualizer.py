@@ -10,13 +10,11 @@ import sys
 from random import shuffle
 
 import core.utils as utils
-from core import YamlConfig
+from core import YamlConfig, Point
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
 from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
-from visualization import Visualizer2D as vis2d
-from visualization import Visualizer3D as vis3d
-
+from gqcnn import Visualizer as vis2d
 
 class GQCNNPredictionVisualizer(object):
     """ Class to visualize predictions of GQCNN on a specified dataset. Visualizes TP, TN, FP, FN. """
@@ -44,16 +42,13 @@ class GQCNNPredictionVisualizer(object):
             im_filename = self.im_filenames[i]
             pose_filename = self.pose_filenames[i]
             label_filename = self.label_filenames[i]
-            # obj_id_filename = self.obj_id_filenames[i]
-            obj_id_filename = 'No obj_ids for this dataset'
 
-            logging.info('Loading Image File: ' + im_filename + ' Pose File: ' + pose_filename + ' Label File: ' + label_filename + ' Object Id File: ' + obj_id_filename)
+            logging.info('Loading Image File: ' + im_filename + ' Pose File: ' + pose_filename + ' Label File: ' + label_filename)
 
             # load tensors from files
             image_tensor = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
             hand_poses_tensor = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
             metric_tensor = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
-            # obj_id_tensor = np.load(os.path.join(self.data_dir, obj_id_filename))['arr_0']
             label_tensor = 1 * (metric_tensor > self.metric_thresh)
 
             pose_tensor = self._read_pose_data(hand_poses_tensor, self.input_data_mode)
@@ -111,23 +106,30 @@ class GQCNNPredictionVisualizer(object):
                     image = GdImage(data)
 
                 vis2d.figure()
+
                 if self.display_image_type == RenderMode.RGBD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.color)
-                    vis2d.grasp(Grasp2D(image.center, 0, self.gripper_width_px))
+                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
+                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
+                    vis2d.grasp(grasp)
                     vis2d.subplot(1,2,2)
                     vis2d.imshow(image.depth)
-                    vis2d.grasp(Grasp2D(image.center, 0, self.gripper_width_px))
+                    vis2d.grasp(grasp)
                 elif self.display_image_type == RenderMode.GD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.gray)
-                    vis2d.grasp(Grasp2D(image.center, 0, self.gripper_width_px))
+                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
+                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
+                    vis2d.grasp(grasp)
                     vis2d.subplot(1,2,2)
                     vis2d.imshow(image.depth)
-                    vis2d.grasp(Grasp2D(image.center, 0, self.gripper_width_px))
+                    vis2d.grasp(grasp)
                 else:
                     vis2d.imshow(image)
-                    vis2d.grasp(Grasp2D(image.center, 0, self.gripper_width_px))
+                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
+                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
+                    vis2d.grasp(grasp)
                 vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(ind,
                                                                      classification_result.pred_probs[ind,1],
                                                                      classification_result.labels[ind]))
@@ -161,7 +163,7 @@ class GQCNNPredictionVisualizer(object):
         self.input_data_mode = self.cfg['data_format']
         self.target_metric_name = self.cfg['metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
-        self.gripper_width_px = self.cfg['gripper_width_px']
+        self.gripper_width_m = self.cfg['gripper_width_m']
 
         # setup data filenames
         self._setup_data_filenames()
@@ -200,18 +202,15 @@ class GQCNNPredictionVisualizer(object):
 
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
-        self.obj_id_filenames = [f for f in all_filenames if f.find('object_labels') > -1]
 
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check that all file categories were found
-        # if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0:
-        #     raise ValueError('1 or more required training files could not be found')
         if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0:
-            raise ValueError('1 or more required training files could not be found hi')
+            raise ValueError('1 or more required training files could not be found')
+
     def _compute_indices(self):
         """ Generate random file index so visualization starts from a 
             different random file everytime """

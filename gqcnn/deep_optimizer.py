@@ -29,6 +29,8 @@ from core import YamlConfig
 import core.utils as utils
 import collections
 
+import IPython
+
 from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
@@ -781,8 +783,8 @@ class DeepOptimizer(object):
 
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
-        self.obj_id_filenames = [f for f in all_filenames if f.find('object_labels') > -1]
-        self.stable_pose_filenames = [f for f in all_filenames if f.find('pose_labels') > -1]
+        self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
+        self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
 
         if self.debug:
             random.shuffle(self.im_filenames)
@@ -802,8 +804,8 @@ class DeepOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 or len(self.stable_pose_filenames) == 0:
-            raise ValueError('One or more required training files in the dataset could not be found.')
+        # if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 or len(self.stable_pose_filenames) == 0:
+            # raise ValueError('One or more required training files in the dataset could not be found.')
 
         # subsample files
         self.num_files = len(self.im_filenames)
@@ -813,7 +815,7 @@ class DeepOptimizer(object):
         self.im_filenames = [self.im_filenames[k] for k in filename_indices]
         self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
         self.label_filenames = [self.label_filenames[k] for k in filename_indices]
-        self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
+        # self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
         self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
     def _setup_output_dirs(self):
@@ -831,12 +833,11 @@ class DeepOptimizer(object):
         if not os.path.exists(self.summary_dir):
             os.mkdir(self.summary_dir)
         else:
-            # if the summary directory already exists, clean it out by deleting it
+            # if the summary directory already exists, clean it out by deleting all files in it
             # we don't want tensorboard to get confused with old logs while debugging with the same directory
-            shutil.rmtree(self.summary_dir)
-
-            # since shutil deletes the directory itself we now re-create it
-            os.mkdir(self.summary_dir)
+            old_files = os.listdir(self.summary_dir)
+            for file in old_files:
+                os.remove(os.path.join(self.summary_dir, file))
 
         logging.info('Saving model to %s' %(self.experiment_dir))
 

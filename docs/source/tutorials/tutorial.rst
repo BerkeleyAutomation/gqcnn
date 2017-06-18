@@ -3,7 +3,9 @@ General Workflow
 The essence of the GQCNN module is to allow modular training of Grasp Quality
 Neural Networks. The main idea is to be able to create a Grasp Quality Neural Network
 and train it using a DeepOptimizer object. Once a GQCNN is trained it can be used to run grasp quality predictions.
-Another key idea is the ability to benchmark the performance of GQCNN's using the GQCNNAnalyzer.  
+Another key idea is the ability to benchmark the performance of GQCNN's using the GQCNNAnalyzer and to be ably to visualize predictions using the GQCNNPredictionVisualizer.
+
+`Sample scripts of the following tutorials can be found under tools/. The corresponding configurations can be found in cfg/tools/`  
 
 Setup
 ~~~~~
@@ -69,7 +71,7 @@ Finally we can analyze models we have trained using the GQCNNAnalyzer::
 	analyzer = GQCNNAnalyzer(analysis_config)
 	analyzer.analyze()
 
-The analysis_config contains a list of models to analyze at once along with many analysis parameters.
+The analysis_config contains a list of models to analyze at once along with many analysis parameters. The GQCNNAnalyzer will calculate various metrics such as the model precision, recall, ROC, etc. and will plot them. It can also visualize filters at specified layers of the network.
 
 Fine-Tuning a Network
 ~~~~~~~~~~~~~~~~~~~~~
@@ -87,3 +89,37 @@ parameters such as learning rate, validation error, minibatch loss, and minibatc
 saved in a folder labeled `tensorboard_summaries` in the model directory. For example, if the model directory where the model is being saved is `/home/user/Data/models/grasp_quality/model_qwueio`, the summaries will be stored in `/home/user/Data/models/grasp_quality/model_qwueio/tensorboard_summaries`. 
 
 The DeepOptimizer will automatically start a local server to feed these summaries. Once you see this output message, `Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries`, simply navigate to `localhost:6006` in your favorite web-browser to start visualizing.
+
+.. image:: ../images/tensorboard.png
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
+   :align: center
+
+Visualizing Specific GQCNN Predictions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The `GQCNN` module also has the ability to visualize specific predictions of a GQCNN on a dataset. This can be done through use of the GQCNNPredictionVisualizer. The GQCNNPredictionVisualizer can visualize false positives, false negatives, true positives, and true negatives. This paramemeter can be toggled in the provided configuration file.
+
+To use the GQCNNPredictionVisualizer first import the class and any other useful imports::
+	
+	import logging
+	from core import YamlConfig
+	from gqcnn import GQCNNPredictionVisualizer
+
+Next load a valid configuration file::
+
+	visualization_config = YamlConfig('cfg/tools/gqcnn_prediction_visualizer.yaml')
+
+Finally we can create a GQCNNPredictionVisualizer and visualize::
+
+	logging.info('Beginning Visualization')
+	visualizer = GQCNNPredictionVisualizer(visualization_config)
+	visualizer.visualize()
+
+This will start the visualization. Data will be loaded from the dataset in batches by file and metrics will be calculated and printed out. For the specified datapoints(FP/TP/FN/TN) a visualization window will show up showing the object and predicting grasp like so:
+
+.. image:: ../images/sample_grasp.png
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
+   :align: center

@@ -7,8 +7,6 @@ import numpy as np
 import os
 import sys
 
-import IPython
-
 import meshpy.obj_file as obj_file
 
 from core import RigidTransform
