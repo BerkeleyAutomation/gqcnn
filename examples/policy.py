@@ -10,9 +10,8 @@ import os
 import sys
 import time
 
-from core import RigidTransform, YamlConfig
+from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory
-from visualization import Visualizer3D as vis3d
 
 from gqcnn import CrossEntropyAntipodalGraspingPolicy, RgbdImageState
 from gqcnn import Visualizer as vis
@@ -23,7 +22,7 @@ if __name__ == '__main__':
 
     # parse args
     parser = argparse.ArgumentParser(description='Capture a set of test images from the Kinect2')
-    parser.add_argument('--config_filename', type=str, default='cfg/examples/policy.yaml', help='path to configuration file to use')
+    parser.add_argument('config_filename', type=str, default='cfg/examples/policy.yaml', help='path to configuration file to use')
     args = parser.parse_args()
     config_filename = args.config_filename
 
@@ -60,24 +59,12 @@ if __name__ == '__main__':
     if policy_config['vis']['final_grasp']:
         vis.figure(size=(10,10))
         vis.subplot(1,2,1)
-        vis.imshow(color_im)
+        vis.imshow(rgbd_im.color)
         vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on color (Q=%.3f)' %(action.p_success))
+        vis.title('Planned grasp on color (Q=%.3f)' %(action.q_value))
         vis.subplot(1,2,2)
-        vis.imshow(depth_im)
+        vis.imshow(rgbd_im.depth)
         vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on depth (Q=%.3f)' %(action.p_success))
+        vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
         vis.show()
 
-    # vis 3d grasp
-    if policy_config['vis']['final_grasp_3d']:
-        point_cloud_camera = camera_intr.deproject(depth_im)
-        point_cloud_world = T_camera_world * point_cloud_camera
-        T_grasp_camera = action.grasp.pose()
-        T_grasp_world = T_camera_world * T_grasp_camera
-        vis3d.figure()
-        vis3d.points(point_cloud_world, subsample=20, random=True)
-        vis3d.pose(T_grasp_world, alpha=0.05)
-        vis3d.show()
-        
-        

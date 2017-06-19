@@ -10,8 +10,6 @@ requirements = [
 	'matplotlib',
 	'opencv-python',
 	'scipy',
-	'core',
-	'perception',
 	'scikit-image',
 	'scikit-learn'
 ]

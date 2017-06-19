@@ -9,8 +9,7 @@ from grasp import Grasp2D
 from visualizer import Visualizer
 from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
-from gripper import RobotGripper
-from policy import Policy, GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, RgbdImageState, ParallelJawGrasp
+from policy import Policy, GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, QFunctionAntipodalGraspingPolicy, EpsilonGreedyQFunctionAntipodalGraspingPolicy, RgbdImageState, ParallelJawGrasp
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 

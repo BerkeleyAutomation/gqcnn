@@ -7,9 +7,9 @@ import rospy
 import time
 import perception
 
-from core import YamlConfig
 from cv_bridge import CvBridge, CvBridgeError
-from visualization import Visualizer2D as vis
+
+from autolab_core import YamlConfig
 from gqcnn import CrossEntropyAntipodalGraspingPolicy, RgbdImageState
 from gqcnn import NoValidGraspsException, NoAntipodalPairsFoundException
 

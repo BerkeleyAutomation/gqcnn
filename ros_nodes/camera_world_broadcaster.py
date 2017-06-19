@@ -2,7 +2,7 @@
 import rospy
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
-from core import RigidTransform
+from autolab_core import RigidTransform
 
 if __name__ == '__main__':
 	# initialize ROS node

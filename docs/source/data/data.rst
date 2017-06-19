@@ -1,0 +1,35 @@
+Download Link
+~~~~~~~~~~~~~
+GQ-CNN training datasets and pretrained network weights are available from our `data storage`_.
+New datasets and models will be uploaded to this location as they become available.
+
+.. _data storage: https://berkeley.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb
+
+Datasets
+~~~~~~~~
+The available datasets include:
+
+1) **Dex-Net-Large:** The full 6.7 million synthetic training datapoints across 1,500 object models from Dex-Net 2.0.
+2) **Adv-Synth:** Synthetic training datapoints for the eight adversarial training objects (~189k datapoints).
+3) **Adv-Phys:** The outcomes of executing 400 random antipodal grasps on the eight adversarial training objects with an ABB YuMi.
+
+More details can be found in `the Dex-Net 2.0 paper`_.
+
+Models
+~~~~~~
+The available models include:
+
+1) **GQ:** The GQ-CNN trained on the full Dex-Net-Large dataset as described in `the Dex-Net 2.0 paper`_.
+
+.. _the Dex-Net 2.0 paper: https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf
+
+License
+~~~~~~~
+The GQ-CNN model and datasets are released for unrestricted use.
+The datasets are generated from 3D object models from `3DNet`_ and `the KIT Object Database`_ that may be subject to copyright.
+
+.. _3DNet: https://repo.acin.tuwien.ac.at/tmp/permanent/3d-net.org/
+.. _the KIT Object Database: https://h2t-projects.webarchiv.kit.edu/Projects/ObjectModelsWebUI/
+
+Our understanding as researchers is that there is no restriction placed on the open release of the datasets or learned model weights, since none of the original 3D models are distributed.
+If the interpretation arises that the datasets or weights are derivative works of the original copyright holder and they assert such a copyright, UC Berkeley makes no representations as to what use is allowed other than to consider our present release in the spirit of fair use in the academic mission of the university to disseminate knowledge and tools as broadly as possible without restriction. 

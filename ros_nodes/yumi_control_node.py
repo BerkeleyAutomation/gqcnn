@@ -1,10 +1,18 @@
 #!/usr/bin/env python
+"""
+Example node for planning grasps from point clouds using the gqcnn module and
+executing the grasps with an ABB YuMi.
+Additionally depends on the dex-net, meshpy, and yumipy modules.
+This file is intended as an example, not as code that will run with standard installation.
+
+Author: Vishal Satish
+"""
 import rospy
 from gqcnn.msg import GQCNNGrasp
 from sensor_msgs.msg import Image, CameraInfo
-from core import RigidTransform
-from gqcnn import RobotGripper
-from core import YamlConfig
+from autolab_core import RigidTransform
+from dexnet.grasping import RobotGripper
+from autolab_core import YamlConfig
 from yumipy import YuMiRobot, YuMiCommException, YuMiControlException, YuMiSubscriber
 from yumipy import YuMiConstants as YMC
 import logging

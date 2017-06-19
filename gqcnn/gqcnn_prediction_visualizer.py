@@ -9,8 +9,8 @@ import os
 import sys
 from random import shuffle
 
-import core.utils as utils
-from core import YamlConfig, Point
+import autolab_core.utils as utils
+from autolab_core import YamlConfig, Point
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
 from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates

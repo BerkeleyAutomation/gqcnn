@@ -20,7 +20,7 @@ import scipy.ndimage.filters as snf
 import scipy.stats as ss
 import sklearn.mixture
 
-from core import Point, RigidTransform
+from autolab_core import Point, RigidTransform
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage
 
 from gqcnn import Grasp2D
@@ -46,7 +46,7 @@ class ImageGraspSampler(object):
 
     Attributes
     ----------
-    config : :obj:`core.YamlConfig`
+    config : :obj:`autolab_core.YamlConfig`
         a dictionary-like object containing the parameters of the sampler
     gripper_width : float
         width of the gripper in 3D space
@@ -154,8 +154,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         number of depth samples to take per grasp
     min_depth_offset : float
         offset from the minimum depth at the grasp center pixel to use in depth sampling
-    max_depth : float
-        maximum possible depth used in sampling
+    max_depth_offset : float
+        offset from the maximum depth across all edges
     depth_sample_win_height : float
         height of a window around the grasp center pixel used to determine min depth
     depth_sample_win_height : float
@@ -182,7 +182,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # depth sampling params
         self._depth_samples_per_grasp = max(self._config['depth_samples_per_grasp'], 1)
         self._min_depth_offset = self._config['min_depth_offset']
-        self._max_depth = self._config['max_depth']
+        self._max_depth_offset = self._config['max_depth_offset']
         self._h = self._config['depth_sample_win_height']
         self._w = self._config['depth_sample_win_width']
 
@@ -271,10 +271,18 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         logging.debug('Depth edge detection took %.3f sec' %(time() - edge_start))
         logging.debug('Found %d edge pixels' %(num_pixels))
 
+        # exit if no edge pixels
+        if num_pixels == 0:
+            return []
+
+        # compute_max_depth
+        max_depth = np.max(depth_im.data[edge_pixels[:,0],
+                                         edge_pixels[:,1]]) + self._max_depth_offset
+
         # compute surface normals
         normal_start = time()
         edge_normals = self._surface_normals(depth_im, edge_pixels)
-        logging.info('Normal computation took %.3f sec' %(time() - normal_start))
+        logging.debug('Normal computation took %.3f sec' %(time() - normal_start))
 
         if visualize:
             vis.figure()
@@ -297,7 +305,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         # form set of valid candidate point pairs
         sample_start = time()
-        max_grasp_width_px = Grasp2D(Point(np.zeros(2)), 0.0, self._max_depth,
+        max_grasp_width_px = Grasp2D(Point(np.zeros(2)), 0.0, max_depth,
                                      width = self._gripper_width,
                                      camera_intr=camera_intr).width_px
         normal_ip = edge_normals.dot(edge_normals.T)
@@ -305,11 +313,11 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         valid_indices = np.where((normal_ip < -np.cos(np.arctan(self._friction_coef))) & (dists < max_grasp_width_px) & (dists > 0.0))
         valid_indices = np.c_[valid_indices[0], valid_indices[1]]
         num_pairs = valid_indices.shape[0]
-        logging.info('Normal pruning %.3f sec' %(time() - sample_start))
+        logging.debug('Normal pruning %.3f sec' %(time() - sample_start))
 
         # raise exception if no antipodal pairs
         if num_pairs == 0:
-            raise NoAntipodalPairsFoundException('No Antipodal Point Pairs could be sampled.')
+            return []
 
         # iteratively sample grasps
         k = 0
@@ -372,7 +380,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
                             # sample depth between the min and max
                             min_depth = np.min(center_depth) + self._min_depth_offset
-                            sample_depth = min_depth + (self._max_depth - min_depth) * np.random.rand()
+                            sample_depth = min_depth + (max_depth - min_depth) * np.random.rand()
                             candidate_grasp = Grasp2D(grasp_center_pt,
                                                       grasp_theta,
                                                       sample_depth,

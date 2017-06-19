@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
-from core import Box, Contour
+from autolab_core import Box, Contour
 from perception import BinaryImage, ColorImage, DepthImage, GrayscaleImage, RgbdImage, GdImage, SegmentationImage
 
 class Visualizer:
@@ -110,7 +110,7 @@ class Visualizer:
 
         Parameters
         ----------
-        b : :obj:`core.Box`
+        b : :obj:`autolab_core.Box`
             box to draw
         line_width : int
             width of lines on side of box

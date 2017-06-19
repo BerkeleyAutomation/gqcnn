@@ -25,8 +25,8 @@ import urllib
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import yaml
-from core import YamlConfig
-import core.utils as utils
+from autolab_core import YamlConfig
+import autolab_core.utils as utils
 import collections
 
 import IPython
@@ -901,7 +901,7 @@ class DeepOptimizer(object):
             self._compute_indices_image_wise()
         elif self.data_split_mode == 'object_wise':
             self._compute_indices_object_wise()
-        elif self.data_split_mode == 'image_stable_pose_wise':
+        elif self.data_split_mode == 'stable_pose_wise':
             self._compute_indices_pose_wise()
         else:
             logging.error('Data Split Mode Not Supported')
@@ -1123,7 +1123,6 @@ class DeepOptimizer(object):
                     train_image[train_image > 0] = self.cfg['background_min_depth'] + (self.cfg['background_max_depth'] - self.cfg['background_min_depth']) * np.random.rand()
 
         # symmetrize images
-        # TODO: need to update angles for full grasp pose regression
         if self.cfg['symmetrize']:
             for i in range(self.num_images):
                 train_image = self.train_data_arr[i,:,:,0]

@@ -7,12 +7,6 @@ Wrapper for parallel jaw grasps in image space.
 
 .. autoclass:: gqcnn.Grasp2D
 
-RobotGripper
-~~~~~~~~~~~~
-Wrapper for robot grippers. Used for collision checking and encapsulation of various grasp parameters.
-
-.. autoclass:: gqcnn.RobotGripper
-
 ImageGraspSampler
 ~~~~~~~~~~~~~~~~~
 Abstract class from Image Grasp Samplers.

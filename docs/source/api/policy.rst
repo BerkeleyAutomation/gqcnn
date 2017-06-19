@@ -52,6 +52,6 @@ NoAntipodalPairsFoundException
 Exception class for handling when the policy cannot sample any antipodal point pairs from the input
 image data.
 
-.. autoclass:: gqcnnn.NoAntipodalPairsFoundException 
+.. autoclass:: gqcnn.NoAntipodalPairsFoundException 
 
 

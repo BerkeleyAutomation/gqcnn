@@ -10,7 +10,7 @@ import numpy as np
 import os
 import sys
 
-from core import RigidTransform, YamlConfig
+from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory
 
 from gqcnn.image_grasp_sampler import AntipodalDepthImageGraspSampler
