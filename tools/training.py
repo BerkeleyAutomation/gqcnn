@@ -3,7 +3,7 @@ GQCNN training script using DeepOptimizer
 Author: Vishal Satish
 """
 from gqcnn import GQCNN, DeepOptimizer, GQCNNAnalyzer
-from core import YamlConfig
+from autolab_core import YamlConfig
 import time
 import logging
 	

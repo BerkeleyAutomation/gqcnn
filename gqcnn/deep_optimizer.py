@@ -25,8 +25,8 @@ import urllib
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import yaml
-from core import YamlConfig
-import core.utils as utils
+from autolab_core import YamlConfig
+import autolab_core.utils as utils
 import collections
 
 import IPython

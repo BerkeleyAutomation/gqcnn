@@ -9,7 +9,7 @@ import sys
 
 import meshpy.obj_file as obj_file
 
-from core import RigidTransform
+from autolab_core import RigidTransform
 
 GRIPPER_MESH_FILENAME = 'gripper.obj'
 GRIPPER_PARAMS_FILENAME = 'params.json'

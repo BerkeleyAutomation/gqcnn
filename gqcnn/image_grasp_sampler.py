@@ -20,7 +20,7 @@ import scipy.ndimage.filters as snf
 import scipy.stats as ss
 import sklearn.mixture
 
-from core import Point, RigidTransform
+from autolab_core import Point, RigidTransform
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage
 
 from gqcnn import Grasp2D
@@ -46,7 +46,7 @@ class ImageGraspSampler(object):
 
     Attributes
     ----------
-    config : :obj:`core.YamlConfig`
+    config : :obj:`autolab_core.YamlConfig`
         a dictionary-like object containing the parameters of the sampler
     gripper_width : float
         width of the gripper in 3D space

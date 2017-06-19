@@ -49,7 +49,7 @@ Then re-source devel/setup.bash for the module to be available through Python.
 
 Dependencies
 ~~~~~~~~~~~~
-The `GQCNN` module depends directly on the Berkeley AutoLab's `core`_ , `perception`_, `visualization`_, and `meshpy`_ modules, which can be installed using the instructions `here for core`_, `here for perception`_, `here for visualization`_, and `here for meshpy`_.
+The `GQCNN` module depends directly on the Berkeley AutoLab's `autolab_core`_ , `perception`_, `visualization`_, and `meshpy`_ modules, which can be installed using the instructions `here for autolab_core`_, `here for perception`_, `here for visualization`_, and `here for meshpy`_.
 
 The `gqcnn` module's other dependencies are on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `skimage`_, `sklearn`_, and `PIL`_ and should be installed automatically.
 You can install these manually if you wish with
@@ -69,9 +69,9 @@ However, installing our repo using `pip` will install these automatically.
 .. _numpy: http://www.numpy.org/
 .. _scipy: https://www.scipy/org/
 .. _matplotlib: http://www.matplotlib.org/
-.. _core: https://github.com/BerkeleyAutomation/core
+.. _autolab_core: https://github.com/BerkeleyAutomation/autolab_core
 .. _perception: https://github.com/BerkeleyAutomation/perception
-.. _here for core: https://BerkeleyAutomation.github.io/core
+.. _here for autolab_core: https://BerkeleyAutomation.github.io/autolab_core
 .. _here for perception: https://BerkeleyAutomation.github.io/perception
 .. _here for visualization: https://BerkeleyAutomation.github.io/visualization
 .. _here for meshpy: https://BerkeleyAutomation.github.io/meshpy

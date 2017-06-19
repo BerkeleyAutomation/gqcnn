@@ -15,7 +15,7 @@ Imports
 The following examples assume the GQCNN, DeepOptimizer, GQCNNAnalyzer, and YamlConfig objects have already been imported. An example import::
 
 	from gqcnn import GQCNN, DeepOptimizer, GQCNNAnalyzer
-	from core import YamlConfig
+	from autolab_core import YamlConfig
 
 Configurations
 ++++++++++++++
@@ -103,7 +103,7 @@ The `GQCNN` module also has the ability to visualize specific predictions of a G
 To use the GQCNNPredictionVisualizer first import the class and any other useful imports::
 	
 	import logging
-	from core import YamlConfig
+	from autolab_core import YamlConfig
 	from gqcnn import GQCNNPredictionVisualizer
 
 Next load a valid configuration file::

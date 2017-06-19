@@ -2,9 +2,9 @@
 import rospy
 from gqcnn.msg import GQCNNGrasp
 from sensor_msgs.msg import Image, CameraInfo
-from core import RigidTransform
+from autolab_core import RigidTransform
 from gqcnn import RobotGripper
-from core import YamlConfig
+from autolab_core import YamlConfig
 from yumipy import YuMiRobot, YuMiCommException, YuMiControlException, YuMiSubscriber
 from yumipy import YuMiConstants as YMC
 import logging

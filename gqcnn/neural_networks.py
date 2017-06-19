@@ -12,7 +12,7 @@ import sys
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from core import YamlConfig
+from autolab_core import YamlConfig
 
 import optimizer_constants
 from optimizer_constants import InputDataMode

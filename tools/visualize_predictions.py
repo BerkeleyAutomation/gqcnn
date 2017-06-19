@@ -5,7 +5,7 @@ Author: Vishal Satish
 
 import logging
 
-from core import YamlConfig
+from autolab_core import YamlConfig
 from gqcnn import GQCNNPredictionVisualizer
 	
 # setup logger

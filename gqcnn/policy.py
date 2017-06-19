@@ -13,8 +13,8 @@ from time import time
 
 from sklearn.mixture import GaussianMixture
 
-import core.utils as utils
-from core import Point
+import autolab_core.utils as utils
+from autolab_core import Point
 from perception import DepthImage
 
 from gqcnn import Grasp2D, RobotGripper, ImageGraspSamplerFactory, GQCNN, InputDataMode

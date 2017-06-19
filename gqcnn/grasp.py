@@ -4,7 +4,7 @@ Author: Jeff
 """
 import numpy as np
 
-from core import Point, RigidTransform
+from autolab_core import Point, RigidTransform
 from perception import CameraIntrinsics
 
 class Grasp2D(object):
@@ -13,7 +13,7 @@ class Grasp2D(object):
 
     Attributes
     ----------
-    center : :obj:`core.Point`
+    center : :obj:`autolab_core.Point`
         point in image space
     angle : float
         grasp axis angle with the camera x-axis
@@ -119,7 +119,7 @@ class Grasp2D(object):
 
         Returns
         -------
-        :obj:`core.RigidTransform`
+        :obj:`autolab_core.RigidTransform`
             the transformation from the grasp to the camera frame of reference
         """
         # check intrinsics

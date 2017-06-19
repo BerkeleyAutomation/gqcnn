@@ -10,7 +10,7 @@ import os
 import sys
 import time
 
-from core import RigidTransform, YamlConfig
+from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory
 from visualization import Visualizer3D as vis3d
 
