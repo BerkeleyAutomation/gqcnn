@@ -308,7 +308,10 @@ class DeepOptimizer(object):
         # close tensorboard
         self._close_tensorboard()
 
-        # pause and wait for queue thread to exit before continueing
+        # TODO: remove this and figure out why queue thread does not properly exit
+        self.sess.close()
+
+        # pause and wait for queue thread to exit before continuing
         logging.info('Waiting for Queue Thread to Exit')
         while not self.queue_thread_exited:
             pass
@@ -582,7 +585,7 @@ class DeepOptimizer(object):
         num_datapoints = self.images_per_file * self.num_files
         self.num_train = int(self.train_pct * num_datapoints)
         self.decay_step = self.decay_step_multiplier * self.num_train
-        
+
         # get number of unique objects by taking last object id of last object id file
         self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
         last_file_object_ids = np.load(os.path.join(self.data_dir, self.obj_id_filenames[len(self.obj_id_filenames) - 1]))['arr_0']
