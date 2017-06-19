@@ -49,9 +49,9 @@ class RgbdImageState(object):
 class ParallelJawGrasp(object):
     """ Action to encapsulate parallel jaw grasps.
     """
-    def __init__(self, grasp, p_success, image):
+    def __init__(self, grasp, q_value, image):
         self.grasp = grasp
-        self.p_success = p_success,
+        self.q_value = q_value
         self.image = image
 
 class Policy(object):
@@ -213,13 +213,13 @@ class AntipodalGraspingPolicy(GraspingPolicy):
             self._gripper = RobotGripper.load(self.config['gripper_name'])
             self._gripper_width = self._gripper.max_width
 
-    def select(self, grasps, p_success):
+    def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
         """
         # sort
         num_grasps = len(grasps)
-        grasps_and_predictions = zip(np.arange(num_grasps), p_success)
+        grasps_and_predictions = zip(np.arange(num_grasps), q_value)
         grasps_and_predictions.sort(key = lambda x : x[1], reverse=True)
         return grasps_and_predictions[0][0]
 
@@ -273,14 +273,14 @@ class AntipodalGraspingPolicy(GraspingPolicy):
         # predict grasps
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        p_successes = output_arr[:,-1]
+        q_values = output_arr[:,-1]
         logging.debug('Prediction took %.3f sec' %(time()-predict_start))
 
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
             vis.figure(size=(FIGSIZE,FIGSIZE))
             vis.imshow(rgbd_im.depth)
-            for grasp, q in zip(grasps, p_successes):
+            for grasp, q in zip(grasps, q_values):
                 vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                           color=plt.cm.RdYlBu(q))
             vis.title('Sampled grasps')
@@ -296,13 +296,13 @@ class AntipodalGraspingPolicy(GraspingPolicy):
             scaled_camera_intr = camera_intr.resize(scale_factor)
 
             # sort grasps
-            p_successes_and_indices = zip(p_successes, np.arange(num_grasps))
-            p_successes_and_indices.sort(key = lambda x : x[0], reverse=True)
+            q_values_and_indices = zip(q_values, np.arange(num_grasps))
+            q_values_and_indices.sort(key = lambda x : x[0], reverse=True)
 
             vis.figure(size=(FIGSIZE,FIGSIZE))
-            for i, p in enumerate(p_successes_and_indices[:k]):
+            for i, p in enumerate(q_values_and_indices[:k]):
                 # read stats for grasp
-                p_success = p[0]
+                q_value = p[0]
                 ind = p[1]
                 depth = pose_tensor[ind][0]
                 image = DepthImage(image_tensor[ind,...])
@@ -314,13 +314,13 @@ class AntipodalGraspingPolicy(GraspingPolicy):
                 vis.subplot(d,d,i+1)
                 vis.imshow(image)
                 vis.grasp(grasp, scale=1.5)
-                vis.title('K=%d: d=%.3f, q=%.3f' %(i, depth, p_success))
+                vis.title('K=%d: d=%.3f, q=%.3f' %(i, depth, q_value))
             vis.show()
 
         # select grasp
-        index = self.select(grasps, p_successes)
+        index = self.select(grasps, q_values)
         grasp = grasps[index]
-        p_success = p_successes[index]
+        q_value = q_values[index]
         image = DepthImage(image_tensor[index,...])
         pose = pose_tensor[index,...]
         depth = pose[0]
@@ -333,11 +333,11 @@ class AntipodalGraspingPolicy(GraspingPolicy):
             vis.figure()
             vis.imshow(image)
             vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True)
-            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, p_success))
+            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, q_value))
             vis.show()
 
         # return action
-        return ParallelJawGrasp(grasp, p_success, image)
+        return ParallelJawGrasp(grasp, q_value, image)
 
 class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 
@@ -400,7 +400,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             self._gripper = RobotGripper.load(self.config['gripper_name'])
             self._gripper_width = self._gripper.max_width
 
-    def select(self, grasps, p_success):
+    def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
         """
@@ -408,7 +408,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         num_grasps = len(grasps)
         if num_grasps == 0:
             raise ValueError('Zero grasps')
-        grasps_and_predictions = zip(np.arange(num_grasps), p_success)
+        grasps_and_predictions = zip(np.arange(num_grasps), q_value)
         grasps_and_predictions.sort(key = lambda x : x[1], reverse=True)
         return grasps_and_predictions[0][0]
 
@@ -444,7 +444,8 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         num_grasps = len(grasps)
 
         if num_grasps == 0:
-            raise NoValidGraspsException('No Valid Grasps Could be Found')
+            logging.warning('No valid grasps could be found')
+            return None
 
         # form tensors
         image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
@@ -485,18 +486,18 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             # predict grasps
             predict_start = time()
             output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-            p_successes = output_arr[:,-1]
+            q_values = output_arr[:,-1]
             logging.debug('Prediction took %.3f sec' %(time()-predict_start))
 
             # sort grasps
-            p_successes_and_indices = zip(p_successes, np.arange(num_grasps))
-            p_successes_and_indices.sort(key = lambda x : x[0], reverse=True)
+            q_values_and_indices = zip(q_values, np.arange(num_grasps))
+            q_values_and_indices.sort(key = lambda x : x[0], reverse=True)
 
             if self.config['vis']['grasp_candidates']:
                 # display each grasp on the original image, colored by predicted success
                 vis.figure(size=(FIGSIZE,FIGSIZE))
                 vis.imshow(rgbd_im.depth)
-                for grasp, q in zip(grasps, p_successes):
+                for grasp, q in zip(grasps, q_values):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                               color=plt.cm.RdYlBu(q))
                 vis.title('Sampled grasps iter %d' %(j))
@@ -512,9 +513,9 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                 scaled_camera_intr = camera_intr.resize(scale_factor)
 
                 vis.figure(size=(FIGSIZE,FIGSIZE))
-                for i, p in enumerate(p_successes_and_indices[:k]):
+                for i, p in enumerate(q_values_and_indices[:k]):
                     # read stats for grasp
-                    p_success = p[0]
+                    q_value = p[0]
                     ind = p[1]
                     depth = pose_tensor[ind][0]
                     image = DepthImage(image_tensor[ind,...])
@@ -526,13 +527,13 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                     vis.subplot(d,d,i+1)
                     vis.imshow(image)
                     vis.grasp(grasp, scale=1.5)
-                    vis.title('K=%d: d=%.3f, q=%.3f' %(i, depth, p_success))
+                    vis.title('K=%d: d=%.3f, q=%.3f' %(i, depth, q_value))
                 vis.show()
 
             # fit elite set
             num_refit = max(int(np.ceil(self._gmm_refit_p * num_grasps)), 1)
-            elite_p_successes = [i[0] for i in p_successes_and_indices[:num_refit]]
-            elite_grasp_indices = [i[1] for i in p_successes_and_indices[:num_refit]]
+            elite_q_values = [i[0] for i in q_values_and_indices[:num_refit]]
+            elite_grasp_indices = [i[1] for i in q_values_and_indices[:num_refit]]
             elite_grasps = [grasps[i] for i in elite_grasp_indices]
             elite_grasp_arr = np.array([g.feature_vec for g in elite_grasps])
 
@@ -541,7 +542,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                 # display each grasp on the original image, colored by predicted success
                 vis.figure(size=(FIGSIZE,FIGSIZE))
                 vis.imshow(rgbd_im.depth)
-                for grasp, q in zip(elite_grasps, elite_p_successes):
+                for grasp, q in zip(elite_grasps, elite_q_values):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                               color=plt.cm.RdYlBu(q))
                 vis.title('Elite grasps iter %d' %(j))
@@ -579,6 +580,9 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                                                        width=self._gripper_width,
                                                        camera_intr=camera_intr))
             num_grasps = len(grasps)
+            if num_grasps == 0:
+                logging.warning('No valid grasps could be found')
+                return None
 
             # form tensors
             image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
@@ -599,23 +603,23 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         # predict final set of grasps
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        p_successes = output_arr[:,-1]
+        q_values = output_arr[:,-1]
         logging.debug('Final prediction took %.3f sec' %(time()-predict_start))
 
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
             vis.figure(size=(FIGSIZE,FIGSIZE))
             vis.imshow(rgbd_im.depth)
-            for grasp, q in zip(grasps, p_successes):
+            for grasp, q in zip(grasps, q_values):
                 vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                           color=plt.cm.RdYlBu(q))
             vis.title('Final sampled grasps')
             vis.show()
 
         # select grasp
-        index = self.select(grasps, p_successes)
+        index = self.select(grasps, q_values)
         grasp = grasps[index]
-        p_success = p_successes[index]
+        q_value = q_values[index]
         image = DepthImage(image_tensor[index,...])
         pose = pose_tensor[index,...]
         depth = pose[0]
@@ -628,11 +632,11 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             vis.figure()
             vis.imshow(image)
             vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True)
-            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, p_success))
+            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, q_value))
             vis.show()
 
         # return action
-        return ParallelJawGrasp(grasp, p_success, image)
+        return ParallelJawGrasp(grasp, q_value, image)
         
 class QFunctionAntipodalGraspingPolicy(CrossEntropyAntipodalGraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 
@@ -733,6 +737,21 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
     def epsilon(self, val):
         self._epsilon = val
 
+    def greedy_action(self, state):
+        """ Plans the grasp with the highest probability of success on
+        the given RGB-D image.
+
+        Attributes
+        ----------
+        state : :obj:`RgbdImageState`
+            image to plan grasps on
+
+        Returns
+        -------
+        :obj:`ParallelJawGrasp`
+            grasp to execute
+        """
+        return CrossEntropyAntipodalGraspingPolicy.action(self, state)
     
     def action(self, state):
         """ Plans the grasp with the highest probability of success on
@@ -750,11 +769,11 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         """
         # take the greedy action with prob 1 - epsilon
         if np.random.rand() > self.epsilon:
-            logging.info('Taking greedy action')
+            logging.debug('Taking greedy action')
             return CrossEntropyAntipodalGraspingPolicy.action(self, state)
 
         # otherwise take a random action
-        logging.info('Taking random action')
+        logging.debug('Taking random action')
 
         # check valid input
         if not isinstance(state, RgbdImageState):
@@ -774,7 +793,8 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         
         num_grasps = len(grasps)
         if num_grasps == 0:
-            raise NoValidGraspsException('No Valid Grasps Could be Found')
+            logging.warning('No valid grasps could be found')
+            return None
 
         # choose a grasp uniformly at random
         grasp_ind = np.random.choice(num_grasps, size=1)[0]
@@ -787,7 +807,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
 
         # predict prob success
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        p_success = output_arr[0,-1]
+        q_value = output_arr[0,-1]
         
         # visualize planned grasp
         if self.config['vis']['grasp_plan']:
@@ -799,9 +819,9 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
             vis.figure()
             vis.imshow(image)
             vis.grasp(vis_grasp, scale=1.5, show_center=False, show_axis=True)
-            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, p_success))
+            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, q_value))
             vis.show()
 
         # return action
-        return ParallelJawGrasp(grasp, p_success, image)
+        return ParallelJawGrasp(grasp, q_value, image)
 
