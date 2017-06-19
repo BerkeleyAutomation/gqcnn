@@ -1,8 +1,8 @@
 General Workflow
 ~~~~~~~~~~~~~~~~
-The essence of the GQCNN module is to allow modular training of Grasp Quality
-Neural Networks. The main idea is to be able to create a Grasp Quality Neural Network
-and train it using a DeepOptimizer object. Once a GQCNN is trained it can be used to run grasp quality predictions.
+The goal of the `gqcnn` package is to facilitate training of Grasp Quality Neural Networks in order to replicate existing results and develop new architectures for better performance.
+
+The main idea is to be able to create a Grasp Quality Neural Network and train it using a DeepOptimizer object. Once a GQCNN is trained it can be used to run grasp quality predictions.
 Another key idea is the ability to benchmark the performance of GQCNN's using the GQCNNAnalyzer and to be ably to visualize predictions using the GQCNNPredictionVisualizer.
 
 `Sample scripts of the following tutorials can be found under tools/. The corresponding configurations can be found in cfg/tools/`  

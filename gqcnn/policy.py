@@ -17,7 +17,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage
 
-from gqcnn import Grasp2D, RobotGripper, ImageGraspSamplerFactory, GQCNN, InputDataMode
+from gqcnn import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
 from gqcnn import Visualizer as vis
 from gqcnn import NoValidGraspsException
 
@@ -207,10 +207,6 @@ class AntipodalGraspingPolicy(GraspingPolicy):
         self._gripper_width = np.inf
         if 'gripper_width' in self.config.keys():
             self._gripper_width = self.config['gripper_width']
-        self._gripper = None
-        if 'gripper_name' in self.config.keys():
-            self._gripper = RobotGripper.load(self.config['gripper_name'])
-            self._gripper_width = self._gripper.max_width
 
     def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
@@ -394,10 +390,6 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         self._gripper_width = np.inf
         if 'gripper_width' in self.config.keys():
             self._gripper_width = self.config['gripper_width']
-        self._gripper = None
-        if 'gripper_name' in self.config.keys():
-            self._gripper = RobotGripper.load(self.config['gripper_name'])
-            self._gripper_width = self._gripper.max_width
 
     def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
