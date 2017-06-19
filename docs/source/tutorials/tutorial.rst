@@ -32,9 +32,11 @@ module is designed this way because architecture and training are closely linked
 
 Dataset
 +++++++
-A small sample dataset can be downloaded from `https://berkeley.app.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb/1/27311630602/` as `dexnet_2.0_adversarial.zip`. The overall download size is approximately 70MB. Once you have downloaded the dataset, unzipped it, and moved it to where you want, you `must` modify the `dataset_dir` parameter in the training configuration file(ex. train_grasp_quality_cnn.yaml)::
+A small sample dataset can be downloaded from `https://berkeley.app.box.com/s/as1bworw6eyn0siw12x1hkn92o1tt00r` as `dexnet_2.0_adv_synth.zip`. The overall download size is approximately 1.5GB Once you have downloaded the dataset, unzipped it, and moved it to where you want, you `must` modify the `dataset_dir` parameter in the training configuration file(ex. train_grasp_quality_cnn.yaml)::
 
 	dataset_dir: /your/path/to/dataset
+
+The `GQCNN` module allows for training with 3 different dataset splits: image-wise(where all images are randomly shuffled and then split into training and test sets), pose-wise(where the unique stable pose labels are shuffled and then split into training and test sets), and object-wise(where the unique objects are shuffled and then split into training and test sets). This can be configured in the configuration file for the DeepOptimizer. `For the various analysis metrics and curves of this dataset such as final validation error, final training error, ROC Curve, precision. recall, etc. please refere to the Results section of the tutorial.`
 
 Training a Network from Scratch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,6 +51,14 @@ There are two main steps to training a network from scratch:
 	
 	with gqcnn.get_tf_graph().as_default():
 	     deepOptimizer.optimize()
+
+`For and image-wise split on the small sample dataset provided the tensorboard validation error curve should look as follows. The model was trained for 25 epochs. Use this as a benchmark to determine whether or not the model is training properly. More detailed metrics for this dataset can be found in the Anlysis section. Please see the tutorial section Visualizing Training with Tensorboard for detailed steps on how to view the tensorboard output.`
+
+.. image:: ../images/dataset_tensorboard_output.png
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
+   :align: center
 
 Prediction
 ~~~~~~~~~~
@@ -71,7 +81,9 @@ Finally we can analyze models we have trained using the GQCNNAnalyzer::
 	analyzer = GQCNNAnalyzer(analysis_config)
 	analyzer.analyze()
 
-The analysis_config contains a list of models to analyze at once along with many analysis parameters. The GQCNNAnalyzer will calculate various metrics such as the model precision, recall, ROC, etc. and will plot them. It can also visualize filters at specified layers of the network.
+The analysis_config contains a list of models to analyze at once along with many analysis parameters. `Make sure to spcify the correct data split type in the configuration file as this will affect which file indices are loaded from the model for analysis.` The GQCNNAnalyzer will calculate various metrics such as the model precision, recall, ROC, etc. and will save them to the specified output directory. It can also visualize filters at specified layers of the network.
+
+`The Analysis metrics and curves such as Final Validation/Training Error, precision, recall, ROC, etc. for the small sample dataset provided on multiple splits can be found under the Results section of the tutorial.`
 
 Fine-Tuning a Network
 ~~~~~~~~~~~~~~~~~~~~~
@@ -97,7 +109,7 @@ The DeepOptimizer will automatically start a local server to feed these summarie
    :align: center
 
 Visualizing Specific GQCNN Predictions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The `GQCNN` module also has the ability to visualize specific predictions of a GQCNN on a dataset. This can be done through use of the GQCNNPredictionVisualizer. The GQCNNPredictionVisualizer can visualize false positives, false negatives, true positives, and true negatives. This paramemeter can be toggled in the provided configuration file.
 
 To use the GQCNNPredictionVisualizer first import the class and any other useful imports::
@@ -119,6 +131,32 @@ Finally we can create a GQCNNPredictionVisualizer and visualize::
 This will start the visualization. Data will be loaded from the dataset in batches by file and metrics will be calculated and printed out. For the specified datapoints(FP/TP/FN/TN) a visualization window will show up showing the object and predicting grasp like so:
 
 .. image:: ../images/sample_grasp.png
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
+   :align: center
+
+Results
+~~~~~~~
+The Precision-Recall curve can be found in precision_recall.pdf and can be found in the specified output directory for the GQCNNAnalyzer. The ROC curve can be found in ROC.pdf. the final Validation and Training error rates are printed to the console both at the end of training and by the GQCNNAnalyzer.
+
+The following metrics and curves are for the small sample dataset provided and the corresponding splits:
+
+Image-Wise Split
+++++++++++++++++
+The `Final Validation Error Rate is 1.355` and the `Final Training Error Rate is 0.804`.
+
+The Precision-Recall curve should look as follows:
+
+.. image:: ../images/precision-recall-1.png
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
+   :align: center
+
+The ROC curve should look as follows:
+
+.. image:: ../images/roc-1.png
    :height: 800px
    :width: 800 px
    :scale: 75 %
