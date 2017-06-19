@@ -1,0 +1,157 @@
+### TRAINING CONFIGURATIONS ###
+# dataset 
+dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/mini_dexnet_all_trans_01_20_17
+output_dir: /mnt/hdd/dex-net/data/models/grasp_quality
+
+# general optimization parameters
+train_batch_size: 64
+val_batch_size: 16
+num_epochs: 25     # number of epochs to train for
+eval_frequency: 1000  # how often to get validation error 
+save_frequency: 1000  # how often to save output
+vis_frequency: 1000
+log_frequency: 1     # how often to log output
+show_filters: 0
+
+queue_capacity: 100  # capacity of prefetch queue
+queue_sleep: 0.01     # how long to sleep between prefetches
+
+data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise or object_wise
+train_pct: 0.8 # percentage of the data to use for training vs validation
+total_pct: 1.0 # percentage of all the files to use
+eval_total_train_error: 0
+
+loss: sparse
+optimizer: momentum
+train_l2_regularizer: 0.0005
+base_lr: 0.01
+decay_step_multiplier: .66   # number of times to go through training datapoints before stepping down decay rate
+decay_rate: 0.95
+momentum_rate: 0.9
+max_training_examples_per_load: 128
+
+fine_tune: 0
+update_fc_only: 1
+update_conv0_only: 0
+reinit_fc3: 0
+reinit_fc4: 0
+reinit_fc5: 0
+
+image_mode: depth_tf_table
+training_mode: classification
+preproc_mode: none
+input_data_mode: tf_image
+num_tensor_channels: 1
+pos_weight: 0.1
+
+num_random_files: 100
+
+target_metric_name: robust_ferrari_canny
+metric_thresh: 0.002
+
+# denoising / synthetic data params
+multiplicative_denoising: 1
+gamma_shape: 1000.00
+
+symmetrize: 1
+
+morphological: 0
+morph_open_rate: 0.25
+morph_poisson_mean: 1.5
+
+image_dropout: 0
+image_dropout_rate: 0.25
+dropout_poisson_mean: 1.0
+dropout_radius_shape: 3.0
+dropout_radius_scale: 1.0
+
+gradient_dropout: 0
+gradient_dropout_rate: 0.1
+gradient_dropout_sigma: 0.5
+gradient_dropout_shape: 15
+gradient_dropout_scale: 0.001
+
+gaussian_process_denoising: 1
+gaussian_process_rate: 0.5
+gaussian_process_scaling_factor: 4.0
+gaussian_process_sigma: 0.005
+
+border_distortion: 0
+border_grad_sigma: 1.0
+border_grad_thresh: 0.075
+border_poisson_mean: 5.0
+border_radius_shape: 5
+border_radius_scale: 0.4
+
+background_denoising: 0
+background_rate: 0.25
+background_min_depth: 0.0
+background_max_depth: 0.65
+
+drop_fc3: 0
+fc3_drop_rate: 0
+drop_fc4: 0
+fc4_drop_rate: 0
+
+# debugging params
+debug: 1
+debug_num_files: 300
+
+### GQCNN CONFIG ###
+gqcnn_config:
+  # basic data metrics
+  im_height: 32
+  im_width: 32
+  im_channels: 1
+  # needs to match input data mode that was used for training, determines the pose dimensions for the network
+  input_data_mode: tf_image
+
+  # prediction batch size, in training this will be overriden by the val_batch_size in the DeepOptimizer's config file
+  batch_size: 16
+
+  # architecture
+  architecture:
+    conv1_1:
+      filt_dim: 5
+      num_filt: 32
+      pool_size: 1
+      pool_stride: 1  
+      norm: 0
+      norm_type: local_response
+    conv1_2:
+      filt_dim: 3
+      num_filt: 32
+      pool_size: 2
+      pool_stride: 2
+      norm: 1
+      norm_type: local_response
+    conv2_1:
+      filt_dim: 3
+      num_filt: 32
+      pool_size: 1
+      pool_stride: 1  
+      norm: 0
+      norm_type: local_response
+    conv2_2:
+      filt_dim: 3
+      num_filt: 32
+      pool_size: 1
+      pool_stride: 1
+      norm: 1
+      norm_type: local_response
+    pc1:
+      out_size: 4
+    pc2:
+      out_size: 0
+    fc3:
+      out_size: 1024
+    fc4:
+      out_size: 512   
+    fc5:
+      out_size: 2
+
+  # architecture normalization constants
+  radius: 2
+  alpha: 2.0e-05
+  beta: 0.75
+  bias: 1.0
