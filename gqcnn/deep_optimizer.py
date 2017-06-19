@@ -1120,7 +1120,6 @@ class DeepOptimizer(object):
                     train_image[train_image > 0] = self.cfg['background_min_depth'] + (self.cfg['background_max_depth'] - self.cfg['background_min_depth']) * np.random.rand()
 
         # symmetrize images
-        # TODO: need to update angles for full grasp pose regression
         if self.cfg['symmetrize']:
             for i in range(self.num_images):
                 train_image = self.train_data_arr[i,:,:,0]

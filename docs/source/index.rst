@@ -5,7 +5,7 @@
 
 Berkeley AUTOLAB's GQCNN Package
 ================================
-The `gqcnn` package supports training Grasp Quality Neural Networks (GQ-CNNs) on datasets from the `Dexterity Network`_ (Dex-Net) and using GQ-CNNs to plan parallel-jaw grasps from point clouds on a physical robot.
+The `gqcnn` package facilitates training Grasp Quality Neural Networks (GQ-CNNs) on datasets from the `Dexterity Network`_ (Dex-Net) and using GQ-CNNs to plan parallel-jaw grasps from point clouds on a physical robot.
 Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.
 
 Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
@@ -22,7 +22,7 @@ For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.ed
    install/install.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Tutorial
 
    tutorials/tutorial.rst

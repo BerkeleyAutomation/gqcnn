@@ -79,8 +79,8 @@ Note that `TensorFlow installation`_ with GPU support requires CUDA 8.0.
 
 .. _TensorFlow installation: https://www.tensorflow.org/install
 
-BerkeleyAutolab Packages
-""""""""""""""""""""""""
+BerkeleyAutomation Packages
+"""""""""""""""""""""""""""
 The `gqcnn` package also depends on `BerkeleyAutomation's`_ `autolab_core`_ and `perception`_ packages.
 To install these dependencies, follow the `installation instructions for autolab_core`_ and the `installation instructions for perception`_.
 

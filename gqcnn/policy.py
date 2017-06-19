@@ -107,7 +107,10 @@ class GraspingPolicy(Policy):
         self._gqcnn.open_session()
 
     def __del__(self):
-        self._gqcnn.close_session()
+        try:
+            self._gqcnn.close_session()
+        except:
+            pass
         del self
 
     @property
