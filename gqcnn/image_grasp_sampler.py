@@ -6,7 +6,6 @@ from abc import ABCMeta, abstractmethod
 
 import copy
 import cv2
-import IPython
 import logging
 import matplotlib.pyplot as plt
 import numpy as np

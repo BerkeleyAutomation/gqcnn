@@ -4,7 +4,6 @@ Author: Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
 
-import IPython
 import logging
 import matplotlib.pyplot as plt
 import numpy as np

@@ -7,7 +7,11 @@ Berkeley AutoLab GQCNN documentation
 ====================================
 Welcome to the documentation for the Berkeley Autolab's
 `GQCNN` module!
-This module is designed to be useful for building, training, and testing Grasp Quality Neural Networks.
+This module is designed to be useful for building, training, analyzing, visualizing, and testing Grasp Quality Neural Networks.
+
+Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
+
+.. _Github Issues: https://github.com/BerkeleyAutomation/gqcnn/issues
 
 .. toctree::
    :maxdepth: 2

@@ -11,7 +11,7 @@ import logging
 logging.getLogger().setLevel(logging.INFO)
 
 # train_config = YamlConfig('cfg/tools/train_grasp_quality_cnn_dexnet_large.yaml')
-train_config = YamlConfig('cfg/tools/train_dexnet_adversarial.yaml')
+train_config = YamlConfig('cfg/tools/train_dex-net_all_trans.yaml')
 gqcnn_config = train_config['gqcnn_config']
 analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
 model_dir = '/home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_vgg_mini_dexnet_robust_eps_replication_01_23_17'
@@ -52,7 +52,7 @@ logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_t
 # logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
 
 # Analysis
-start_time = time.time()
-analyzer = GQCNNAnalyzer(analysis_config)
-analyzer.analyze()
-logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
+# start_time = time.time()
+# analyzer = GQCNNAnalyzer(analysis_config)
+# analyzer.analyze()
+# logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))

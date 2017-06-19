@@ -2,7 +2,6 @@
 Classes to encapsulate parallel-jaw grasps in image space
 Author: Jeff
 """
-import IPython
 import numpy as np
 
 from core import Point, RigidTransform
