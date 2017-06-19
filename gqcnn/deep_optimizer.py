@@ -308,7 +308,10 @@ class DeepOptimizer(object):
         # close tensorboard
         self._close_tensorboard()
 
-        # pause and wait for queue thread to exit before continueing
+        # TODO: remove this and figure out why queue thread does not properly exit
+        self.sess.close()
+
+        # pause and wait for queue thread to exit before continuing
         logging.info('Waiting for Queue Thread to Exit')
         while not self.queue_thread_exited:
             pass
@@ -582,7 +585,7 @@ class DeepOptimizer(object):
         num_datapoints = self.images_per_file * self.num_files
         self.num_train = int(self.train_pct * num_datapoints)
         self.decay_step = self.decay_step_multiplier * self.num_train
-        
+
         # get number of unique objects by taking last object id of last object id file
         self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
         last_file_object_ids = np.load(os.path.join(self.data_dir, self.obj_id_filenames[len(self.obj_id_filenames) - 1]))['arr_0']
@@ -804,8 +807,8 @@ class DeepOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        # if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 or len(self.stable_pose_filenames) == 0:
-            # raise ValueError('One or more required training files in the dataset could not be found.')
+        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 or len(self.stable_pose_filenames) == 0:
+            raise ValueError('One or more required training files in the dataset could not be found.')
 
         # subsample files
         self.num_files = len(self.im_filenames)
@@ -815,7 +818,7 @@ class DeepOptimizer(object):
         self.im_filenames = [self.im_filenames[k] for k in filename_indices]
         self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
         self.label_filenames = [self.label_filenames[k] for k in filename_indices]
-        # self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
+        self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
         self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
     def _setup_output_dirs(self):
@@ -898,7 +901,7 @@ class DeepOptimizer(object):
             self._compute_indices_image_wise()
         elif self.data_split_mode == 'object_wise':
             self._compute_indices_object_wise()
-        elif self.data_split_mode == 'image_stable_pose_wise':
+        elif self.data_split_mode == 'stable_pose_wise':
             self._compute_indices_pose_wise()
         else:
             logging.error('Data Split Mode Not Supported')

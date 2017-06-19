@@ -72,11 +72,22 @@ There are just two steps:
 	with gqcnn.get_tf_graph().as_default():
 	     deepOptimizer.optimize()
 
-You'll see a bunch of output on the terminal logging the minibatch error and occasionally the validation error.
+You should see output on the terminal logging the minibatch error and occasionally the validation error.
 Training on the the Adv-Synth dataset for 25 epochs took 74 minutes on a GeForce GTX 980 GPU.
 
 By default, models will be saved to the location specified in `output_dir` parameter of your training configuration file in a subdirectory with a random 10-character string, like `model_ewlohgukns`.
 This prevents overwriting previous models when training multiple times.
+
+Dataset Splits
+++++++++++++++
+The DeepOptimizer class randomly samples a new training-validation split every time a new model is trained.
+This help to prevent overfitting.
+
+There are three options for choosing the dataset splits which can be configured by changing the `data_split_mode` parameter of the training configuration file:
+
+1) **image_wise:** splits by individual datapoints to test memorization.
+2) **stable_pose_wise:** splits by the stable resting poses of objects on a table to test generalization to new object orientations.
+3) **object_wise:** splits by the object to test generalization to novel objects.
 
 Visualizing Training Progress
 -----------------------------
@@ -143,6 +154,27 @@ We can benchmark the performance of GQ-CNNs using the GQCNNAnalyzer class::
 	analyzer.analyze()
 
 The analysis_config contains a list of models to analyze at once along with many analysis parameters. The GQCNNAnalyzer will calculate various metrics such as the model precision, recall, ROC, etc. and plot them. It can also visualize filters at specified layers of the network.
+
+Results on Image-Wise Split
++++++++++++++++++++++++++++
+After training for the full 25 epochs, the validation error rate should be approximately 1.3%.
+
+You should also check the Precision-Recall curve (precision_recall.pdf) and Reciever Operative Characteristic (ROC) curve (ROC.pdf) which can be found in the specified output directory for the GQCNNAnalyzer.
+The Precision-Recall curve should look as follows:
+
+.. image:: ../images/precision-recall-1.png
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
+   :align: center
+
+The ROC curve should look as follows:
+
+.. image:: ../images/roc-1.png
+   :height: 800px
+   :width: 800 px
+   :scale: 75 %
+   :align: center
 
 Fine-Tuning a Network
 ---------------------

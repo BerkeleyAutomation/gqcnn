@@ -21,8 +21,8 @@ First, update the parameters of your configuration file (ex. `policy.yaml`) to p
 
 For example, this could be the path to the model trained in the previous example (e.g. `/home/user/Data/models/grasp_quality/model_ewlohgukns`)
 
-Run the Example
----------------
+Run the Example Python Script
+-----------------------------
 From a new terminal run the following out of the root of your `gqcnn` repo::
 
 	python examples/policy.py /path/to/your/policy/configuration
@@ -48,5 +48,8 @@ You can also try out grasp planning on multiple objects by changing the input da
 	sensor:
 	  image_dir: data/rgbd/multiple_objects
 
-
+ROS Package
+-----------
+We are currently developing a ROS service that can be used to plan grasps from RGBD images using GQ-CNNs.
+We plan to release the ROS package by June 28, 2017.
 

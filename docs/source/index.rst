@@ -22,7 +22,13 @@ For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.ed
    install/install.rst
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
+   :caption: Data
+
+   data/data.rst
+
+.. toctree::
+   :maxdepth: 2
    :caption: Tutorial
 
    tutorials/tutorial.rst

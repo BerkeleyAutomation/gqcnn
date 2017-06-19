@@ -16,6 +16,8 @@ import scipy.misc as sm
 import sys
 import time
 
+import IPython
+
 from gqcnn import GQCNN
 from learning_analysis import ClassificationResult
 
@@ -58,6 +60,7 @@ class GQCNNAnalyzer(object):
         # read config
         self.model_dir = self.cfg['model_dir']
         self.output_dir = self.cfg['output_dir']
+        self.split_type = self.cfg['split_type']
         if not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
 
@@ -92,8 +95,17 @@ class GQCNNAnalyzer(object):
             logging.info('Loading model %s' %(model_name))
             if model_type == 'gqcnn':
                 model = GQCNN.load(model_subdir)
-                train_indices_filename = os.path.join(model_subdir, 'train_indices.pkl')
-                val_indices_filename = os.path.join(model_subdir, 'val_indices.pkl')
+                # load indices based on dataset-split-type
+                if self.split_type == 'image_wise':
+                    train_indices_filename = os.path.join(model_subdir, 'train_indices_image_wise.pkl')
+                    val_indices_filename = os.path.join(model_subdir, 'val_indices_image_wise.pkl')
+                elif self.split_type == 'object_wise':
+                    train_indices_filename = os.path.join(model_subdir, 'train_indices_object_wise.pkl')
+                    val_indices_filename = os.path.join(model_subdir, 'val_indices_object_wise.pkl')
+                elif self.split_type == 'image_stable_pose_wise':
+                    train_indices_filename = os.path.join(model_subdir, 'train_indices_stable_pose_wise.pkl')
+                    val_indices_filename = os.path.join(model_subdir, 'val_indices_stable_pose_wise.pkl')
+ 
                 model.open_session()
 
                 # visualize filters
@@ -223,7 +235,15 @@ class GQCNNAnalyzer(object):
 
                 # break into training / val
                 index_im_filename = im_filename
-                    
+                new_train_indices = {}
+                for key in train_indices.keys():
+                    new_train_indices[os.path.join(model_training_dataset_dir, key)] = train_indices[key]
+                train_indices = new_train_indices
+                new_val_indices = {}
+                for key in val_indices.keys():
+                    new_val_indices[os.path.join(model_training_dataset_dir, key)] = val_indices[key]
+                val_indices = new_val_indices
+                # IPython.embed()
                 train_preds.append(pred_arr[train_indices[index_im_filename]])
                 train_labels.append(labels_arr[train_indices[index_im_filename]])
                 val_preds.append(pred_arr[val_indices[index_im_filename]])
@@ -309,4 +329,49 @@ class GQCNNAnalyzer(object):
         handles, labels = plt.gca().get_legend_handles_labels()
         plt.legend(handles, labels, loc='best')
         figname = os.path.join(self.output_dir, 'val_roc.pdf')
+        plt.savefig(figname, dpi=self.dpi)
+
+        # combined training and validation precision-recall curves plot
+        plt.clf()
+        i = 0
+        for model_name in self.models.keys():
+            model_tag = self.models[model_name]['tag']
+            train_class_result = self.train_class_results[model_tag]
+            train_class_result.precision_recall_curve(plot=True, color=colors[i],
+                                                      style=styles[i], label='Training, ' + model_tag)
+            i += 1
+        for model_name in self.models.keys():
+            model_tag = self.models[model_name]['tag']
+            val_class_result = self.val_class_results[model_tag]
+            val_class_result.precision_recall_curve(plot=True, color=colors[i],
+                                                      style=styles[i], label='Validation, ' + model_tag)
+            i += 1
+        
+        plt.title('Precision Recall Curves', fontsize=self.font_size)
+        handles, labels = plt.gca().get_legend_handles_labels()
+        plt.legend(handles, labels, loc='best')
+        figname = os.path.join(self.output_dir, 'precision_recall.pdf')
+        plt.savefig(figname, dpi=self.dpi)
+
+
+        # combined training and validation roc curves plot
+        plt.clf()
+        i = 0
+        for model_name in self.models.keys():
+            model_tag = self.models[model_name]['tag']
+            train_class_result = self.train_class_results[model_tag]
+            train_class_result.roc_curve(plot=True, color=colors[i],
+                                         style=styles[i], label='Training, ' + model_tag)
+            i += 1
+        for model_name in self.models.keys():
+            model_tag = self.models[model_name]['tag']
+            val_class_result = self.val_class_results[model_tag]
+            val_class_result.roc_curve(plot=True, color=colors[i],
+                                         style=styles[i], label='Validation, ' + model_tag)
+            i += 1
+
+        plt.title('ROC Curves', fontsize=self.font_size)
+        handles, labels = plt.gca().get_legend_handles_labels()
+        plt.legend(handles, labels, loc='best')
+        figname = os.path.join(self.output_dir, 'ROC.pdf')
         plt.savefig(figname, dpi=self.dpi)
