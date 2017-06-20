@@ -270,6 +270,8 @@ class DeepOptimizer(object):
                 # save the model
                 if step % self.save_frequency == 0 and step > 0:
                     self.saver.save(self.sess, os.path.join(self.experiment_dir, 'model_%05d.ckpt' %(step)))
+                    self.saver.save(self.sess, os.path.join(self.experiment_dir, 'model.ckpt'))
+
 
                 # launch tensorboard only after the first iteration
                 if not self.tensorboard_has_launched:
