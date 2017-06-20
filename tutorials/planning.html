@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Grasp Planning &mdash; GQCNN 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="GQCNN 0.1.0 documentation" href="../index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> GQCNN
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Installation Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html">Python Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#ros-installation">ROS Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#dependencies">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#documentation">Documentation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html">Download Link</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#datasets">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#models">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#license">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorial</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html#grasp-planning">Grasp Planning</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Benchmarks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks/benchmarks.html">Dex-Net 2.0</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/analysis.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/gqcnn.html">GQCNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/grasping.html">Grasping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/policy.html">Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/visualization.html">Visualization</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Grasp Planning</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/tutorials/planning.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="grasp-planning">
+<h1>Grasp Planning<a class="headerlink" href="#grasp-planning" title="Permalink to this headline">¶</a></h1>
+<p>Grasp planning involves searching for the grasp with the highest predicted probability of success given a point cloud.
+In the <cite>gqcnn</cite> package this is implemented as a policy that maps an RGBD (color + depth) image to a 6-DOF grasping pose by maximizing the output of a GQ-CNN with the <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-entropy_method">Cross Entropy Method</a>.
+For details, see our <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_icra2017_lecom_workshop_abstract.pdf">ICRA 2017 workshop abstract</a>.</p>
+<p>This part of the tutorial walks through the script <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/examples/policy.py">policy.py</a> which is included in the <cite>gqcnn</cite> repository under examples/.
+The corresponding template configuration file is <cite>cfg/examples/policy.yaml</cite>.</p>
+<div class="section" id="edit-the-configuration-file">
+<h2>Edit the Configuration File<a class="headerlink" href="#edit-the-configuration-file" title="Permalink to this headline">¶</a></h2>
+<p>First, update the parameters of your configuration file (ex. <cite>policy.yaml</cite>) to point to a GQ-CNN model:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">policy</span><span class="p">:</span>
+  <span class="n">gqcnn_model</span><span class="p">:</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">model</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>For example, this could be the path to the model trained in the previous example (e.g. <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns</cite>)</p>
+</div>
+<div class="section" id="run-the-example-python-script">
+<h2>Run the Example Python Script<a class="headerlink" href="#run-the-example-python-script" title="Permalink to this headline">¶</a></h2>
+<p>From a new terminal run the following out of the root of your <cite>gqcnn</cite> repo:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">examples</span><span class="o">/</span><span class="n">policy</span><span class="o">.</span><span class="n">py</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">policy</span><span class="o">/</span><span class="n">configuration</span>
+</pre></div>
+</div>
+<p>You should see a sequence of images similar to these:</p>
+<a class="reference internal image-reference" href="../_images/cem.png"><img alt="../_images/cem.png" class="align-center" src="../_images/cem.png" style="width: 800.0px; height: 800.0px;" /></a>
+<p>The final planned grasp will be overlayed on the original color and depth images</p>
+<a class="reference internal image-reference" href="../_images/policy_final_grasp.png"><img alt="../_images/policy_final_grasp.png" class="align-center" src="../_images/policy_final_grasp.png" style="width: 800.0px; height: 800.0px;" /></a>
+<p>You can also try out grasp planning on multiple objects by changing the input data directory in the configuration file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sensor</span><span class="p">:</span>
+  <span class="n">image_dir</span><span class="p">:</span> <span class="n">data</span><span class="o">/</span><span class="n">rgbd</span><span class="o">/</span><span class="n">multiple_objects</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ros-package">
+<h2>ROS Package<a class="headerlink" href="#ros-package" title="Permalink to this headline">¶</a></h2>
+<p>We are currently developing a ROS service that can be used to plan grasps from RGBD images using GQ-CNNs.
+We plan to release the ROS package by June 28, 2017.</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Vishal Satish, Jeff Mahler.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

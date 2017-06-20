@@ -1,2 +1,0 @@
-geometry_msgs/Pose pose
-float64 grasp_success_prob

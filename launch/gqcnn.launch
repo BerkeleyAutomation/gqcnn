@@ -1,8 +1,0 @@
-<launch>
-  <!-- Namespace for the node and services -->
-  <arg name="ns"  default="gqcnn" />
-  
-  <group ns="$(arg ns)">
-    <node name="grasp_sampler_node"  pkg="gqcnn" type="grasp_sampler_node.py" />
-  </group>
-</launch>

@@ -1,0 +1,404 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Training &mdash; GQCNN 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="GQCNN 0.1.0 documentation" href="../index.html"/>
+        <link rel="next" title="Visualization" href="visualization.html"/>
+        <link rel="prev" title="Policy" href="policy.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> GQCNN
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Installation Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html">Python Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#ros-installation">ROS Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#dependencies">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#documentation">Documentation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html">Download Link</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#datasets">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#models">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#license">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorial</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/tutorial.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/tutorial.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/tutorial.html#grasp-planning">Grasp Planning</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Benchmarks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks/benchmarks.html">Dex-Net 2.0</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="analysis.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gqcnn.html">GQCNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="grasping.html">Grasping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy.html">Policy</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#deepoptimizer">DeepOptimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trainstatslogger">TrainStatsLogger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generalconstants">GeneralConstants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#imagefiletemplates">ImageFileTemplates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#imagemode">ImageMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trainingmode">TrainingMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preprocmode">PreprocMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inputdatamode">InputDataMode</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Training</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/api/training.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="training">
+<h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="deepoptimizer">
+<h2>DeepOptimizer<a class="headerlink" href="#deepoptimizer" title="Permalink to this headline">¶</a></h2>
+<p>A model for training GQCNN objects for grasp quality prediction.</p>
+<dl class="class">
+<dt id="gqcnn.DeepOptimizer">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">DeepOptimizer</code><span class="sig-paren">(</span><em>gqcnn</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.DeepOptimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Optimizer for gqcnn object</p>
+<dl class="method">
+<dt id="gqcnn.DeepOptimizer.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>gqcnn</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.DeepOptimizer.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>gqcnn</strong> (<code class="xref py py-obj docutils literal"><span class="pre">GQCNN</span></code>) – grasp quality neural network to optimize</li>
+<li><strong>config</strong> (<em>dict</em>) – dictionary of configuration parameters</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.DeepOptimizer.optimize">
+<code class="descname">optimize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.DeepOptimizer.optimize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform optimization</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="trainstatslogger">
+<h2>TrainStatsLogger<a class="headerlink" href="#trainstatslogger" title="Permalink to this headline">¶</a></h2>
+<p>A tool for saving training data and metrics to disk while training a GQCNN.</p>
+<dl class="class">
+<dt id="gqcnn.TrainStatsLogger">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">TrainStatsLogger</code><span class="sig-paren">(</span><em>experiment_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.TrainStatsLogger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Class to log optimization error rates/parameters/losses/etc.</p>
+<dl class="method">
+<dt id="gqcnn.TrainStatsLogger.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>experiment_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.TrainStatsLogger.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>experiment_dir</strong> (<em>str</em>) – the experiment directory to save statistics to</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.TrainStatsLogger.log">
+<code class="descname">log</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.TrainStatsLogger.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log all of the statistics to experiment directory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.TrainStatsLogger.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>**stats</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.TrainStatsLogger.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update optimization statistics
+NOTE: Any statistic that is None in the argument dict will not be updated</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stats</strong> (<em>dict</em>) – dict of statistics and values to be updated</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="generalconstants">
+<h2>GeneralConstants<a class="headerlink" href="#generalconstants" title="Permalink to this headline">¶</a></h2>
+<p>Enum for holding general DeepOptimizer constants such as random SEED and timeouts.</p>
+<dl class="class">
+<dt id="gqcnn.GeneralConstants">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">GeneralConstants</code><a class="headerlink" href="#gqcnn.GeneralConstants" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="imagefiletemplates">
+<h2>ImageFileTemplates<a class="headerlink" href="#imagefiletemplates" title="Permalink to this headline">¶</a></h2>
+<p>Enum for holding dataset file naming templates for use when reading in files from dataset
+directory.</p>
+<dl class="class">
+<dt id="gqcnn.ImageFileTemplates">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">ImageFileTemplates</code><a class="headerlink" href="#gqcnn.ImageFileTemplates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="imagemode">
+<h2>ImageMode<a class="headerlink" href="#imagemode" title="Permalink to this headline">¶</a></h2>
+<p>Enum for holding various image modalities.</p>
+<dl class="class">
+<dt id="gqcnn.ImageMode">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">ImageMode</code><a class="headerlink" href="#gqcnn.ImageMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="trainingmode">
+<h2>TrainingMode<a class="headerlink" href="#trainingmode" title="Permalink to this headline">¶</a></h2>
+<p>Enum for holding specific training mode(classification vs. regression).</p>
+<dl class="class">
+<dt id="gqcnn.TrainingMode">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">TrainingMode</code><a class="headerlink" href="#gqcnn.TrainingMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="preprocmode">
+<h2>PreprocMode<a class="headerlink" href="#preprocmode" title="Permalink to this headline">¶</a></h2>
+<p>Enum for holding pre-processing mode for use during regression.</p>
+<dl class="class">
+<dt id="gqcnn.PreprocMode">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">PreprocMode</code><a class="headerlink" href="#gqcnn.PreprocMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="inputdatamode">
+<h2>InputDataMode<a class="headerlink" href="#inputdatamode" title="Permalink to this headline">¶</a></h2>
+<p>Enum for holding format of input pose data.</p>
+<p>..autoclass:: gqcnn.InputDataMode</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="visualization.html" class="btn btn-neutral float-right" title="Visualization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="policy.html" class="btn btn-neutral" title="Policy" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Vishal Satish, Jeff Mahler.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

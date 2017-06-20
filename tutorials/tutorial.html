@@ -1,0 +1,518 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Overview &mdash; GQCNN 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="GQCNN 0.1.0 documentation" href="../index.html"/>
+        <link rel="next" title="Dex-Net 2.0" href="../benchmarks/benchmarks.html"/>
+        <link rel="prev" title="Download Link" href="../data/data.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> GQCNN
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Installation Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html">Python Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#ros-installation">ROS Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#dependencies">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/install.html#documentation">Documentation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html">Download Link</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#datasets">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#models">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#license">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorial</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#training">Training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setup">Setup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dataset">Dataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#imports">Imports</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-files">Configuration Files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#training-a-network-from-scratch">Training a Network from Scratch</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dataset-splits">Dataset Splits</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#visualizing-training-progress">Visualizing Training Progress</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#python-plotting">Python Plotting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tensorboard">Tensorboard</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#prediction">Prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#analysis">Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#results-on-image-wise-split">Results on Image-Wise Split</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#fine-tuning-a-network">Fine-Tuning a Network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visualizing-gqcnn-predictions">Visualizing GQCNN Predictions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#grasp-planning">Grasp Planning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#edit-the-configuration-file">Edit the Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-the-example-python-script">Run the Example Python Script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ros-package">ROS Package</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Benchmarks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks/benchmarks.html">Dex-Net 2.0</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/analysis.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/gqcnn.html">GQCNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/grasping.html">Grasping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/policy.html">Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/visualization.html">Visualization</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Overview</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/tutorials/tutorial.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>The tutorial covers the two main use cases of the <cite>gqcnn</cite> package:</p>
+<ol class="arabic simple">
+<li><a class="reference internal" href="#training"><span class="std std-ref">Training</span></a> GQ-CNNs on offline datasets of point clouds, grasps, and grasp success metrics.</li>
+<li><a class="reference internal" href="#grasp-planning"><span class="std std-ref">Grasp Planning</span></a> on RGBD images using trained GQ-CNNs.</li>
+</ol>
+<p>Click on the links or scroll down to get started!</p>
+</div>
+<div class="section" id="training">
+<span id="id1"></span><h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial walks through the scripts <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/training.py">training.py</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py">visualize_predictions.py</a> which are included in the <cite>gqcnn</cite> repository under tools/.
+The corresponding configurations can be found in cfg/tools/.</p>
+<p>First we’ll train a network following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/training.py">training.py</a>.</p>
+<div class="section" id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="dataset">
+<h3>Dataset<a class="headerlink" href="#dataset" title="Permalink to this headline">¶</a></h3>
+<p>Download <a class="reference external" href="https://berkeley.box.com/s/as1bworw6eyn0siw12x1hkn92o1tt00r">the sample dataset</a> from Box to a location of your choice and unzip the dataset.
+The sample datset is the Adv-Synth dataset from the <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0 RSS Paper</a>, which contains roughly 189,000 datatpoints (1.5 GB) from eight objects with challenging geometry.</p>
+</div>
+<div class="section" id="imports">
+<h3>Imports<a class="headerlink" href="#imports" title="Permalink to this headline">¶</a></h3>
+<p>To get started in Python, import the GQCNN, DeepOptimizer, GQCNNAnalyzer, and YamlConfig objects:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gqcnn</span> <span class="k">import</span> <span class="n">GQCNN</span><span class="p">,</span> <span class="n">DeepOptimizer</span><span class="p">,</span> <span class="n">GQCNNAnalyzer</span>
+<span class="kn">from</span> <span class="nn">autolab_core</span> <span class="k">import</span> <span class="n">YamlConfig</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="configuration-files">
+<h3>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h3>
+<p>Scripts in the <cite>gqcnn</cite> package use YAML configuration files to specify parameters.
+This tutorial uses three configuration files which have templates in the <cite>gqcnn</cite> repo under the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/cfg/tools/">cfg/tools</a> directory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cfg</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">training</span><span class="o">.</span><span class="n">yaml</span>
+<span class="n">cfg</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">analyze_gqcnn_performance</span><span class="o">.</span><span class="n">yaml</span>
+<span class="n">cfg</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">gqcnn_prediction_visualizer</span><span class="o">.</span><span class="n">yaml</span>
+</pre></div>
+</div>
+<p>Edit the <cite>dataset_dir</cite> parameter of the training configuration file (ex. training.yaml) to point to the location where you unzipped the dataset:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dataset_dir</span><span class="p">:</span> <span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">example</span><span class="o">/</span><span class="n">dataset</span>
+</pre></div>
+</div>
+<p>Also edit the <cite>output_dir</cite> parameter to point to a directory to save the GQ-CNN weights in:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">output_dir</span><span class="p">:</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">model</span><span class="o">/</span><span class="n">save</span><span class="o">/</span><span class="n">location</span>
+</pre></div>
+</div>
+<p>Then load the training config file in Python by instantiating a YamlConfig object, which allows the parameters to be accessed like a Python dictionary:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">train_config</span> <span class="o">=</span> <span class="n">YamlConfig</span><span class="p">(</span><span class="s1">&#39;/path/to/your/training/configuration&#39;</span><span class="p">)</span> <span class="c1"># Sample config: &#39;cfg/tools/training.yaml&#39;</span>
+</pre></div>
+</div>
+<p>Many objects in the <cite>gqcnn</cite> package are constructed with parameters contained in a single dictionary-like object.
+For simplicity, in this example the GQ-CNN parameters (e.g. architecture) and learning parameters (e.g. learning rate) are specified in same training configuration file.</p>
+<p>Read the parameters for the GQ-CNN by running:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gqcnn_config</span> <span class="o">=</span> <span class="n">train_config</span><span class="p">[</span><span class="s1">&#39;gqcnn_config&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="training-a-network-from-scratch">
+<h2>Training a Network from Scratch<a class="headerlink" href="#training-a-network-from-scratch" title="Permalink to this headline">¶</a></h2>
+<p>GQ-CNNs can be trained using a DeepOptimizer object, which facilitates dynamically loading and queueing datapoints from a dataset during training.</p>
+<p>Let’s start by training a GQ-CNN from scratch on the Adv-Synth dataset.
+There are just two steps:</p>
+<ol class="arabic">
+<li><p class="first">Initialize a GQCNN and a DeepOptimizer:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gqcnn</span> <span class="o">=</span> <span class="n">GQCNN</span><span class="p">(</span><span class="n">gqcnn_config</span><span class="p">)</span>
+<span class="n">deepOptimizer</span> <span class="o">=</span> <span class="n">DeepOptimizer</span><span class="p">(</span><span class="n">gqcnn</span><span class="p">,</span> <span class="n">train_config</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Train the GQCNN:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">gqcnn</span><span class="o">.</span><span class="n">get_tf_graph</span><span class="p">()</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+     <span class="n">deepOptimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>You should see output on the terminal logging the minibatch error and occasionally the validation error.
+Training on the the Adv-Synth dataset for 25 epochs took 74 minutes on a GeForce GTX 980 GPU.</p>
+<p>By default, models will be saved to the location specified in <cite>output_dir</cite> parameter of your training configuration file in a subdirectory with a random 10-character string, like <cite>model_ewlohgukns</cite>.
+This prevents overwriting previous models when training multiple times.</p>
+<div class="section" id="dataset-splits">
+<h3>Dataset Splits<a class="headerlink" href="#dataset-splits" title="Permalink to this headline">¶</a></h3>
+<p>The DeepOptimizer class randomly samples a new training-validation split every time a new model is trained.
+This help to prevent overfitting.</p>
+<p>There are three options for choosing the dataset splits which can be configured by changing the <cite>data_split_mode</cite> parameter of the training configuration file:</p>
+<ol class="arabic simple">
+<li><strong>image_wise:</strong> splits by individual datapoints to test memorization.</li>
+<li><strong>stable_pose_wise:</strong> splits by the stable resting poses of objects on a table to test generalization to new object orientations.</li>
+<li><strong>object_wise:</strong> splits by the object to test generalization to novel objects.</li>
+</ol>
+</div>
+</div>
+<div class="section" id="visualizing-training-progress">
+<h2>Visualizing Training Progress<a class="headerlink" href="#visualizing-training-progress" title="Permalink to this headline">¶</a></h2>
+<p>Since training may take hours to days, we provide several tools for monitoring progress.</p>
+<div class="section" id="python-plotting">
+<h3>Python Plotting<a class="headerlink" href="#python-plotting" title="Permalink to this headline">¶</a></h3>
+<p>One way to monitor progress is the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/plot_training_losses.py">plot_training_losses.py</a> script, which plots training and validation losses on the same plot.
+Find the directory for the model in progress (e.g. <cite>model_ewlohgukns</cite>) and run the following in a new terminal from the root of your <cite>gqcnn</cite> repo:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">tools</span><span class="o">/</span><span class="n">plot_training_losses</span><span class="o">.</span><span class="n">py</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">model</span><span class="o">/</span><span class="n">save</span><span class="o">/</span><span class="n">location</span><span class="o">/</span><span class="n">model_dir</span>
+</pre></div>
+</div>
+<p>The training and validation curves for the example should look something like this after 25 epochs:</p>
+<a class="reference internal image-reference" href="../_images/training_losses.png"><img alt="../_images/training_losses.png" class="align-center" src="../_images/training_losses.png" style="width: 800.0px; height: 800.0px;" /></a>
+</div>
+<div class="section" id="tensorboard">
+<h3>Tensorboard<a class="headerlink" href="#tensorboard" title="Permalink to this headline">¶</a></h3>
+<p>The DeepOptimizer supports Tensorboard to visualize various training parameters such as learning rate, validation error, and minibatch loss.
+Tensorboard summaries are saved in the folder <cite>tensorboard_summaries</cite> under the model directory.
+For example, if the model directory where the model is being saved is <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns</cite>, the summaries will be stored in <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns/tensorboard_summaries</cite>.</p>
+<p>The DeepOptimizer automatically starts a local server to feed these summaries.
+Once you get the output message:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Launching</span> <span class="n">Tensorboard</span><span class="p">,</span> <span class="n">Please</span> <span class="n">navigate</span> <span class="n">to</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">6006</span> <span class="ow">in</span> <span class="n">your</span> <span class="n">favorite</span> <span class="n">web</span> <span class="n">browser</span> <span class="n">to</span> <span class="n">view</span> <span class="n">summaries</span>
+</pre></div>
+</div>
+<p>then you can visualize progress by navigating to <cite>localhost:6006</cite> in your favorite web-browser.</p>
+<a class="reference internal image-reference" href="../_images/tensorboard.png"><img alt="../_images/tensorboard.png" class="align-center" src="../_images/tensorboard.png" style="width: 600.0px; height: 600.0px;" /></a>
+</div>
+</div>
+<div class="section" id="prediction">
+<h2>Prediction<a class="headerlink" href="#prediction" title="Permalink to this headline">¶</a></h2>
+<p>To predict the probability of success, or grasp robustness, of a new datapoint, instantiate a GQCNN object with a path to the saved model (e.g. <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns</cite>) and and call the <cite>predict()</cite> function:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">images</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;array of images&#39;</span><span class="p">]</span>
+<span class="n">poses</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;corresponding poses&#39;</span><span class="p">]</span>
+
+<span class="n">gqcnn</span> <span class="o">=</span> <span class="n">GQCNN</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">gqcnn</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">poses</span><span class="p">)</span>
+<span class="n">pred_p_success</span> <span class="o">=</span> <span class="n">output</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">gqcnn</span><span class="o">.</span><span class="n">close_session</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The images should be specified as an <cite>N`x32x32x1 array and the poses should be specified as an `N`x1 array of depths, where `N</cite> is the number of datapoints to predict.
+For an example, load a batch of images from <cite>depth_ims_tf_table_00000.npz</cite> and a batch of corresponding poses from column 2 of <cite>hand_poses_00000.npz</cite> from the Adv-Synth dataset.</p>
+</div>
+<div class="section" id="analysis">
+<h2>Analysis<a class="headerlink" href="#analysis" title="Permalink to this headline">¶</a></h2>
+<p>We can benchmark the performance of GQ-CNNs using the GQCNNAnalyzer class:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">analysis_config</span> <span class="o">=</span> <span class="n">YamlConfig</span><span class="p">(</span><span class="s1">&#39;/path/to/your/analysis/configuration&#39;</span><span class="p">)</span> <span class="c1"># Sample config: &#39;cfg/tools/analyze_gqcnn_performance.yaml&#39;</span>
+<span class="n">analyzer</span> <span class="o">=</span> <span class="n">GQCNNAnalyzer</span><span class="p">(</span><span class="n">analysis_config</span><span class="p">)</span>
+<span class="n">analyzer</span><span class="o">.</span><span class="n">analyze</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The analysis_config contains a list of models to analyze at once along with many analysis parameters. The GQCNNAnalyzer will calculate various metrics such as the model precision, recall, ROC, etc. and plot them. It can also visualize filters at specified layers of the network.</p>
+<div class="section" id="results-on-image-wise-split">
+<h3>Results on Image-Wise Split<a class="headerlink" href="#results-on-image-wise-split" title="Permalink to this headline">¶</a></h3>
+<p>After training for the full 25 epochs, the validation error rate should be approximately 1.3%.</p>
+<p>You should also check the Precision-Recall curve (precision_recall.pdf) and Reciever Operative Characteristic (ROC) curve (ROC.pdf) which can be found in the specified output directory for the GQCNNAnalyzer.
+The Precision-Recall curve should look as follows:</p>
+<a class="reference internal image-reference" href="../_images/precision-recall-1.png"><img alt="../_images/precision-recall-1.png" class="align-center" src="../_images/precision-recall-1.png" style="width: 600.0px; height: 600.0px;" /></a>
+<p>The ROC curve should look as follows:</p>
+<a class="reference internal image-reference" href="../_images/roc-1.png"><img alt="../_images/roc-1.png" class="align-center" src="../_images/roc-1.png" style="width: 600.0px; height: 600.0px;" /></a>
+</div>
+</div>
+<div class="section" id="fine-tuning-a-network">
+<h2>Fine-Tuning a Network<a class="headerlink" href="#fine-tuning-a-network" title="Permalink to this headline">¶</a></h2>
+<p>Fine-tuning a network is similar to training one from scratch.
+The only difference is that we load a GQCNN from a model directory instead of creating one from scratch before optimizing:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gqcnn</span> <span class="o">=</span> <span class="n">GQCNN</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
+<span class="n">deepOptimizer</span> <span class="o">=</span> <span class="n">DeepOptimizer</span><span class="p">(</span><span class="n">gqcnn</span><span class="p">,</span> <span class="n">train_config</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">gqcnn</span><span class="o">.</span><span class="n">get_tf_graph</span><span class="p">()</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+     <span class="n">deepOptimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="visualizing-gqcnn-predictions">
+<h2>Visualizing GQCNN Predictions<a class="headerlink" href="#visualizing-gqcnn-predictions" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>gqcnn</cite> package also has the ability to visualize predictions of a GQCNN on a dataset with the GQCNNPredictionVisualizer class.
+The GQCNNPredictionVisualizer can visualize false positives, false negatives, true positives, and true negatives on a dataset.
+This parameter can be toggled in the provided configuration file.</p>
+<p>Let’s visualize some predictions following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py">visualize_predictions.py</a>.</p>
+<p>To use the GQCNNPredictionVisualizer first import the class and any other useful imports:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autolab_core</span> <span class="k">import</span> <span class="n">YamlConfig</span>
+<span class="kn">from</span> <span class="nn">gqcnn</span> <span class="k">import</span> <span class="n">GQCNNPredictionVisualizer</span>
+</pre></div>
+</div>
+<p>Next, load a the configuration file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">visualization_config</span> <span class="o">=</span> <span class="n">YamlConfig</span><span class="p">(</span><span class="s1">&#39;/path/to/your/visualization/configuration&#39;</span><span class="p">)</span> <span class="c1"># Sample config: &#39;cfg/tools/gqcnn_prediction_visualizer.yaml&#39;</span>
+</pre></div>
+</div>
+<p>Finally, create a GQCNNPredictionVisualizer and visualize:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">visualizer</span> <span class="o">=</span> <span class="n">GQCNNPredictionVisualizer</span><span class="p">(</span><span class="n">visualization_config</span><span class="p">)</span>
+<span class="n">visualizer</span><span class="o">.</span><span class="n">visualize</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This will load a dataset in batches and individual datapoints will be printed out.
+For the specified datapoints(FP/TP/FN/TN) a visualization window will show up showing the object and predicting grasp like this:</p>
+<a class="reference internal image-reference" href="../_images/sample_grasp.png"><img alt="../_images/sample_grasp.png" class="align-center" src="../_images/sample_grasp.png" style="width: 600.0px; height: 600.0px;" /></a>
+</div>
+</div>
+<div class="section" id="grasp-planning">
+<span id="id3"></span><h1>Grasp Planning<a class="headerlink" href="#grasp-planning" title="Permalink to this headline">¶</a></h1>
+<p>Grasp planning involves searching for the grasp with the highest predicted probability of success given a point cloud.
+In the <cite>gqcnn</cite> package this is implemented as a policy that maps an RGBD (color + depth) image to a 6-DOF grasping pose by maximizing the output of a GQ-CNN with the <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-entropy_method">Cross Entropy Method</a>.
+For details, see our <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_icra2017_lecom_workshop_abstract.pdf">ICRA 2017 workshop abstract</a>.</p>
+<p>This part of the tutorial walks through the script <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/examples/policy.py">policy.py</a> which is included in the <cite>gqcnn</cite> repository under examples/.
+The corresponding template configuration file is <cite>cfg/examples/policy.yaml</cite>.</p>
+<div class="section" id="edit-the-configuration-file">
+<h2>Edit the Configuration File<a class="headerlink" href="#edit-the-configuration-file" title="Permalink to this headline">¶</a></h2>
+<p>First, update the parameters of your configuration file (ex. <cite>policy.yaml</cite>) to point to a GQ-CNN model:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">policy</span><span class="p">:</span>
+  <span class="n">gqcnn_model</span><span class="p">:</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">model</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>For example, this could be the path to the model trained in the previous example (e.g. <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns</cite>)</p>
+</div>
+<div class="section" id="run-the-example-python-script">
+<h2>Run the Example Python Script<a class="headerlink" href="#run-the-example-python-script" title="Permalink to this headline">¶</a></h2>
+<p>From a new terminal run the following out of the root of your <cite>gqcnn</cite> repo:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">examples</span><span class="o">/</span><span class="n">policy</span><span class="o">.</span><span class="n">py</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">policy</span><span class="o">/</span><span class="n">configuration</span>
+</pre></div>
+</div>
+<p>You should see a sequence of images similar to these:</p>
+<a class="reference internal image-reference" href="../_images/cem.png"><img alt="../_images/cem.png" class="align-center" src="../_images/cem.png" style="width: 800.0px; height: 800.0px;" /></a>
+<p>The final planned grasp will be overlayed on the original color and depth images</p>
+<a class="reference internal image-reference" href="../_images/policy_final_grasp.png"><img alt="../_images/policy_final_grasp.png" class="align-center" src="../_images/policy_final_grasp.png" style="width: 800.0px; height: 800.0px;" /></a>
+<p>You can also try out grasp planning on multiple objects by changing the input data directory in the configuration file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sensor</span><span class="p">:</span>
+  <span class="n">image_dir</span><span class="p">:</span> <span class="n">data</span><span class="o">/</span><span class="n">rgbd</span><span class="o">/</span><span class="n">multiple_objects</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ros-package">
+<h2>ROS Package<a class="headerlink" href="#ros-package" title="Permalink to this headline">¶</a></h2>
+<p>We are currently developing a ROS service that can be used to plan grasps from RGBD images using GQ-CNNs.
+We plan to release the ROS package by June 28, 2017.</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../benchmarks/benchmarks.html" class="btn btn-neutral float-right" title="Dex-Net 2.0" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../data/data.html" class="btn btn-neutral" title="Download Link" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Vishal Satish, Jeff Mahler.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

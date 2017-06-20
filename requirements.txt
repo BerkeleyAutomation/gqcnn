@@ -1,9 +1,0 @@
--e .
-numpy==1.12.1
-opencv-python==3.2.0.7
-scipy==0.19.0
-matplotlib==2.0.2
-tensorflow==1.1.0
-scikit-image==0.13.0
-scikit-learn==0.18.1
-Pillow==4.1.1

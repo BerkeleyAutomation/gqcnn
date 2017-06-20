@@ -1,0 +1,381 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Python Installation &mdash; GQCNN 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="GQCNN 0.1.0 documentation" href="../index.html"/>
+        <link rel="next" title="Download Link" href="../data/data.html"/>
+        <link rel="prev" title="Berkeley AUTOLAB’s GQCNN Package" href="../index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> GQCNN
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Installation Guide</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Python Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#clone-the-repository">1. Clone the repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-installation-script">2. Run installation script</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#ros-installation">ROS Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">1. Clone the repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-the-catkin-package">2. Build the catkin package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#dependencies">Dependencies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pypi-packages">PyPI Packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#berkeleyautomation-packages">BerkeleyAutomation Packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#documentation">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#building">Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deploying">Deploying</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html">Download Link</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#datasets">Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#models">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/data.html#license">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorial</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/tutorial.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/tutorial.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/tutorial.html#grasp-planning">Grasp Planning</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Benchmarks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks/benchmarks.html">Dex-Net 2.0</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/analysis.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/gqcnn.html">GQCNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/grasping.html">Grasping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/policy.html">Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/visualization.html">Visualization</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Python Installation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/install/install.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="python-installation">
+<h1>Python Installation<a class="headerlink" href="#python-installation" title="Permalink to this headline">¶</a></h1>
+<p>Python-only installation is intended for users who are <strong>only interested in training GQ-CNNs</strong>, not
+using them on a physical robot.
+If you have intentions of using GQ-CNNs for grasp planning on a physical robot, we suggest you <a class="reference external" href="https://berkeleyautomation.github.io/gqcnn/nstall/install.html#ros-installation">install as a ROS package</a>.</p>
+<p>The <cite>gqcnn</cite> package is known to work for Python 2.7 and has not been tested for Python 3.</p>
+<div class="section" id="clone-the-repository">
+<h2>1. Clone the repository<a class="headerlink" href="#clone-the-repository" title="Permalink to this headline">¶</a></h2>
+<p>Clone or download the project from <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">Github</a>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone https://github.com/BerkeleyAutomation/gqcnn.git
+</pre></div>
+</div>
+</div>
+<div class="section" id="run-installation-script">
+<h2>2. Run installation script<a class="headerlink" href="#run-installation-script" title="Permalink to this headline">¶</a></h2>
+<p>Change directories into the <cite>gqcnn</cite> repository and run</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python setup.py install
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ pip install -r requirements.txt
+</pre></div>
+</div>
+<p>Alternatively, you can run</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ pip install /path/to/gqcnn
+</pre></div>
+</div>
+<p>to install <cite>gqcnn</cite> from anywhere.
+This will install <cite>gqcnn</cite> in your current Python environment.</p>
+</div>
+</div>
+<div class="section" id="ros-installation">
+<h1>ROS Installation<a class="headerlink" href="#ros-installation" title="Permalink to this headline">¶</a></h1>
+<p>Installation as a ROS package is intended for users who wish to use GQ-CNNs to plan grasps on a physical robot.</p>
+<div class="section" id="id1">
+<h2>1. Clone the repository<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>Clone or download our source code from <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">Github</a>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ cd {PATH_TO_YOUR_CATKIN_WORKSPACE}/src
+$ git clone https://github.com/BerkeleyAutomation/gqcnn.git
+</pre></div>
+</div>
+</div>
+<div class="section" id="build-the-catkin-package">
+<h2>2. Build the catkin package<a class="headerlink" href="#build-the-catkin-package" title="Permalink to this headline">¶</a></h2>
+<p>Build the catkin pacakge by running</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ cd {PATH_TO_YOUR_CATKIN_WORKSPACE}
+$ catkin_make
+</pre></div>
+</div>
+<p>Then re-source devel/setup.bash for the package to be available through Python.</p>
+</div>
+</div>
+<div class="section" id="dependencies">
+<h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="pypi-packages">
+<h2>PyPI Packages<a class="headerlink" href="#pypi-packages" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>gqcnn</cite> package  depends on <a class="reference external" href="http://www.numpy.org/">numpy</a>, <a class="reference external" href="https://www.scipy/org/">scipy</a>, <a class="reference external" href="http://www.matplotlib.org/">matplotlib</a>, <a class="reference external" href="https://www.tensorflow.org/">tensorflow</a>, <a class="reference external" href="http://opencv.org/">cv2</a>, <a class="reference external" href="http://scikit-learn.org/stable/">skimage</a>, <a class="reference external" href="http://scikit-image.org/">sklearn</a>, and <a class="reference external" href="https://python-pillow.org/">pillow</a> which should be installed automatically when using pip.
+You can also install these manually if necessary</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ pip install numpy scipy matplotlib tensorflow-gpu opencv-python scikit-image scikit-learn pillow
+</pre></div>
+</div>
+<p>If you do not have a GPU, then substitute <cite>tensorflow</cite> for <cite>tensorflow-gpu</cite> in the installation command.
+Note that <a class="reference external" href="https://www.tensorflow.org/install">TensorFlow installation</a> with GPU support requires CUDA 8.0.</p>
+</div>
+<div class="section" id="berkeleyautomation-packages">
+<h2>BerkeleyAutomation Packages<a class="headerlink" href="#berkeleyautomation-packages" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>gqcnn</cite> package also depends on <a class="reference external" href="https://github.com/BerkeleyAutomation">BerkeleyAutomation’s</a> <a class="reference external" href="https://github.com/BerkeleyAutomation/autolab_core">autolab_core</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> packages.
+To install these dependencies, follow the <a class="reference external" href="https://BerkeleyAutomation.github.io/autolab_core/install/install.html">installation instructions for autolab_core</a> and the <a class="reference external" href="https://berkeleyautomation.github.io/perception/install/install.html">installation instructions for perception</a>.</p>
+</div>
+</div>
+<div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="building">
+<h2>Building<a class="headerlink" href="#building" title="Permalink to this headline">¶</a></h2>
+<p>The API documentation is available on the <a class="reference external" href="https://berkeleyautomation.github.io/gqcnn">gqcnn website</a>.</p>
+<p>You can re-build <cite>gqcnn</cite>’s documentation from scratch with a few extra dependencies –
+specifically, <a class="reference external" href="http://www.sphinx-doc.org/en/1.4.8/">sphinx</a> and a few plugins.
+This is important for developers only.</p>
+<p>To install the dependencies required, simply run</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ pip install -r docs_requirements.txt
+</pre></div>
+</div>
+<p>Then, go to the <cite>docs</cite> directory and run <code class="docutils literal"><span class="pre">make</span></code> with the appropriate target.
+For example,</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ cd docs/
+$ make html
+</pre></div>
+</div>
+<p>will generate a set of web pages. Any documentation files
+generated in this manner can be found in <cite>docs/build</cite>.</p>
+</div>
+<div class="section" id="deploying">
+<h2>Deploying<a class="headerlink" href="#deploying" title="Permalink to this headline">¶</a></h2>
+<p>To deploy documentation to the Github Pages site for the repository,
+simply push any changes to the documentation source to master
+and then run</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ . gh_deploy.sh
+</pre></div>
+</div>
+<p>from the <cite>docs</cite> folder. This script will automatically checkout the
+<code class="docutils literal"><span class="pre">gh-pages</span></code> branch, build the documentation from source, and push it
+to Github.</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../data/data.html" class="btn btn-neutral float-right" title="Download Link" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral" title="Berkeley AUTOLAB’s GQCNN Package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Vishal Satish, Jeff Mahler.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
