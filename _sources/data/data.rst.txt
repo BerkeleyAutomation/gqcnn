@@ -20,6 +20,10 @@ Models
 The available models include:
 
 1) **GQ:** The GQ-CNN trained on the full Dex-Net-Large dataset as described in `the Dex-Net 2.0 paper`_.
+2) **GQ-Image-Wise:** The GQ model trained on an image-wise training and validation script for 100,000 iterations.
+3) **GQ-Stable-Pose-Wise:** The GQ model trained on a stable-pose-wise training and validation script.
+4) **GQ-Object-Wise:** The GQ model trained on an object-wise training and validation script.
+5) **GQ-Adv:** The GQ-CNN trained on the Adv-Synth dataset as described in `the Dex-Net 2.0 paper`_.
 
 .. _the Dex-Net 2.0 paper: https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf
 
