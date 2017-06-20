@@ -101,7 +101,7 @@ class GQCNNAnalyzer(object):
                 elif split_type == 'object_wise':
                     train_indices_filename = os.path.join(model_subdir, 'train_indices_object_wise.pkl')
                     val_indices_filename = os.path.join(model_subdir, 'val_indices_object_wise.pkl')
-                elif split_type == 'image_stable_pose_wise':
+                elif split_type == 'stable_pose_wise':
                     train_indices_filename = os.path.join(model_subdir, 'train_indices_stable_pose_wise.pkl')
                     val_indices_filename = os.path.join(model_subdir, 'val_indices_stable_pose_wise.pkl')
  
