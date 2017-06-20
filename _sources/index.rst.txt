@@ -29,15 +29,15 @@ For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.ed
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorial
-
-   tutorials/tutorial.rst
-
-.. toctree::
-   :maxdepth: 2
    :caption: Benchmarks
 
    /benchmarks/benchmarks.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorial
+
+   tutorials/tutorial.rst
 
 .. toctree::
    :maxdepth: 2
