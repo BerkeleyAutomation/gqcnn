@@ -11,9 +11,13 @@ Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.
 Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
 For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.edu).
 
+If you use the code, datasets, or models in a publication, please `cite the Dex-Net 2.0 paper`_.
+
 .. _Github Issues: https://github.com/BerkeleyAutomation/gqcnn/issues
 
 .. _Dexterity Network: https://berkeleyautomation.github.io/dex-net
+
+.. _cite the Dex-Net 2.0 paper: https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017.bib
 
 .. toctree::
    :maxdepth: 2
