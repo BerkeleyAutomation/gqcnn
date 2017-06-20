@@ -1,8 +1,5 @@
-Benchmarks
-~~~~~~~~~~
-
 Dex-Net 2.0
------------
+~~~~~~~~~~~
 Here are the lowest error rates (%) we have achieved on the `Dex-Net-Large`_ dataset on randomized validation sets using various splitting rules:
 
 .. image:: ../images/dexnet_benchmark.png
