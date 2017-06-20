@@ -26,6 +26,7 @@ BerkeleyAutomation Packages
 """""""""""""""""""""""""""
 The `gqcnn` package also depends on `BerkeleyAutomation's`_ `autolab_core`_ and `perception`_ packages.
 To install these dependencies, follow the `installation instructions for autolab_core`_ and the `installation instructions for perception`_.
+If you are installing gqcnn as a ROS package, we suggest installing both `autolab_core`_ and `perception`_ as ROS packages by checking out the repos into your catkin workspace and running catkin_make.
 
 .. _BerkeleyAutomation's: https://github.com/BerkeleyAutomation
 .. _autolab_core: https://github.com/BerkeleyAutomation/autolab_core
