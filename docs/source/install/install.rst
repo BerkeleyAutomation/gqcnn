@@ -1,3 +1,39 @@
+Dependencies
+~~~~~~~~~~~~
+
+PyPI Packages
+"""""""""""""
+The `gqcnn` package  depends on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `skimage`_, `sklearn`_, and `pillow`_ which should be installed automatically when using pip.
+You can also install these manually if necessary ::
+
+    $ pip install numpy scipy matplotlib tensorflow-gpu opencv-python scikit-image scikit-learn pillow
+
+.. _numpy: http://www.numpy.org/
+.. _scipy: https://www.scipy/org/
+.. _matplotlib: http://www.matplotlib.org/
+.. _tensorflow: https://www.tensorflow.org/
+.. _cv2: http://opencv.org/
+.. _pillow: https://python-pillow.org/
+.. _skimage: http://scikit-learn.org/stable/
+.. _sklearn: http://scikit-image.org/
+
+If you do not have a GPU, then substitute `tensorflow` for `tensorflow-gpu` in the installation command.
+Note that `TensorFlow installation`_ with GPU support requires CUDA 8.0.
+
+.. _TensorFlow installation: https://www.tensorflow.org/install
+
+BerkeleyAutomation Packages
+"""""""""""""""""""""""""""
+The `gqcnn` package also depends on `BerkeleyAutomation's`_ `autolab_core`_ and `perception`_ packages.
+To install these dependencies, follow the `installation instructions for autolab_core`_ and the `installation instructions for perception`_.
+
+.. _BerkeleyAutomation's: https://github.com/BerkeleyAutomation
+.. _autolab_core: https://github.com/BerkeleyAutomation/autolab_core
+.. _perception: https://github.com/BerkeleyAutomation/perception
+.. _installation instructions for autolab_core: https://BerkeleyAutomation.github.io/autolab_core/install/install.html
+.. _installation instructions for perception: https://berkeleyautomation.github.io/perception/install/install.html
+
+
 Python Installation
 ~~~~~~~~~~~~~~~~~~~
 
@@ -55,40 +91,11 @@ Build the catkin pacakge by running ::
 
 Then re-source devel/setup.bash for the package to be available through Python.
 
-Dependencies
-~~~~~~~~~~~~
+Quick Start Guide
+~~~~~~~~~~~~~~~~~
+Once gqcnn is installed, see `our tutorial page`_ to get started!
 
-PyPI Packages
-"""""""""""""
-The `gqcnn` package  depends on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `skimage`_, `sklearn`_, and `pillow`_ which should be installed automatically when using pip.
-You can also install these manually if necessary ::
-
-    $ pip install numpy scipy matplotlib tensorflow-gpu opencv-python scikit-image scikit-learn pillow
-
-.. _numpy: http://www.numpy.org/
-.. _scipy: https://www.scipy/org/
-.. _matplotlib: http://www.matplotlib.org/
-.. _tensorflow: https://www.tensorflow.org/
-.. _cv2: http://opencv.org/
-.. _pillow: https://python-pillow.org/
-.. _skimage: http://scikit-learn.org/stable/
-.. _sklearn: http://scikit-image.org/
-
-If you do not have a GPU, then substitute `tensorflow` for `tensorflow-gpu` in the installation command.
-Note that `TensorFlow installation`_ with GPU support requires CUDA 8.0.
-
-.. _TensorFlow installation: https://www.tensorflow.org/install
-
-BerkeleyAutomation Packages
-"""""""""""""""""""""""""""
-The `gqcnn` package also depends on `BerkeleyAutomation's`_ `autolab_core`_ and `perception`_ packages.
-To install these dependencies, follow the `installation instructions for autolab_core`_ and the `installation instructions for perception`_.
-
-.. _BerkeleyAutomation's: https://github.com/BerkeleyAutomation
-.. _autolab_core: https://github.com/BerkeleyAutomation/autolab_core
-.. _perception: https://github.com/BerkeleyAutomation/perception
-.. _installation instructions for autolab_core: https://BerkeleyAutomation.github.io/autolab_core/install/install.html
-.. _installation instructions for perception: https://berkeleyautomation.github.io/perception/install/install.html
+.. _our tutorial page: https://berkeleyautomation.github.io/gqcnn/tutorials/tutorial.html
 
 Documentation
 ~~~~~~~~~~~~~
