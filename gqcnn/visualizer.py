@@ -177,7 +177,7 @@ class Visualizer:
             style of center of grasp
         grasp_axis_width : float
             line width of grasp axis
-        grasp_axis_style : :obj:`str
+        grasp_axis_style : :obj:`str`
             style of grasp axis line
         show_center : bool
             whether or not to plot the grasp center
