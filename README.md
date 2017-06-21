@@ -1,5 +1,5 @@
 ## Berkeley AUTOLAB's GQCNN Package
-Dexterity Network (Dex-Net)
+[Dexterity Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net)
 AUTOLAB, UC Berkeley
 
 # Overview
