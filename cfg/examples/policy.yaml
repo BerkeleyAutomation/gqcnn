@@ -4,7 +4,7 @@ inpaint_rescale_factor: 0.5
 # sensor params
 calib_dir: data/calib
 sensor:
-  image_dir: data/rgbd/bar_clamp
+  image_dir: data/rgbd/multiple_objects
   type: virtual_primesense
   frame: primesense_overhead
   auto_white_balance: 0
@@ -12,7 +12,7 @@ sensor:
 # policy params
 policy:
   # gqcnn params
-  gqcnn_model: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_test_network
+  gqcnn_model: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
   
   # optimization params
   num_seed_samples: 100
@@ -57,7 +57,7 @@ policy:
   vis:
     grasp_sampling : 0
     tf_images: 0
-    grasp_candidates: 1
+    grasp_candidates: 0
     elite_grasps: 0
     grasp_ranking: 0
     grasp_plan: 0

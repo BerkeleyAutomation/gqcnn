@@ -164,12 +164,13 @@ class GraspingPolicy(Policy):
         tensor_start = time()
         image_tensor = np.zeros([num_grasps, gqcnn_im_height, gqcnn_im_width, gqcnn_num_channels])
         pose_tensor = np.zeros([num_grasps, gqcnn_pose_dim])
+        scale = float(gqcnn_im_height) / self._crop_height
+        depth_im_scaled = depth_im.resize(scale)
         for i, grasp in enumerate(grasps):
-            translation = np.array([depth_im.center[0] - grasp.center.data[1],
-                                    depth_im.center[1] - grasp.center.data[0]])
-            im_tf = depth_im.transform(translation, grasp.angle)
-            im_tf = im_tf.crop(self._crop_height, self._crop_width)
-            im_tf = im_tf.resize((gqcnn_im_height, gqcnn_im_width))
+            translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
+                                            depth_im.center[1] - grasp.center.data[0]])
+            im_tf = depth_im_scaled.transform(translation, grasp.angle)
+            im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
             image_tensor[i,...] = im_tf.raw_data
             
             if input_data_mode == InputDataMode.TF_IMAGE:
