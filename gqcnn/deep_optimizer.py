@@ -188,10 +188,40 @@ class DeepOptimizer(object):
         with tf.name_scope('optimizer'):
             optimizer = self._create_optimizer(loss, batch, var_list, learning_rate)
 
-        # setup data thread
         def handler(signum, frame):
             logging.info('caught CTRL+C, exiting...')
             self.term_event.set()
+
+            ### Forcefully Exit ####
+            # TODO: remove this and figure out why queue thread does not properly exit
+            logging.info('Forcefully Exiting Optimization')
+            self.forceful_exit = True
+
+            # forcefully kill the session to terminate any current graph ops that are stalling because the enqueue op has ended
+            self.sess.close()
+
+            # close tensorboard
+            self._close_tensorboard()
+
+            # pause and wait for queue thread to exit before continuing
+            logging.info('Waiting for Queue Thread to Exit')
+            while not self.queue_thread_exited:
+                pass
+
+            logging.info('Cleaning and Preparing to Exit Optimization')
+                
+            # cleanup
+            for layer_weights in self.weights.__dict__.values():
+                del layer_weights
+            del self.saver
+            del self.sess
+
+            # exit
+            logging.info('Exiting Optimization')
+
+            # forcefully exit the script
+            exit(0)
+
         signal.signal(signal.SIGINT, handler)
 
         # now that everything in our graph is set up we write the graph to the summary event so 
@@ -293,15 +323,14 @@ class DeepOptimizer(object):
 
         except Exception as e:
             self.term_event.set()
-            self.sess.close() 
-            for layer_weights in self.weights.__dict__.values():
-                del layer_weights
-            del self.saver
-            del self.sess
+            if not self.forceful_exit:
+                self.sess.close() 
+                for layer_weights in self.weights.__dict__.values():
+                    del layer_weights
+                del self.saver
+                del self.sess
             raise
 
-        self.queue_thread_exited = False
-        
         # check for dead queue
         self._check_dead_queue()
 
@@ -887,6 +916,10 @@ class DeepOptimizer(object):
         logging.getLogger().setLevel(logging.INFO)
 
         self.debug = self.cfg['debug']
+        
+        # initialize thread exit booleans
+        self.queue_thread_exited = False
+        self.forceful_exit = False
 
         # set random seed for deterministic execution
         if self.debug:
