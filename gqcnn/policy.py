@@ -431,16 +431,17 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         segmask = state.segmask
 
         # sample grasps
+        seed_set_start = time()
         grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
                                             self._num_seed_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
                                             seed=self._seed)
         num_grasps = len(grasps)
-
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
             return None
+        logging.debug('Computing the seed set took %.3f sec' %(time() - seed_set_start))
 
         # form tensors
         image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
