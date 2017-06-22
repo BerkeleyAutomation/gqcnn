@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/hdd/dex-net/data/clutter/3dnet_kit_06_11_17_random/tensors
+dataset_dir: /home/autolab/Public/data/dex-net/data/clutter/3dnet_kit_06_21_17_on_policy_iter_1/tensors
 output_dir: /mnt/hdd/dex-net/data/models/clutter
 model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
 
