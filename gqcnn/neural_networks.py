@@ -187,7 +187,7 @@ class GQCNN(object):
             self._weights.fc5W = tf.Variable(reader.get_tensor("fc5W"))
             self._weights.fc5b = tf.Variable(reader.get_tensor("fc5b"))
 
-    def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5):
+    def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5, reinit_pc1=False):
         """ Re-initializes final fully-connected layers for fine-tuning 
 
         Parameters
@@ -198,8 +198,17 @@ class GQCNN(object):
             whether to re-initialize fc4
         reinit_fc5 : bool
             whether to re-initialize fc5
+        reinit_pc1 : bool
+            whether to re-initiazlize pc1
         """
         with self._graph.as_default():
+            if reinit_pc1:
+                pc1_std = np.sqrt(2.0 / self.pc1_in_size)
+                self._weights.pc1W = tf.Variable(tf.truncated_normal([self.pc1_in_size, self.pc1_out_size],
+                                                       stddev=pc1_std), name='pc1W')
+                self._weights.pc1b = tf.Variable(tf.truncated_normal([self.pc1_out_size],
+                                                       stddev=pc1_std), name='pc1b')
+
             if reinit_fc3:
                 fc3_std = np.sqrt(2.0 / (self.fc3_in_size))
                 self._weights.fc3W = tf.Variable(tf.truncated_normal([self.fc3_in_size, self.fc3_out_size], stddev=fc3_std))
@@ -446,6 +455,7 @@ class GQCNN(object):
 
         # get in and out sizes of fully-connected layer for possible re-initialization
         self.pc2_out_size = self._architecture['pc2']['out_size']
+        self.pc1_in_size = self._pose_dim
         self.pc1_out_size = self._architecture['pc1']['out_size']
         self.fc3_in_size = self._architecture['pc2']['out_size']
         self.fc3_out_size = self._architecture['fc3']['out_size']

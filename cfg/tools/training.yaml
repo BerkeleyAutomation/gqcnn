@@ -34,6 +34,7 @@ max_training_examples_per_load: 128
 fine_tune: 1
 update_fc_only: 1
 update_conv0_only: 0
+reinit_pc1: 0
 reinit_fc3: 0
 reinit_fc4: 0
 reinit_fc5: 0
@@ -89,9 +90,9 @@ background_min_depth: 0.0
 background_max_depth: 0.65
 
 drop_fc3: 0
-fc3_drop_rate: 0
-drop_fc4: 0
-fc4_drop_rate: 0
+fc3_drop_rate: 0.5
+drop_fc4: 1
+fc4_drop_rate: 0.5
 
 # debugging params
 debug: 0

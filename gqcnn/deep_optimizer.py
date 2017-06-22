@@ -413,7 +413,10 @@ class DeepOptimizer(object):
         if self.cfg['fine_tune']:
             # this assumes that a gqcnn was passed in that was initialized with weights from a model using GQCNN.load(), so all that has to
             # be done is to possibly reinitialize fc3/fc4/fc5
-            self.gqcnn.reinitialize_layers(self.cfg['reinit_fc3'], self.cfg['reinit_fc4'], self.cfg['reinit_fc5'])
+            reinit_pc1 = False
+            if 'reinit_pc1' in self.cfg.keys():
+                reinit_pc1 = self.cfg['reinit_pc1']
+            self.gqcnn.reinitialize_layers(self.cfg['reinit_fc3'], self.cfg['reinit_fc4'], self.cfg['reinit_fc5'], reinit_pc1=reinit_pc1)
         else:
             self.gqcnn.init_weights_gaussian()
 
