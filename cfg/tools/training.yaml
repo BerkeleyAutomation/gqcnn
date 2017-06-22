@@ -1,15 +1,15 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
 dataset_dir: /home/autolab/Public/data/dex-net/data/clutter/3dnet_kit_06_21_17_on_policy_iter_1/tensors
-output_dir: /mnt/hdd/dex-net/data/models/clutter
-model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
+output_dir: /home/autolab/Public/data/dex-net/data/models/clutter
+model_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
 num_epochs: 25     # number of epochs to train for
-eval_frequency: 1000  # how often to get validation error 
-save_frequency: 5000  # how often to save output
+eval_frequency: 500  # how often to get validation error 
+save_frequency: 1000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0

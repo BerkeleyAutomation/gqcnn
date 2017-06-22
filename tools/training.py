@@ -37,24 +37,24 @@ logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_t
 """
 
 # Prediction
-
-# start_time = time.time()
-# model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
-# gqcnn = GQCNN.load(model_dir)
-# output = gqcnn.predict(images, poses)
-# pred_p_success = output[:,1]
-# gqcnn.close_session()
-# logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
-
+"""
+start_time = time.time()
+model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
+gqcnn = GQCNN.load(model_dir)
+output = gqcnn.predict(images, poses)
+pred_p_success = output[:,1]
+gqcnn.close_session()
+logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
+"""
 
 # Analysis
-
-# start_time = time.time()
-# analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
-# analyzer = GQCNNAnalyzer(analysis_config)
-# analyzer.analyze()
-# logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
-
+"""
+start_time = time.time()
+analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
+analyzer = GQCNNAnalyzer(analysis_config)
+analyzer.analyze()
+logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
+"""
 
 # Fine-Tuning
 start_time = time.time()
