@@ -440,6 +440,12 @@ class DeepOptimizer(object):
 
         # setup weights using gqcnn
         if self.cfg['fine_tune']:
+            # check that the gqcnn has weights, re-initialize if not
+            try:
+                self.weights = self.gqcnn.get_weights()
+            except:
+                self.gqcnn.init_weights_gaussian()                
+
             # this assumes that a gqcnn was passed in that was initialized with weights from a model using GQCNN.load(), so all that has to
             # be done is to possibly reinitialize fc3/fc4/fc5
             reinit_pc1 = False
@@ -541,7 +547,7 @@ class DeepOptimizer(object):
         # update gqcnn pose_mean and pose_std according to data_mode
         if self.input_data_mode == InputDataMode.TF_IMAGE:
             # depth
-            if isinstance(self.pose_mean, numbers.Number):
+            if isinstance(self.pose_mean, numbers.Number) or self.pose_mean.shape[0] == 1:
                 self.gqcnn.update_pose_mean(self.pose_mean)
                 self.gqcnn.update_pose_std(self.pose_std)
             else:
