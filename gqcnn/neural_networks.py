@@ -523,6 +523,22 @@ class GQCNN(object):
         return self._im_width
 
     @property
+    def im_mean(self):
+        return self._im_mean
+
+    @property
+    def im_std(self):
+        return self._im_std
+
+    @property
+    def pose_mean(self):
+        return self._pose_mean
+
+    @property
+    def pose_std(self):
+        return self._pose_std
+
+    @property
     def num_channels(self):
         return self._num_channels
 

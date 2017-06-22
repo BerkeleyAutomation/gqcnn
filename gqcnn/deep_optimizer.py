@@ -7,6 +7,7 @@ import copy
 import cv2
 import json
 import logging
+import numbers
 import numpy as np
 import cPickle as pkl
 import os
@@ -219,7 +220,7 @@ class DeepOptimizer(object):
                 # run optimization
                 _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, pose_node = self.sess.run(
                         [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
-                
+
                 ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
                 softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 		        
@@ -494,12 +495,12 @@ class DeepOptimizer(object):
         if self.cfg['fine_tune']:
             out_mean_filename = os.path.join(self.experiment_dir, 'mean.npy')
             out_std_filename = os.path.join(self.experiment_dir, 'std.npy')
-            out_self.pose_mean_filename = os.path.join(self.experiment_dir, 'pose_mean.npy')
-            out_self.pose_std_filename = os.path.join(self.experiment_dir, 'pose_std.npy')
+            out_pose_mean_filename = os.path.join(self.experiment_dir, 'pose_mean.npy')
+            out_pose_std_filename = os.path.join(self.experiment_dir, 'pose_std.npy')
             np.save(out_mean_filename, self.data_mean)
             np.save(out_std_filename, self.data_std)
-            np.save(out_self.pose_mean_filename, self.pose_mean)
-            np.save(out_self.pose_std_filename, self.pose_std)
+            np.save(out_pose_mean_filename, self.pose_mean)
+            np.save(out_pose_std_filename, self.pose_std)
 
         # update gqcnn im mean & std
         self.gqcnn.update_im_mean(self.data_mean)
@@ -508,8 +509,12 @@ class DeepOptimizer(object):
         # update gqcnn pose_mean and pose_std according to data_mode
         if self.input_data_mode == InputDataMode.TF_IMAGE:
             # depth
-            self.gqcnn.update_pose_mean(self.pose_mean[2])
-            self.gqcnn.update_pose_std(self.pose_std[2])
+            if isinstance(self.pose_mean, numbers.Number):
+                self.gqcnn.update_pose_mean(self.pose_mean)
+                self.gqcnn.update_pose_std(self.pose_std)
+            else:
+                self.gqcnn.update_pose_mean(self.pose_mean[2])
+                self.gqcnn.update_pose_std(self.pose_std[2])
         elif self.input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             # depth, cx, cy
             self.gqcnn.update_pose_mean(np.concatenate([self.pose_mean[2:3], self.pose_mean[4:6]]))
@@ -582,6 +587,9 @@ class DeepOptimizer(object):
 
     def _compute_indices_object_wise(self):
         """ Compute train and validation indices based on an object-wise split"""
+
+        if self.obj_id_filenames is None:
+            raise ValueError('Cannot use object-wise split. No object labels! Check the dataset_dir')
 
         # get total number of training datapoints and set the decay_step
         num_datapoints = self.images_per_file * self.num_files
@@ -809,8 +817,10 @@ class DeepOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 or len(self.stable_pose_filenames) == 0:
+        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.stable_pose_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
+        if len(self.obj_id_filenames) == 0:
+            self.obj_id_filenames = None
 
         # subsample files
         self.num_files = len(self.im_filenames)
@@ -820,7 +830,8 @@ class DeepOptimizer(object):
         self.im_filenames = [self.im_filenames[k] for k in filename_indices]
         self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
         self.label_filenames = [self.label_filenames[k] for k in filename_indices]
-        self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
+        if self.obj_id_filenames is not None:
+            self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
         self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
     def _setup_output_dirs(self):
@@ -989,9 +1000,9 @@ class DeepOptimizer(object):
                     self.train_label_arr = self.train_label_arr.astype(self.numpy_dtype)
 
                 # enqueue training data batch
-                train_data[start_i:end_i, ...] = self.train_data_arr
-                train_poses[start_i:end_i,:] = self._read_pose_data(self.train_poses_arr, self.input_data_mode)
-                label_data[start_i:end_i] = self.train_label_arr
+                train_data[start_i:end_i, ...] = np.copy(self.train_data_arr)
+                train_poses[start_i:end_i,:] = self._read_pose_data(np.copy(self.train_poses_arr), self.input_data_mode)
+                label_data[start_i:end_i] = np.copy(self.train_label_arr)
 
                 del self.train_data_arr
                 del self.train_poses_arr
@@ -1005,8 +1016,8 @@ class DeepOptimizer(object):
             if not self.term_event.is_set():
                 try:
                     self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_data,
-                                                self.train_poses_batch: train_poses,
-                                                self.train_labels_batch: label_data})
+                                                              self.train_poses_batch: train_poses,
+                                                              self.train_labels_batch: label_data})
                 except:
                     pass
         del train_data

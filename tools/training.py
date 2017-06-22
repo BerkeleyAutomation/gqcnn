@@ -4,8 +4,9 @@ Author: Vishal Satish
 """
 from gqcnn import GQCNN, DeepOptimizer, GQCNNAnalyzer
 from autolab_core import YamlConfig
-import time
+import IPython
 import logging
+import time
 	
 #setup logger
 logging.getLogger().setLevel(logging.INFO)
@@ -26,13 +27,14 @@ def get_elapsed_time(time_in_seconds):
 ###Possible Use-Cases###
 
 # Training from Scratch
+"""
 start_time = time.time()
 gqcnn = GQCNN(gqcnn_config)
 deepOptimizer = DeepOptimizer(gqcnn, train_config)
 with gqcnn.get_tf_graph().as_default():
     deepOptimizer.optimize()
 logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
-
+"""
 
 # Prediction
 
@@ -55,12 +57,11 @@ logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_t
 
 
 # Fine-Tuning
-
-# start_time = time.time()
-# model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
-# gqcnn = GQCNN.load(model_dir)
-# deepOptimizer = DeepOptimizer(gqcnn, train_config)
-# with gqcnn._graph.as_default():
-    # deepOptimizer.optimize()
-# logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
+start_time = time.time()
+model_dir = train_config['model_dir']
+gqcnn = GQCNN.load(model_dir)
+deepOptimizer = DeepOptimizer(gqcnn, train_config)
+with gqcnn._graph.as_default():
+        deepOptimizer.optimize()
+logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
 
