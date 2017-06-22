@@ -90,7 +90,11 @@
               
             
             
-              <p class="caption"><span class="caption-text">Installation Guide</span></p>
+              <p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Installation Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../install/install.html">Dependencies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install/install.html#python-installation">Python Installation</a></li>
@@ -293,7 +297,7 @@ im_height, im_width, …</td>
 
 <dl class="method">
 <dt id="gqcnn.GQCNN.reinitialize_layers">
-<code class="descname">reinitialize_layers</code><span class="sig-paren">(</span><em>reinit_fc3</em>, <em>reinit_fc4</em>, <em>reinit_fc5</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.reinitialize_layers" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reinitialize_layers</code><span class="sig-paren">(</span><em>reinit_fc3</em>, <em>reinit_fc4</em>, <em>reinit_fc5</em>, <em>reinit_pc1=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.reinitialize_layers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Re-initializes final fully-connected layers for fine-tuning</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -303,6 +307,7 @@ im_height, im_width, …</td>
 <li><strong>reinit_fc3</strong> (<em>bool</em>) – whether to re-initialize fc3</li>
 <li><strong>reinit_fc4</strong> (<em>bool</em>) – whether to re-initialize fc4</li>
 <li><strong>reinit_fc5</strong> (<em>bool</em>) – whether to re-initialize fc5</li>
+<li><strong>reinit_pc1</strong> (<em>bool</em>) – whether to re-initiazlize pc1</li>
 </ul>
 </td>
 </tr>

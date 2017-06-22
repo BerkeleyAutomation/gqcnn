@@ -89,7 +89,11 @@
               
             
             
-              <p class="caption"><span class="caption-text">Installation Guide</span></p>
+              <p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="info/info.html">What are GQ-CNNs?</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Installation Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install/install.html">Dependencies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install/install.html#python-installation">Python Installation</a></li>
@@ -189,6 +193,7 @@
 <div class="genindex-jumpbox">
  <a href="#_"><strong>_</strong></a>
  | <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
@@ -204,7 +209,10 @@
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
+ | <a href="#X"><strong>X</strong></a>
+ | <a href="#Y"><strong>Y</strong></a>
  
 </div>
 <h2 id="_">_</h2>
@@ -220,6 +228,8 @@
         <li><a href="api/gqcnn.html#gqcnn.GQCNN.__init__">(gqcnn.GQCNN method)</a>
 </li>
         <li><a href="api/analysis.html#gqcnn.GQCNNAnalyzer.__init__">(gqcnn.GQCNNAnalyzer method)</a>
+</li>
+        <li><a href="api/visualization.html#gqcnn.GQCNNPredictionVisualizer.__init__">(gqcnn.GQCNNPredictionVisualizer method)</a>
 </li>
         <li><a href="api/analysis.html#gqcnn.RegressionResult.__init__">(gqcnn.RegressionResult method)</a>
 </li>
@@ -263,6 +273,14 @@
   </ul></td>
 </tr></table>
 
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.box">box() (gqcnn.Visualizer static method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -276,8 +294,14 @@
 </li>
       <li><a href="api/analysis.html#gqcnn.ClassificationResult">ClassificationResult (class in gqcnn)</a>
 </li>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.clf">clf() (gqcnn.Visualizer static method)</a>
+</li>
       <li><a href="api/gqcnn.html#gqcnn.GQCNN.close_session">close_session() (gqcnn.GQCNN method)</a>
 </li>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.colorbar">colorbar() (gqcnn.Visualizer static method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/policy.html#gqcnn.GraspingPolicy.config">config (gqcnn.GraspingPolicy attribute)</a>
 
       <ul>
@@ -286,8 +310,6 @@
         <li><a href="api/grasping.html#ImageGraspSampler.config">(ImageGraspSampler attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/analysis.html#gqcnn.ClassificationResult.confusion_matrix">confusion_matrix (gqcnn.ClassificationResult attribute)</a>
 </li>
       <li><a href="api/analysis.html#gqcnn.ConfusionMatrix">ConfusionMatrix (class in gqcnn)</a>
@@ -334,12 +356,14 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/grasping.html#gqcnn.Grasp2D.feature_vec">feature_vec (gqcnn.Grasp2D attribute)</a>
 </li>
-      <li><a href="api/gqcnn.html#gqcnn.GQCNN.filters">filters (gqcnn.GQCNN attribute)</a>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.figure">figure() (gqcnn.Visualizer static method)</a>
 </li>
-      <li><a href="api/analysis.html#gqcnn.ClassificationResult.fpr">fpr (gqcnn.ClassificationResult attribute)</a>
+      <li><a href="api/gqcnn.html#gqcnn.GQCNN.filters">filters (gqcnn.GQCNN attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/analysis.html#gqcnn.ClassificationResult.fpr">fpr (gqcnn.ClassificationResult attribute)</a>
+</li>
       <li><a href="api/grasping.html#gqcnn.Grasp2D.frame">frame (gqcnn.Grasp2D attribute)</a>
 </li>
       <li><a href="api/grasping.html#gqcnn.Grasp2D.from_feature_vec">from_feature_vec() (gqcnn.Grasp2D static method)</a>
@@ -368,11 +392,15 @@
 </li>
       <li><a href="api/gqcnn.html#gqcnn.GQCNN">GQCNN (class in gqcnn)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/policy.html#gqcnn.GraspingPolicy.gqcnn">gqcnn (gqcnn.GraspingPolicy attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/analysis.html#gqcnn.GQCNNAnalyzer">GQCNNAnalyzer (class in gqcnn)</a>
+</li>
+      <li><a href="api/visualization.html#gqcnn.GQCNNPredictionVisualizer">GQCNNPredictionVisualizer (class in gqcnn)</a>
+</li>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.grasp">grasp() (gqcnn.Visualizer static method)</a>
 </li>
       <li><a href="api/grasping.html#gqcnn.Grasp2D">Grasp2D (class in gqcnn)</a>
 </li>
@@ -400,9 +428,11 @@
 </li>
       <li><a href="api/grasping.html#gqcnn.ImageGraspSamplerFactory">ImageGraspSamplerFactory (class in gqcnn)</a>
 </li>
+      <li><a href="api/training.html#gqcnn.ImageMode">ImageMode (class in gqcnn)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/training.html#gqcnn.ImageMode">ImageMode (class in gqcnn)</a>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.imshow">imshow() (gqcnn.Visualizer static method)</a>
 </li>
       <li><a href="api/gqcnn.html#gqcnn.GQCNN.init_mean_and_std">init_mean_and_std() (gqcnn.GQCNN method)</a>
 </li>
@@ -484,14 +514,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/policy.html#gqcnn.ParallelJawGrasp">ParallelJawGrasp (class in gqcnn)</a>
 </li>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.plot">plot() (gqcnn.Visualizer static method)</a>
+</li>
       <li><a href="api/policy.html#gqcnn.Policy">Policy (class in gqcnn)</a>
 </li>
       <li><a href="api/grasping.html#gqcnn.Grasp2D.pose">pose() (gqcnn.Grasp2D method)</a>
 </li>
-      <li><a href="api/analysis.html#gqcnn.ClassificationResult.precision">precision (gqcnn.ClassificationResult attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/analysis.html#gqcnn.ClassificationResult.precision">precision (gqcnn.ClassificationResult attribute)</a>
+</li>
       <li><a href="api/analysis.html#gqcnn.ClassificationResult.precision_recall_curve">precision_recall_curve() (gqcnn.ClassificationResult method)</a>
 </li>
       <li><a href="api/gqcnn.html#gqcnn.GQCNN.predict">predict() (gqcnn.GQCNN method)</a>
@@ -534,6 +566,10 @@
         <li><a href="api/analysis.html#gqcnn.RegressionResult.save">(gqcnn.RegressionResult method)</a>
 </li>
       </ul></li>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.savefig">savefig() (gqcnn.Visualizer static method)</a>
+</li>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.scatter">scatter() (gqcnn.Visualizer static method)</a>
+</li>
       <li><a href="api/policy.html#RgbdImageState.segmask">segmask (RgbdImageState attribute)</a>
 </li>
   </ul></td>
@@ -544,6 +580,8 @@
         <li><a href="api/policy.html#gqcnn.CrossEntropyAntipodalGraspingPolicy.select">(gqcnn.CrossEntropyAntipodalGraspingPolicy method)</a>
 </li>
       </ul></li>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.show">show() (gqcnn.Visualizer static method)</a>
+</li>
       <li><a href="api/policy.html#AntipodalGraspingPolicy.state">state (AntipodalGraspingPolicy attribute)</a>
 
       <ul>
@@ -552,18 +590,22 @@
         <li><a href="api/policy.html#GraspingPolicy.state">(GraspingPolicy attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.subplot">subplot() (gqcnn.Visualizer static method)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/analysis.html#gqcnn.ClassificationResult.top_k_error_rate">top_k_error_rate() (gqcnn.ClassificationResult method)</a>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.title">title() (gqcnn.Visualizer static method)</a>
 </li>
-      <li><a href="api/analysis.html#gqcnn.ClassificationResult.top_k_predictions">top_k_predictions() (gqcnn.ClassificationResult method)</a>
+      <li><a href="api/analysis.html#gqcnn.ClassificationResult.top_k_error_rate">top_k_error_rate() (gqcnn.ClassificationResult method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/analysis.html#gqcnn.ClassificationResult.top_k_predictions">top_k_predictions() (gqcnn.ClassificationResult method)</a>
+</li>
       <li><a href="api/training.html#gqcnn.TrainingMode">TrainingMode (class in gqcnn)</a>
 </li>
       <li><a href="api/training.html#gqcnn.TrainStatsLogger">TrainStatsLogger (class in gqcnn)</a>
@@ -595,6 +637,18 @@
   </ul></td>
 </tr></table>
 
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/visualization.html#gqcnn.GQCNNPredictionVisualizer.visualize">visualize() (gqcnn.GQCNNPredictionVisualizer method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/visualization.html#gqcnn.Visualizer">Visualizer (class in gqcnn)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -603,6 +657,22 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/grasping.html#gqcnn.Grasp2D.width_px">width_px (gqcnn.Grasp2D attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="X">X</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.xlabel">xlabel() (gqcnn.Visualizer static method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Y">Y</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/visualization.html#gqcnn.Visualizer.ylabel">ylabel() (gqcnn.Visualizer static method)</a>
 </li>
   </ul></td>
 </tr></table>

@@ -36,7 +36,7 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="GQCNN 0.1.0 documentation" href="#"/>
-        <link rel="next" title="Dependencies" href="install/install.html"/> 
+        <link rel="next" title="What are GQ-CNNs?" href="info/info.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -89,7 +89,11 @@
               
             
             
-              <p class="caption"><span class="caption-text">Installation Guide</span></p>
+              <p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="info/info.html">What are GQ-CNNs?</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Installation Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install/install.html">Dependencies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install/install.html#python-installation">Python Installation</a></li>
@@ -187,11 +191,49 @@
             
   <div class="section" id="berkeley-autolab-s-gqcnn-package">
 <h1>Berkeley AUTOLAB’s GQCNN Package<a class="headerlink" href="#berkeley-autolab-s-gqcnn-package" title="Permalink to this headline">¶</a></h1>
-<p>The <cite>gqcnn</cite> package facilitates training Grasp Quality Neural Networks (GQ-CNNs) on datasets from the <a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dexterity Network</a> (Dex-Net) and using GQ-CNNs to plan parallel-jaw grasps from point clouds on a physical robot.
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>gqcnn</cite> package is a Python API for training and deploying <a class="reference external" href="info/info.html">Grasp Quality Convolutional Neural Networks (GQ-CNNs)</a> for grasp planning using training datasets from the <a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dexterity Network (Dex-Net)</a>, developed by the <a class="reference external" href="http://autolab.berkeley.edu/">Berkeley AUTOLAB</a> and introduced in the <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf">Dex-Net 2.0 paper</a>.</p>
+<p>See the github page for the source code: <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">https://github.com/BerkeleyAutomation/gqcnn</a>.</p>
+<a class="reference internal image-reference" href="_images/gqcnn.png"><img alt="_images/gqcnn.png" class="align-center" src="_images/gqcnn.png" style="width: 800.0px; height: 800.0px;" /></a>
+</div>
+<div class="section" id="goals">
+<h2>Goals<a class="headerlink" href="#goals" title="Permalink to this headline">¶</a></h2>
+<p>The goals of this project are to facilitate:</p>
+<ol class="arabic simple">
+<li><strong>Replicability</strong> of GQ-CNN training from the <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf">Dex-Net 2.0 paper</a>.</li>
+<li><strong>Research extensions</strong> on novel GQ-CNN architectures that have higher performance on Dex-Net 2.0 training datasets.</li>
+</ol>
+<p>Our longer-term goal is to encourage development of GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.</p>
+</div>
+<div class="section" id="disclaimer">
+<h2>Disclaimer<a class="headerlink" href="#disclaimer" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>gqcnn</cite> package currently supports only training of GQ-CNN on Dex-Net 2.0 datasets.
+We are working toward a grasp planning ROS service based on GQ-CNNs to work toward GQ-CNNs that work on other robot hardware setups.</p>
+<p>Please note that <strong>performance on current datasets is not indicative of performance on other hardware setups</strong> because our datasets are specific to:</p>
+<ol class="arabic simple">
+<li>An ABB YuMi parallel-jaw gripper due to collision geometry.</li>
+<li>A Primense Carmine 1.08 due to camera parameters.</li>
+<li>A camera positioned between 50-70cm above a table looking down due to image rendering parameters.</li>
+</ol>
+<p>We are currently researching how to generate datasets that can generalize across robots, cameras, and viewpoints.</p>
+</div>
+<div class="section" id="development">
+<h2>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h2>
+<p>The package is currently under active development and we hope to have a stable version with ROS package support by June 30, 2017.
 Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.</p>
 <p>Please raise all bugs, feature requests, and other issues under the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/issues">Github Issues</a>.
-For other questions or concerns, please contact Jeff Mahler (<a class="reference external" href="mailto:jmahler&#37;&#52;&#48;berkeley&#46;edu">jmahler<span>&#64;</span>berkeley<span>&#46;</span>edu</a>).</p>
+For other questions or concerns, please contact Jeff Mahler (<a class="reference external" href="mailto:jmahler&#37;&#52;&#48;berkeley&#46;edu">jmahler<span>&#64;</span>berkeley<span>&#46;</span>edu</a>) with the subject line starting with “gqcnn development: “</p>
+</div>
+<div class="section" id="academic-use">
+<h2>Academic Use<a class="headerlink" href="#academic-use" title="Permalink to this headline">¶</a></h2>
 <p>If you use the code, datasets, or models in a publication, please <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017.bib">cite the Dex-Net 2.0 paper</a>.</p>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="info/info.html">What are GQ-CNNs?</a></li>
+</ul>
+</div>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Installation Guide</span></p>
 <ul>
@@ -306,6 +348,7 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
 </ul>
 </div>
 </div>
+</div>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
@@ -325,7 +368,7 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="install/install.html" class="btn btn-neutral float-right" title="Dependencies" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="info/info.html" class="btn btn-neutral float-right" title="What are GQ-CNNs?" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>
