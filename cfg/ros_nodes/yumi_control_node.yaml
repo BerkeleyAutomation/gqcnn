@@ -1,3 +1,64 @@
+# sensor config
+sensor_cfg:
+    frame: primesense_overhead
+    auto_white_balance: 0
+    flip_images: 1
+    type: primesense_ros
+
+# inpaint
+inpaint_rescale_factor: 0.5
+
+# detector config
+detector:
+  foreground_mask_tolerance: 60
+  min_pt:
+    - 0.21
+    - -0.25
+    - 0.005
+
+  max_pt:
+    - 0.55
+    - 0.23
+    - 0.15
+
+  selection_policy: random
+  focus: 0
+
+  min_contour_area: 250.0
+  max_contour_area: 1000000.0
+  min_box_area: 250.0
+  max_box_area: 1000000.0
+  box_padding_px: 15
+
+  rescale_factor: 1.0
+  interpolation: bilinear
+  depth_grad_thresh: 10.0
+  contour_dist_thresh: 2.5
+
+  point_cloud_mask_only: 1
+
+  bounding_box_width: 200
+  bounding_box_height: 200
+
+  color_seg_num_clusters: 2
+  color_seg_rgb_weight: 1.0
+  color_seg_hsv_weight: 10.0
+  color_seg_dist_pctile: 5.0
+  color_seg_dist_thresh: 30.0
+  color_seg_min_bg_dist: 320.0
+
+  filter_dim: 1
+
+  pushable_image_right_thresh: 365.0
+
+  workspace:
+    crop_center_px:
+      - 190
+      - 310
+    crop_dim:
+      - 360
+      - 460
+
 # general experiment parameters		
 planner_type: gqcnn_2d
 trials_per_object: 5
@@ -211,7 +272,11 @@ vis:
   debug_registration: 0
   final_registration: 0
   k: 5
+  vis_detector_output: 1
+
 
 # debugging
 debug: 0
 robot_off: 0
+
+thresh: 1
