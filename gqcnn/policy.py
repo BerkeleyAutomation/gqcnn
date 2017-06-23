@@ -439,7 +439,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
 
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
-            return None
+            raise NoValidGraspsException()
 
         # form tensors
         image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
@@ -576,7 +576,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             num_grasps = len(grasps)
             if num_grasps == 0:
                 logging.warning('No valid grasps could be found')
-                return None
+                raise NoValidGraspsException()
 
             # form tensors
             image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
@@ -788,7 +788,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         num_grasps = len(grasps)
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
-            return None
+            raise NoValidGraspsException()
 
         # choose a grasp uniformly at random
         grasp_ind = np.random.choice(num_grasps, size=1)[0]
