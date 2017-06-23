@@ -5,4 +5,4 @@ sensor_msgs/CameraInfo camera_info
 BoundingBox bounding_box
 ---
 # response params
-GQGNNGrasp grasp
+GQCNNGrasp grasp
