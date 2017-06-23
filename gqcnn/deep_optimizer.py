@@ -587,7 +587,9 @@ class DeepOptimizer(object):
         self.mean_metric = np.mean(all_metrics)
         self.median_metric = np.median(all_metrics)
 
+        pct_pos_val_filename = os.path.join(self.experiment_dir, 'pct_pos_val.npy')
         pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
+        np.save(pct_pos_val_filename, np.array(pct_pos_val))
         logging.info('Percent positive in val set: ' + str(pct_pos_val))
 
     def _compute_indices_image_wise(self):

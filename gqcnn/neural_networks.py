@@ -6,6 +6,7 @@ Author: Jeff Mahler
 import copy
 import json
 import logging
+import numbers
 import numpy as np
 import os
 import sys
@@ -120,8 +121,13 @@ class GQCNN(object):
         # is dependent on the input data mode used to train the model
         if self._input_data_mode == InputDataMode.TF_IMAGE:
             # depth
-            self._pose_mean = self._pose_mean[2]
-            self._pose_std = self._pose_std[2]
+            if isinstance(self.pose_mean, numbers.Number) \
+               or len(self.pose_mean.shape) == 0 \
+               or self.pose_mean.shape[0] == 1:
+                self._pose_mean = self.pose_mean
+            else:
+                self._pose_mean = self._pose_mean[2]
+                self._pose_std = self._pose_std[2]
         elif self._input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             # depth, cx, cy
             self._pose_mean = np.concatenate([self._pose_mean[2:3], self._pose_mean[4:6]])
@@ -154,38 +160,38 @@ class GQCNN(object):
             self._weights = GQCnnWeights()
 
             # read in conv1 & conv2
-            self._weights.conv1_1W = tf.Variable(reader.get_tensor("conv1_1W"))
-            self._weights.conv1_1b = tf.Variable(reader.get_tensor("conv1_1b"))
-            self._weights.conv1_2W = tf.Variable(reader.get_tensor("conv1_2W"))
-            self._weights.conv1_2b = tf.Variable(reader.get_tensor("conv1_2b"))
-            self._weights.conv2_1W = tf.Variable(reader.get_tensor("conv2_1W"))
-            self._weights.conv2_1b = tf.Variable(reader.get_tensor("conv2_1b"))
-            self._weights.conv2_2W = tf.Variable(reader.get_tensor("conv2_2W"))
-            self._weights.conv2_2b = tf.Variable(reader.get_tensor("conv2_2b"))
+            self._weights.conv1_1W = tf.Variable(reader.get_tensor("conv1_1W"), name="conv1_1W")
+            self._weights.conv1_1b = tf.Variable(reader.get_tensor("conv1_1b"), name="conv1_1b")
+            self._weights.conv1_2W = tf.Variable(reader.get_tensor("conv1_2W"), name="conv1_2W")
+            self._weights.conv1_2b = tf.Variable(reader.get_tensor("conv1_2b"), name="conv1_2b")
+            self._weights.conv2_1W = tf.Variable(reader.get_tensor("conv2_1W"), name="conv2_1W")
+            self._weights.conv2_1b = tf.Variable(reader.get_tensor("conv2_1b"), name="conv2_1b")
+            self._weights.conv2_2W = tf.Variable(reader.get_tensor("conv2_2W"), name="conv2_2W")
+            self._weights.conv2_2b = tf.Variable(reader.get_tensor("conv2_2b"), name="conv2_2b")
 
             # if conv3 is to be used, read in conv3
             if self._use_conv3:
-                self._weights.conv3_1W = tf.Variable(reader.get_tensor("conv3_1W"))
-                self._weights.conv3_1b = tf.Variable(reader.get_tensor("conv3_1b"))
-                self._weights.conv3_2W = tf.Variable(reader.get_tensor("conv3_2W"))
-                self._weights.conv3_2b = tf.Variable(reader.get_tensor("conv3_2b"))
+                self._weights.conv3_1W = tf.Variable(reader.get_tensor("conv3_1W"), name="conv3_1W")
+                self._weights.conv3_1b = tf.Variable(reader.get_tensor("conv3_1b"), name="conv3_1b")
+                self._weights.conv3_2W = tf.Variable(reader.get_tensor("conv3_2W"), name="conv3_2W")
+                self._weights.conv3_2b = tf.Variable(reader.get_tensor("conv3_2b"), name="conv3_2b")
 
             # read in pc1
-            self._weights.pc1W = tf.Variable(reader.get_tensor("pc1W"))
-            self._weights.pc1b = tf.Variable(reader.get_tensor("pc1b"))
+            self._weights.pc1W = tf.Variable(reader.get_tensor("pc1W"), name="pc1W")
+            self._weights.pc1b = tf.Variable(reader.get_tensor("pc1b"), name="pc1b")
 
             # if pc2 is to be used, read in pc2
             if self._use_pc2:
-                self._weights.pc2W = tf.Variable(reader.get_tensor("pc2W"))
-                self._weights.pc2b = tf.Variable(reader.get_tensor("pc2b"))
+                self._weights.pc2W = tf.Variable(reader.get_tensor("pc2W"), name="pc2W")
+                self._weights.pc2b = tf.Variable(reader.get_tensor("pc2b"), name="pc2b")
 
-            self._weights.fc3W = tf.Variable(reader.get_tensor("fc3W"))
-            self._weights.fc3b = tf.Variable(reader.get_tensor("fc3b"))
-            self._weights.fc4W_im = tf.Variable(reader.get_tensor("fc4W_im"))
-            self._weights.fc4W_pose = tf.Variable(reader.get_tensor("fc4W_pose"))
-            self._weights.fc4b = tf.Variable(reader.get_tensor("fc4b"))
-            self._weights.fc5W = tf.Variable(reader.get_tensor("fc5W"))
-            self._weights.fc5b = tf.Variable(reader.get_tensor("fc5b"))
+            self._weights.fc3W = tf.Variable(reader.get_tensor("fc3W"), name="fc3W")
+            self._weights.fc3b = tf.Variable(reader.get_tensor("fc3b"), name="fc3b")
+            self._weights.fc4W_im = tf.Variable(reader.get_tensor("fc4W_im"), name="fc4W_im")
+            self._weights.fc4W_pose = tf.Variable(reader.get_tensor("fc4W_pose"), name="fc4W_pose")
+            self._weights.fc4b = tf.Variable(reader.get_tensor("fc4b"), name="fc4b")
+            self._weights.fc5W = tf.Variable(reader.get_tensor("fc5W"), name="fc5W")
+            self._weights.fc5b = tf.Variable(reader.get_tensor("fc5b"), name="fc5b")
 
     def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5, reinit_pc1=False):
         """ Re-initializes final fully-connected layers for fine-tuning 
@@ -211,17 +217,17 @@ class GQCNN(object):
 
             if reinit_fc3:
                 fc3_std = np.sqrt(2.0 / (self.fc3_in_size))
-                self._weights.fc3W = tf.Variable(tf.truncated_normal([self.fc3_in_size, self.fc3_out_size], stddev=fc3_std))
-                self._weights.fc3b = tf.Variable(tf.truncated_normal([self.fc3_out_size], stddev=fc3_std))  
+                self._weights.fc3W = tf.Variable(tf.truncated_normal([self.fc3_in_size, self.fc3_out_size], stddev=fc3_std), name='fc3W')
+                self._weights.fc3b = tf.Variable(tf.truncated_normal([self.fc3_out_size], stddev=fc3_std), name='fc3b')  
             if reinit_fc4:
                 fc4_std = np.sqrt(2.0 / (self.fc4_in_size))
-                self._weights.fc4W_im = tf.Variable(tf.truncated_normal([self.fc4_in_size, self.fc4_out_size], stddev=fc4_std))
-                self._weights.fc4W_pose = tf.Variable(tf.truncated_normal([self.fc4_pose_in_size, self.fc4_out_size], stddev=fc4_std))
-                self._weights.fc4b = tf.Variable(tf.truncated_normal([self.fc4_out_size], stddev=fc4_std))
+                self._weights.fc4W_im = tf.Variable(tf.truncated_normal([self.fc4_in_size, self.fc4_out_size], stddev=fc4_std), name='fc4W_im')
+                self._weights.fc4W_pose = tf.Variable(tf.truncated_normal([self.fc4_pose_in_size, self.fc4_out_size], stddev=fc4_std), name='fc4W_pose')
+                self._weights.fc4b = tf.Variable(tf.truncated_normal([self.fc4_out_size], stddev=fc4_std), name='fc4b')
             if reinit_fc5:
                 fc5_std = np.sqrt(2.0 / (self.fc5_in_size))
-                self._weights.fc5W = tf.Variable(tf.truncated_normal([self.fc5_in_size, self.fc5_out_size], stddev=fc5_std))
-                self._weights.fc5b = tf.Variable(tf.constant(0.0, shape=[self.fc5_out_size]))
+                self._weights.fc5W = tf.Variable(tf.truncated_normal([self.fc5_in_size, self.fc5_out_size], stddev=fc5_std), name='fc5W')
+                self._weights.fc5b = tf.Variable(tf.constant(0.0, shape=[self.fc5_out_size]), name='fc5b')
     
     def init_weights_gaussian(self):
         """ Initializes weights for network from scratch using Gaussian Distribution """
