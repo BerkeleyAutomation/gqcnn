@@ -13,6 +13,7 @@ The `gqcnn` package is a Python API for training and deploying `Grasp Quality Co
 Links
 -----
 * Source code: https://github.com/BerkeleyAutomation/gqcnn
+* Data: https://berkeley.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb
 * Dex-Net Website: https://berkeleyautomation.github.io/dex-net
 * UC Berkeley AUTOLAB: http://autolab.berkeley.edu
 
