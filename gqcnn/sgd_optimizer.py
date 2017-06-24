@@ -35,7 +35,7 @@ from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 
-class DeepOptimizer(object):
+class SGDOptimizer(object):
     """ Optimizer for gqcnn object """
 
     def __init__(self, gqcnn, config):

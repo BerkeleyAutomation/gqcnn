@@ -1,5 +1,5 @@
 from neural_networks import GQCNN
-from deep_optimizer import DeepOptimizer
+from sgd_optimizer import SGDOptimizer
 from gqcnn_analyzer import GQCNNAnalyzer
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
@@ -13,7 +13,7 @@ from policy import Policy, GraspingPolicy, AntipodalGraspingPolicy, CrossEntropy
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 
-           'DeepOptimizer',
+           'SGDOptimizer',
            'GQCNNAnalyzer',
            'ImageMode', 'TrainingMode', 'PreprocMode', 'InputDataMode',
            'TrainStatsLogger',

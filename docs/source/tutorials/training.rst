@@ -21,16 +21,16 @@ The sample datset is the Adv-Synth dataset from the `Dex-Net 2.0 RSS Paper`_, wh
 
 Imports
 +++++++
-To get started in Python, import the GQCNN, DeepOptimizer, GQCNNAnalyzer, and YamlConfig objects::
+To get started in Python, import the GQCNN, SGDOptimizer, GQCNNAnalyzer, and YamlConfig objects::
 
-	from gqcnn import GQCNN, DeepOptimizer, GQCNNAnalyzer
+	from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
 	from autolab_core import YamlConfig
 
 Configuration Files
 +++++++++++++++++++
 Scripts in the `gqcnn` package use YAML configuration files to specify parameters.
 This tutorial uses three configuration files which have templates in the `gqcnn` repo under the `cfg/tools`_ directory::
-        cfg/tools/training.yaml
+	cfg/tools/training.yaml
 	cfg/tools/analyze_gqcnn_performance.yaml
 	cfg/tools/gqcnn_prediction_visualizer.yaml
 
@@ -57,20 +57,20 @@ Read the parameters for the GQ-CNN by running::
 
 Training a Network from Scratch
 -------------------------------
-GQ-CNNs can be trained using a DeepOptimizer object, which facilitates dynamically loading and queueing datapoints from a dataset during training.
+GQ-CNNs can be trained using a SGDOptimizer object, which facilitates dynamically loading and queueing datapoints from a dataset during training.
 
 Let's start by training a GQ-CNN from scratch on the Adv-Synth dataset.
 There are just two steps:
 
-1) Initialize a GQCNN and a DeepOptimizer::
+1) Initialize a GQCNN and a SGDOptimizer::
 
 	gqcnn = GQCNN(gqcnn_config)
-	deepOptimizer = DeepOptimizer(gqcnn, train_config)
+	SGDOptimizer = SGDOptimizer(gqcnn, train_config)
 
 2) Train the GQCNN::
 	
 	with gqcnn.get_tf_graph().as_default():
-	     deepOptimizer.optimize()
+	     SGDOptimizer.optimize()
 
 You should see output on the terminal logging the minibatch error and occasionally the validation error.
 Training on the the Adv-Synth dataset for 25 epochs took 74 minutes on a GeForce GTX 980 GPU.
@@ -80,7 +80,7 @@ This prevents overwriting previous models when training multiple times.
 
 Dataset Splits
 ++++++++++++++
-The DeepOptimizer class randomly samples a new training-validation split every time a new model is trained.
+The SGDOptimizer class randomly samples a new training-validation split every time a new model is trained.
 This help to prevent overfitting.
 
 There are three options for choosing the dataset splits which can be configured by changing the `data_split_mode` parameter of the training configuration file:
@@ -112,11 +112,11 @@ The training and validation curves for the example should look something like th
 
 Tensorboard
 +++++++++++
-The DeepOptimizer supports Tensorboard to visualize various training parameters such as learning rate, validation error, and minibatch loss.
+The SGDOptimizer supports Tensorboard to visualize various training parameters such as learning rate, validation error, and minibatch loss.
 Tensorboard summaries are saved in the folder `tensorboard_summaries` under the model directory.
 For example, if the model directory where the model is being saved is `/home/user/Data/models/grasp_quality/model_ewlohgukns`, the summaries will be stored in `/home/user/Data/models/grasp_quality/model_ewlohgukns/tensorboard_summaries`. 
 
-The DeepOptimizer automatically starts a local server to feed these summaries.
+The SGDOptimizer automatically starts a local server to feed these summaries.
 Once you get the output message::
 
   Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries
@@ -182,9 +182,9 @@ Fine-tuning a network is similar to training one from scratch.
 The only difference is that we load a GQCNN from a model directory instead of creating one from scratch before optimizing::
 
 	gqcnn = GQCNN.load(model_dir)
-	deepOptimizer = DeepOptimizer(gqcnn, train_config)
+	SGDOptimizer = SGDOptimizer(gqcnn, train_config)
 	with gqcnn.get_tf_graph().as_default():
-	     deepOptimizer.optimize()
+	     SGDOptimizer.optimize()
 
 Visualizing GQCNN Predictions
 -----------------------------
