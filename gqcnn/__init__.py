@@ -1,9 +1,9 @@
 from neural_networks import GQCNN
 from sgd_optimizer import SGDOptimizer
-from gqcnn_analyzer import GQCNNAnalyzer
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 from learning_analysis import ClassificationResult, RegressionResult, ConfusionMatrix
+from gqcnn_analyzer import GQCNNAnalyzer
 
 from grasp import Grasp2D
 from visualizer import Visualizer
