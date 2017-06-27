@@ -1,11 +1,11 @@
 Training
 ==============
 
-DeepOptimizer
+SGDOptimizer
 ~~~~~~~~~~~~~
-A model for training GQCNN objects for grasp quality prediction.
+A tool for training GQ-CNN objects using Stochastic-Gradient-Descent.
 
-.. autoclass:: gqcnn.DeepOptimizer
+.. autoclass:: gqcnn.SGDOptimizer
 
 TrainStatsLogger
 ~~~~~~~~~~~~~~~~
