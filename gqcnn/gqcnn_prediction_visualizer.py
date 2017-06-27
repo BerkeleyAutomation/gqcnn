@@ -16,6 +16,8 @@ from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleIm
 from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
 from gqcnn import Visualizer as vis2d
 
+import IPython
+
 class GQCNNPredictionVisualizer(object):
     """ Class to visualize predictions of GQCNN on a specified dataset. Visualizes TP, TN, FP, FN. """
 
@@ -35,7 +37,7 @@ class GQCNNPredictionVisualizer(object):
     def visualize(self):
         """ Visualize predictions """
 
-        logging.info('Visualizing.')
+        logging.info('Visualizing ' + self.datapoint_type)
 
         # iterate through shuffled file indices
         for i in self.indices:
@@ -46,10 +48,10 @@ class GQCNNPredictionVisualizer(object):
             logging.info('Loading Image File: ' + im_filename + ' Pose File: ' + pose_filename + ' Label File: ' + label_filename)
 
             # load tensors from files
-            image_tensor = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
-            hand_poses_tensor = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
             metric_tensor = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
             label_tensor = 1 * (metric_tensor > self.metric_thresh)
+            image_tensor = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
+            hand_poses_tensor = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
 
             pose_tensor = self._read_pose_data(hand_poses_tensor, self.input_data_mode)
 
@@ -65,15 +67,20 @@ class GQCNNPredictionVisualizer(object):
             logging.info('Recall on files: %.3f' %(classification_result.recall))
             mispred_ind = classification_result.mispredicted_indices()
             correct_ind = classification_result.correct_indices()
-
+            # IPython.embed()
 
             if self.datapoint_type == 'true_positive' or self.datapoint_type == 'true_negative':
                 vis_ind = correct_ind
             else:
                 vis_ind = mispred_ind
-
+            num_visualized = 0
             # visualize
             for ind in vis_ind:
+                # limit the number of sampled datapoints displayed per object
+                num_visualized += 1
+                if num_visualized >= self.samples_per_object:
+                    break
+
                 # don't visualize the datapoints that we don't want
                 if self.datapoint_type == 'true_positive':
                     if classification_result.labels[ind] == 0:
@@ -82,10 +89,10 @@ class GQCNNPredictionVisualizer(object):
                     if classification_result.labels[ind] == 1:
                         continue
                 elif self.datapoint_type == 'false_positive':
-                    if classification_result.labels[ind] == 1:
+                    if classification_result.labels[ind] == 0:
                         continue
                 elif self.datapoint_type == 'false_negative':
-                    if classification_result.labels[ind] == 0:
+                    if classification_result.labels[ind] == 1:
                         continue
 
                 logging.info('Datapoint %d of files for %s' %(ind, im_filename))
@@ -153,9 +160,10 @@ class GQCNNPredictionVisualizer(object):
     	# dataset directory
     	self.data_dir = self.cfg['dataset_dir']
 
-    	# datatpoints params
+    	# visualization params
         self.display_image_type = self.cfg['display_image_type']
         self.font_size = self.cfg['font_size']
+        self.samples_per_object = self.cfg['samples_per_object']
 
         # analysis params
         self.datapoint_type = self.cfg['datapoint_type']
