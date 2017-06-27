@@ -380,12 +380,8 @@ class SGDOptimizer(object):
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-        elif input_data_mode == InputDataMode.RAW_IMAGE:
-            return pose_arr[:,:4]
-        elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
-            return pose_arr[:,:6]
         else:
-            raise ValueError('Input data mode %s not supported' %(input_data_mode))
+            raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))
 
     def _setup_summaries(self):
         """ Sets up placeholders for summary values and creates summary writer """
