@@ -547,7 +547,7 @@ class DeepOptimizer(object):
         # update gqcnn pose_mean and pose_std according to data_mode
         if self.input_data_mode == InputDataMode.TF_IMAGE:
             # depth
-            if isinstance(self.pose_mean, numbers.Number) or self.pose_mean.shape[0] == 1:
+            if isinstance(self.pose_mean, numbers.Number) or len(self.pose_mean.shape) == 0 or self.pose_mean.shape[0] == 1:
                 self.gqcnn.update_pose_mean(self.pose_mean)
                 self.gqcnn.update_pose_std(self.pose_std)
             else:
@@ -1009,9 +1009,6 @@ class DeepOptimizer(object):
                                           'arr_0'].astype(np.float32)
                 self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames[file_num]))[
                                           'arr_0'].astype(np.float32)
-
-                if self.pose_dim == 1 and self.train_poses_arr.shape[1] == 6:
-                    self.train_poses_arr = self.train_poses_arr[:, :4]
 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
