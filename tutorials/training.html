@@ -13,8 +13,6 @@
 
   
   
-  
-  
 
   
 
@@ -44,7 +42,6 @@
 
 <body class="wy-body-for-nav" role="document">
 
-   
   <div class="wy-grid-for-nav">
 
     
@@ -85,10 +82,7 @@
           
             
             
-              
-            
-            
-              <p class="caption"><span class="caption-text">Background</span></p>
+                <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -137,10 +131,8 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">GQCNN</a>
-        
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">GQCNN</a>
       </nav>
 
 
@@ -149,40 +141,23 @@
         <div class="rst-content">
           
 
-
-
-
-
-
-
-
-
-
-
-
+ 
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
-
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../index.html">Docs</a> &raquo;</li>
-        
-      <li>Training</li>
-    
-    
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Training</li>
       <li class="wy-breadcrumbs-aside">
         
-            
-            <a href="../_sources/tutorials/training.rst.txt" rel="nofollow"> View page source</a>
+          
+            <a href="../_sources/tutorials/training.txt" rel="nofollow"> View page source</a>
           
         
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -192,7 +167,7 @@
 <h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
 <p>This tutorial walks through the scripts <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/training.py">training.py</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py">visualize_predictions.py</a> which are included in the <cite>gqcnn</cite> repository under tools/.
 The corresponding configurations can be found in cfg/tools/.</p>
-<p>First we’ll train a network following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/training.py">training.py</a>.</p>
+<p>First we&#8217;ll train a network following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/training.py">training.py</a>.</p>
 <div class="section" id="setup">
 <h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="dataset">
@@ -240,7 +215,7 @@ For simplicity, in this example the GQ-CNN parameters (e.g. architecture) and le
 <div class="section" id="training-a-network-from-scratch">
 <h2>Training a Network from Scratch<a class="headerlink" href="#training-a-network-from-scratch" title="Permalink to this headline">¶</a></h2>
 <p>GQ-CNNs can be trained using a DeepOptimizer object, which facilitates dynamically loading and queueing datapoints from a dataset during training.</p>
-<p>Let’s start by training a GQ-CNN from scratch on the Adv-Synth dataset.
+<p>Let&#8217;s start by training a GQ-CNN from scratch on the Adv-Synth dataset.
 There are just two steps:</p>
 <ol class="arabic">
 <li><p class="first">Initialize a GQCNN and a DeepOptimizer:</p>
@@ -349,7 +324,7 @@ The only difference is that we load a GQCNN from a model directory instead of cr
 <p>The <cite>gqcnn</cite> package also has the ability to visualize predictions of a GQCNN on a dataset with the GQCNNPredictionVisualizer class.
 The GQCNNPredictionVisualizer can visualize false positives, false negatives, true positives, and true negatives on a dataset.
 This parameter can be toggled in the provided configuration file.</p>
-<p>Let’s visualize some predictions following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py">visualize_predictions.py</a>.</p>
+<p>Let&#8217;s visualize some predictions following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py">visualize_predictions.py</a>.</p>
 <p>To use the GQCNNPredictionVisualizer first import the class and any other useful imports:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autolab_core</span> <span class="k">import</span> <span class="n">YamlConfig</span>
 <span class="kn">from</span> <span class="nn">gqcnn</span> <span class="k">import</span> <span class="n">GQCNNPredictionVisualizer</span>
@@ -371,9 +346,6 @@ For the specified datapoints(FP/TP/FN/TN) a visualization window will show up sh
 </div>
 
 
-           </div>
-           <div class="articleComments">
-            
            </div>
           </div>
           <footer>
@@ -408,8 +380,7 @@ For the specified datapoints(FP/TP/FN/TN) a visualization window will show up sh
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
+            HAS_SOURCE:  true
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

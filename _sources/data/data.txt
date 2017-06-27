@@ -14,6 +14,10 @@ The available datasets include:
 3) **Adv-Phys:** The outcomes of executing 400 random antipodal grasps on the eight adversarial training objects with an ABB YuMi.
 
 More details can be found in `the Dex-Net 2.0 paper`_.
+The Dex-Net-Large dataset was generated from 3D models from the `KIT`_ and `3DNet`_ datasets.
+
+.. _KIT: https://h2t-projects.webarchiv.kit.edu/Projects/ObjectModelsWebUI/
+.. _3DNet: https://repo.acin.tuwien.ac.at/tmp/permanent/3d-net.org/
 
 Models
 ~~~~~~

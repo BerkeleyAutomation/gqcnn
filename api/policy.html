@@ -13,8 +13,6 @@
 
   
   
-  
-  
 
   
 
@@ -46,7 +44,6 @@
 
 <body class="wy-body-for-nav" role="document">
 
-   
   <div class="wy-grid-for-nav">
 
     
@@ -87,10 +84,7 @@
           
             
             
-              
-            
-            
-              <p class="caption"><span class="caption-text">Background</span></p>
+                <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -149,10 +143,8 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">GQCNN</a>
-        
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">GQCNN</a>
       </nav>
 
 
@@ -161,40 +153,23 @@
         <div class="rst-content">
           
 
-
-
-
-
-
-
-
-
-
-
-
+ 
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
-
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../index.html">Docs</a> &raquo;</li>
-        
-      <li>Policy</li>
-    
-    
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Policy</li>
       <li class="wy-breadcrumbs-aside">
         
-            
-            <a href="../_sources/api/policy.rst.txt" rel="nofollow"> View page source</a>
+          
+            <a href="../_sources/api/policy.txt" rel="nofollow"> View page source</a>
           
         
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -221,7 +196,7 @@
 </div>
 <div class="section" id="graspingpolicy">
 <h2>GraspingPolicy<a class="headerlink" href="#graspingpolicy" title="Permalink to this headline">¶</a></h2>
-<p>A policy for robust grasping with GQCNN’s</p>
+<p>A policy for robust grasping with GQCNN&#8217;s</p>
 <dl class="class">
 <dt id="gqcnn.GraspingPolicy">
 <em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">GraspingPolicy</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GraspingPolicy" title="Permalink to this definition">¶</a></dt>
@@ -230,7 +205,7 @@
 <dl class="attribute">
 <dt id="GraspingPolicy.config">
 <code class="descname">config</code><a class="headerlink" href="#GraspingPolicy.config" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – dictionary of parameters for the policy</p>
+<dd><p><em>dict</em> &#8211; dictionary of parameters for the policy</p>
 </dd></dl>
 
 <p class="rubric">Notes</p>
@@ -240,9 +215,9 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name" colspan="2">Other Parameters:</th></tr>
-<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first last simple">
-<li><strong>sampling</strong> (<em>dict</em>) – dictionary of parameters for grasp sampling, see gqcnn/image_grasp_sampler.py</li>
-<li><strong>gqcnn_model</strong> (<em>str</em>) – string path to a trained GQ-CNN model see gqcnn/neural_networks.py</li>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><ul class="first last simple">
+<li><strong>sampling</strong> (<em>dict</em>) &#8211; dictionary of parameters for grasp sampling, see gqcnn/image_grasp_sampler.py</li>
+<li><strong>gqcnn_model</strong> (<em>str</em>) &#8211; string path to a trained GQ-CNN model see gqcnn/neural_networks.py</li>
 </ul>
 </td>
 </tr>
@@ -279,13 +254,13 @@
 <dl class="attribute">
 <dt id="GraspingPolicy.grasps">
 <code class="descname">grasps</code><a class="headerlink" href="#GraspingPolicy.grasps" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code> – list of image grassps to convert</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code> &#8211; list of image grassps to convert</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="GraspingPolicy.state">
 <code class="descname">state</code><a class="headerlink" href="#GraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> – RGB-D image to plan grasps on</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> &#8211; RGB-D image to plan grasps on</p>
 </dd></dl>
 
 <table class="docutils field-list" frame="void" rules="none">
@@ -293,8 +268,8 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
-<li><strong>image_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) – 4D Tensor of image to be predicted</li>
-<li><strong>pose_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) – 2D Tensor of depth values</li>
+<li><strong>image_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) &#8211; 4D Tensor of image to be predicted</li>
+<li><strong>pose_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) &#8211; 2D Tensor of depth values</li>
 </ul>
 </td>
 </tr>
@@ -307,7 +282,7 @@
 </div>
 <div class="section" id="antipodalgraspingpolicy">
 <h2>AntipodalGraspingPolicy<a class="headerlink" href="#antipodalgraspingpolicy" title="Permalink to this headline">¶</a></h2>
-<p>A policy for robust grasping with GQCNN’s using sampling of
+<p>A policy for robust grasping with GQCNN&#8217;s using sampling of
 antipodal grasp candidates from an image space and ranking using a
 GQCNN instance.</p>
 <dl class="class">
@@ -324,10 +299,10 @@ and returns the grasp with the highest probability of success.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name" colspan="2">Other Parameters:</th></tr>
-<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first last simple">
-<li><strong>num_grasp_samples</strong> (<em>int</em>) – number of grasps to sample</li>
-<li><strong>gripper_width</strong> (<em>float, optional</em>) – width of the gripper in meters</li>
-<li><strong>gripper_name</strong> (<em>str, optional</em>) – name of the gripper</li>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><ul class="first last simple">
+<li><strong>num_grasp_samples</strong> (<em>int</em>) &#8211; number of grasps to sample</li>
+<li><strong>gripper_width</strong> (<em>float, optional</em>) &#8211; width of the gripper in meters</li>
+<li><strong>gripper_name</strong> (<em>str, optional</em>) &#8211; name of the gripper</li>
 </ul>
 </td>
 </tr>
@@ -348,7 +323,7 @@ the given RGB-D image.</p>
 <dl class="attribute">
 <dt id="AntipodalGraspingPolicy.state">
 <code class="descname">state</code><a class="headerlink" href="#AntipodalGraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> – image to plan grasps on</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> &#8211; image to plan grasps on</p>
 </dd></dl>
 
 <table class="docutils field-list" frame="void" rules="none">
@@ -368,7 +343,7 @@ the given RGB-D image.</p>
 </div>
 <div class="section" id="crossentropyantipodalgraspingpolicy">
 <h2>CrossEntropyAntipodalGraspingPolicy<a class="headerlink" href="#crossentropyantipodalgraspingpolicy" title="Permalink to this headline">¶</a></h2>
-<p>A policy for robust grasping with GQCNN’s using antipodal point sampling and
+<p>A policy for robust grasping with GQCNN&#8217;s using antipodal point sampling and
 a cross-entropy method.</p>
 <dl class="class">
 <dt id="gqcnn.CrossEntropyAntipodalGraspingPolicy">
@@ -389,16 +364,16 @@ cross entropy method:
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name" colspan="2">Other Parameters:</th></tr>
-<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first last simple">
-<li><strong>num_seed_samples</strong> (<em>int</em>) – number of candidate to sample in the initial set</li>
-<li><strong>num_gmm_samples</strong> (<em>int</em>) – number of candidates to sample on each resampling from the GMMs</li>
-<li><strong>num_iters</strong> (<em>int</em>) – number of sample-and-refit iterations of CEM</li>
-<li><strong>gmm_refit_p</strong> (<em>float</em>) – top p-% of grasps used for refitting</li>
-<li><strong>gmm_component_frac</strong> (<em>float</em>) – percentage of the elite set size used to determine number of GMM components</li>
-<li><strong>gmm_reg_covar</strong> (<em>float</em>) – regularization parameters for GMM covariance matrix, enforces diversity of fitted distributions</li>
-<li><strong>deterministic</strong> (<em>bool, optional</em>) – whether to set the random seed to enforce deterministic behavior</li>
-<li><strong>gripper_width</strong> (<em>float, optional</em>) – width of the gripper in meters</li>
-<li><strong>gripper_name</strong> (<em>str, optional</em>) – name of the gripper</li>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><ul class="first last simple">
+<li><strong>num_seed_samples</strong> (<em>int</em>) &#8211; number of candidate to sample in the initial set</li>
+<li><strong>num_gmm_samples</strong> (<em>int</em>) &#8211; number of candidates to sample on each resampling from the GMMs</li>
+<li><strong>num_iters</strong> (<em>int</em>) &#8211; number of sample-and-refit iterations of CEM</li>
+<li><strong>gmm_refit_p</strong> (<em>float</em>) &#8211; top p-% of grasps used for refitting</li>
+<li><strong>gmm_component_frac</strong> (<em>float</em>) &#8211; percentage of the elite set size used to determine number of GMM components</li>
+<li><strong>gmm_reg_covar</strong> (<em>float</em>) &#8211; regularization parameters for GMM covariance matrix, enforces diversity of fitted distributions</li>
+<li><strong>deterministic</strong> (<em>bool, optional</em>) &#8211; whether to set the random seed to enforce deterministic behavior</li>
+<li><strong>gripper_width</strong> (<em>float, optional</em>) &#8211; width of the gripper in meters</li>
+<li><strong>gripper_name</strong> (<em>str, optional</em>) &#8211; name of the gripper</li>
 </ul>
 </td>
 </tr>
@@ -419,7 +394,7 @@ the given RGB-D image.</p>
 <dl class="attribute">
 <dt id="CrossEntropyAntipodalGraspingPolicy.state">
 <code class="descname">state</code><a class="headerlink" href="#CrossEntropyAntipodalGraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> – image to plan grasps on</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> &#8211; image to plan grasps on</p>
 </dd></dl>
 
 <table class="docutils field-list" frame="void" rules="none">
@@ -448,25 +423,25 @@ the given RGB-D image.</p>
 <dl class="attribute">
 <dt id="RgbdImageState.rgbd_im">
 <code class="descname">rgbd_im</code><a class="headerlink" href="#RgbdImageState.rgbd_im" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.RgbdImage</span></code> – an RGB-D image to plan grasps on</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.RgbdImage</span></code> &#8211; an RGB-D image to plan grasps on</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="RgbdImageState.camera_intr">
 <code class="descname">camera_intr</code><a class="headerlink" href="#RgbdImageState.camera_intr" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code> – intrinsics of the RGB-D camera</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code> &#8211; intrinsics of the RGB-D camera</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="RgbdImageState.segmask">
 <code class="descname">segmask</code><a class="headerlink" href="#RgbdImageState.segmask" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.BinaryImage</span></code> – segmentation mask for the binary image</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.BinaryImage</span></code> &#8211; segmentation mask for the binary image</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="RgbdImageState.full_observed">
 <code class="descname">full_observed</code><a class="headerlink" href="#RgbdImageState.full_observed" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">object</span></code> – representation of the fully observed state</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">object</span></code> &#8211; representation of the fully observed state</p>
 </dd></dl>
 
 </dd></dl>
@@ -509,18 +484,15 @@ image data.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="training.html" class="btn btn-neutral float-right" title="Training" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="training.html" class="btn btn-neutral float-right" title="Training" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="grasping.html" class="btn btn-neutral" title="Grasping" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="grasping.html" class="btn btn-neutral" title="Grasping" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -554,8 +526,7 @@ image data.</p>
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
+            HAS_SOURCE:  true
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

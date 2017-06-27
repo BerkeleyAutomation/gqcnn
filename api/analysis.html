@@ -13,8 +13,6 @@
 
   
   
-  
-  
 
   
 
@@ -46,7 +44,6 @@
 
 <body class="wy-body-for-nav" role="document">
 
-   
   <div class="wy-grid-for-nav">
 
     
@@ -87,10 +84,7 @@
           
             
             
-              
-            
-            
-              <p class="caption"><span class="caption-text">Background</span></p>
+                <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -145,10 +139,8 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">GQCNN</a>
-        
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">GQCNN</a>
       </nav>
 
 
@@ -157,40 +149,23 @@
         <div class="rst-content">
           
 
-
-
-
-
-
-
-
-
-
-
-
+ 
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
-
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../index.html">Docs</a> &raquo;</li>
-        
-      <li>Analysis</li>
-    
-    
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Analysis</li>
       <li class="wy-breadcrumbs-aside">
         
-            
-            <a href="../_sources/api/analysis.rst.txt" rel="nofollow"> View page source</a>
+          
+            <a href="../_sources/api/analysis.txt" rel="nofollow"> View page source</a>
           
         
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -214,7 +189,7 @@ such as Training Precision-Recall, Training ROC, Validation Precision-Recall, Va
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>dict</em>) – dictionary of configuration parameters</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>dict</em>) &#8211; dictionary of configuration parameters</td>
 </tr>
 </tbody>
 </table>
@@ -244,7 +219,7 @@ such as Training Precision-Recall, Training ROC, Validation Precision-Recall, Va
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_categories</strong> (<em>int</em>) – number of prediction categories</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_categories</strong> (<em>int</em>) &#8211; number of prediction categories</td>
 </tr>
 </tbody>
 </table>
@@ -259,8 +234,8 @@ such as Training Precision-Recall, Training ROC, Validation Precision-Recall, Va
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>predictions</strong> (<em>obj: list</em>) – predictions to put in the matrix</li>
-<li><strong>labels</strong> (<em>obj: list</em>) – labels to put in the matrix</li>
+<li><strong>predictions</strong> (<em>obj: list</em>) &#8211; predictions to put in the matrix</li>
+<li><strong>labels</strong> (<em>obj: list</em>) &#8211; labels to put in the matrix</li>
 </ul>
 </td>
 </tr>
@@ -287,8 +262,8 @@ such as Training Precision-Recall, Training ROC, Validation Precision-Recall, Va
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>predictions_list</strong> (<em>obj: list</em>) – list of predictions</li>
-<li><strong>labels_list</strong> (<em>obj: list</em>) – list of labels</li>
+<li><strong>predictions_list</strong> (<em>obj: list</em>) &#8211; list of predictions</li>
+<li><strong>labels_list</strong> (<em>obj: list</em>) &#8211; list of labels</li>
 </ul>
 </td>
 </tr>
@@ -337,7 +312,7 @@ specified by filename</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>obj: str</em>) – the directory to which to store the predictions and labels</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>obj: str</em>) &#8211; the directory to which to store the predictions and labels</td>
 </tr>
 </tbody>
 </table>
@@ -352,7 +327,7 @@ filename into a RegressionResult</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>obj: str</em>) – the directory from which to load the predictions and labels</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>obj: str</em>) &#8211; the directory from which to load the predictions and labels</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a RegressionResult object containing the predictions and labels</td>
 </tr>
@@ -381,8 +356,8 @@ filename into a RegressionResult</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>pred_probs_list</strong> (<em>obj: list</em>) – list of predicted probabilities</li>
-<li><strong>labels_list</strong> (<em>obj: list</em>) – list of labels corresponding to predicted probabilites</li>
+<li><strong>pred_probs_list</strong> (<em>obj: list</em>) &#8211; list of predicted probabilities</li>
+<li><strong>labels_list</strong> (<em>obj: list</em>) &#8211; list of labels corresponding to predicted probabilites</li>
 </ul>
 </td>
 </tr>
@@ -414,7 +389,7 @@ filename into a RegressionResult</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>k</strong> (<em>int</em>) – number of error rates to get</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>k</strong> (<em>int</em>) &#8211; number of error rates to get</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">ndarray of top k error rates</td>
 </tr>
@@ -560,7 +535,7 @@ filename into a RegressionResult</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>k</strong> (<em>int</em>) – number of predictions to get</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>k</strong> (<em>int</em>) &#8211; number of predictions to get</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">ndarray of top k predictions rates</td>
 </tr>
@@ -611,8 +586,8 @@ filename into a RegressionResult</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
-<li><em>obj: ndarray</em> – ndarray of predicted probabilities</li>
-<li><em>obj: ndarray</em> – ndarray of labels</li>
+<li><em>obj: ndarray</em> &#8211; ndarray of predicted probabilities</li>
+<li><em>obj: ndarray</em> &#8211; ndarray of labels</li>
 </ul>
 </td>
 </tr>
@@ -629,8 +604,8 @@ filename into a RegressionResult</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
-<li><em>obj: ndarray</em> – ndarray of predicted probabilities</li>
-<li><em>obj: ndarray</em> – ndarray of labels</li>
+<li><em>obj: ndarray</em> &#8211; ndarray of predicted probabilities</li>
+<li><em>obj: ndarray</em> &#8211; ndarray of labels</li>
 </ul>
 </td>
 </tr>
@@ -640,7 +615,7 @@ filename into a RegressionResult</p>
 
 <dl class="method">
 <dt id="gqcnn.ClassificationResult.precision_recall_curve">
-<code class="descname">precision_recall_curve</code><span class="sig-paren">(</span><em>plot=False</em>, <em>line_width=2</em>, <em>font_size=15</em>, <em>color=’b’</em>, <em>style=’-‘</em>, <em>label=”</em>, <em>marker=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.ClassificationResult.precision_recall_curve" title="Permalink to this definition">¶</a></dt>
+<code class="descname">precision_recall_curve</code><span class="sig-paren">(</span><em>plot=False</em>, <em>line_width=2</em>, <em>font_size=15</em>, <em>color='b'</em>, <em>style='-'</em>, <em>label=''</em>, <em>marker=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.ClassificationResult.precision_recall_curve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates precision recall curve for the predictions and labels in this ClassificationResult. Optionally plots the
 curve if the plot flag is on</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -648,20 +623,20 @@ curve if the plot flag is on</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>plot</strong> (<em>boolean</em>) – whether or not to plot the curve</li>
-<li><strong>line_width</strong> (<em>float</em>) – line width to use if plotting</li>
-<li><strong>font_size</strong> (<em>int</em>) – font size to use if plotting</li>
-<li><strong>color</strong> (<em>obj: str</em>) – color to use if plotting</li>
-<li><strong>style</strong> (<em>obj: str</em>) – style to use if plotting</li>
-<li><strong>label</strong> (<em>obj: str</em>) – label to use if plotting</li>
-<li><strong>marker</strong> (<em>obj: str</em>) – valid marker style to use if plotting</li>
+<li><strong>plot</strong> (<em>boolean</em>) &#8211; whether or not to plot the curve</li>
+<li><strong>line_width</strong> (<em>float</em>) &#8211; line width to use if plotting</li>
+<li><strong>font_size</strong> (<em>int</em>) &#8211; font size to use if plotting</li>
+<li><strong>color</strong> (<em>obj: str</em>) &#8211; color to use if plotting</li>
+<li><strong>style</strong> (<em>obj: str</em>) &#8211; style to use if plotting</li>
+<li><strong>label</strong> (<em>obj: str</em>) &#8211; label to use if plotting</li>
+<li><strong>marker</strong> (<em>obj: str</em>) &#8211; valid marker style to use if plotting</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
-<li><strong>precision</strong> (<em>obj: ndarray</em>) – ndarray of precision values</li>
-<li><strong>recall</strong> (<em>obj: ndarray</em>) – ndarray of recall values</li>
-<li><strong>thresholds</strong> (<em>obj: ndarray</em>) – ndarray of thresholds</li>
+<li><strong>precision</strong> (<em>obj: ndarray</em>) &#8211; ndarray of precision values</li>
+<li><strong>recall</strong> (<em>obj: ndarray</em>) &#8211; ndarray of recall values</li>
+<li><strong>thresholds</strong> (<em>obj: ndarray</em>) &#8211; ndarray of thresholds</li>
 </ul>
 </p>
 </td>
@@ -672,7 +647,7 @@ curve if the plot flag is on</p>
 
 <dl class="method">
 <dt id="gqcnn.ClassificationResult.roc_curve">
-<code class="descname">roc_curve</code><span class="sig-paren">(</span><em>plot=False</em>, <em>line_width=2</em>, <em>font_size=15</em>, <em>color=’b’</em>, <em>style=’-‘</em>, <em>label=”</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.ClassificationResult.roc_curve" title="Permalink to this definition">¶</a></dt>
+<code class="descname">roc_curve</code><span class="sig-paren">(</span><em>plot=False</em>, <em>line_width=2</em>, <em>font_size=15</em>, <em>color='b'</em>, <em>style='-'</em>, <em>label=''</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.ClassificationResult.roc_curve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates receiver operating characteristic curve for the predictions and labels in this ClassificationResult. Optionally plots
 the curve if the plot flag is on</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -680,19 +655,19 @@ the curve if the plot flag is on</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>plot</strong> (<em>boolean</em>) – whether or not to plot the curve</li>
-<li><strong>line_width</strong> (<em>float</em>) – line width to use if plotting</li>
-<li><strong>font_size</strong> (<em>int</em>) – font size to use if plotting</li>
-<li><strong>color</strong> (<em>obj: str</em>) – color to use if plotting</li>
-<li><strong>style</strong> (<em>obj: str</em>) – style to use if plotting</li>
-<li><strong>label</strong> (<em>obj: str</em>) – label to use if plotting</li>
+<li><strong>plot</strong> (<em>boolean</em>) &#8211; whether or not to plot the curve</li>
+<li><strong>line_width</strong> (<em>float</em>) &#8211; line width to use if plotting</li>
+<li><strong>font_size</strong> (<em>int</em>) &#8211; font size to use if plotting</li>
+<li><strong>color</strong> (<em>obj: str</em>) &#8211; color to use if plotting</li>
+<li><strong>style</strong> (<em>obj: str</em>) &#8211; style to use if plotting</li>
+<li><strong>label</strong> (<em>obj: str</em>) &#8211; label to use if plotting</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
-<li><strong>fpr</strong> (<em>obj: ndarray</em>) – false positive rates</li>
-<li><strong>tpr</strong> (<em>obj: ndarray</em>) – true positive rates</li>
-<li><strong>thresholds</strong> (<em>obj: ndarray</em>) – thresholds</li>
+<li><strong>fpr</strong> (<em>obj: ndarray</em>) &#8211; false positive rates</li>
+<li><strong>tpr</strong> (<em>obj: ndarray</em>) &#8211; true positive rates</li>
+<li><strong>thresholds</strong> (<em>obj: ndarray</em>) &#8211; thresholds</li>
 </ul>
 </p>
 </td>
@@ -742,7 +717,7 @@ specified by filename</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>obj: str</em>) – the directory to which to store the predictions and labels</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>obj: str</em>) &#8211; the directory to which to store the predictions and labels</td>
 </tr>
 </tbody>
 </table>
@@ -757,7 +732,7 @@ filename into a ClassificationResult</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>obj: str</em>) – the directory from which to load the predictions and labels</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>obj: str</em>) &#8211; the directory from which to load the predictions and labels</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a ClassificationResult object containing the predictions and labels</td>
 </tr>
@@ -774,18 +749,15 @@ filename into a ClassificationResult</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="gqcnn.html" class="btn btn-neutral float-right" title="GQCNN" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="gqcnn.html" class="btn btn-neutral float-right" title="GQCNN" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../tutorials/tutorial.html" class="btn btn-neutral" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../tutorials/tutorial.html" class="btn btn-neutral" title="Overview" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -819,8 +791,7 @@ filename into a ClassificationResult</p>
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
+            HAS_SOURCE:  true
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
