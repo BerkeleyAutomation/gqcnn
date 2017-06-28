@@ -30,9 +30,10 @@ Configuration Files
 +++++++++++++++++++
 Scripts in the `gqcnn` package use YAML configuration files to specify parameters.
 This tutorial uses three configuration files which have templates in the `gqcnn` repo under the `cfg/tools`_ directory::
-	cfg/tools/training.yaml
-	cfg/tools/analyze_gqcnn_performance.yaml
-	cfg/tools/gqcnn_prediction_visualizer.yaml
+
+       cfg/tools/training.yaml
+       cfg/tools/analyze_gqcnn_performance.yaml 
+       cfg/tools/gqcnn_prediction_visualizer.yaml
 
 .. _`cfg/tools`: https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/cfg/tools/
 
