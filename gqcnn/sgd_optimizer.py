@@ -994,6 +994,10 @@ class SGDOptimizer(object):
                 num_remaining = self.train_batch_size - num_queued
 
                 # gen file index uniformly at random
+                if len(self.im_filenames) == 0:
+                    # if the list is being sorted asynchrynously then pass
+                    pass 
+                      
                 file_num = np.random.choice(len(self.im_filenames), size=1)[0]
                 train_data_filename = self.im_filenames[file_num]
 
