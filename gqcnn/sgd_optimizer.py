@@ -868,6 +868,9 @@ class SGDOptimizer(object):
             self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
         self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
+        # create copy of image filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
+        self.im_filenames_copy = self.im_filenames[:]
+         
     def _setup_output_dirs(self):
         """ Setup output directories """
 
@@ -994,12 +997,8 @@ class SGDOptimizer(object):
                 num_remaining = self.train_batch_size - num_queued
 
                 # gen file index uniformly at random
-                if len(self.im_filenames) == 0:
-                    # if the list is being sorted asynchrynously then pass
-                    pass 
-                      
-                file_num = np.random.choice(len(self.im_filenames), size=1)[0]
-                train_data_filename = self.im_filenames[file_num]
+                file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
+                train_data_filename = self.im_filenames_copy[file_num]
 
                 self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
                                          'arr_0'].astype(np.float32)
