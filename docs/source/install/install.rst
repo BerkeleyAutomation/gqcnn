@@ -44,7 +44,7 @@ If you have intentions of using GQ-CNNs for grasp planning on a physical robot, 
 
 The `gqcnn` package is known to work for Python 2.7 and has not been tested for Python 3.
 
-.. _install as a ROS package: https://berkeleyautomation.github.io/gqcnn/nstall/install.html#ros-installation
+.. _install as a ROS package: https://berkeleyautomation.github.io/gqcnn/install/install.html#ros-installation
 
 1. Clone the repository
 """""""""""""""""""""""
