@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /home/autolab/Public/data/dex-net/data/clutter/3dnet_kit_06_11_17_random/tensors
+dataset_dir: /home/autolab/Public/data/dex-net/data/clutter/3dnet_kit_06_22_17_on_policy_iter_2_aggregated/tensors
 output_dir: /home/autolab/Public/data/dex-net/data/models/clutter
 model_dir: /home/autolab/Public/data/dex-net/data/models/clutter/gqcnn_dexnet_large_clutter_iter_1
 
@@ -25,14 +25,14 @@ eval_total_train_error: 0
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.01
-decay_step_multiplier: 2.5   # number of times to go through training datapoints before stepping down decay rate
+base_lr: 0.001
+decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
 
-fine_tune: 0
-update_fc_only: 0
+fine_tune: 1
+update_fc_only: 1
 update_conv0_only: 0
 reinit_pc1: 0
 reinit_fc3: 0
@@ -91,7 +91,7 @@ background_max_depth: 0.65
 
 drop_fc3: 0
 fc3_drop_rate: 0.5
-drop_fc4: 0
+drop_fc4: 1
 fc4_drop_rate: 0.5
 
 # debugging params
@@ -114,28 +114,28 @@ gqcnn_config:
   architecture:
     conv1_1:
       filt_dim: 7
-      num_filt: 32
+      num_filt: 64
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv1_2:
       filt_dim: 5
-      num_filt: 32
+      num_filt: 64
       pool_size: 2
       pool_stride: 2
       norm: 1
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 32
+      num_filt: 64
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 32
+      num_filt: 64
       pool_size: 1
       pool_stride: 1
       norm: 1
@@ -145,9 +145,9 @@ gqcnn_config:
     pc2:
       out_size: 0
     fc3:
-      out_size: 512
+      out_size: 1024
     fc4:
-      out_size: 512
+      out_size: 1024
     fc5:
       out_size: 2
 

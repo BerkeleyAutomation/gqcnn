@@ -27,12 +27,14 @@ def get_elapsed_time(time_in_seconds):
 ###Possible Use-Cases###
 
 # Training from Scratch
+"""
 start_time = time.time()
 gqcnn = GQCNN(gqcnn_config)
 deepOptimizer = DeepOptimizer(gqcnn, train_config)
 with gqcnn.get_tf_graph().as_default():
     deepOptimizer.optimize()
 logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
+"""
 
 # Prediction
 """
@@ -55,7 +57,6 @@ logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_t
 """
 
 # Fine-Tuning
-"""
 start_time = time.time()
 model_dir = train_config['model_dir']
 gqcnn = GQCNN.load(model_dir)
@@ -63,4 +64,4 @@ deepOptimizer = DeepOptimizer(gqcnn, train_config)
 with gqcnn._graph.as_default():
         deepOptimizer.optimize()
 logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
-"""
+
