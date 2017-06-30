@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -42,6 +44,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -82,7 +85,10 @@
           
             
             
-                <p class="caption"><span class="caption-text">Background</span></p>
+              
+            
+            
+              <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -131,8 +137,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">GQCNN</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
       </nav>
 
 
@@ -141,23 +149,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-    <li>Training</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Training</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/tutorials/training.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/tutorials/training.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -165,9 +190,9 @@
             
   <div class="section" id="training">
 <h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
-<p>This tutorial walks through the scripts <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/training.py">training.py</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py">visualize_predictions.py</a> which are included in the <cite>gqcnn</cite> repository under tools/.
+<p>This tutorial walks through the scripts <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/training.py">training.py</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/visualize_predictions.py">visualize_predictions.py</a> which are included in the <cite>gqcnn</cite> repository under tools/.
 The corresponding configurations can be found in cfg/tools/.</p>
-<p>First we&#8217;ll train a network following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/training.py">training.py</a>.</p>
+<p>First we’ll train a network following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/training.py">training.py</a>.</p>
 <div class="section" id="setup">
 <h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="dataset">
@@ -177,8 +202,8 @@ The sample datset is the Adv-Synth dataset from the <a class="reference external
 </div>
 <div class="section" id="imports">
 <h3>Imports<a class="headerlink" href="#imports" title="Permalink to this headline">¶</a></h3>
-<p>To get started in Python, import the GQCNN, DeepOptimizer, GQCNNAnalyzer, and YamlConfig objects:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gqcnn</span> <span class="k">import</span> <span class="n">GQCNN</span><span class="p">,</span> <span class="n">DeepOptimizer</span><span class="p">,</span> <span class="n">GQCNNAnalyzer</span>
+<p>To get started in Python, import the GQCNN, SGDOptimizer, GQCNNAnalyzer, and YamlConfig objects:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gqcnn</span> <span class="k">import</span> <span class="n">GQCNN</span><span class="p">,</span> <span class="n">SGDOptimizer</span><span class="p">,</span> <span class="n">GQCNNAnalyzer</span>
 <span class="kn">from</span> <span class="nn">autolab_core</span> <span class="k">import</span> <span class="n">YamlConfig</span>
 </pre></div>
 </div>
@@ -186,7 +211,7 @@ The sample datset is the Adv-Synth dataset from the <a class="reference external
 <div class="section" id="configuration-files">
 <h3>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h3>
 <p>Scripts in the <cite>gqcnn</cite> package use YAML configuration files to specify parameters.
-This tutorial uses three configuration files which have templates in the <cite>gqcnn</cite> repo under the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/cfg/tools/">cfg/tools</a> directory:</p>
+This tutorial uses three configuration files which have templates in the <cite>gqcnn</cite> repo under the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/cfg/tools/">cfg/tools</a> directory:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cfg</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">training</span><span class="o">.</span><span class="n">yaml</span>
 <span class="n">cfg</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">analyze_gqcnn_performance</span><span class="o">.</span><span class="n">yaml</span>
 <span class="n">cfg</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">gqcnn_prediction_visualizer</span><span class="o">.</span><span class="n">yaml</span>
@@ -214,19 +239,19 @@ For simplicity, in this example the GQ-CNN parameters (e.g. architecture) and le
 </div>
 <div class="section" id="training-a-network-from-scratch">
 <h2>Training a Network from Scratch<a class="headerlink" href="#training-a-network-from-scratch" title="Permalink to this headline">¶</a></h2>
-<p>GQ-CNNs can be trained using a DeepOptimizer object, which facilitates dynamically loading and queueing datapoints from a dataset during training.</p>
-<p>Let&#8217;s start by training a GQ-CNN from scratch on the Adv-Synth dataset.
+<p>GQ-CNNs can be trained using a SGDOptimizer object, which facilitates dynamically loading and queueing datapoints from a dataset during training.</p>
+<p>Let’s start by training a GQ-CNN from scratch on the Adv-Synth dataset.
 There are just two steps:</p>
 <ol class="arabic">
-<li><p class="first">Initialize a GQCNN and a DeepOptimizer:</p>
+<li><p class="first">Initialize a GQCNN and a SGDOptimizer:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gqcnn</span> <span class="o">=</span> <span class="n">GQCNN</span><span class="p">(</span><span class="n">gqcnn_config</span><span class="p">)</span>
-<span class="n">deepOptimizer</span> <span class="o">=</span> <span class="n">DeepOptimizer</span><span class="p">(</span><span class="n">gqcnn</span><span class="p">,</span> <span class="n">train_config</span><span class="p">)</span>
+<span class="n">SGDOptimizer</span> <span class="o">=</span> <span class="n">SGDOptimizer</span><span class="p">(</span><span class="n">gqcnn</span><span class="p">,</span> <span class="n">train_config</span><span class="p">)</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first">Train the GQCNN:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">gqcnn</span><span class="o">.</span><span class="n">get_tf_graph</span><span class="p">()</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
-     <span class="n">deepOptimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+     <span class="n">SGDOptimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
 </pre></div>
 </div>
 </li>
@@ -237,7 +262,7 @@ Training on the the Adv-Synth dataset for 25 epochs took 74 minutes on a GeForce
 This prevents overwriting previous models when training multiple times.</p>
 <div class="section" id="dataset-splits">
 <h3>Dataset Splits<a class="headerlink" href="#dataset-splits" title="Permalink to this headline">¶</a></h3>
-<p>The DeepOptimizer class randomly samples a new training-validation split every time a new model is trained.
+<p>The SGDOptimizer class randomly samples a new training-validation split every time a new model is trained.
 This help to prevent overfitting.</p>
 <p>There are three options for choosing the dataset splits which can be configured by changing the <cite>data_split_mode</cite> parameter of the training configuration file:</p>
 <ol class="arabic simple">
@@ -252,7 +277,7 @@ This help to prevent overfitting.</p>
 <p>Since training may take hours to days, we provide several tools for monitoring progress.</p>
 <div class="section" id="python-plotting">
 <h3>Python Plotting<a class="headerlink" href="#python-plotting" title="Permalink to this headline">¶</a></h3>
-<p>One way to monitor progress is the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/plot_training_losses.py">plot_training_losses.py</a> script, which plots training and validation losses on the same plot.
+<p>One way to monitor progress is the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/plot_training_losses.py">plot_training_losses.py</a> script, which plots training and validation losses on the same plot.
 Find the directory for the model in progress (e.g. <cite>model_ewlohgukns</cite>) and run the following in a new terminal from the root of your <cite>gqcnn</cite> repo:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">tools</span><span class="o">/</span><span class="n">plot_training_losses</span><span class="o">.</span><span class="n">py</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">model</span><span class="o">/</span><span class="n">save</span><span class="o">/</span><span class="n">location</span><span class="o">/</span><span class="n">model_dir</span>
 </pre></div>
@@ -262,10 +287,10 @@ Find the directory for the model in progress (e.g. <cite>model_ewlohgukns</cite>
 </div>
 <div class="section" id="tensorboard">
 <h3>Tensorboard<a class="headerlink" href="#tensorboard" title="Permalink to this headline">¶</a></h3>
-<p>The DeepOptimizer supports Tensorboard to visualize various training parameters such as learning rate, validation error, and minibatch loss.
+<p>The SGDOptimizer supports Tensorboard to visualize various training parameters such as learning rate, validation error, and minibatch loss.
 Tensorboard summaries are saved in the folder <cite>tensorboard_summaries</cite> under the model directory.
 For example, if the model directory where the model is being saved is <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns</cite>, the summaries will be stored in <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns/tensorboard_summaries</cite>.</p>
-<p>The DeepOptimizer automatically starts a local server to feed these summaries.
+<p>The SGDOptimizer automatically starts a local server to feed these summaries.
 Once you get the output message:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Launching</span> <span class="n">Tensorboard</span><span class="p">,</span> <span class="n">Please</span> <span class="n">navigate</span> <span class="n">to</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">6006</span> <span class="ow">in</span> <span class="n">your</span> <span class="n">favorite</span> <span class="n">web</span> <span class="n">browser</span> <span class="n">to</span> <span class="n">view</span> <span class="n">summaries</span>
 </pre></div>
@@ -313,9 +338,9 @@ The Precision-Recall curve should look as follows:</p>
 <p>Fine-tuning a network is similar to training one from scratch.
 The only difference is that we load a GQCNN from a model directory instead of creating one from scratch before optimizing:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gqcnn</span> <span class="o">=</span> <span class="n">GQCNN</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
-<span class="n">deepOptimizer</span> <span class="o">=</span> <span class="n">DeepOptimizer</span><span class="p">(</span><span class="n">gqcnn</span><span class="p">,</span> <span class="n">train_config</span><span class="p">)</span>
+<span class="n">SGDOptimizer</span> <span class="o">=</span> <span class="n">SGDOptimizer</span><span class="p">(</span><span class="n">gqcnn</span><span class="p">,</span> <span class="n">train_config</span><span class="p">)</span>
 <span class="k">with</span> <span class="n">gqcnn</span><span class="o">.</span><span class="n">get_tf_graph</span><span class="p">()</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
-     <span class="n">deepOptimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+     <span class="n">SGDOptimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -324,7 +349,7 @@ The only difference is that we load a GQCNN from a model directory instead of cr
 <p>The <cite>gqcnn</cite> package also has the ability to visualize predictions of a GQCNN on a dataset with the GQCNNPredictionVisualizer class.
 The GQCNNPredictionVisualizer can visualize false positives, false negatives, true positives, and true negatives on a dataset.
 This parameter can be toggled in the provided configuration file.</p>
-<p>Let&#8217;s visualize some predictions following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py">visualize_predictions.py</a>.</p>
+<p>Let’s visualize some predictions following <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/visualize_predictions.py">visualize_predictions.py</a>.</p>
 <p>To use the GQCNNPredictionVisualizer first import the class and any other useful imports:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autolab_core</span> <span class="k">import</span> <span class="n">YamlConfig</span>
 <span class="kn">from</span> <span class="nn">gqcnn</span> <span class="k">import</span> <span class="n">GQCNNPredictionVisualizer</span>
@@ -346,6 +371,9 @@ For the specified datapoints(FP/TP/FN/TN) a visualization window will show up sh
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -380,7 +408,8 @@ For the specified datapoints(FP/TP/FN/TN) a visualization window will show up sh
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -43,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -83,7 +86,10 @@
           
             
             
-                <p class="caption"><span class="caption-text">Background</span></p>
+              
+            
+            
+              <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -136,8 +142,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">GQCNN</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
       </nav>
 
 
@@ -146,23 +154,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-    <li>Visualization</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Visualization</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/api/visualization.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/api/visualization.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -186,9 +211,9 @@ function include visualizing grasps and much more.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>size</strong> (<em>2-tuple</em>) &#8211; size of the view window in inches</li>
-<li><strong>args</strong> (<em>list</em>) &#8211; args of mayavi figure</li>
-<li><strong>kwargs</strong> (<em>list</em>) &#8211; keyword args of mayavi figure</li>
+<li><strong>size</strong> (<em>2-tuple</em>) – size of the view window in inches</li>
+<li><strong>args</strong> (<em>list</em>) – args of mayavi figure</li>
+<li><strong>kwargs</strong> (<em>list</em>) – keyword args of mayavi figure</li>
 </ul>
 </td>
 </tr>
@@ -270,7 +295,7 @@ function include visualizing grasps and much more.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>image</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.Image</span></code>) &#8211; image to display</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>image</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.Image</span></code>) – image to display</td>
 </tr>
 </tbody>
 </table>
@@ -278,17 +303,17 @@ function include visualizing grasps and much more.</p>
 
 <dl class="staticmethod">
 <dt id="gqcnn.Visualizer.box">
-<em class="property">static </em><code class="descname">box</code><span class="sig-paren">(</span><em>b</em>, <em>line_width=2</em>, <em>color='g'</em>, <em>style='-'</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.Visualizer.box" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="descname">box</code><span class="sig-paren">(</span><em>b</em>, <em>line_width=2</em>, <em>color=’g’</em>, <em>style=’-‘</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.Visualizer.box" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draws a box on the current plot.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>b</strong> (<code class="xref py py-obj docutils literal"><span class="pre">autolab_core.Box</span></code>) &#8211; box to draw</li>
-<li><strong>line_width</strong> (<em>int</em>) &#8211; width of lines on side of box</li>
-<li><strong>color</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) &#8211; color of box</li>
-<li><strong>style</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) &#8211; style of lines to draw</li>
+<li><strong>b</strong> (<code class="xref py py-obj docutils literal"><span class="pre">autolab_core.Box</span></code>) – box to draw</li>
+<li><strong>line_width</strong> (<em>int</em>) – width of lines on side of box</li>
+<li><strong>color</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) – color of box</li>
+<li><strong>style</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) – style of lines to draw</li>
 </ul>
 </td>
 </tr>
@@ -298,27 +323,27 @@ function include visualizing grasps and much more.</p>
 
 <dl class="staticmethod">
 <dt id="gqcnn.Visualizer.grasp">
-<em class="property">static </em><code class="descname">grasp</code><span class="sig-paren">(</span><em>grasp</em>, <em>color='r'</em>, <em>arrow_len=4</em>, <em>arrow_head_len=2</em>, <em>arrow_head_width=3</em>, <em>arrow_width=1</em>, <em>jaw_len=3</em>, <em>jaw_width=3.0</em>, <em>grasp_center_size=7.5</em>, <em>grasp_center_thickness=2.5</em>, <em>grasp_center_style='+'</em>, <em>grasp_axis_width=1</em>, <em>grasp_axis_style='--'</em>, <em>line_width=8.0</em>, <em>show_center=True</em>, <em>show_axis=False</em>, <em>scale=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.Visualizer.grasp" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="descname">grasp</code><span class="sig-paren">(</span><em>grasp</em>, <em>color=’r’</em>, <em>arrow_len=4</em>, <em>arrow_head_len=2</em>, <em>arrow_head_width=3</em>, <em>arrow_width=1</em>, <em>jaw_len=3</em>, <em>jaw_width=3.0</em>, <em>grasp_center_size=7.5</em>, <em>grasp_center_thickness=2.5</em>, <em>grasp_center_style=’+’</em>, <em>grasp_axis_width=1</em>, <em>grasp_axis_style=’–’</em>, <em>line_width=8.0</em>, <em>show_center=True</em>, <em>show_axis=False</em>, <em>scale=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.Visualizer.grasp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots a 2D grasp with arrow and jaw style using matplotlib</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>grasp</strong> (<code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code>) &#8211; 2D grasp to plot</li>
-<li><strong>color</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) &#8211; color of plotted grasp</li>
-<li><strong>arrow_len</strong> (<em>float</em>) &#8211; length of arrow body</li>
-<li><strong>arrow_head_len</strong> (<em>float</em>) &#8211; length of arrow head</li>
-<li><strong>arrow_head_width</strong> (<em>float</em>) &#8211; width of arrow head</li>
-<li><strong>arrow_width</strong> (<em>float</em>) &#8211; width of arrow body</li>
-<li><strong>jaw_len</strong> (<em>float</em>) &#8211; length of jaw line</li>
-<li><strong>jaw_width</strong> (<em>float</em>) &#8211; line width of jaw line</li>
-<li><strong>grasp_center_thickness</strong> (<em>float</em>) &#8211; thickness of grasp center</li>
-<li><strong>grasp_center_style</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) &#8211; style of center of grasp</li>
-<li><strong>grasp_axis_width</strong> (<em>float</em>) &#8211; line width of grasp axis</li>
-<li><strong>grasp_axis_style</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) &#8211; style of grasp axis line</li>
-<li><strong>show_center</strong> (<em>bool</em>) &#8211; whether or not to plot the grasp center</li>
-<li><strong>show_axis</strong> (<em>bool</em>) &#8211; whether or not to plot the grasp axis</li>
+<li><strong>grasp</strong> (<code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code>) – 2D grasp to plot</li>
+<li><strong>color</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) – color of plotted grasp</li>
+<li><strong>arrow_len</strong> (<em>float</em>) – length of arrow body</li>
+<li><strong>arrow_head_len</strong> (<em>float</em>) – length of arrow head</li>
+<li><strong>arrow_head_width</strong> (<em>float</em>) – width of arrow head</li>
+<li><strong>arrow_width</strong> (<em>float</em>) – width of arrow body</li>
+<li><strong>jaw_len</strong> (<em>float</em>) – length of jaw line</li>
+<li><strong>jaw_width</strong> (<em>float</em>) – line width of jaw line</li>
+<li><strong>grasp_center_thickness</strong> (<em>float</em>) – thickness of grasp center</li>
+<li><strong>grasp_center_style</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) – style of center of grasp</li>
+<li><strong>grasp_axis_width</strong> (<em>float</em>) – line width of grasp axis</li>
+<li><strong>grasp_axis_style</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) – style of grasp axis line</li>
+<li><strong>show_center</strong> (<em>bool</em>) – whether or not to plot the grasp center</li>
+<li><strong>show_axis</strong> (<em>bool</em>) – whether or not to plot the grasp axis</li>
 </ul>
 </td>
 </tr>
@@ -345,7 +370,7 @@ false positives, false negatives and their corresponding grasps and other metric
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>dict</em>) &#8211; dictionary of configuration parameters</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>dict</em>) – dictionary of configuration parameters</td>
 </tr>
 </tbody>
 </table>
@@ -364,13 +389,16 @@ false positives, false negatives and their corresponding grasps and other metric
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="training.html" class="btn btn-neutral" title="Training" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="training.html" class="btn btn-neutral" title="Training" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -404,7 +432,8 @@ false positives, false negatives and their corresponding grasps and other metric
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

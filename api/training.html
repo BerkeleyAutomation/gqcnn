@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <p class="caption"><span class="caption-text">Background</span></p>
+              
+            
+            
+              <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -120,7 +126,7 @@
 <li class="toctree-l1"><a class="reference internal" href="grasping.html">Grasping</a></li>
 <li class="toctree-l1"><a class="reference internal" href="policy.html">Policy</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Training</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#deepoptimizer">DeepOptimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sgdoptimizer">SGDOptimizer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#trainstatslogger">TrainStatsLogger</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#generalconstants">GeneralConstants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#imagefiletemplates">ImageFileTemplates</a></li>
@@ -143,8 +149,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">GQCNN</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
       </nav>
 
 
@@ -153,23 +161,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-    <li>Training</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Training</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/api/training.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/api/training.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -177,24 +202,24 @@
             
   <div class="section" id="training">
 <h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="deepoptimizer">
-<h2>DeepOptimizer<a class="headerlink" href="#deepoptimizer" title="Permalink to this headline">¶</a></h2>
-<p>A model for training GQCNN objects for grasp quality prediction.</p>
+<div class="section" id="sgdoptimizer">
+<h2>SGDOptimizer<a class="headerlink" href="#sgdoptimizer" title="Permalink to this headline">¶</a></h2>
+<p>A tool for training GQ-CNN objects using Stochastic-Gradient-Descent.</p>
 <dl class="class">
-<dt id="gqcnn.DeepOptimizer">
-<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">DeepOptimizer</code><span class="sig-paren">(</span><em>gqcnn</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.DeepOptimizer" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.SGDOptimizer">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">SGDOptimizer</code><span class="sig-paren">(</span><em>gqcnn</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.SGDOptimizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Optimizer for gqcnn object</p>
 <dl class="method">
-<dt id="gqcnn.DeepOptimizer.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>gqcnn</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.DeepOptimizer.__init__" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.SGDOptimizer.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>gqcnn</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.SGDOptimizer.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>gqcnn</strong> (<code class="xref py py-obj docutils literal"><span class="pre">GQCNN</span></code>) &#8211; grasp quality neural network to optimize</li>
-<li><strong>config</strong> (<em>dict</em>) &#8211; dictionary of configuration parameters</li>
+<li><strong>gqcnn</strong> (<code class="xref py py-obj docutils literal"><span class="pre">GQCNN</span></code>) – grasp quality neural network to optimize</li>
+<li><strong>config</strong> (<em>dict</em>) – dictionary of configuration parameters</li>
 </ul>
 </td>
 </tr>
@@ -203,8 +228,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="gqcnn.DeepOptimizer.optimize">
-<code class="descname">optimize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.DeepOptimizer.optimize" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.SGDOptimizer.optimize">
+<code class="descname">optimize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.SGDOptimizer.optimize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform optimization</p>
 </dd></dl>
 
@@ -226,7 +251,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>experiment_dir</strong> (<em>str</em>) &#8211; the experiment directory to save statistics to</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>experiment_dir</strong> (<em>str</em>) – the experiment directory to save statistics to</td>
 </tr>
 </tbody>
 </table>
@@ -247,7 +272,7 @@ NOTE: Any statistic that is None in the argument dict will not be updated</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stats</strong> (<em>dict</em>) &#8211; dict of statistics and values to be updated</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stats</strong> (<em>dict</em>) – dict of statistics and values to be updated</td>
 </tr>
 </tbody>
 </table>
@@ -311,15 +336,18 @@ directory.</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="visualization.html" class="btn btn-neutral float-right" title="Visualization" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="visualization.html" class="btn btn-neutral float-right" title="Visualization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="policy.html" class="btn btn-neutral" title="Policy" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="policy.html" class="btn btn-neutral" title="Policy" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -353,7 +381,8 @@ directory.</p>
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -42,6 +44,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -82,7 +85,10 @@
           
             
             
-                <p class="caption"><span class="caption-text">Background</span></p>
+              
+            
+            
+              <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -131,8 +137,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">GQCNN</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
       </nav>
 
 
@@ -141,23 +149,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-    <li>Grasp Planning</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Grasp Planning</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/tutorials/planning.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/tutorials/planning.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -182,7 +207,7 @@ The corresponding template configuration file is <cite>cfg/examples/policy.yaml<
 <div class="section" id="run-the-example-python-script">
 <h2>Run the Example Python Script<a class="headerlink" href="#run-the-example-python-script" title="Permalink to this headline">¶</a></h2>
 <p>From a new terminal run the following out of the root of your <cite>gqcnn</cite> repo:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">examples</span><span class="o">/</span><span class="n">policy</span><span class="o">.</span><span class="n">py</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">policy</span><span class="o">/</span><span class="n">configuration</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">examples</span><span class="o">/</span><span class="n">policy</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">config</span><span class="o">-</span><span class="n">filename</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">policy</span><span class="o">/</span><span class="n">configuration</span>
 </pre></div>
 </div>
 <p>You should see a sequence of images similar to these:</p>
@@ -203,6 +228,9 @@ We plan to release the ROS package by June 28, 2017.</p>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -237,7 +265,8 @@ We plan to release the ROS package by June 28, 2017.</p>
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

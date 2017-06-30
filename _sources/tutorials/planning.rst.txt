@@ -25,7 +25,7 @@ Run the Example Python Script
 -----------------------------
 From a new terminal run the following out of the root of your `gqcnn` repo::
 
-	python examples/policy.py /path/to/your/policy/configuration
+	python examples/policy.py --config-filename /path/to/your/policy/configuration
 
 You should see a sequence of images similar to these:
                         

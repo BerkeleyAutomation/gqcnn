@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <p class="caption"><span class="caption-text">Background</span></p>
+              
+            
+            
+              <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -136,8 +142,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">GQCNN</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
       </nav>
 
 
@@ -146,23 +154,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-    <li>GQCNN</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>GQCNN</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/api/gqcnn.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/api/gqcnn.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -185,8 +210,8 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>obj: dict</em>) &#8211; python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
-im_height, im_width, ...</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>obj: dict</em>) – python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
+im_height, im_width, …</td>
 </tr>
 </tbody>
 </table>
@@ -200,7 +225,7 @@ im_height, im_width, ...</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_dir</strong> (<em>obj: str</em>) &#8211; path to model directory where weights and architecture are stored</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_dir</strong> (<em>obj: str</em>) – path to model directory where weights and architecture are stored</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">GQCNN object initialized with the weights and architecture found in the specified model directory</td>
 </tr>
@@ -250,7 +275,7 @@ im_height, im_width, ...</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_dir</strong> (<em>obj: str</em>) &#8211; path to model directory where means and standard deviations are stored</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_dir</strong> (<em>obj: str</em>) – path to model directory where means and standard deviations are stored</td>
 </tr>
 </tbody>
 </table>
@@ -264,7 +289,7 @@ im_height, im_width, ...</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_filename</strong> (<em>obj: str</em>) &#8211; path to model to be loaded into weights</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_filename</strong> (<em>obj: str</em>) – path to model to be loaded into weights</td>
 </tr>
 </tbody>
 </table>
@@ -279,10 +304,10 @@ im_height, im_width, ...</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>reinit_fc3</strong> (<em>bool</em>) &#8211; whether to re-initialize fc3</li>
-<li><strong>reinit_fc4</strong> (<em>bool</em>) &#8211; whether to re-initialize fc4</li>
-<li><strong>reinit_fc5</strong> (<em>bool</em>) &#8211; whether to re-initialize fc5</li>
-<li><strong>reinit_pc1</strong> (<em>bool</em>) &#8211; whether to re-initiazlize pc1</li>
+<li><strong>reinit_fc3</strong> (<em>bool</em>) – whether to re-initialize fc3</li>
+<li><strong>reinit_fc4</strong> (<em>bool</em>) – whether to re-initialize fc4</li>
+<li><strong>reinit_fc5</strong> (<em>bool</em>) – whether to re-initialize fc5</li>
+<li><strong>reinit_pc1</strong> (<em>bool</em>) – whether to re-initiazlize pc1</li>
 </ul>
 </td>
 </tr>
@@ -304,7 +329,7 @@ im_height, im_width, ...</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>add_softmax</strong> (<em>float</em>) &#8211; whether or not to add a softmax layer</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>add_softmax</strong> (<em>float</em>) – whether or not to add a softmax layer</td>
 </tr>
 </tbody>
 </table>
@@ -330,7 +355,7 @@ im_height, im_width, ...</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>im_mean</strong> (<em>float</em>) &#8211; image mean to be used</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>im_mean</strong> (<em>float</em>) – image mean to be used</td>
 </tr>
 </tbody>
 </table>
@@ -360,7 +385,7 @@ im_height, im_width, ...</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>im_std</strong> (<em>float</em>) &#8211; image standard deviation to be used</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>im_std</strong> (<em>float</em>) – image standard deviation to be used</td>
 </tr>
 </tbody>
 </table>
@@ -442,7 +467,7 @@ im_height, im_width, ...</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>batch_size</strong> (<em>float</em>) &#8211; batch size to be used for prediction</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>batch_size</strong> (<em>float</em>) – batch size to be used for prediction</td>
 </tr>
 </tbody>
 </table>
@@ -457,8 +482,8 @@ im_height, im_width, ...</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>image_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code>) &#8211; 4D Tensor of images to be predicted</li>
-<li><strong>pose_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code>) &#8211; 4D Tensor of poses to be predicted</li>
+<li><strong>image_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code>) – 4D Tensor of images to be predicted</li>
+<li><strong>pose_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code>) – 4D Tensor of poses to be predicted</li>
 </ul>
 </td>
 </tr>
@@ -489,15 +514,18 @@ im_height, im_width, ...</td>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="grasping.html" class="btn btn-neutral float-right" title="Grasping" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="grasping.html" class="btn btn-neutral float-right" title="Grasping" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="analysis.html" class="btn btn-neutral" title="Analysis" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="analysis.html" class="btn btn-neutral" title="Analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -531,7 +559,8 @@ im_height, im_width, ...</td>
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

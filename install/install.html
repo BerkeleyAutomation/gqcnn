@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <p class="caption"><span class="caption-text">Background</span></p>
+              
+            
+            
+              <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -149,8 +155,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">GQCNN</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
       </nav>
 
 
@@ -159,23 +167,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-    <li>Dependencies</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Dependencies</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/install/install.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/install/install.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -195,7 +220,7 @@ Note that <a class="reference external" href="https://www.tensorflow.org/install
 </div>
 <div class="section" id="berkeleyautomation-packages">
 <h2>BerkeleyAutomation Packages<a class="headerlink" href="#berkeleyautomation-packages" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>gqcnn</cite> package also depends on <a class="reference external" href="https://github.com/BerkeleyAutomation">BerkeleyAutomation&#8217;s</a> <a class="reference external" href="https://github.com/BerkeleyAutomation/autolab_core">autolab_core</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> packages.
+<p>The <cite>gqcnn</cite> package also depends on <a class="reference external" href="https://github.com/BerkeleyAutomation">BerkeleyAutomation’s</a> <a class="reference external" href="https://github.com/BerkeleyAutomation/autolab_core">autolab_core</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> packages.
 To install these dependencies, follow the <a class="reference external" href="https://BerkeleyAutomation.github.io/autolab_core/install/install.html">installation instructions for autolab_core</a> and the <a class="reference external" href="https://berkeleyautomation.github.io/perception/install/install.html">installation instructions for perception</a>.
 If you are installing gqcnn as a ROS package, we suggest installing both <a class="reference external" href="https://github.com/BerkeleyAutomation/autolab_core">autolab_core</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> as ROS packages by checking out the repos into your catkin workspace and running catkin_make.</p>
 </div>
@@ -204,7 +229,7 @@ If you are installing gqcnn as a ROS package, we suggest installing both <a clas
 <h1>Python Installation<a class="headerlink" href="#python-installation" title="Permalink to this headline">¶</a></h1>
 <p>Python-only installation is intended for users who are <strong>only interested in training GQ-CNNs</strong>, not
 using them on a physical robot.
-If you have intentions of using GQ-CNNs for grasp planning on a physical robot, we suggest you <a class="reference external" href="https://berkeleyautomation.github.io/gqcnn/nstall/install.html#ros-installation">install as a ROS package</a>.</p>
+If you have intentions of using GQ-CNNs for grasp planning on a physical robot, we suggest you <a class="reference external" href="https://berkeleyautomation.github.io/gqcnn/install/install.html#ros-installation">install as a ROS package</a>.</p>
 <p>The <cite>gqcnn</cite> package is known to work for Python 2.7 and has not been tested for Python 3.</p>
 <div class="section" id="clone-the-repository">
 <h2>1. Clone the repository<a class="headerlink" href="#clone-the-repository" title="Permalink to this headline">¶</a></h2>
@@ -261,7 +286,7 @@ $ catkin_make
 <div class="section" id="building">
 <h2>Building<a class="headerlink" href="#building" title="Permalink to this headline">¶</a></h2>
 <p>The API documentation is available on the <a class="reference external" href="https://berkeleyautomation.github.io/gqcnn">gqcnn website</a>.</p>
-<p>You can re-build <cite>gqcnn</cite>&#8216;s documentation from scratch with a few extra dependencies &#8211;
+<p>You can re-build <cite>gqcnn</cite>’s documentation from scratch with a few extra dependencies –
 specifically, <a class="reference external" href="http://www.sphinx-doc.org/en/1.4.8/">sphinx</a> and a few plugins.
 This is important for developers only.</p>
 <p>To install the dependencies required, simply run</p>
@@ -293,15 +318,18 @@ to Github.</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../data/data.html" class="btn btn-neutral float-right" title="Download Link" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../data/data.html" class="btn btn-neutral float-right" title="Download Link" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../info/info.html" class="btn btn-neutral" title="What are GQ-CNNs?" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../info/info.html" class="btn btn-neutral" title="What are GQ-CNNs?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -335,7 +363,8 @@ to Github.</p>
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <p class="caption"><span class="caption-text">Background</span></p>
+              
+            
+            
+              <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -139,8 +145,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">GQCNN</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
       </nav>
 
 
@@ -149,23 +157,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-    <li>Grasping</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Grasping</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/api/grasping.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/api/grasping.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -184,31 +209,31 @@
 <dl class="attribute">
 <dt id="Grasp2D.center">
 <code class="descname">center</code><a class="headerlink" href="#Grasp2D.center" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.Point</span></code> &#8211; point in image space</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.Point</span></code> – point in image space</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Grasp2D.angle">
 <code class="descname">angle</code><a class="headerlink" href="#Grasp2D.angle" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; grasp axis angle with the camera x-axis</p>
+<dd><p><em>float</em> – grasp axis angle with the camera x-axis</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Grasp2D.depth">
 <code class="descname">depth</code><a class="headerlink" href="#Grasp2D.depth" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; depth of the grasp center in 3D space</p>
+<dd><p><em>float</em> – depth of the grasp center in 3D space</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Grasp2D.width">
 <code class="descname">width</code><a class="headerlink" href="#Grasp2D.width" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; distance between the jaws in meters</p>
+<dd><p><em>float</em> – distance between the jaws in meters</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Grasp2D.camera_intr">
 <code class="descname">camera_intr</code><a class="headerlink" href="#Grasp2D.camera_intr" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code> &#8211; frame of reference for camera that the grasp corresponds to</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code> – frame of reference for camera that the grasp corresponds to</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -252,9 +277,9 @@ where p1 and p2 are the jaw locations in image space</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>v</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) &#8211; feature vector, see Grasp2D.feature_vec</li>
-<li><strong>width</strong> (<em>float</em>) &#8211; grasp opening width, in meters</li>
-<li><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code>) &#8211; frame of reference for camera that the grasp corresponds to</li>
+<li><strong>v</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) – feature vector, see Grasp2D.feature_vec</li>
+<li><strong>width</strong> (<em>float</em>) – grasp opening width, in meters</li>
+<li><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code>) – frame of reference for camera that the grasp corresponds to</li>
 </ul>
 </td>
 </tr>
@@ -272,7 +297,7 @@ optical axis is used.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>grasp_approach_dir</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) &#8211; approach direction for the grasp in camera basis (e.g. opposite to table normal)</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>grasp_approach_dir</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) – approach direction for the grasp in camera basis (e.g. opposite to table normal)</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the transformation from the grasp to the camera frame of reference</td>
 </tr>
@@ -292,9 +317,9 @@ Euclidean distance with alpha weighting of angles</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>g1</strong> (<code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code>) &#8211; first grasp</li>
-<li><strong>g2</strong> (<code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code>) &#8211; second grasp</li>
-<li><strong>alpha</strong> (<em>float</em>) &#8211; weight of angle distance (rad to meters)</li>
+<li><strong>g1</strong> (<code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code>) – first grasp</li>
+<li><strong>g2</strong> (<code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code>) – second grasp</li>
+<li><strong>alpha</strong> (<em>float</em>) – weight of angle distance (rad to meters)</li>
 </ul>
 </td>
 </tr>
@@ -322,13 +347,13 @@ Euclidean distance with alpha weighting of angles</p>
 <dl class="attribute">
 <dt id="ImageGraspSampler.config">
 <code class="descname">config</code><a class="headerlink" href="#ImageGraspSampler.config" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.YamlConfig</span></code> &#8211; a dictionary-like object containing the parameters of the sampler</p>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.YamlConfig</span></code> – a dictionary-like object containing the parameters of the sampler</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ImageGraspSampler.gripper_width">
 <code class="descname">gripper_width</code><a class="headerlink" href="#ImageGraspSampler.gripper_width" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; width of the gripper in 3D space</p>
+<dd><p><em>float</em> – width of the gripper in 3D space</p>
 </dd></dl>
 
 <dl class="method">
@@ -340,12 +365,12 @@ Euclidean distance with alpha weighting of angles</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>rgbd_im</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.RgbdImage</span></code>) &#8211; RGB-D image to sample from</li>
-<li><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code>) &#8211; intrinsics of the camera that captured the images</li>
-<li><strong>num_samples</strong> (<em>int</em>) &#8211; number of grasps to sample</li>
-<li><strong>segmask</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.BinaryImage</span></code>) &#8211; binary image segmenting out the object of interest</li>
-<li><strong>seed</strong> (<em>int</em>) &#8211; number to use in random seed (None if no seed)</li>
-<li><strong>visualize</strong> (<em>bool</em>) &#8211; whether or not to show intermediate samples (for debugging)</li>
+<li><strong>rgbd_im</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.RgbdImage</span></code>) – RGB-D image to sample from</li>
+<li><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code>) – intrinsics of the camera that captured the images</li>
+<li><strong>num_samples</strong> (<em>int</em>) – number of grasps to sample</li>
+<li><strong>segmask</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.BinaryImage</span></code>) – binary image segmenting out the object of interest</li>
+<li><strong>seed</strong> (<em>int</em>) – number to use in random seed (None if no seed)</li>
+<li><strong>visualize</strong> (<em>bool</em>) – whether or not to show intermediate samples (for debugging)</li>
 </ul>
 </td>
 </tr>
@@ -377,20 +402,20 @@ Euclidean distance with alpha weighting of angles</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name" colspan="2">Other Parameters:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><ul class="first last simple">
-<li><strong>friction_coef</strong> (<em>float</em>) &#8211; friction coefficient for 2D force closure</li>
-<li><strong>depth_grad_thresh</strong> (<em>float</em>) &#8211; threshold for depth image gradients to determine edge points for sampling</li>
-<li><strong>depth_grad_gaussian_sigma</strong> (<em>float</em>) &#8211; sigma used for pre-smoothing the depth image for better gradients</li>
-<li><strong>downsample_rate</strong> (<em>float</em>) &#8211; factor to downsample the depth image by before sampling grasps</li>
-<li><strong>max_rejection_samples</strong> (<em>int</em>) &#8211; ceiling on the number of grasps to check in antipodal grasp rejection sampling</li>
-<li><strong>max_dist_from_center</strong> (<em>int</em>) &#8211; maximum allowable distance of a grasp from the image center</li>
-<li><strong>min_grasp_dist</strong> (<em>float</em>) &#8211; threshold on the grasp distance</li>
-<li><strong>angle_dist_weight</strong> (<em>float</em>) &#8211; amount to weight the angle difference in grasp distance computation</li>
-<li><strong>depth_samples_per_grasp</strong> (<em>int</em>) &#8211; number of depth samples to take per grasp</li>
-<li><strong>min_depth_offset</strong> (<em>float</em>) &#8211; offset from the minimum depth at the grasp center pixel to use in depth sampling</li>
-<li><strong>max_depth_offset</strong> (<em>float</em>) &#8211; offset from the maximum depth across all edges</li>
-<li><strong>depth_sample_win_height</strong> (<em>float</em>) &#8211; height of a window around the grasp center pixel used to determine min depth</li>
-<li><strong>depth_sample_win_height</strong> (<em>float</em>) &#8211; width of a window around the grasp center pixel used to determine min depth</li>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first last simple">
+<li><strong>friction_coef</strong> (<em>float</em>) – friction coefficient for 2D force closure</li>
+<li><strong>depth_grad_thresh</strong> (<em>float</em>) – threshold for depth image gradients to determine edge points for sampling</li>
+<li><strong>depth_grad_gaussian_sigma</strong> (<em>float</em>) – sigma used for pre-smoothing the depth image for better gradients</li>
+<li><strong>downsample_rate</strong> (<em>float</em>) – factor to downsample the depth image by before sampling grasps</li>
+<li><strong>max_rejection_samples</strong> (<em>int</em>) – ceiling on the number of grasps to check in antipodal grasp rejection sampling</li>
+<li><strong>max_dist_from_center</strong> (<em>int</em>) – maximum allowable distance of a grasp from the image center</li>
+<li><strong>min_grasp_dist</strong> (<em>float</em>) – threshold on the grasp distance</li>
+<li><strong>angle_dist_weight</strong> (<em>float</em>) – amount to weight the angle difference in grasp distance computation</li>
+<li><strong>depth_samples_per_grasp</strong> (<em>int</em>) – number of depth samples to take per grasp</li>
+<li><strong>min_depth_offset</strong> (<em>float</em>) – offset from the minimum depth at the grasp center pixel to use in depth sampling</li>
+<li><strong>max_depth_offset</strong> (<em>float</em>) – offset from the maximum depth across all edges</li>
+<li><strong>depth_sample_win_height</strong> (<em>float</em>) – height of a window around the grasp center pixel used to determine min depth</li>
+<li><strong>depth_sample_win_height</strong> (<em>float</em>) – width of a window around the grasp center pixel used to determine min depth</li>
 </ul>
 </td>
 </tr>
@@ -414,15 +439,18 @@ Euclidean distance with alpha weighting of angles</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="policy.html" class="btn btn-neutral float-right" title="Policy" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="policy.html" class="btn btn-neutral float-right" title="Policy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="gqcnn.html" class="btn btn-neutral" title="GQCNN" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="gqcnn.html" class="btn btn-neutral" title="GQCNN" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -456,7 +484,8 @@ Euclidean distance with alpha weighting of angles</p>
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

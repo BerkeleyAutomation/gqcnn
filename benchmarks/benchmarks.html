@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <p class="caption"><span class="caption-text">Background</span></p>
+              
+            
+            
+              <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../info/info.html">What are GQ-CNNs?</a></li>
 </ul>
@@ -133,8 +139,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">GQCNN</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GQCNN</a>
+        
       </nav>
 
 
@@ -143,23 +151,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-    <li>Dex-Net 2.0</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Dex-Net 2.0</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/benchmarks/benchmarks.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/benchmarks/benchmarks.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -172,20 +197,23 @@
 <p>The lower error rates were achieved by training model GQ from the RSS paper for additional epochs.
 These models can be found in our <a class="reference external" href="https://berkeley.box.com/s/szbchyt3tou9e4ct6dz8c5v99vhx0s84">model zoo</a>.</p>
 <p>We believe grasping performance on the physical robot can be improved if these validation error rates can be further reduced by modifications to the network architecture and optimization.
-If you achieve superior numbers on a randomized validation set, please email Jeff Mahler (<a class="reference external" href="mailto:jmahler&#37;&#52;&#48;berkeley&#46;edu">jmahler<span>&#64;</span>berkeley<span>&#46;</span>edu</a>) with the subject &#8220;Dex-Net 2.0 Benchmark Submission&#8221; and we will consider testing on our ABB YuMi.</p>
+If you achieve superior numbers on a randomized validation set, please email Jeff Mahler (<a class="reference external" href="mailto:jmahler&#37;&#52;&#48;berkeley&#46;edu">jmahler<span>&#64;</span>berkeley<span>&#46;</span>edu</a>) with the subject “Dex-Net 2.0 Benchmark Submission” and we will consider testing on our ABB YuMi.</p>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../tutorials/tutorial.html" class="btn btn-neutral float-right" title="Overview" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../tutorials/tutorial.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../data/data.html" class="btn btn-neutral" title="Download Link" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../data/data.html" class="btn btn-neutral" title="Download Link" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -219,7 +247,8 @@ If you achieve superior numbers on a randomized validation set, please email Jef
             VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
