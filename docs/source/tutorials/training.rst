@@ -5,8 +5,8 @@ The corresponding configurations can be found in cfg/tools/.
 
 First we'll train a network following `training.py`_.
 
-.. _training.py: https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/training.py
-.. _visualize_predictions.py: https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py
+.. _training.py: https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/training.py
+.. _visualize_predictions.py: https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/visualize_predictions.py
 
 Setup
 -----
@@ -35,7 +35,7 @@ This tutorial uses three configuration files which have templates in the `gqcnn`
        cfg/tools/analyze_gqcnn_performance.yaml 
        cfg/tools/gqcnn_prediction_visualizer.yaml
 
-.. _`cfg/tools`: https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/cfg/tools/
+.. _`cfg/tools`: https://github.com/BerkeleyAutomation/gqcnn/blob/master/cfg/tools/
 
 Edit the `dataset_dir` parameter of the training configuration file (ex. training.yaml) to point to the location where you unzipped the dataset::
 
@@ -101,7 +101,7 @@ Find the directory for the model in progress (e.g. `model_ewlohgukns`) and run t
 
 	python tools/plot_training_losses.py /path/to/your/model/save/location/model_dir
 
-.. _plot_training_losses.py: https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/plot_training_losses.py
+.. _plot_training_losses.py: https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/plot_training_losses.py
 
 The training and validation curves for the example should look something like this after 25 epochs:
 
@@ -195,7 +195,7 @@ This parameter can be toggled in the provided configuration file.
 
 Let's visualize some predictions following `visualize_predictions.py`_.
 
-.. _visualize_predictions.py: https://github.com/BerkeleyAutomation/gqcnn/blob/dev_jeff/tools/visualize_predictions.py
+.. _visualize_predictions.py: https://github.com/BerkeleyAutomation/gqcnn/blob/master/tools/visualize_predictions.py
 
 To use the GQCNNPredictionVisualizer first import the class and any other useful imports::
 	
