@@ -115,7 +115,7 @@ Tensorboard
 +++++++++++
 The SGDOptimizer supports Tensorboard to visualize various training parameters such as learning rate, validation error, and minibatch loss.
 Tensorboard summaries are saved in the folder `tensorboard_summaries` under the model directory.
-For example, if the model directory where the model is being saved is `/home/user/Data/models/grasp_quality/model_ewlohgukns`, the summaries will be stored in `/home/user/Data/models/grasp_quality/model_ewlohgukns/tensorboard_summaries`. 
+For example, if the model directory where the model is being saved is `/home/user/data/models/grasp_quality/model_ewlohgukns`, the summaries will be stored in `/home/user/data/models/grasp_quality/model_ewlohgukns/tensorboard_summaries`. 
 
 The SGDOptimizer automatically starts a local server to feed these summaries.
 Once you get the output message::
@@ -133,7 +133,7 @@ then you can visualize progress by navigating to `localhost:6006` in your favori
 
 Prediction
 ----------
-To predict the probability of success, or grasp robustness, of a new datapoint, instantiate a GQCNN object with a path to the saved model (e.g. `/home/user/Data/models/grasp_quality/model_ewlohgukns`) and and call the `predict()` function::
+To predict the probability of success, or grasp robustness, of a new datapoint, instantiate a GQCNN object with a path to the saved model (e.g. `/home/user/data/models/grasp_quality/model_ewlohgukns`) and and call the `predict()` function::
 	
 	images = ['array of images']
 	poses = ['corresponding poses']

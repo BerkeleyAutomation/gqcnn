@@ -36,7 +36,7 @@
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="GQCNN 0.1.0 documentation" href="../index.html"/>
-        <link rel="next" title="Analysis" href="../api/analysis.html"/>
+        <link rel="next" title="Examples" href="../scripts/examples.html"/>
         <link rel="prev" title="Dex-Net 2.0" href="../benchmarks/benchmarks.html"/> 
 
   
@@ -150,6 +150,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#ros-package">ROS Package</a></li>
 </ul>
 </li>
+</ul>
+<p class="caption"><span class="caption-text">Documentation for Scripts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scripts/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scripts/tools.html">Tools</a></li>
 </ul>
 <p class="caption"><span class="caption-text">API Documentation</span></p>
 <ul>
@@ -357,7 +362,7 @@ Find the directory for the model in progress (e.g. <cite>model_ewlohgukns</cite>
 <h3>Tensorboard<a class="headerlink" href="#tensorboard" title="Permalink to this headline">¶</a></h3>
 <p>The SGDOptimizer supports Tensorboard to visualize various training parameters such as learning rate, validation error, and minibatch loss.
 Tensorboard summaries are saved in the folder <cite>tensorboard_summaries</cite> under the model directory.
-For example, if the model directory where the model is being saved is <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns</cite>, the summaries will be stored in <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns/tensorboard_summaries</cite>.</p>
+For example, if the model directory where the model is being saved is <cite>/home/user/data/models/grasp_quality/model_ewlohgukns</cite>, the summaries will be stored in <cite>/home/user/data/models/grasp_quality/model_ewlohgukns/tensorboard_summaries</cite>.</p>
 <p>The SGDOptimizer automatically starts a local server to feed these summaries.
 Once you get the output message:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Launching</span> <span class="n">Tensorboard</span><span class="p">,</span> <span class="n">Please</span> <span class="n">navigate</span> <span class="n">to</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">6006</span> <span class="ow">in</span> <span class="n">your</span> <span class="n">favorite</span> <span class="n">web</span> <span class="n">browser</span> <span class="n">to</span> <span class="n">view</span> <span class="n">summaries</span>
@@ -369,7 +374,7 @@ Once you get the output message:</p>
 </div>
 <div class="section" id="prediction">
 <h2>Prediction<a class="headerlink" href="#prediction" title="Permalink to this headline">¶</a></h2>
-<p>To predict the probability of success, or grasp robustness, of a new datapoint, instantiate a GQCNN object with a path to the saved model (e.g. <cite>/home/user/Data/models/grasp_quality/model_ewlohgukns</cite>) and and call the <cite>predict()</cite> function:</p>
+<p>To predict the probability of success, or grasp robustness, of a new datapoint, instantiate a GQCNN object with a path to the saved model (e.g. <cite>/home/user/data/models/grasp_quality/model_ewlohgukns</cite>) and and call the <cite>predict()</cite> function:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">images</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;array of images&#39;</span><span class="p">]</span>
 <span class="n">poses</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;corresponding poses&#39;</span><span class="p">]</span>
 
@@ -486,7 +491,7 @@ We plan to release the ROS package by June 28, 2017.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../api/analysis.html" class="btn btn-neutral float-right" title="Analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../scripts/examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="../benchmarks/benchmarks.html" class="btn btn-neutral" title="Dex-Net 2.0" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

@@ -108,6 +108,13 @@ If you use the code, datasets, or models in a publication, please `cite the Dex-
 
 .. toctree::
    :maxdepth: 2
+   :caption: Documentation for Scripts
+   :glob:
+
+   scripts/*
+
+.. toctree::
+   :maxdepth: 2
    :caption: API Documentation
    :glob:
 
