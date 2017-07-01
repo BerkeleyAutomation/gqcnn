@@ -3,7 +3,7 @@ Download Link
 GQ-CNN training datasets and pretrained network weights are available from our `data repository`_.
 New datasets and models will be uploaded to this location as they become available.
 
-.. _data storage: https://berkeley.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb
+.. _data repository: https://berkeley.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb
 
 Datasets
 ~~~~~~~~
