@@ -1,6 +1,96 @@
 """
-Demonstrates robust grasping policies with GQ-CNNS
-Author: Jeff Mahler
+Displays robust grasps planned using a GQ-CNN-based policy on a set of saved RGB-D images.
+The default configuration is cfg/examples/policy.yaml.
+
+Author
+------
+Jeff Mahler
+
+YAML Configuration File Parameters
+----------------------------------
+sensor/image_dir : str
+    directory to the sample images, specified relative to /path/to/your/gqcnn/ (change this to try your own images!)
+sensor/type : str
+    type of sensor to use (virtual_primesense by default to use pre-stored images)
+sensor/frame : str
+    name of the sensor frame of references
+
+calib_dir : str
+    directory to the sample camera calibration files, specified relative to /path/to/your/gqcnn/
+
+policy/gqcnn_model : str
+    path to a directory containing a GQ-CNN model (change this to try your own networks!)
+policy/num_seed_samples : int
+    number of initial samples to take in the cross-entropy method (CEM) optimizer (smaller means faster grasp planning, lower-quality grasps)
+policy/num_gmm_samples : int
+    number of samples to take from the Gaussian Mixture Models on each iteration of the CEM optimizer
+policy/num_iters : int
+    number of sample-and-refit iterations of CEM
+policy/gmm_refit_p : flota
+    percentage of samples to use in the elite set on each iteration of CEM
+policy/gmm_component_frac : float
+    number of GMM components to use as a fraction of the sample size
+policy/gmm_reg_covat : float
+    regularization constant to ensure GMM sample diversity
+policy/deterministic : bool
+    True (1) if execution should be deterministic (via setting a random seed) and False (0) otherwise
+policy/gripper_width : float
+    distance between the jaws, in meters
+policy/crop_height : int
+    height of bounding box to use for cropping the image around a grasp candidate before passing it into the GQ-CNN
+policy/crop_width : int
+    width of bounding box to use for cropping the image around a grasp candidate before passing it into the GQ-CNN
+policy/sampling/type : str
+    grasp sampling type (use antipodal_depth to sample antipodal pairs in image space)
+policy/sampling/friction_coef : float
+    friction coefficient to use in sampling
+policy/sampling/depth_grad_thresh : float
+    threshold on depth image gradients for edge detection
+policy/sampling/depth_grad_gaussian_sigma : float
+    variance for gaussian filter to smooth image before taking gradients
+policy/sampling/downsample_rate : float
+    factor by which to downsample the image when detecting edges (larger number means edges are smaller images, which speeds up performance_
+policy/sampling/max_rejection_samples : int
+    maximum number of samples to take when sampling antipodal candidates (larger means potentially longer runtimes)
+policy/sampling/max_dist_from_center : int
+    maximum distance, in pixels, from the image center allowed in grasp sampling
+policy/sampling/min_dist_from_boundary : int
+    minimum distance, in pixels, of a grasp from the image boundary
+policy/sampling/min_grasp_dist : float
+    minimum distance between grasp vectors allowed in sampling (larger means greater sample diversity but potentially lower precision)
+policy/sampling/angle_dist_weight : float
+    weight for the distance between grasp axes in radians (we recommend keeping the default)
+policy/sampling/depth_samples_per_grasp : int
+    number of depth samples to take per independent antipodal grasp sample in image space
+policy/sampling/depth_sample_win_height: int
+    height of window used to compute the minimum depth for grasp depth sampling
+policy/sampling/depth_sample_win_width: int
+    width of window used to compute the minimum depth for grasp depth sampling
+policy/sampling/min_depth_offset : float
+    offset, in cm, from the min depth
+policy/sampling/max_depth_offset : float
+    offset, in cm, from the max depth
+
+policy/vis/grasp_sampling : bool
+    True (1) if grasp sampling should be displayed (for debugging)
+policy/vis/tf_images : bool
+    True (1) if transformed images should be displayed (for debugging)
+policy/vis/grasp_candidates : bool
+    True (1) if grasp candidates should be displayed (for debugging)
+policy/vis/elite_grasps : bool
+    True (1) if the elite set should be displayed (for debugging)
+policy/vis/grasp_ranking : bool
+    True (1) if the ranked grasps should be displayed (for debugging)
+policy/vis/grasp_plan : bool
+    True (1) if the planned grasps should be displayed (for debugging)
+policy/vis/final_grasp : bool
+    True (1) if the final planned grasp should be displayed (for debugging)
+policy/vis/k : int
+    number of grasps to display
+
+inpaint_rescale_factor : float
+    scale factor to resize the image by before inpainting (smaller means faster performance by less precise)
+
 """
 import argparse
 import logging
