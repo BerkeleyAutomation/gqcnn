@@ -51,7 +51,8 @@ You can also try out grasp planning on multiple objects by changing the input da
 ROS Package
 -----------
 
-We developed a ROS service for grasp planning with GQ-CNNs. The service takes as input a color image, depth image, camera info topic, and bounding box for the object in image space, and returns a parallel-jaw gripper pose relative to the camer along with a predicted probability of success. This has been tested on our setup with ROS Jade on Ubuntu 14.04
+We developed a `ROS service`_ for grasp planning with GQ-CNNs. The service takes as input a color image, depth image, camera info topic, and bounding box for the object in image space, and returns a parallel-jaw gripper pose relative to the camer along with a predicted probability of success. This has been tested on our setup with ROS Jade on Ubuntu 14.04
 
 To illustrate using our ROS service, we've shared the ROS node that we use to plan grasps for and control an ABB YuMi on our local setup. This file should be considered READ-ONLY as it uses parameters specific to our setup. If you have interest in replicating this functionality on your own robot, please contact Jeff Mahler (jmahler@berkeley.edu) with the subject line: "Interested in GQ-CNN ROS Service".
 
+.. _ROS service: https://github.com/BerkeleyAutomation/gqcnn/blob/master/ros_nodes/grasp_planner_node.py
