@@ -1,6 +1,6 @@
 # visualization
 vis:
-  vis_cropped_rgbd_image: 1
+  vis_cropped_rgbd_image: 0
   vis_uncropped_color_image: 0
   vis_uncropped_depth_image: 0
 
@@ -9,12 +9,12 @@ width_pad: 0
 height_pad: 0
 
 # inpaint
-inpaint_rescale_factor: 0.5
+inpaint_rescale_factor: 0.5 # amount to rescale the images before inpainting (smaller numbers == faster code) 
 
 # policy params
 policy:
   # optimization params
-  num_seed_samples: 100
+  num_seed_samples: 200 # number of seed samples
   num_gmm_samples: 50
   num_iters: 3
   gmm_refit_p: 0.25
@@ -22,7 +22,7 @@ policy:
   gmm_reg_covar: 0.01
 
   # gqcnn params
-  gqcnn_model: /mnt/hdd/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
+  gqcnn_model: /mnt/hdd/dex-net/data/models/grasp_quality/GQ-Image-Wise
 
   # general params
   deterministic: 1
@@ -38,30 +38,29 @@ policy:
 
     # antipodality
     friction_coef: 0.8
-    depth_grad_thresh: 0.005
+    depth_grad_thresh: 0.0025
     depth_grad_gaussian_sigma: 1.0
     downsample_rate: 4
     max_rejection_samples: 2500
 
     # distance
-    max_dist_from_center: 150
-    min_dist_from_boundary: 80
-    min_grasp_dist: 0.025
-    angle_dist_weight: 0.025
+    max_dist_from_center: 10000000
+    min_dist_from_boundary: 40
+    min_grasp_dist: 2.5
+    angle_dist_weight: 5.0
 
     # depth sampling
     depth_samples_per_grasp: 1
     depth_sample_win_height: 1
     depth_sample_win_width: 1
     min_depth_offset: 0.015
-    max_depth_offset: .03
-    max_depth: 0.69
+    max_depth_offset: 0.0
 
   # visualization
   vis:
     grasp_sampling : 0
     tf_images: 0
-    grasp_candidates: 1
+    grasp_candidates: 0
     elite_grasps: 0
     grasp_ranking: 0
     grasp_plan: 0

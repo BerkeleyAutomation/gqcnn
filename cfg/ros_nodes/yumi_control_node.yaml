@@ -59,10 +59,11 @@ detector:
       - 360
       - 460
 
-# general experiment parameters		
-planner_type: gqcnn_2d
+# general experiment parameters
+experiment_dir: /mnt/hdd/dex-net/experiments/gqcnn_ros_node
+planner_type: gqcnn_ros_node
 trials_per_object: 5
-supervisor: jeff
+supervisor: vishal
 human_reset: 1
 query_human: 1
 datapoints_per_file: 1000
@@ -70,14 +71,46 @@ gripper: yumi_metal_spline
 table_to_world_z_offset: -0.0025
 
 test_object_keys:
-  - bar_clamp
-  - gearbox
-  - nozzle
-  - part1
-  - part3
-  - pawn
-  - turbine_housing
-  - vase
+  - glue_stick
+  - whiteout
+  - remote
+  - chess
+  - sharpie
+  - white_board_cleaner
+  - lego_brick
+  - truck
+  - screw_grab
+  - bolt
+  - plug
+  - big_tape
+  - string
+  - staples
+  - listerine
+  - ball
+  - flashlight
+  - marker
+  - cloth
+  - small_bag_clip
+  - toothpaste
+  - fork
+  - goggles
+  - clamp
+  - ink
+  - lego_hat
+  - allen_wrench
+  - circle
+  - wire
+  - large_bag_clip
+  - shoe
+  - scissors
+  - can_opener
+  - pipe_connector
+  - shark
+  - thingamajig
+  - glue_gun
+  - spray
+  - blue_tape
+  - spoon
 
 planning:
   num_grasp_samples: 100
@@ -152,7 +185,7 @@ control:
   standard_velocity: 500
   standard_zoning: fine
 
-  shake_test: 0
+  shake_test: 1
   shake_drop: 1
   shake_velocity: 1000
   shake_zoning: z50
@@ -272,11 +305,11 @@ vis:
   debug_registration: 0
   final_registration: 0
   k: 5
-  vis_detector_output: 1
+  vis_detector_output: 0
 
 
 # debugging
-debug: 0
+debug: 1
 robot_off: 0
 
 thresh: 1
