@@ -276,8 +276,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             return []
 
         # compute_max_depth
-        max_depth = np.max(depth_im.data[edge_pixels[:,0],
-                                         edge_pixels[:,1]]) + self._max_depth_offset
+        max_depth = np.max(depth_im.data) + self._max_depth_offset
 
         # compute surface normals
         normal_start = time()
