@@ -54,8 +54,7 @@ We are currently researching how to generate datasets that can generalize across
 
 Development
 -----------
-The package is currently under active development and we hope to have a stable version with ROS package support by June 30, 2017.
-Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.
+The package is currently under active development. Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.
 
 Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
 For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.edu) with the subject line starting with "gqcnn development: "
