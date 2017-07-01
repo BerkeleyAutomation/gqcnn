@@ -15,5 +15,12 @@ See the website at [https://berkeleyautomation.github.io/gqcnn](https://berkeley
 ## Datasets
 Our GQ-CNN training datasets and trained models can be downloaded from [this link](https://berkeley.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb).
 
-## ROS Support
-The ROS package is still in development and will be be released by June 30, 2017.
+## ROS Service
+We developed a [ROS service for grasp planning with GQ-CNNs](https://github.com/BerkeleyAutomation/gqcnn/blob/master/ros_nodes/grasp_planner_node.py).
+The service takes as input a color image, depth image, camera info topic, and bounding box for the object in image space, and returns a parallel-jaw gripper pose relative to the camer along with a predicted probability of success.
+This has been tested on our setup with ROS Jade on Ubuntu 14.04
+
+To illustrate using our ROS service, we've shared [the ROS node that we use to plan grasps for and control an ABB YuMi on our local setup](https://github.com/BerkeleyAutomation/gqcnn/blob/master/ros_nodes/yumi_control_node.py).
+This file should be considered READ-ONLY as it uses parameters specific to our setup.
+If you have interest in replicating this functionality on your own robot, please contact Jeff Mahler (jmahler@berkeley.edu) with the subject line: "Interested in GQ-CNN ROS Service".
+
