@@ -107,7 +107,7 @@ gqcnn_config:
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_data_mode: tf_image
 
-  # prediction batch size, in training this will be overriden by the val_batch_size in the DeepOptimizer's config file
+  # prediction batch size, in training this will be overriden by the val_batch_size in the SGDOptimizer's config file
   batch_size: 16
 
   # architecture
