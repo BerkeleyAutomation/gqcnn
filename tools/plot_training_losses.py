@@ -1,6 +1,15 @@
 """
-Script to plot the errors during training
-Author: Jeff Mahler
+Script to plot the various errors saved during training.
+
+Author
+------
+Jeff Mahler
+
+Required Parameters
+------------------------
+model_dir : str
+    Command line argument, the path to the model whose errors are to plotted. All plots and other metrics will
+    be saved to this directory. 
 """
 import IPython
 import matplotlib.pyplot as plt
