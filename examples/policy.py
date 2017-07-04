@@ -49,7 +49,7 @@ policy/sampling/depth_grad_thresh : float
 policy/sampling/depth_grad_gaussian_sigma : float
     variance for gaussian filter to smooth image before taking gradients
 policy/sampling/downsample_rate : float
-    factor by which to downsample the image when detecting edges (larger number means edges are smaller images, which speeds up performance_
+    factor by which to downsample the image when detecting edges (larger number means edges are smaller images, which speeds up performance)
 policy/sampling/max_rejection_samples : int
     maximum number of samples to take when sampling antipodal candidates (larger means potentially longer runtimes)
 policy/sampling/max_dist_from_center : int
