@@ -10,10 +10,4 @@ models:
     tag: GQCNN (N=100)
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
-    batch_size: 64
-    im_height: 32
-    im_width: 32
-    im_channels: 1
-    input_data_mode: tf_image
-    replace: 0
     vis_conv: 0
