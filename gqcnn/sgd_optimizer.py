@@ -680,6 +680,9 @@ class SGDOptimizer(object):
     def _compute_indices_pose_wise(self):
         """ Compute train and validation indices based on an image-stable-pose-wise split"""
 
+        if self.stable_pose_filenames is None:
+            raise ValueError('Cannot use stable-pose-wise split. No stable pose labels! Check the dataset_dir')
+
         # get total number of training datapoints and set the decay_step
         num_datapoints = self.images_per_file * self.num_files
         self.num_train = int(self.train_pct * num_datapoints)
@@ -853,10 +856,12 @@ class SGDOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0 or len(self.stable_pose_filenames) == 0:
+        if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
         if len(self.obj_id_filenames) == 0:
             self.obj_id_filenames = None
+        if len(self.stable_pose_filenames) == 0:
+            self.stable_pose_filenames = None
 
         # subsample files
         self.num_files = len(self.im_filenames)
@@ -868,7 +873,8 @@ class SGDOptimizer(object):
         self.label_filenames = [self.label_filenames[k] for k in filename_indices]
         if self.obj_id_filenames is not None:
             self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
-        self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
+        if self.stable_pose_filenames is not None:
+            self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
         # create copy of image filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
         self.im_filenames_copy = self.im_filenames[:]
