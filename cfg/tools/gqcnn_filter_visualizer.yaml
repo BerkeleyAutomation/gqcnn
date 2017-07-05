@@ -1,0 +1,10 @@
+model_dir: /mnt/hdd/dex-net/data/models/grasp_quality
+output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_filters
+
+models:
+  dex-net_2.0_image_wise_06_15_17:
+    show_filters: 1
+    conv1_1: 1
+    conv1_2: 1
+    conv2_1: 1
+    conv2_2: 1
