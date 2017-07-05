@@ -10,7 +10,19 @@ Overview
 --------
 The `gqcnn` package is a Python API for training and deploying `Grasp Quality Convolutional Neural Networks (GQ-CNNs)`_ for grasp planning using training datasets from the `Dexterity Network (Dex-Net)`_, developed by the `Berkeley AUTOLAB`_ and introduced in the `Dex-Net 2.0 paper`_.
 
-See the github page for the source code: https://github.com/BerkeleyAutomation/gqcnn.
+Links
+-----
+* `Source Code`_
+* `Datasets`_
+* `Pretrained Models`_
+* `Dex-Net Website`_
+* `UC Berkeley AUTOLAB`_
+
+.. _Source Code: https://github.com/BerkeleyAutomation/gqcnn
+.. _Datasets: http://bit.ly/2rIM7Jk
+.. _Pretrained Models: http://bit.ly/2tAFMko
+.. _Dex-Net Website: https://berkeleyautomation.gitub.io/dex-net
+.. _UC Berkeley AUTOLAB: http://autolab.berkeley.edu
 
 .. image:: images/gqcnn.png
    :height: 800px
@@ -18,8 +30,8 @@ See the github page for the source code: https://github.com/BerkeleyAutomation/g
    :scale: 100 %
    :align: center
 
-Goals
------
+Project Goals
+-------------
 The goals of this project are to facilitate:
 
 1) **Replicability** of GQ-CNN training from the `Dex-Net 2.0 paper`_.
@@ -42,8 +54,7 @@ We are currently researching how to generate datasets that can generalize across
 
 Development
 -----------
-The package is currently under active development and we hope to have a stable version with ROS package support by June 30, 2017.
-Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.
+The package is currently under active development. Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.
 
 Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
 For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.edu) with the subject line starting with "gqcnn development: "
@@ -93,6 +104,13 @@ If you use the code, datasets, or models in a publication, please `cite the Dex-
    :caption: Tutorial
 
    tutorials/tutorial.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Documentation for Scripts
+   :glob:
+
+   scripts/*
 
 .. toctree::
    :maxdepth: 2

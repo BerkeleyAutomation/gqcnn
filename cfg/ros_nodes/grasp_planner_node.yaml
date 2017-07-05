@@ -1,28 +1,20 @@
-# ros_topics to subscribe to
-ros_topics:
-  camera_intrinsics: /primesense_overhead/rgb/camera_info
-  object_detector:
-    bounding_boxes: /yumi_primesense_object_detector/bounding_boxes
-    rgb_image: /yumi_primesense_object_detector/image/rgb
-    depth_image: /yumi_primesense_object_detector/image/depth
-
-# visualize cropped images
-vis_cropped_images: 0
+# visualization
+vis:
+  vis_cropped_rgbd_image: 0
+  vis_uncropped_color_image: 0
+  vis_uncropped_depth_image: 0
 
 # padding for the cropped images so when they are rotated to be centered on the grasp point there will not be any gaps where there is no part of the image
-width_pad: 60
-height_pad: 60
+width_pad: 0
+height_pad: 0
 
 # inpaint
-inpaint_rescale_factor: 0.5
-
-# sensor calibration dir
-calib_dir: /home/autolab/Public/alan/calib
+inpaint_rescale_factor: 0.5 # amount to rescale the images before inpainting (smaller numbers == faster code) 
 
 # policy params
 policy:
   # optimization params
-  num_seed_samples: 100
+  num_seed_samples: 200 # number of seed samples
   num_gmm_samples: 50
   num_iters: 3
   gmm_refit_p: 0.25
@@ -30,7 +22,7 @@ policy:
   gmm_reg_covar: 0.01
 
   # gqcnn params
-  gqcnn_model: /home/autolab/Public/data/dex-net/data/models/gqcnn_test_network
+  gqcnn_model: /mnt/hdd/dex-net/data/models/grasp_quality/GQ-Image-Wise
 
   # general params
   deterministic: 1
@@ -46,23 +38,23 @@ policy:
 
     # antipodality
     friction_coef: 0.8
-    depth_grad_thresh: 0.005
+    depth_grad_thresh: 0.0025
     depth_grad_gaussian_sigma: 1.0
     downsample_rate: 4
     max_rejection_samples: 2500
 
     # distance
-    max_dist_from_center: 150
-    min_dist_from_boundary: 80
-    min_grasp_dist: 0.025
-    angle_dist_weight: 0.025
+    max_dist_from_center: 10000000
+    min_dist_from_boundary: 40
+    min_grasp_dist: 2.5
+    angle_dist_weight: 5.0
 
     # depth sampling
     depth_samples_per_grasp: 1
     depth_sample_win_height: 1
     depth_sample_win_width: 1
     min_depth_offset: 0.015
-    max_depth: 0.69
+    max_depth_offset: 0.0
 
   # visualization
   vis:

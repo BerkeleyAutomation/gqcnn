@@ -36,7 +36,7 @@ from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 
-class DeepOptimizer(object):
+class SGDOptimizer(object):
     """ Optimizer for gqcnn object """
 
     def __init__(self, gqcnn, config):
@@ -380,12 +380,8 @@ class DeepOptimizer(object):
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-        elif input_data_mode == InputDataMode.RAW_IMAGE:
-            return pose_arr[:,:4]
-        elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
-            return pose_arr[:,:6]
         else:
-            raise ValueError('Input data mode %s not supported' %(input_data_mode))
+            raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))
 
     def _setup_summaries(self):
         """ Sets up placeholders for summary values and creates summary writer """
@@ -837,7 +833,7 @@ class DeepOptimizer(object):
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
-        self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
+        self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
 
         if self.debug:
             random.shuffle(self.im_filenames)
@@ -857,7 +853,7 @@ class DeepOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.stable_pose_filenames) == 0:
+        if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0 or len(self.stable_pose_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
         if len(self.obj_id_filenames) == 0:
             self.obj_id_filenames = None
@@ -874,6 +870,9 @@ class DeepOptimizer(object):
             self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
         self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
+        # create copy of image filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
+        self.im_filenames_copy = self.im_filenames[:]
+         
     def _setup_output_dirs(self):
         """ Setup output directories """
 
@@ -1000,8 +999,8 @@ class DeepOptimizer(object):
                 num_remaining = self.train_batch_size - num_queued
 
                 # gen file index uniformly at random
-                file_num = np.random.choice(len(self.im_filenames), size=1)[0]
-                train_data_filename = self.im_filenames[file_num]
+                file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
+                train_data_filename = self.im_filenames_copy[file_num]
 
                 self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
                                          'arr_0'].astype(np.float32)

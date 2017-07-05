@@ -14,3 +14,4 @@ model_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_dex
 datapoint_type: false_positive # which datapoints to visualize, possible values are true positive, false positive, true negative, false negative
 display_image_type: depth
 font_size: 15
+samples_per_object: 1
