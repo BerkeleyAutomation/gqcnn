@@ -38,7 +38,7 @@ import logging
 from autolab_core import YamlConfig
 from gqcnn import GQCNNPredictionVisualizer
 
-if __name__ == 'main':
+if __name__ == '__main__':
 	# setup logger
 	logging.getLogger().setLevel(logging.INFO)
 
