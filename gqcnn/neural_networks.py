@@ -11,11 +11,13 @@ import os
 import sys
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import IPython
 
 from autolab_core import YamlConfig
 
 import optimizer_constants
 from optimizer_constants import InputDataMode
+
 def reduce_shape(shape):
     """ Get shape of a layer for flattening """
     shape = [x.value for x in shape[1:]]
@@ -553,6 +555,10 @@ class GQCNN(object):
     @property
     def graph(self):
         return self._graph
+    
+    @property
+    def sess(self):
+        return self._sess
 
     def update_im_mean(self, im_mean):
         """ Updates image mean to be used for normalization when predicting 
@@ -692,27 +698,49 @@ class GQCNN(object):
             if close_sess:
                 self.close_session()
         return output_arr
-		
-    @property
-    def filters(self):
-        """ Returns the set of conv1_1 filters 
+	
+    def featurize(self, image_arr, pose_arr, feature_layer='conv2_2'):
+        """ Featurize a set of images in batches """
 
-        Returns
-        -------
-        :obj:`tensorflow Tensor`
-            filters(weights) from conv1_1 of the network
-        """
+        if feature_layer not in self._feature_tensors.keys():
+            raise ValueError('Feature layer %s not recognized' %(feature_layer))
+        
+        # setup prediction
+        num_images = image_arr.shape[0]
+        num_poses = pose_arr.shape[0]
+        output_arr = None
+        if num_images != num_poses:
+            raise ValueError('Must provide same number of images and poses')
 
+        # predict by filling in image array in batches
         close_sess = False
-        if self._sess is None:
-            close_sess = True
-            self.open_session()
+        with self._graph.as_default():
+            if self._sess is None:
+                close_sess = True
+                self.open_session()
+            i = 0
+            while i < num_images:
+                logging.debug('Predicting file %d' % (i))
+                dim = min(self._batch_size, num_images - i)
+                cur_ind = i
+                end_ind = cur_ind + dim
+                self._input_im_arr[:dim, :, :, :] = (
+                    image_arr[cur_ind:end_ind, :, :, :] - self._im_mean) / self._im_std
+                self._input_pose_arr[:dim, :] = (
+                    pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
 
-        filters = self._sess.run(self._weights.conv1_1W)
+                gqcnn_output = self._sess.run(self._feature_tensors[feature_layer],
+                                              feed_dict={self._input_im_node: self._input_im_arr,
+                                                         self._input_pose_node: self._input_pose_arr})
+                if output_arr is None:
+                    output_arr = gqcnn_output
+                else:
+                    np.r_[output_arr, gqcnn_output]
 
-        if close_sess:
-            self.close_session()
-        return filters
+                i = end_ind
+            if close_sess:
+                self.close_session()
+        return output_arr
 
     def _build_network(self, input_im_node, input_pose_node,  drop_fc3=False, drop_fc4=False, fc3_drop_rate=0, fc4_drop_rate=0):
         """ Builds neural network 
@@ -895,5 +923,15 @@ class GQCNN(object):
 
         # fc5
         fc5 = tf.matmul(fc4, self._weights.fc5W) + self._weights.fc5b
+
+        # form intermediate layer tensors for feature analysis
+        self._feature_tensors = {}
+        self._feature_tensors['conv1_1'] = pool1_1
+        self._feature_tensors['conv1_2'] = pool1_2
+        self._feature_tensors['conv2_1'] = pool2_1
+        self._feature_tensors['conv2_2'] = pool2_2
+        self._feature_tensors['fc3'] = fc3
+        self._feature_tensors['fc4'] = fc4
+        self._feature_tensors['fc5'] = fc5
 
         return fc5
