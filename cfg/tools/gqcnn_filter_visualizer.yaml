@@ -3,7 +3,19 @@ output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_filters
 
 models:
   dex-net_2.0_image_wise_06_15_17:
-    show_filters: 1
+    show_filters: 0
+    conv1_1: 1
+    conv1_2: 1
+    conv2_1: 1
+    conv2_2: 1
+  dex-net_2.0_object_wise_06_15_17:
+    show_filters: 0
+    conv1_1: 1
+    conv1_2: 1
+    conv2_1: 1
+    conv2_2: 1
+  dex-net_2.0_pose_wise_06_15_17:
+    show_filters: 0
     conv1_1: 1
     conv1_2: 1
     conv2_1: 1
