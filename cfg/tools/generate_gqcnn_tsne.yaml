@@ -1,0 +1,25 @@
+dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/3dnet_kit_06_13_17
+feature_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/feature_maps/pose_wise
+output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/tsne_plots/pose_wise
+
+layers:
+  - conv1_2
+  - conv2_1
+  - conv2_2
+  - fc3
+  - fc4
+
+image_mode: depth_tf_table
+pose_data_format: tf_image
+
+metric_thresh: .002
+metric_name: robust_ferrari_canny
+
+plotting:
+  figsize: 8
+  font_size: 15
+  point_size: 5
+  dpi: 100
+
+pre_computed_layers:
+ - none
