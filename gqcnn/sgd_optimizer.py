@@ -971,12 +971,6 @@ class SGDOptimizer(object):
   
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images for training """
-
-        train_data = np.zeros(
-            [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
-        train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
-        label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
-
         # read parameters of gaussian process
         self.gp_rescale_factor = self.cfg['gaussian_process_scaling_factor']
         self.gp_sample_height = int(self.im_height / self.gp_rescale_factor)
@@ -992,6 +986,13 @@ class SGDOptimizer(object):
             start_i = 0
             end_i = 0
             file_num = 0
+
+            # init buffers
+            train_data = np.zeros(
+            [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
+            train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
+            label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
+
             while start_i < self.train_batch_size:
                 # compute num remaining
                 num_remaining = self.train_batch_size - num_queued
