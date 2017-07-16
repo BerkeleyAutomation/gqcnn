@@ -91,7 +91,7 @@ background_max_depth: 0.65
 
 drop_fc3: 0
 fc3_drop_rate: 0.5
-drop_fc4: 1
+drop_fc4: 0
 fc4_drop_rate: 0.5
 
 # debugging params
