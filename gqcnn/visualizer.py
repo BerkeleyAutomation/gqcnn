@@ -145,7 +145,7 @@ class Visualizer:
         plt.plot(bottom[:,0], bottom[:,1], linewidth=line_width, color=color, linestyle=style)
 
     @staticmethod
-    def grasp(grasp, color='r', arrow_len=4, arrow_head_len = 2, arrow_head_width = 3,
+    def grasp(grasp, width=None, color='r', arrow_len=4, arrow_head_len = 2, arrow_head_width = 3,
               arrow_width = 1, jaw_len=3, jaw_width = 3.0,
               grasp_center_size=7.5, grasp_center_thickness=2.5,
               grasp_center_style='+', grasp_axis_width=1,
@@ -157,6 +157,8 @@ class Visualizer:
         ----------
         grasp : :obj:`Grasp2D`
             2D grasp to plot
+        width : float
+            width, in pixels, of the grasp (overrides Grasp2D.width_px)
         color : :obj:`str`
             color of plotted grasp
         arrow_len : float
@@ -190,8 +192,11 @@ class Visualizer:
         
         # compute axis and jaw locations
         axis = grasp.axis
-        g1 = grasp.center.data - (float(grasp.width_px) / 2) * axis
-        g2 = grasp.center.data + (float(grasp.width_px) / 2) * axis
+        width_px = width
+        if width_px is None:
+            width_px = grasp.width_px
+        g1 = grasp.center.data - (float(width_px) / 2) * axis
+        g2 = grasp.center.data + (float(width_px) / 2) * axis
         g1p = g1 - scale * arrow_len * axis # start location of grasp jaw 1
         g2p = g2 + scale * arrow_len * axis # start location of grasp jaw 2
 

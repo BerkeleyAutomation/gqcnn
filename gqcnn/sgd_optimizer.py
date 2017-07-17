@@ -877,8 +877,10 @@ class SGDOptimizer(object):
             self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
         # create copy of image filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
-        self.im_filenames_copy = self.im_filenames[:]
-         
+        self.im_filenames_queue = copy.deepcopy(self.im_filenames)
+        self.pose_filenames_queue = copy.deepcopy(self.pose_filenames)
+        self.label_filenames_queue = copy.deepcopy(self.label_filenames)
+
     def _setup_output_dirs(self):
         """ Setup output directories """
 
@@ -980,11 +982,6 @@ class SGDOptimizer(object):
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images for training """
 
-        train_data = np.zeros(
-            [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
-        train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
-        label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
-
         # read parameters of gaussian process
         self.gp_rescale_factor = self.cfg['gaussian_process_scaling_factor']
         self.gp_sample_height = int(self.im_height / self.gp_rescale_factor)
@@ -1000,20 +997,26 @@ class SGDOptimizer(object):
             start_i = 0
             end_i = 0
             file_num = 0
+
+            train_data = np.zeros(
+                [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
+            train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
+            label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
+
             while start_i < self.train_batch_size:
                 # compute num remaining
                 num_remaining = self.train_batch_size - num_queued
 
                 # gen file index uniformly at random
-                file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
-                train_data_filename = self.im_filenames_copy[file_num]
+                file_num = np.random.choice(len(self.im_filenames_queue), size=1)[0]
+                train_data_filename = self.im_filenames_queue[file_num]
 
                 self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
-                                         'arr_0'].astype(np.float32)
-                self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames[file_num]))[
-                                          'arr_0'].astype(np.float32)
-                self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames[file_num]))[
-                                          'arr_0'].astype(np.float32)
+                    'arr_0'].astype(np.float32)
+                self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames_queue[file_num]))[
+                    'arr_0'].astype(np.float32)
+                self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_queue[file_num]))[
+                    'arr_0'].astype(np.float32)
 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
@@ -1046,9 +1049,9 @@ class SGDOptimizer(object):
                     self.train_label_arr = self.train_label_arr.astype(self.numpy_dtype)
 
                 # enqueue training data batch
-                train_data[start_i:end_i, ...] = np.copy(self.train_data_arr)
-                train_poses[start_i:end_i,:] = self._read_pose_data(np.copy(self.train_poses_arr), self.input_data_mode)
-                label_data[start_i:end_i] = np.copy(self.train_label_arr)
+                train_data[start_i:end_i, ...] = self.train_data_arr.copy()
+                train_poses[start_i:end_i,:] = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
+                label_data[start_i:end_i] = self.train_label_arr.copy()
 
                 del self.train_data_arr
                 del self.train_poses_arr
@@ -1215,11 +1218,8 @@ class SGDOptimizer(object):
             validation error
         """
         error_rates = []
-        self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
-
         for data_filename, pose_filename, label_filename in zip(self.im_filenames, self.pose_filenames, self.label_filenames):
+
             # load next file
             data = np.load(os.path.join(self.data_dir, data_filename))['arr_0']
             poses = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
@@ -1249,10 +1249,10 @@ class SGDOptimizer(object):
             else:
                 error_rates.append(RegressionResult([predictions], [labels]).error_rate)
             
-        # clean up
-        del data
-        del poses
-        del labels
+            # clean up
+            del data
+            del poses
+            del labels
 
         # return average error rate over all files (assuming same size)
         return np.mean(error_rates)

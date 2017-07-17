@@ -1,12 +1,16 @@
 ### TRAINING CONFIGURATIONS ###
+mode: training
+
 # dataset 
-dataset_dir: /home/autolab/Public/data/dex-net/data/clutter/3dnet_kit_06_29_17_eps_90/tensors
-output_dir: /home/autolab/Public/data/dex-net/data/models/clutter
-model_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
+dataset_dir: /home/autolab/Public/data/dex-net/data/grasp_quality_regression/example_07_10_17/tensors
+output_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality
+#model_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
+model_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_vgg_dexnet_large_v1_01_24_17
+
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
-num_epochs: 5     # number of epochs to train for
+num_epochs: 2.5     # number of epochs to train for
 eval_frequency: 1000  # how often to get validation error 
 save_frequency: 5000  # how often to save output
 vis_frequency: 1000
@@ -25,13 +29,13 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 0.25   # number of times to go through training datapoints before stepping down decay rate
+decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
 
-fine_tune: 1
-update_fc_only: 1
+fine_tune: 0
+update_fc_only: 0
 update_conv0_only: 0
 reinit_pc1: 0
 reinit_fc3: 0
@@ -46,8 +50,8 @@ num_tensor_channels: 1
 
 num_random_files: 100
 
-target_metric_name: labels
-metric_thresh: 0.5
+target_metric_name: robust_ferrari_canny
+metric_thresh: 0.002
 
 # denoising / synthetic data params
 multiplicative_denoising: 1

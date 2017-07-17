@@ -238,16 +238,36 @@ models/model_XXXX/split_type : str
 models/model_XXXX/vis_conv : int
 	flag (0 or 1) whether or not to display and save convolution filters from the model directory	
 """
-from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
-from autolab_core import YamlConfig
+import argparse
 import logging
+import os
 import time
+
+from autolab_core import YamlConfig
+from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
 
 if __name__ == '__main__':
 	#setup logger
 	logging.getLogger().setLevel(logging.INFO)
 
-	train_config = YamlConfig('cfg/tools/training.yaml')
+        # parse args
+        parser = argparse.ArgumentParser(description='Create a GQ-CNN training dataset from a dataset of 3D object models and grasps in a Dex-Net database')
+        parser.add_argument('--config_filename', type=str, default=None, help='configuration file to use')
+        args = parser.parse_args()
+        config_filename = args.config_filename
+
+        # handle config filename
+        if config_filename is None:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/tools/training.yaml')
+
+        # turn relative paths absolute
+        if not os.path.isabs(config_filename):
+                config_filename = os.path.join(os.getcwd(), config_filename)
+
+	train_config = YamlConfig(config_filename)
+        mode = train_config['mode']
 	gqcnn_config = train_config['gqcnn_config']
 
 	def get_elapsed_time(time_in_seconds):
@@ -262,40 +282,42 @@ if __name__ == '__main__':
 	###Possible Use-Cases###
 
 	# Training from Scratch
-        """"
-	start_time = time.time()
-	gqcnn = GQCNN(gqcnn_config)
-	sgdOptimizer = SGDOptimizer(gqcnn, train_config)
-	with gqcnn.get_tf_graph().as_default():
-	    sgdOptimizer.optimize()
-	logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
-        """
+        if mode == 'training':
+                start_time = time.time()
+                gqcnn = GQCNN(gqcnn_config)
+                sgdOptimizer = SGDOptimizer(gqcnn, train_config)
+                with gqcnn.get_tf_graph().as_default():
+                        sgdOptimizer.optimize()
+                logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
 
 	# Prediction
-	"""
-	start_time = time.time()
-	model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
-	gqcnn = GQCNN.load(model_dir)
-	output = gqcnn.predict(images, poses)
-	pred_p_success = output[:,1]
-	gqcnn.close_session()
-	logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
-	"""
+        elif mode == 'prediction':
+                start_time = time.time()
+                model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
+                gqcnn = GQCNN.load(model_dir)
+                output = gqcnn.predict(images, poses)
+                pred_p_success = output[:,1]
+                gqcnn.close_session()
+                logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
 
 	# Analysis
-	"""
-	start_time = time.time()
-	analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
-	analyzer = GQCNNAnalyzer(analysis_config)
-	analyzer.analyze()
-	logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
-	"""
+        elif mode == 'analysis':
+                start_time = time.time()
+                analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
+                analyzer = GQCNNAnalyzer(analysis_config)
+                analyzer.analyze()
+                logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
 
 	# Fine-Tuning
-	start_time = time.time()
-	model_dir = train_config['model_dir']
-	gqcnn = GQCNN.load(model_dir)
-	sgdOptimizer = SGDOptimizer(gqcnn, train_config)
-	with gqcnn._graph.as_default():
-	        sgdOptimizer.optimize()
-	logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
+        elif mode == 'finetuning':
+                start_time = time.time()
+                model_dir = train_config['model_dir']
+                gqcnn = GQCNN.load(model_dir)
+                sgdOptimizer = SGDOptimizer(gqcnn, train_config)
+                with gqcnn._graph.as_default():
+                        sgdOptimizer.optimize()
+                logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
+        
+        # handle illegal modes
+        else:
+                raise ValueError('Mode %s not recognized!' %(mode))
