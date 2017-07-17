@@ -21,7 +21,7 @@ Links
 .. _Source Code: https://github.com/BerkeleyAutomation/gqcnn
 .. _Datasets: http://bit.ly/2rIM7Jk
 .. _Pretrained Models: http://bit.ly/2tAFMko
-.. _Dex-Net Website: https://berkeleyautomation.gitub.io/dex-net
+.. _Dex-Net Website: https://berkeleyautomation.github.io/dex-net
 .. _UC Berkeley AUTOLAB: http://autolab.berkeley.edu
 
 .. image:: images/gqcnn.png
