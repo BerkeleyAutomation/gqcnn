@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     # read config parameters
     logging.info('Reading in featurization configurations.')
-    cfg = YamlConfig('cfg/tools/gqcnn_feature_generator.yaml')
+    cfg = YamlConfig('cfg/tools/generate_gqcnn_features.yaml')
     dataset_dir = cfg['dataset_dir']
     model_dir = cfg['model_dir']
     output_dir = cfg['output_dir']
