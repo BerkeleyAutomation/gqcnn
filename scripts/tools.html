@@ -122,7 +122,16 @@
 <p class="caption"><span class="caption-text">Documentation for Scripts</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tools</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#training-py">training.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visualize-predictions-py">visualize_predictions.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-plot_training_losses">plot_training_losses.py</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#author">Author</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#required-parameters">Required Parameters</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">API Documentation</span></p>
 <ul>
@@ -197,7 +206,28 @@
             
   <div class="section" id="tools">
 <h1>Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h1>
-<p>Documentation in progress!!!</p>
+<div class="section" id="training-py">
+<h2>training.py<a class="headerlink" href="#training-py" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="visualize-predictions-py">
+<h2>visualize_predictions.py<a class="headerlink" href="#visualize-predictions-py" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-plot_training_losses">
+<span id="plot-training-losses-py"></span><h2>plot_training_losses.py<a class="headerlink" href="#module-plot_training_losses" title="Permalink to this headline">¶</a></h2>
+<p>Script to plot the various errors saved during training.</p>
+<div class="section" id="author">
+<h3>Author<a class="headerlink" href="#author" title="Permalink to this headline">¶</a></h3>
+<p>Jeff Mahler</p>
+</div>
+<div class="section" id="required-parameters">
+<h3>Required Parameters<a class="headerlink" href="#required-parameters" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>model_dir <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Command line argument, the path to the model whose errors are to plotted. All plots and other metrics will
+be saved to this directory.</dd>
+</dl>
+</div>
+</div>
 </div>
 
 
