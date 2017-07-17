@@ -123,10 +123,22 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#training-py">training.py</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#visualize-predictions-py">visualize_predictions.py</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-plot_training_losses">plot_training_losses.py</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-training">training.py</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#author">Author</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#yaml-configuration-file-parameters">YAML Configuration File Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#training-fine-tuning-configuration">Training/Fine-Tuning Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis-configuration">Analysis Configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-visualize_predictions">visualize_predictions.py</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Author</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">YAML Configuration File Parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-plot_training_losses">plot_training_losses.py</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id3">Author</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#required-parameters">Required Parameters</a></li>
 </ul>
 </li>
@@ -206,17 +218,281 @@
             
   <div class="section" id="tools">
 <h1>Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="training-py">
-<h2>training.py<a class="headerlink" href="#training-py" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-training">
+<span id="training-py"></span><h2>training.py<a class="headerlink" href="#module-training" title="Permalink to this headline">¶</a></h2>
+<p>Script with examples for:
+1) Training Grasp Quality Neural Networks(GQ-CNN’s) using Stochastic Gradient Descent
+2) Predicting probability of grasp success from images in batches using a pre-trained GQ-CNN model
+3) Fine-tuning a GQ-CNN model
+4) Analyzing a GQC-NN model</p>
+<div class="section" id="author">
+<h3>Author<a class="headerlink" href="#author" title="Permalink to this headline">¶</a></h3>
+<p>Vishal Satish</p>
 </div>
-<div class="section" id="visualize-predictions-py">
-<h2>visualize_predictions.py<a class="headerlink" href="#visualize-predictions-py" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="yaml-configuration-file-parameters">
+<h3>YAML Configuration File Parameters<a class="headerlink" href="#yaml-configuration-file-parameters" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="training-fine-tuning-configuration">
+<h4>Training/Fine-Tuning Configuration<a class="headerlink" href="#training-fine-tuning-configuration" title="Permalink to this headline">¶</a></h4>
+<dl class="docutils">
+<dt>dataset_dir <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the location of the dataset to use for training ex. /path/to/your/dataset</dd>
+<dt>output_dir <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the location to save the trained model, which will be saved as model_XXXXX where XXXXX will
+be a randomly generated string of characters. Note: if the debug flag is on this model name will stay the same so the same model directory
+will continuosuly be over-written. If debug is off, a new name and thus directrory will be generated every time.</dd>
+<dt>model_dir <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>if the fine-tune flag is on this is the model that will be loaded for training ex. /path/to/pre-trained/model</dd>
+<dt>train_batch_size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the number of datapoints to process during each iteration of training</dd>
+<dt>val_batch_size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the number of datapoints to process during each iteration of validation</dd>
+<dt>num_epochs <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the number of epoches to train for</dd>
+<dt>eval_frequency <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the validation error will be calculated after this many iterations</dd>
+<dt>save_frequency <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the model will be saved after this many iterations</dd>
+<dt>vis_frequency <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>if the visualization flag is turned on visualization will occur after this many iterations</dd>
+<dt>log_frequency <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>training metrics will be logged after this many iterations</dd>
+<dt>show_filters <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to show network filters during training</dd>
+<dt>queue_capacity <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>total capacity of data prefetch queue</dd>
+<dt>queue_sleep <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>how long to sleep between data prefetches</dd>
+<dt>data_split_mode <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>how to split up the data into training and validation, options are 1) image wise-randomly shuffle and split images 2) stable_pose_wise-randomly shuffle all valid stable
+poses of objects and then split so that all datapoints of a certain stable pose are entirely in either training or validation 3) object_wise-randomly shuffle all objects and split into training and validation
+so that all datapoints of a certain object are entirely in training or validation</dd>
+<dt>train_pct <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>percentage of datapoints to use for training</dd>
+<dt>val_pct <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>percentage of datapoints to use for validation</dd>
+<dt>total_pct <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>percentage of total datapoints to use</dd>
+<dt>eval_total_train_error <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to evaluate the total training error and save it at the end of optimization</dd>
+<dt>loss <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the loss function to use, currently supported options are 1) l2-l2 loss 2) sparse-sparse softmax cross entropy with logits loss</dd>
+<dt>optimizer <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the optimizer to use, currently supported options are 1) momentum 2) adam 3) rmsprop</dd>
+<dt>train_l2_regularizer <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><dl class="first last docutils">
+<dt>factor to multiple summed regularizers by before adding to loss:</dt>
+<dd>loss = loss + train_l2_regularizer * regularizers</dd>
+</dl>
+</dd>
+<dt>base_lr <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>base learning rate</dd>
+<dt>decay_step_multiplier <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>number of times to go through entire training datapoints before stepping down decay rate</dd>
+<dt>decay_rate <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>decay rate during optimization</dd>
+<dt>momentum_rate <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>momentume rate if using momentum optimizer</dd>
+<dt>max_training_examples_per_load <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>maximum number of training datapoints to use in each batch</dd>
+<dt>fine_tune <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not fine-tuning</dd>
+<dt>update_fc_only <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) used during fine-tuning to indicate whether or not to only update the first fully-connected layer</dd>
+<dt>update_conv0_only <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) used during fine-tuning to indicate whether or not to only update the first convolution layer</dd>
+<dt>reinit_pc1 <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the first pose layer</dd>
+<dt>reinit_fc3 <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the third fully-connected layer</dd>
+<dt>reinit_fc4 <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the fourth fully-connected layer</dd>
+<dt>reinit_fc5 <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the fifth fully-connected layer</dd>
+<dt>image_mode <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the type of the input image datapoints, please refer to the README for the dataset for the possible options</dd>
+<dt>training_mode <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><ol class="first last arabic simple">
+<li>classification or 2) regression</li>
+</ol>
+</dd>
+<dt>preproc_mode <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the data pre-processing mode for use during regression, options are: 1) normalized 2) none</dd>
+<dt>input_data_mode <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the format to use for the input pose data, please refer to the README for the dataset for the possible options</dd>
+<dt>num_tensor_channels <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the number of image channels</dd>
+<dt>num_random_files <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the sub-sample size when calculating dataset metrics such as image_mean, pose_mean, image_std, pose_std</dd>
+<dt>target_metric_name <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the name of the target metric to use when training, please refer to the README for the dataset for the possible options</dd>
+<dt>metric_thresh <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>the threshold to use when converting the grasp probability metric predicted by the network into a binary metric</dd>
+<dt>multiplicative_denoising <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to apply multiplicative denoising to the images</dd>
+<dt>gamma_shape <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>gamma shape to use for multiplicative_denoising</dd>
+<dt>symmetrize <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to symmetrize images by randomly rotating and reflecting</dd>
+<dt>morphological <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to apply morphological filters to images</dd>
+<dt>morph_open_rate <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>open rate for morphological filter</dd>
+<dt>morph_poisson_mean <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>poisson mean to use for morphological filter</dd>
+<dt>image_dropout <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to randomly dropout regions of the images for robustness</dd>
+<dt>image_dropout_rate <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>rate at which specific images are chosen to have regions dropped from them</dd>
+<dt>dropout_poisson_mean <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>poisson mean to use when dropping regions from image</dd>
+<dt>dropout_radius_shape <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>shape of dropout radius</dd>
+<dt>dropout_radius_scale <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>scale fo dropout radius</dd>
+<dt>gradient_dropout <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to drop out a region around the areas of the images with high gradient</dd>
+<dt>gradient_dropout_rate <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>rate at which specific images are chosen to have gradients dropped out</dd>
+<dt>gradient_dropout_sigma <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>sigma value for gradient dropout</dd>
+<dt>gradient_dropout_shape <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>shape of gradient dropout filter</dd>
+<dt>gradient_dropout_scale <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>scale of gradient dropout filter</dd>
+<dt>gaussian_process_denoising <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to add correlated gaussian noise to images</dd>
+<dt>gaussian_process_rate <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>rate at which specific images are chosen to have added correlated gaussian noise</dd>
+<dt>gaussian_process_scaling_factor <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>scaling factor to use for added correlated gaussian noise</dd>
+<dt>gaussian_process_sigma <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>sigma to use for added correlated gaussian noise</dd>
+<dt>border_distortion <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to randomly dropout regions of the image borders for robustness</dd>
+<dt>border_grad_sigma <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>sigma for gaussian gradient magnitude calculation</dd>
+<dt>border_grad_thresh <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>threshold for finding high gradient pixels in the image</dd>
+<dt>border_poisson_mean <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>poisson mean for calculating the number of dropout regions</dd>
+<dt>border_radius_shape <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>shape of radius of filter for border dropouts</dd>
+<dt>border_radius_scale <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>scale of radius of filter for border dropouts</dd>
+<dt>background_denoising <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to apply background denoising to images</dd>
+<dt>background_rate <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>rate at which specific images are chosen to have background denoising applied</dd>
+<dt>background_min_depth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>minimum depth in meters for background denoising</dd>
+<dt>background_max_depth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>maximum depth in meters for background denoising</dd>
+<dt>debug <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to use debug mode, in debug mode the same model name is used for saving between multiple
+optimizations and the model directory is thus overwritten. Also the number of datapoints used for training is limited by the size
+of the following debug_num_file parameter</dd>
+<dt>debug_num_files <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the max number of files from the dataset to use for training and validation</dd>
+<dt>gqcnn_config/im_height <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the height of the input image data in pixels</dd>
+<dt>gqcnn_config/im_width <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the width of the input image data in pixels</dd>
+<dt>gqcnn_config/im_channels <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the number of channels in the input images</dd>
+<dt>gqcnn_config/input_data_mode <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the type of the input image datapoints, please refer to the README for the dataset for the possible options, NOTE: if the network is being fine-tuned
+then this parameter must match what was used for training as otherwise the pose tensor dimensions will not match</dd>
+<dt>gqcnn_config/batch_size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the batch size to use for prediction from this network, in training using the SGDOptimizer this will be overridden by the val_batch_size parameter
+in the training config</dd>
+<dt>gqcnn_config/architecture <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd>this section outlines the architecture of the GQ-CNN. Convolutional layers are denoted by the notation convX_Y where X is the group that the layer belongs to
+and Y is the individual layer id. Ex. conv1_1 and conv1_2 are the first and second convolutional layers of the first group of convolutional layers. Layers that process pose
+data are denoted by pcY where Y is the layer id. Fully-connected layers are denoted by fcY where Y is the layer id. Underneath each layer are its vairous properties such as filter dimensions,
+number of filters, pooling size, normalization type and output_size. Please see the actual yaml file for an example architecture definition.</dd>
+<dt>radius <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>the network normalization radius</dd>
+<dt>alpha <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>the network normalization alpha</dd>
+<dt>beta <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>the network normalization beta</dd>
+<dt>bias <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>the network normalization bias</dd>
+</dl>
+</div>
+<div class="section" id="analysis-configuration">
+<h4>Analysis Configuration<a class="headerlink" href="#analysis-configuration" title="Permalink to this headline">¶</a></h4>
+<dl class="docutils">
+<dt>model_dir <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the outer directory containing the models to be analyzed, ex. if the path to one of the models to be analyzed is
+/home/user/models/grasp_quality/model_XXXX then the model_dir is /home/user/models/grasp_quality/</dd>
+<dt>output_dir <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the output directory to save the output figures and/or filters from analysis, ex. /home/users/analyses/gqcnn_training_performance</dd>
+<dt>out_rate <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the frequency with which to use dataset files for analyses, ex. if 1 then every single file is used, if 2 then every other file is used</dd>
+<dt>font_size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the font size to use in figures</dd>
+<dt>dpi <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the dpi to use when plotting figures</dd>
+<dt>models <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd>a dictionary of models to analyze along with their analyzation parameters. The following documentation assumes we have
+a sample moduled named model_XXXX and describes the various model parameters</dd>
+<dt>models/model_XXXX/tag <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the tag to be prepended before the curve titles</dd>
+<dt>models/model_XXXX/type <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the type of model, options are: 1) gqcnn 2) rf 3) svm</dd>
+<dt>models/model_XXXX/split_type <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>how the data was split into training and validation, options are 1) image wise-randomly shuffle and split images 2) stable_pose_wise-randomly shuffle all valid stable
+poses of objects and then split so that all datapoints of a certain stable pose are entirely in either training or validation 3) object_wise-randomly shuffle all objects and split into training and validation
+so that all datapoints of a certain object are entirely in training or validation. This will determine which sets of indices are read in from the model directory</dd>
+<dt>models/model_XXXX/vis_conv <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>flag (0 or 1) whether or not to display and save convolution filters from the model directory</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="section" id="module-visualize_predictions">
+<span id="visualize-predictions-py"></span><h2>visualize_predictions.py<a class="headerlink" href="#module-visualize_predictions" title="Permalink to this headline">¶</a></h2>
+<p>Script for visualizing the predictions made by a given Grasp Quality Neural Network(GQ-CNN) model
+on a given dataset. Allows for the visualization of true-positives, true-negatives, false-positives, and
+false negatives.</p>
+<div class="section" id="id1">
+<h3>Author<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>Vishal Satish</p>
+</div>
+<div class="section" id="id2">
+<h3>YAML Configuration File Parameters<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>dataset_dir <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the path to the dataset to use for visualization, ex. /path/to/dataset</dd>
+<dt>image_mode <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the type of the input image datapoints, please refer to the README for the dataset for the possible options</dd>
+<dt>data_format <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the format to use for the input pose data, please refer to the README for the dataset for the possible options</dd>
+<dt>metric_name <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the name of the target metric to use when training, please refer to the README for the dataset for the possible options</dd>
+<dt>metric_thresh <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>the threshold to use when converting the target metric into a binary metric</dd>
+<dt>gripper_width_m <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>the robot gripper width in meters (used only for visualization)</dd>
+<dt>model_dir <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the path to the GQ-CNN model to use for predicting from the specified dataset, ex. /path/to/your/model</dd>
+<dt>datapoint_type <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>which datapoints to visualize, options: 1) false_positive 2) false_negative 3) true_positive 4) true_negative</dd>
+<dt>display_image_type <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>the type of image to display the grasps on during visualization, options: 1) depth 2) color 3) grayscale 4) rgbd 5) gd 6) segmask</dd>
+<dt>font_size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the font size to use for visualization</dd>
+<dt>samples_per_object <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the number of predictions to display per object</dd>
+</dl>
+</div>
 </div>
 <div class="section" id="module-plot_training_losses">
 <span id="plot-training-losses-py"></span><h2>plot_training_losses.py<a class="headerlink" href="#module-plot_training_losses" title="Permalink to this headline">¶</a></h2>
 <p>Script to plot the various errors saved during training.</p>
-<div class="section" id="author">
-<h3>Author<a class="headerlink" href="#author" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id3">
+<h3>Author<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <p>Jeff Mahler</p>
 </div>
 <div class="section" id="required-parameters">

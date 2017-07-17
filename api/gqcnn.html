@@ -203,6 +203,317 @@
 <div class="section" id="id1">
 <h2>GQCNN<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>A model for building Grasp Quality Neural Networks.</p>
+<dl class="class">
+<dt id="gqcnn.GQCNN">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">GQCNN</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Wrapper for grasp quality CNN</p>
+<dl class="method">
+<dt id="gqcnn.GQCNN.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>obj: dict</em>) – python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
+im_height, im_width, …</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="gqcnn.GQCNN.load">
+<em class="property">static </em><code class="descname">load</code><span class="sig-paren">(</span><em>model_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiates a GQCNN object using the model found in model_dir</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_dir</strong> (<em>obj: str</em>) – path to model directory where weights and architecture are stored</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">GQCNN object initialized with the weights and architecture found in the specified model directory</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">GQCNN</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.get_tf_graph">
+<code class="descname">get_tf_graph</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.get_tf_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the graph for this tf session</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">TensorFlow Graph</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">tf</span> <span class="pre">Graph</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.get_weights">
+<code class="descname">get_weights</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.get_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the weights for this network</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">network weights</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">GQCnnWeights</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.init_mean_and_std">
+<code class="descname">init_mean_and_std</code><span class="sig-paren">(</span><em>model_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.init_mean_and_std" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the mean and std to use for data normalization during prediction</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_dir</strong> (<em>obj: str</em>) – path to model directory where means and standard deviations are stored</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.init_weights_file">
+<code class="descname">init_weights_file</code><span class="sig-paren">(</span><em>model_filename</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.init_weights_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize network weights from the specified model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_filename</strong> (<em>obj: str</em>) – path to model to be loaded into weights</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.reinitialize_layers">
+<code class="descname">reinitialize_layers</code><span class="sig-paren">(</span><em>reinit_fc3</em>, <em>reinit_fc4</em>, <em>reinit_fc5</em>, <em>reinit_pc1=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.reinitialize_layers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Re-initializes final fully-connected layers for fine-tuning</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>reinit_fc3</strong> (<em>bool</em>) – whether to re-initialize fc3</li>
+<li><strong>reinit_fc4</strong> (<em>bool</em>) – whether to re-initialize fc4</li>
+<li><strong>reinit_fc5</strong> (<em>bool</em>) – whether to re-initialize fc5</li>
+<li><strong>reinit_pc1</strong> (<em>bool</em>) – whether to re-initiazlize pc1</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.init_weights_gaussian">
+<code class="descname">init_weights_gaussian</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.init_weights_gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes weights for network from scratch using Gaussian Distribution</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.initialize_network">
+<code class="descname">initialize_network</code><span class="sig-paren">(</span><em>add_softmax=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.initialize_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up input nodes and builds network.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>add_softmax</strong> (<em>float</em>) – whether or not to add a softmax layer</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.open_session">
+<code class="descname">open_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.open_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open tensorflow session</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.close_session">
+<code class="descname">close_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.close_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close tensorflow session</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.update_im_mean">
+<code class="descname">update_im_mean</code><span class="sig-paren">(</span><em>im_mean</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.update_im_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates image mean to be used for normalization when predicting</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>im_mean</strong> (<em>float</em>) – image mean to be used</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.get_im_mean">
+<code class="descname">get_im_mean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.get_im_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current image mean to be used for normalization when predicting</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">image mean</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.update_im_std">
+<code class="descname">update_im_std</code><span class="sig-paren">(</span><em>im_std</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.update_im_std" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates image standard deviation to be used for normalization when predicting</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>im_std</strong> (<em>float</em>) – image standard deviation to be used</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.get_im_std">
+<code class="descname">get_im_std</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.get_im_std" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current image standard deviation to be used for normalization when predicting</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">image standard deviation</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.update_pose_mean">
+<code class="descname">update_pose_mean</code><span class="sig-paren">(</span><em>pose_mean</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.update_pose_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates pose mean to be used for normalization when predicting</p>
+<p>:param pose_mean <code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code>: pose mean to be used</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.get_pose_mean">
+<code class="descname">get_pose_mean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.get_pose_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current pose mean to be used for normalization when predicting</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">pose mean</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.update_pose_std">
+<code class="descname">update_pose_std</code><span class="sig-paren">(</span><em>pose_std</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.update_pose_std" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates pose standard deviation to be used for normalization when predicting</p>
+<p>:param pose_std <code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code>: pose standard deviation to be used</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.get_pose_std">
+<code class="descname">get_pose_std</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.get_pose_std" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current pose standard deviation to be used for normalization when predicting</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">pose standard deviation</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.add_softmax_to_predict">
+<code class="descname">add_softmax_to_predict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.add_softmax_to_predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds softmax to output tensor of prediction network</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.update_batch_size">
+<code class="descname">update_batch_size</code><span class="sig-paren">(</span><em>batch_size</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.update_batch_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the prediction batch size</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>batch_size</strong> (<em>float</em>) – batch size to be used for prediction</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.GQCNN.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>image_arr</em>, <em>pose_arr</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNN.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict a set of images in batches</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>image_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code>) – 4D Tensor of images to be predicted</li>
+<li><strong>pose_arr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code>) – 4D Tensor of poses to be predicted</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gqcnn.GQCNN.filters">
+<code class="descname">filters</code><a class="headerlink" href="#gqcnn.GQCNN.filters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the set of conv1_1 filters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">filters(weights) from conv1_1 of the network</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">tensorflow</span> <span class="pre">Tensor</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 

@@ -210,31 +210,127 @@
 <div class="section" id="sgdoptimizer">
 <h2>SGDOptimizer<a class="headerlink" href="#sgdoptimizer" title="Permalink to this headline">¶</a></h2>
 <p>A tool for training GQ-CNN objects using Stochastic-Gradient-Descent.</p>
+<dl class="class">
+<dt id="gqcnn.SGDOptimizer">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">SGDOptimizer</code><span class="sig-paren">(</span><em>gqcnn</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.SGDOptimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Optimizer for gqcnn object</p>
+<dl class="method">
+<dt id="gqcnn.SGDOptimizer.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>gqcnn</em>, <em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.SGDOptimizer.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>gqcnn</strong> (<code class="xref py py-obj docutils literal"><span class="pre">GQCNN</span></code>) – grasp quality neural network to optimize</li>
+<li><strong>config</strong> (<em>dict</em>) – dictionary of configuration parameters</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.SGDOptimizer.optimize">
+<code class="descname">optimize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.SGDOptimizer.optimize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform optimization</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="trainstatslogger">
 <h2>TrainStatsLogger<a class="headerlink" href="#trainstatslogger" title="Permalink to this headline">¶</a></h2>
 <p>A tool for saving training data and metrics to disk while training a GQCNN.</p>
+<dl class="class">
+<dt id="gqcnn.TrainStatsLogger">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">TrainStatsLogger</code><span class="sig-paren">(</span><em>experiment_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.TrainStatsLogger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Class to log optimization error rates/parameters/losses/etc.</p>
+<dl class="method">
+<dt id="gqcnn.TrainStatsLogger.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>experiment_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.TrainStatsLogger.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>experiment_dir</strong> (<em>str</em>) – the experiment directory to save statistics to</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.TrainStatsLogger.log">
+<code class="descname">log</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.TrainStatsLogger.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log all of the statistics to experiment directory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gqcnn.TrainStatsLogger.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>**stats</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.TrainStatsLogger.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update optimization statistics
+NOTE: Any statistic that is None in the argument dict will not be updated</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stats</strong> (<em>dict</em>) – dict of statistics and values to be updated</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="generalconstants">
 <h2>GeneralConstants<a class="headerlink" href="#generalconstants" title="Permalink to this headline">¶</a></h2>
 <p>Enum for holding general DeepOptimizer constants such as random SEED and timeouts.</p>
+<dl class="class">
+<dt id="gqcnn.GeneralConstants">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">GeneralConstants</code><a class="headerlink" href="#gqcnn.GeneralConstants" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 <div class="section" id="imagefiletemplates">
 <h2>ImageFileTemplates<a class="headerlink" href="#imagefiletemplates" title="Permalink to this headline">¶</a></h2>
 <p>Enum for holding dataset file naming templates for use when reading in files from dataset
 directory.</p>
+<dl class="class">
+<dt id="gqcnn.ImageFileTemplates">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">ImageFileTemplates</code><a class="headerlink" href="#gqcnn.ImageFileTemplates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 <div class="section" id="imagemode">
 <h2>ImageMode<a class="headerlink" href="#imagemode" title="Permalink to this headline">¶</a></h2>
 <p>Enum for holding various image modalities.</p>
+<dl class="class">
+<dt id="gqcnn.ImageMode">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">ImageMode</code><a class="headerlink" href="#gqcnn.ImageMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 <div class="section" id="trainingmode">
 <h2>TrainingMode<a class="headerlink" href="#trainingmode" title="Permalink to this headline">¶</a></h2>
 <p>Enum for holding specific training mode(classification vs. regression).</p>
+<dl class="class">
+<dt id="gqcnn.TrainingMode">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">TrainingMode</code><a class="headerlink" href="#gqcnn.TrainingMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 <div class="section" id="preprocmode">
 <h2>PreprocMode<a class="headerlink" href="#preprocmode" title="Permalink to this headline">¶</a></h2>
 <p>Enum for holding pre-processing mode for use during regression.</p>
+<dl class="class">
+<dt id="gqcnn.PreprocMode">
+<em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">PreprocMode</code><a class="headerlink" href="#gqcnn.PreprocMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 <div class="section" id="inputdatamode">
 <h2>InputDataMode<a class="headerlink" href="#inputdatamode" title="Permalink to this headline">¶</a></h2>
