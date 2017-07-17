@@ -1,9 +1,9 @@
 dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/3dnet_kit_06_13_17
-model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/dex-net_2.0_pose_wise_06_15_17
-output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/feature_maps/pose_wise
+model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/dex-net_2.0_object_wise_06_15_17
+output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/feature_maps/object_wise
 
 image_mode: depth_tf_table
-data_split: stable_pose_wise
+data_split: object_wise
 pose_data_format: tf_image
 max_features: 20000
 layers: 

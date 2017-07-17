@@ -1,6 +1,6 @@
 dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/3dnet_kit_06_13_17
-feature_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/feature_maps/pose_wise
-output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/tsne_plots/pose_wise
+feature_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/feature_maps/object_wise
+output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/tsne_plots/object_wise
 
 layers:
   - conv1_2
