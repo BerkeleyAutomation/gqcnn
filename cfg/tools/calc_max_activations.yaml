@@ -1,0 +1,32 @@
+dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/3dnet_kit_06_13_17
+model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/dex-net_2.0_pose_wise_06_15_17
+output_dir: /mnt/hdd/dex-net/data/analyses/max_activations/pose_wise
+
+image_mode: depth_tf_table
+data_split: stable_pose_wise
+pose_data_format: tf_image
+
+layers: 
+  conv1_1:
+    filt_dim: 7
+    pool_size: 1 
+  conv1_2:
+    filt_dim: 5
+    pool_size: 2
+  conv2_1:
+    filt_dim: 3
+    pool_size: 1
+  conv2_2:
+    filt_dim: 3
+    pool_size: 1
+
+num_top_responses: 25
+num_responses_to_check: 100
+dirty_patch_thresh: .4
+
+vis:
+  vis_patches: 0
+
+debug: 0
+debug_num_files: 100
+
