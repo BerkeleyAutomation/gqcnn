@@ -868,8 +868,10 @@ class SGDOptimizer(object):
             self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
         self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
-        # create copy of image filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
+        # create copy of image, pose, and label filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
         self.im_filenames_copy = self.im_filenames[:]
+        self.pose_filenames_copy = self.pose_filenames[:]
+        self.label_filenames_copy = self.label_filenames[:]
          
     def _setup_output_dirs(self):
         """ Setup output directories """
@@ -1003,9 +1005,9 @@ class SGDOptimizer(object):
 
                 self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
                                          'arr_0'].astype(np.float32)
-                self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames[file_num]))[
+                self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
-                self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames[file_num]))[
+                self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
 
                 if self.pose_dim == 1 and self.train_poses_arr.shape[1] == 6:
