@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /path/to/your/gqcnn/data/GQ-Image-Wise
+dataset_dir: /path/to/your/gqcnn/data/adv_synth
 output_dir: /path/to/your/gqcnn/models
 model_dir: /path/to/your/pretrained/gqcnn/model
 
