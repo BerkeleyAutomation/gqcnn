@@ -238,16 +238,30 @@ models/model_XXXX/split_type : str
 models/model_XXXX/vis_conv : int
 	flag (0 or 1) whether or not to display and save convolution filters from the model directory	
 """
-from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
-from autolab_core import YamlConfig
+import argparse
 import logging
 import time
 
+from autolab_core import YamlConfig
+from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
+
 if __name__ == '__main__':
-	#setup logger
+	# setup logger
 	logging.getLogger().setLevel(logging.INFO)
 
-	train_config = YamlConfig('cfg/tools/training.yaml')
+        # parse args
+        parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network with TensorFlow')
+        parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
+        args = parser.parse_args()
+        config_filename = args.config_filename
+
+        if config_filename is None:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/tools/training.yaml')
+
+        # open config file
+	train_config = YamlConfig(config_filename)
 	gqcnn_config = train_config['gqcnn_config']
 
 	def get_elapsed_time(time_in_seconds):
