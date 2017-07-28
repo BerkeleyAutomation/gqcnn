@@ -7,7 +7,7 @@ SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = GQCNN
 SOURCEDIR     = source
 BUILDDIR      = build
-GH_PAGES_SOURCES = docs gqcnn
+GH_PAGES_SOURCES = docs examples gqcnn tools
 
 # Put it first so that "make" without argument is like "make help".
 help:

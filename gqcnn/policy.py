@@ -488,7 +488,8 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         num_grasps = len(grasps)
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
-            return None
+            raise NoValidGraspsException()
+
         logging.debug('Computing the seed set took %.3f sec' %(time() - seed_set_start))
 
         # form tensors
@@ -626,7 +627,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             num_grasps = len(grasps)
             if num_grasps == 0:
                 logging.warning('No valid grasps could be found')
-                return None
+                raise NoValidGraspsException()
 
             # form tensors
             image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
@@ -838,7 +839,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         num_grasps = len(grasps)
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
-            return None
+            raise NoValidGraspsException()
 
         # choose a grasp uniformly at random
         grasp_ind = np.random.choice(num_grasps, size=1)[0]

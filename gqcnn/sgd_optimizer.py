@@ -36,7 +36,7 @@ from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 
-class DeepOptimizer(object):
+class SGDOptimizer(object):
     """ Optimizer for gqcnn object """
 
     def __init__(self, gqcnn, config):
@@ -380,12 +380,8 @@ class DeepOptimizer(object):
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-        elif input_data_mode == InputDataMode.RAW_IMAGE:
-            return pose_arr[:,:4]
-        elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
-            return pose_arr[:,:6]
         else:
-            raise ValueError('Input data mode %s not supported' %(input_data_mode))
+            raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))
 
     def _setup_summaries(self):
         """ Sets up placeholders for summary values and creates summary writer """
@@ -547,7 +543,7 @@ class DeepOptimizer(object):
         # update gqcnn pose_mean and pose_std according to data_mode
         if self.input_data_mode == InputDataMode.TF_IMAGE:
             # depth
-            if isinstance(self.pose_mean, numbers.Number) or self.pose_mean.shape[0] == 1:
+            if isinstance(self.pose_mean, numbers.Number) or len(self.pose_mean.shape) == 0 or self.pose_mean.shape[0] == 1:
                 self.gqcnn.update_pose_mean(self.pose_mean)
                 self.gqcnn.update_pose_std(self.pose_std)
             else:
@@ -683,6 +679,9 @@ class DeepOptimizer(object):
 
     def _compute_indices_pose_wise(self):
         """ Compute train and validation indices based on an image-stable-pose-wise split"""
+
+        if self.stable_pose_filenames is None:
+            raise ValueError('Cannot use stable-pose-wise split. No stable pose labels! Check the dataset_dir')
 
         # get total number of training datapoints and set the decay_step
         num_datapoints = self.images_per_file * self.num_files
@@ -837,7 +836,7 @@ class DeepOptimizer(object):
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
-        self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
+        self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
 
         if self.debug:
             random.shuffle(self.im_filenames)
@@ -857,10 +856,12 @@ class DeepOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.stable_pose_filenames) == 0:
+        if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
         if len(self.obj_id_filenames) == 0:
             self.obj_id_filenames = None
+        if len(self.stable_pose_filenames) == 0:
+            self.stable_pose_filenames = None
 
         # subsample files
         self.num_files = len(self.im_filenames)
@@ -872,7 +873,13 @@ class DeepOptimizer(object):
         self.label_filenames = [self.label_filenames[k] for k in filename_indices]
         if self.obj_id_filenames is not None:
             self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
-        self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
+        if self.stable_pose_filenames is not None:
+            self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
+
+        # create copy of image filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
+        self.im_filenames_queue = copy.deepcopy(self.im_filenames)
+        self.pose_filenames_queue = copy.deepcopy(self.pose_filenames)
+        self.label_filenames_queue = copy.deepcopy(self.label_filenames)
 
     def _setup_output_dirs(self):
         """ Setup output directories """
@@ -975,11 +982,6 @@ class DeepOptimizer(object):
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images for training """
 
-        train_data = np.zeros(
-            [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
-        train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
-        label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
-
         # read parameters of gaussian process
         self.gp_rescale_factor = self.cfg['gaussian_process_scaling_factor']
         self.gp_sample_height = int(self.im_height / self.gp_rescale_factor)
@@ -995,20 +997,26 @@ class DeepOptimizer(object):
             start_i = 0
             end_i = 0
             file_num = 0
+
+            train_data = np.zeros(
+                [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
+            train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
+            label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
+
             while start_i < self.train_batch_size:
                 # compute num remaining
                 num_remaining = self.train_batch_size - num_queued
 
                 # gen file index uniformly at random
-                file_num = np.random.choice(len(self.im_filenames), size=1)[0]
-                train_data_filename = self.im_filenames[file_num]
+                file_num = np.random.choice(len(self.im_filenames_queue), size=1)[0]
+                train_data_filename = self.im_filenames_queue[file_num]
 
                 self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
-                                         'arr_0'].astype(np.float32)
+                    'arr_0'].astype(np.float32)
                 self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames[file_num]))[
-                                          'arr_0'].astype(np.float32)
+                    'arr_0'].astype(np.float32)
                 self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames[file_num]))[
-                                          'arr_0'].astype(np.float32)
+                    'arr_0'].astype(np.float32)
 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
@@ -1041,9 +1049,9 @@ class DeepOptimizer(object):
                     self.train_label_arr = self.train_label_arr.astype(self.numpy_dtype)
 
                 # enqueue training data batch
-                train_data[start_i:end_i, ...] = np.copy(self.train_data_arr)
-                train_poses[start_i:end_i,:] = self._read_pose_data(np.copy(self.train_poses_arr), self.input_data_mode)
-                label_data[start_i:end_i] = np.copy(self.train_label_arr)
+                train_data[start_i:end_i, ...] = self.train_data_arr.copy()
+                train_poses[start_i:end_i,:] = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
+                label_data[start_i:end_i] = self.train_label_arr.copy()
 
                 del self.train_data_arr
                 del self.train_poses_arr
@@ -1210,11 +1218,8 @@ class DeepOptimizer(object):
             validation error
         """
         error_rates = []
-        self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
-
         for data_filename, pose_filename, label_filename in zip(self.im_filenames, self.pose_filenames, self.label_filenames):
+
             # load next file
             data = np.load(os.path.join(self.data_dir, data_filename))['arr_0']
             poses = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
@@ -1244,10 +1249,10 @@ class DeepOptimizer(object):
             else:
                 error_rates.append(RegressionResult([predictions], [labels]).error_rate)
             
-        # clean up
-        del data
-        del poses
-        del labels
+            # clean up
+            del data
+            del poses
+            del labels
 
         # return average error rate over all files (assuming same size)
         return np.mean(error_rates)

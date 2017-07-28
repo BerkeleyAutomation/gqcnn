@@ -283,8 +283,10 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         depth_im_downsampled = depth_im.resize(self._rescale_factor)
         depth_im_threshed = depth_im_downsampled.threshold_gradients(self._depth_grad_thresh)
         edge_pixels = self._downsample_rate * depth_im_threshed.zero_pixels()
+        depth_im_mask = depth_im.copy()
         if segmask is not None:
             edge_pixels = np.array([p for p in edge_pixels if np.any(segmask[p[0], p[1]] > 0)])
+            depth_im_mask = depth_im.mask_binary(segmask)
         num_pixels = edge_pixels.shape[0]
         logging.debug('Depth edge detection took %.3f sec' %(time() - edge_start))
         logging.debug('Found %d edge pixels' %(num_pixels))
@@ -294,9 +296,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             return []
 
         # compute_max_depth
-        max_depth = np.max(depth_im.data[edge_pixels[:,0],
-                                         edge_pixels[:,1]]) + self._max_depth_offset
-        max_depth = 0.69 # TODO: remove
+        max_depth = np.max(depth_im_mask.data) + self._max_depth_offset
 
         # compute surface normals
         normal_start = time()

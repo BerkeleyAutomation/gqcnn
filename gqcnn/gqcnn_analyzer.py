@@ -16,8 +16,7 @@ import scipy.misc as sm
 import sys
 import time
 
-from gqcnn import GQCNN
-from learning_analysis import ClassificationResult
+from gqcnn import GQCNN, ClassificationResult
 
 from optimizer_constants import InputDataMode, ImageMode
 

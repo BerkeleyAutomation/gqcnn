@@ -1,9 +1,9 @@
 from neural_networks import GQCNN
-from deep_optimizer import DeepOptimizer
-from gqcnn_analyzer import GQCNNAnalyzer
+from sgd_optimizer import SGDOptimizer
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 from learning_analysis import ClassificationResult, RegressionResult, ConfusionMatrix
+from gqcnn_analyzer import GQCNNAnalyzer
 
 from grasp import Grasp2D
 from visualizer import Visualizer
@@ -13,7 +13,7 @@ from policy import Policy, GraspingPolicy, UniformRandomAntipodalGraspingPolicy,
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 
-           'DeepOptimizer',
+           'SGDOptimizer',
            'GQCNNAnalyzer',
            'ImageMode', 'TrainingMode', 'PreprocMode', 'InputDataMode',
            'TrainStatsLogger',

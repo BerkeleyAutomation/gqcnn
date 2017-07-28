@@ -6,7 +6,7 @@ import tensorflow as tf
 
 # other constants
 class GeneralConstants:
-    SEED = 95417238
+    SEED = 4117238
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
 
 # enum for templates for file reading
@@ -21,6 +21,7 @@ class ImageFileTemplates:
     table_mask_template = 'table_mask'
     hand_poses_template = 'hand_poses'
     object_labels_template = 'object_labels'
+    pose_labels_template = 'pose_labels'
 
 # enum for image modalities
 class ImageMode:
