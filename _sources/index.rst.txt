@@ -46,7 +46,7 @@ We are working toward a grasp planning ROS service based on GQ-CNNs to work towa
 
 Please note that **performance on current datasets is not indicative of performance on other hardware setups** because our datasets are specific to:
 
-1) An ABB YuMi parallel-jaw gripper due to collision geometry.
+1) Our ABB YuMi parallel-jaw gripper with custom fingertips due to collision geometry.
 2) A Primense Carmine 1.08 due to camera parameters.
 3) A camera positioned between 50-70cm above a table looking down due to image rendering parameters.
 
