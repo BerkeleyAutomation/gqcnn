@@ -1010,9 +1010,6 @@ class DeepOptimizer(object):
                 self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames[file_num]))[
                                           'arr_0'].astype(np.float32)
 
-                if self.pose_dim == 1 and self.train_poses_arr.shape[1] == 6:
-                    self.train_poses_arr = self.train_poses_arr[:, :4]
-
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
                 np.random.shuffle(train_ind)

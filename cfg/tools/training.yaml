@@ -1,15 +1,15 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /home/autolab/Public/data/dex-net/data/clutter/3dnet_kit_06_21_17_on_policy_iter_1/tensors
-output_dir: /home/autolab/Public/data/dex-net/data/models/clutter
-model_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
+dataset_dir: /mnt/hdd/dex-net/data/clutter/3dnet_kit_06_11_17_random/tensors
+output_dir: /mnt/hdd/dex-net/data/models/clutter
+model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
-num_epochs: 25     # number of epochs to train for
+num_epochs: 10     # number of epochs to train for
 eval_frequency: 500  # how often to get validation error 
-save_frequency: 1000  # how often to save output
+save_frequency: 5000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
@@ -25,7 +25,7 @@ eval_total_train_error: 0
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.001
+base_lr: 0.01
 decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
@@ -37,7 +37,7 @@ update_conv0_only: 0
 reinit_pc1: 0
 reinit_fc3: 0
 reinit_fc4: 0
-reinit_fc5: 1
+reinit_fc5: 0
 
 image_mode: depth_tf_table
 training_mode: classification
@@ -89,7 +89,7 @@ background_rate: 0.25
 background_min_depth: 0.0
 background_max_depth: 0.65
 
-drop_fc3: 0
+drop_fc3: 1
 fc3_drop_rate: 0.5
 drop_fc4: 1
 fc4_drop_rate: 0.5
@@ -147,7 +147,7 @@ gqcnn_config:
     fc3:
       out_size: 1024
     fc4:
-      out_size: 512
+      out_size: 1024
     fc5:
       out_size: 2
 

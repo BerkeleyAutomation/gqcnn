@@ -40,6 +40,12 @@ def force_closure(p1, p2, n1, n2, mu):
     in_cone_2 = (np.arccos(n2.dot(v)) < alpha)
     return (in_cone_1 and in_cone_2)
 
+class DepthSamplingMode(object):
+    """ Modes for sampling grasp depth. """
+    UNIFORM = 'uniform'
+    MIN = 'min'
+    MAX = 'max'
+
 class ImageGraspSampler(object):
     """
     Wraps image to crane grasp candidate generation for easy deployment of GQ-CNN.
@@ -160,6 +166,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         height of a window around the grasp center pixel used to determine min depth
     depth_sample_win_height : float
         width of a window around the grasp center pixel used to determine min depth
+    depth_sampling_mode : str
+        name of depth sampling mode (uniform, min, max)
     """
     def __init__(self, config, gripper_width=np.inf):
         # init superclass
@@ -185,6 +193,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         self._max_depth_offset = self._config['max_depth_offset']
         self._h = self._config['depth_sample_win_height']
         self._w = self._config['depth_sample_win_width']
+        self._depth_sampling_mode = self._config['depth_sampling_mode']
 
     def _surface_normals(self, depth_im, edge_pixels):
         """ Return an array of the surface normals at the edge pixels. """
@@ -203,6 +212,15 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             normals[i,:] = normal_vec
 
         return normals
+
+    def _sample_depth(self, min_depth, max_depth):
+        """ Samples a depth value between the min and max. """
+        depth_sample = max_depth
+        if self._depth_sampling_mode == DepthSamplingMode.UNIFORM:
+            depth_sample = min_depth + (max_depth - min_depth) * np.random.rand()
+        elif self._depth_sampling_mode == DepthSamplingMode.MIN:
+            depth_sample = min_depth
+        return depth_sample
 
     def _sample(self, rgbd_im, camera_intr, num_samples, segmask=None,
                 visualize=False):
@@ -278,6 +296,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # compute_max_depth
         max_depth = np.max(depth_im.data[edge_pixels[:,0],
                                          edge_pixels[:,1]]) + self._max_depth_offset
+        max_depth = 0.69 # TODO: remove
 
         # compute surface normals
         normal_start = time()
@@ -380,7 +399,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
                             # sample depth between the min and max
                             min_depth = np.min(center_depth) + self._min_depth_offset
-                            sample_depth = min_depth + (max_depth - min_depth) * np.random.rand()
+                            sample_depth = self._sample_depth(min_depth, max_depth)
                             candidate_grasp = Grasp2D(grasp_center_pt,
                                                       grasp_theta,
                                                       sample_depth,

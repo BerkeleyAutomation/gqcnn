@@ -182,6 +182,54 @@ class GraspingPolicy(Policy):
         logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
         return image_tensor, pose_tensor
 
+class UniformRandomAntipodalGraspingPolicy(GraspingPolicy):
+    """ Returns a random antipodal grasp with the minimum depth in the graspable region. """
+    def __init__(self, config):
+        GraspingPolicy.__init__(self, config)
+        self._num_grasp_samples = 1
+
+    def action(self, state):
+        """ Plans the grasp with the highest probability of success on
+        the given RGB-D image.
+
+        Attributes
+        ----------
+        state : :obj:`RgbdImageState`
+            image to plan grasps on
+
+        Returns
+        -------
+        :obj:`ParallelJawGrasp`
+            grasp to execute
+        """
+        # check valid input
+        if not isinstance(state, RgbdImageState):
+            raise ValueError('Must provide an RGB-D image state.')
+
+        # parse state
+        rgbd_im = state.rgbd_im
+        camera_intr = state.camera_intr
+        segmask = state.segmask
+
+        # sample grasps
+        grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
+                                            self._num_grasp_samples,
+                                            segmask=segmask,
+                                            visualize=self.config['vis']['grasp_sampling'],
+                                            seed=None)
+        num_grasps = len(grasps)
+        if num_grasps == 0:
+            logging.warning('No valid grasps could be found')
+            return None
+
+        # set grasp
+        grasp = grasps[0]
+
+        # form tensors
+        image_tensor, pose_tensor = self.grasps_to_tensors([grasp], state)
+        image = DepthImage(image_tensor[0,...])
+        return ParallelJawGrasp(grasp, 0.0, image)
+
 class AntipodalGraspingPolicy(GraspingPolicy):
     """ Samples a set of antipodal grasp candidates in image space,
     ranks the grasps by the predicted probability of success from a GQ-CNN,
