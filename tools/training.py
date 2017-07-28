@@ -247,16 +247,15 @@ from autolab_core import YamlConfig
 from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
 
 if __name__ == '__main__':
-	#setup logger
+	# setup logger
 	logging.getLogger().setLevel(logging.INFO)
 
         # parse args
-        parser = argparse.ArgumentParser(description='Create a GQ-CNN training dataset from a dataset of 3D object models and grasps in a Dex-Net database')
-        parser.add_argument('--config_filename', type=str, default=None, help='configuration file to use')
+        parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network with TensorFlow')
+        parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
         args = parser.parse_args()
         config_filename = args.config_filename
 
-        # handle config filename
         if config_filename is None:
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                '..',
@@ -266,6 +265,7 @@ if __name__ == '__main__':
         if not os.path.isabs(config_filename):
                 config_filename = os.path.join(os.getcwd(), config_filename)
 
+        # open train config
 	train_config = YamlConfig(config_filename)
         mode = train_config['mode']
 	gqcnn_config = train_config['gqcnn_config']

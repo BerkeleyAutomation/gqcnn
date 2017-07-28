@@ -2,16 +2,16 @@
 mode: training
 
 # dataset 
-dataset_dir: /mnt/hdd/dex-net/data/clutter/3dnet_kit_06_11_17_random/tensors
-output_dir: /mnt/hdd/dex-net/data/models/clutter
-model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
+dataset_dir: /path/to/your/gqcnn/data/adv_synth
+output_dir: /path/to/your/gqcnn/models
+model_dir: /path/to/your/pretrained/gqcnn/model
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
 num_epochs: 2.5     # number of epochs to train for
 eval_frequency: 1000  # how often to get validation error 
-save_frequency: 5000  # how often to save output
+save_frequency: 1000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
@@ -28,7 +28,7 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
+decay_step_multiplier: 0.66   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -115,22 +115,22 @@ gqcnn_config:
   # architecture
   architecture:
     conv1_1:
-      filt_dim: 7
-      num_filt: 64
+      filt_dim: 5
+      num_filt: 32
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv1_2:
-      filt_dim: 5
-      num_filt: 64
+      filt_dim: 3
+      num_filt: 32
       pool_size: 2
       pool_stride: 2
       norm: 1
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 64
+      num_filt: 32
       pool_size: 1
       pool_stride: 1  
       norm: 0
@@ -143,13 +143,13 @@ gqcnn_config:
       norm: 1
       norm_type: local_response
     pc1:
-      out_size: 16
+      out_size: 4
     pc2:
       out_size: 0
     fc3:
       out_size: 1024
     fc4:
-      out_size: 1024
+      out_size: 512
     fc5:
       out_size: 2
 

@@ -876,11 +876,11 @@ class SGDOptimizer(object):
         if self.stable_pose_filenames is not None:
             self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
-        # create copy of image filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
-        self.im_filenames_queue = copy.deepcopy(self.im_filenames)
-        self.pose_filenames_queue = copy.deepcopy(self.pose_filenames)
-        self.label_filenames_queue = copy.deepcopy(self.label_filenames)
-
+        # create copy of image, pose, and label filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
+        self.im_filenames_copy = self.im_filenames[:]
+        self.pose_filenames_copy = self.pose_filenames[:]
+        self.label_filenames_copy = self.label_filenames[:]
+         
     def _setup_output_dirs(self):
         """ Setup output directories """
 
@@ -981,7 +981,6 @@ class SGDOptimizer(object):
   
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images for training """
-
         # read parameters of gaussian process
         self.gp_rescale_factor = self.cfg['gaussian_process_scaling_factor']
         self.gp_sample_height = int(self.im_height / self.gp_rescale_factor)
@@ -998,6 +997,7 @@ class SGDOptimizer(object):
             end_i = 0
             file_num = 0
 
+            # init buffers
             train_data = np.zeros(
                 [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
             train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
@@ -1012,11 +1012,11 @@ class SGDOptimizer(object):
                 train_data_filename = self.im_filenames_queue[file_num]
 
                 self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
-                    'arr_0'].astype(np.float32)
-                self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames[file_num]))[
-                    'arr_0'].astype(np.float32)
-                self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames[file_num]))[
-                    'arr_0'].astype(np.float32)
+                                         'arr_0'].astype(np.float32)
+                self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames_copy[file_num]))[
+                                          'arr_0'].astype(np.float32)
+                self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
+                                          'arr_0'].astype(np.float32)
 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
