@@ -39,15 +39,15 @@ The goals of this project are to facilitate:
 
 Our longer-term goal is to encourage development of GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.
 
-Disclaimer
-----------
+System Requirements
+-------------------
 The `gqcnn` package currently supports only training of GQ-CNN on Dex-Net 2.0 datasets.
 We are working toward a grasp planning ROS service based on GQ-CNNs to work toward GQ-CNNs that work on other robot hardware setups.
 
 Please note that **performance on current datasets is not indicative of performance on other hardware setups** because our datasets are specific to:
 
 1) Our ABB YuMi parallel-jaw gripper with custom fingertips due to collision geometry.
-2) A Primense Carmine 1.08 due to camera parameters.
+2) A Primense Carmine 1.09 due to camera parameters.
 3) A camera positioned between 50-70cm above a table looking down due to image rendering parameters.
 
 We are currently researching how to generate datasets that can generalize across robots, cameras, and viewpoints.
