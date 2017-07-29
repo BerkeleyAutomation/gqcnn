@@ -17,7 +17,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage
 
-from gqcnn import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
+from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
 from gqcnn import Visualizer as vis
 from gqcnn import NoValidGraspsException
 
@@ -45,7 +45,7 @@ class RgbdImageState(object):
         self.segmask = segmask
         self.fully_observed = fully_observed
 
-class ParallelJawGrasp(object):
+class GraspAction(object):
     """ Action to encapsulate parallel jaw grasps.
     """
     def __init__(self, grasp, q_value, image):
@@ -92,13 +92,13 @@ class GraspingPolicy(Policy):
         self._crop_height = config['crop_height']
         self._crop_width = config['crop_width']
         self._sampling_config = config['sampling']
+        self._sampling_config['gripper_width'] = self._gripper_width
         self._gqcnn_model_dir = config['gqcnn_model']
         sampler_type = self._sampling_config['type']
         
         # init grasp sampler
         self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
-                                                               self._sampling_config,
-                                                               self._gripper_width)
+                                                               self._sampling_config)
         
         # init GQ-CNN
         self._gqcnn = GQCNN.load(self._gqcnn_model_dir)
@@ -169,7 +169,9 @@ class GraspingPolicy(Policy):
         for i, grasp in enumerate(grasps):
             translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
                                             depth_im.center[1] - grasp.center.data[0]])
-            im_tf = depth_im_scaled.transform(translation, grasp.angle)
+            im_tf = depth_im_scaled
+            if isinstance(grasp, Grasp2D):
+                im_tf = depth_im_scaled.transform(translation, grasp.angle)
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
             image_tensor[i,...] = im_tf.raw_data
             
@@ -182,8 +184,8 @@ class GraspingPolicy(Policy):
         logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
         return image_tensor, pose_tensor
 
-class UniformRandomAntipodalGraspingPolicy(GraspingPolicy):
-    """ Returns a random antipodal grasp with the minimum depth in the graspable region. """
+class UniformRandomGraspingPolicy(GraspingPolicy):
+    """ Returns a grasp uniformly at random. """
     def __init__(self, config):
         GraspingPolicy.__init__(self, config)
         self._num_grasp_samples = 1
@@ -199,7 +201,7 @@ class UniformRandomAntipodalGraspingPolicy(GraspingPolicy):
 
         Returns
         -------
-        :obj:`ParallelJawGrasp`
+        :obj:`GraspAction`
             grasp to execute
         """
         # check valid input
@@ -228,7 +230,7 @@ class UniformRandomAntipodalGraspingPolicy(GraspingPolicy):
         # form tensors
         image_tensor, pose_tensor = self.grasps_to_tensors([grasp], state)
         image = DepthImage(image_tensor[0,...])
-        return ParallelJawGrasp(grasp, 0.0, image)
+        return GraspAction(grasp, 0.0, image)
 
 class AntipodalGraspingPolicy(GraspingPolicy):
     """ Samples a set of antipodal grasp candidates in image space,
@@ -281,7 +283,7 @@ class AntipodalGraspingPolicy(GraspingPolicy):
 
         Returns
         -------
-        :obj:`ParallelJawGrasp`
+        :obj:`GraspAction`
             grasp to execute
         """
         # check valid input
@@ -384,7 +386,7 @@ class AntipodalGraspingPolicy(GraspingPolicy):
             vis.show()
 
         # return action
-        return ParallelJawGrasp(grasp, q_value, image)
+        return GraspAction(grasp, q_value, image)
 
 class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 
@@ -466,7 +468,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
 
         Returns
         -------
-        :obj:`ParallelJawGrasp`
+        :obj:`GraspAction`
             grasp to execute
         """
         # check valid input
@@ -681,7 +683,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
             vis.show()
 
         # return action
-        return ParallelJawGrasp(grasp, q_value, image)
+        return GraspAction(grasp, q_value, image)
         
 class QFunctionAntipodalGraspingPolicy(CrossEntropyAntipodalGraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 
@@ -793,7 +795,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
 
         Returns
         -------
-        :obj:`ParallelJawGrasp`
+        :obj:`GraspAction`
             grasp to execute
         """
         return CrossEntropyAntipodalGraspingPolicy.action(self, state)
@@ -809,7 +811,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
 
         Returns
         -------
-        :obj:`ParallelJawGrasp`
+        :obj:`GraspAction`
             grasp to execute
         """
         # take the greedy action with prob 1 - epsilon
@@ -868,5 +870,5 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
             vis.show()
 
         # return action
-        return ParallelJawGrasp(grasp, q_value, image)
+        return GraspAction(grasp, q_value, image)
 

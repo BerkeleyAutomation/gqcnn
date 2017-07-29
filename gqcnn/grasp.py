@@ -181,3 +181,125 @@ class Grasp2D(object):
         axis_dist = np.arccos(np.abs(g1.axis.dot(g2.axis)))
 
         return point_dist + alpha * axis_dist
+
+class SuctionPoint2D(object):
+    """
+    Suction grasp in image space.
+
+    Attributes
+    ----------
+    center : :obj:`autolab_core.Point`
+        point in image space
+    axis : :obj:`numpy.ndarray`
+        normalized 3-vector representing the direction of the suction tip
+    depth : float
+        depth of the suction point in 3D space
+    camera_intr : :obj:`perception.CameraIntrinsics`
+        frame of reference for camera that the suction point corresponds to
+    """
+    def __init__(self, center, axis, depth, camera_intr=None):
+        self.center = center
+        self.axis = axis
+        self.depth = depth
+        # if camera_intr is none use default primesense camera intrinsics
+        if not camera_intr:
+            self.camera_intr = CameraIntrinsics('primesense_overhead', fx=525, fy=525, cx=319.5, cy=239.5, width=640, height=480)
+        else: 
+            self.camera_intr = camera_intr
+
+    @property
+    def frame(self):
+        """ The name of the frame of reference for the grasp. """
+        if self.camera_intr is None:
+            raise ValueError('Must specify camera intrinsics')
+        return self.camera_intr.frame
+
+    @property
+    def feature_vec(self):
+        """ Returns the feature vector for the suction point.
+        v = [center, axis, depth]
+        """
+        return np.r_[self.center.data, self.axis, self.depth]
+
+    @staticmethod
+    def from_feature_vec(v, camera_intr=None):
+        """ Creates a SuctionPoint2D obj from a feature vector and additional parameters.
+
+        Parameters
+        ----------
+        v : :obj:`numpy.ndarray`
+            feature vector, see Grasp2D.feature_vec
+        width : float
+            grasp opening width, in meters
+        camera_intr : :obj:`perception.CameraIntrinsics`
+            frame of reference for camera that the grasp corresponds to
+        """
+        # read feature vec
+        center_px = v[:2]
+        axis = v[2:5]
+        depth = v[5]
+
+        # compute center and angle
+        center = Point(center_px, camera_intr.frame)
+        return SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)
+
+    def pose(self):
+        """ Computes the 3D pose of the grasp relative to the camera.
+
+        Returns
+        -------
+        :obj:`autolab_core.RigidTransform`
+            the transformation from the grasp to the camera frame of reference
+        """
+        # check intrinsics
+        if self.camera_intr is None:
+            raise ValueError('Must specify camera intrinsics to compute 3D grasp pose')
+
+        # compute 3D grasp center in camera basis
+        suction_center_im = self.center.data
+        center_px_im = Point(suction_center_im, frame=self.camera_intr.frame)
+        suction_center_camera = self.camera_intr.deproject_pixel(self.depth, center_px_im)
+        suction_center_camera = suction_center_camera.data
+
+        # compute 3D grasp axis in camera basis
+        suction_axis_camera = self.axis
+        
+        # convert to 3D pose
+        suction_z_camera = suction_axis_camera
+        suction_x_camera = np.array([-suction_z_camera[1], suction_z_camera[0], 0])
+        suction_x_camera = suction_x_camera / np.linalg.norm(suction_x_camera)
+        suction_y_camera = np.cross(suction_z_camera, suction_x_camera)
+        suction_rot_camera = np.c_[suction_x_camera, suction_y_camera, suction_z_camera]
+
+        T_suction_camera = RigidTransform(rotation=suction_rot_camera,
+                                          translation=suction_center_camera,
+                                          from_frame='grasp',
+                                          to_frame=self.camera_intr.frame)
+        return T_suction_camera
+
+    @staticmethod
+    def image_dist(g1, g2, alpha=1.0):
+        """ Computes the distance between grasps in image space.
+        Euclidean distance with alpha weighting of angles
+
+        Parameters
+        ----------
+        g1 : :obj:`SuctionPoint2D`
+            first suction point
+        g2 : :obj:`SuctionPoint2D`
+            second suction point
+        alpha : float
+            weight of angle distance (rad to meters)
+
+        Returns
+        -------
+        float
+            distance between grasps
+        """
+        # point to point distances
+        point_dist = np.linalg.norm(g1.center.data - g2.center.data)
+
+        # axis distances
+        axis_dist = np.arccos(np.abs(g1.axis.dot(g2.axis)))
+
+        return point_dist + alpha * axis_dist

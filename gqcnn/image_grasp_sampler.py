@@ -23,7 +23,7 @@ import sklearn.mixture
 from autolab_core import Point, RigidTransform
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage
 
-from gqcnn import Grasp2D
+from gqcnn import Grasp2D, SuctionPoint2D
 from gqcnn import Visualizer as vis
 
 from gqcnn import NoAntipodalPairsFoundException
@@ -54,15 +54,12 @@ class ImageGraspSampler(object):
     ----------
     config : :obj:`autolab_core.YamlConfig`
         a dictionary-like object containing the parameters of the sampler
-    gripper_width : float
-        width of the gripper in 3D space
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, config, gripper_width=np.inf):
+    def __init__(self, config):
         # set params
         self._config = config
-        self._gripper_width = gripper_width
 
     def sample(self, rgbd_im, camera_intr, num_samples,
                segmask=None, seed=None, visualize=False):
@@ -140,6 +137,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
     Other Parameters
     ----------------
+    gripper_width : float
+        width of the gripper, in meters
     friction_coef : float
         friction coefficient for 2D force closure
     depth_grad_thresh : float
@@ -171,9 +170,10 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
     """
     def __init__(self, config, gripper_width=np.inf):
         # init superclass
-        ImageGraspSampler.__init__(self, config, gripper_width)
+        ImageGraspSampler.__init__(self, config)
 
         # antipodality params
+        self._gripper_width = self._config['gripper_width']
         self._friction_coef = self._config['friction_coef']
         self._depth_grad_thresh = self._config['depth_grad_thresh']
         self._depth_grad_gaussian_sigma = self._config['depth_grad_gaussian_sigma']
@@ -410,11 +410,190 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # return sampled grasps
         return grasps
 
+class DepthImageSuctionPointSampler(ImageGraspSampler):
+    """ Grasp sampler for suction points from depth images.
+
+    Notes
+    -----
+    Required configuration parameters are specified in Other Parameters
+
+    Other Parameters
+    ----------------
+    max_suction_dir_optical_axis_angle : float
+        maximum angle, in degrees, between the suction approach axis and the camera optical axis
+    delta_theta : float
+        maximum deviation from zero for the aziumth angle of a rotational perturbation to the surface normal (for sample diversity)
+    delta_phi : float
+        maximum deviation from zero for the elevation angle of a rotational perturbation to the surface normal (for sample diversity)
+    sigma_depth : float
+        standard deviation for a normal distribution over depth values (for sample diversity)
+    min_suction_dist : float
+        minimum admissible distance between suction points (for sample diversity)
+    angle_dist_weight : float
+        amount to weight the angle difference in suction point distance computation
+    depth_gaussian_sigma : float
+        sigma used for pre-smoothing the depth image for better gradients
+    """
+    def __init__(self, config):
+        # init superclass
+        ImageGraspSampler.__init__(self, config)
+
+        # read params
+        self._max_suction_dir_optical_axis_angle = np.deg2rad(self._config['max_suction_dir_optical_axis_angle'])
+
+        self._min_theta = -np.deg2rad(self._config['delta_theta'])
+        self._max_theta = np.deg2rad(self._config['delta_theta'])
+        self._theta_rv = ss.uniform(loc=self._min_theta,
+                                    scale=self._max_theta-self._min_theta)
+
+        self._min_phi = -np.deg2rad(self._config['delta_phi'])
+        self._max_phi = np.deg2rad(self._config['delta_phi'])
+        self._phi_rv = ss.uniform(loc=self._min_phi,
+                                  scale=self._max_phi-self._min_phi)
+
+        self._sigma_depth = self._config['sigma_depth']
+        self._depth_rv = ss.norm(0.0, self._sigma_depth**2)
+
+        self._min_suction_dist = self._config['min_suction_dist']
+        self._angle_dist_weight = self._config['angle_dist_weight']
+        self._depth_gaussian_sigma = self._config['depth_gaussian_sigma']
+ 
+    def _sample(self, rgbd_im, camera_intr, num_samples, segmask=None,
+                visualize=False):
+        """
+        Sample a set of 2D grasp candidates from a depth image.
+
+        Parameters
+        ----------
+        rgbd_im : :obj:`perception.RgbdImage`
+            RGB-D image to sample from
+        camera_intr : :obj:`perception.CameraIntrinsics`
+            intrinsics of the camera that captured the images
+        num_samples : int
+            number of grasps to sample
+        segmask : :obj:`perception.BinaryImage`
+            binary image segmenting out the object of interest
+        visualize : bool
+            whether or not to show intermediate samples (for debugging)
+ 
+        Returns
+        -------
+        :obj:`list` of :obj:`Grasp2D`
+            list of 2D grasp candidates
+        """
+        # sample antipodal pairs in image space
+        grasps = self._sample_suction_points(rgbd_im, camera_intr, num_samples,
+                                             segmask=segmask, visualize=visualize)
+        return grasps
+
+    def _sample_suction_points(self, rgbd_im, camera_intr, num_samples,
+                               segmask=None, visualize=False):
+        """
+        Sample a set of 2D suction point candidates from a depth image by
+        choosing points on an object surface uniformly at random
+        and then sampling around the surface normal
+
+        Parameters
+        ----------
+        rgbd_im : :obj:`perception.RgbdImage`
+            RGB-D image to sample from
+        camera_intr : :obj:`perception.CameraIntrinsics`
+            intrinsics of the camera that captured the images
+        num_samples : int
+            number of grasps to sample
+        segmask : :obj:`perception.BinaryImage`
+            binary image segmenting out the object of interest
+        visualize : bool
+            whether or not to show intermediate samples (for debugging)
+ 
+        Returns
+        -------
+        :obj:`list` of :obj:`SuctionPoint2D`
+            list of 2D suction point candidates
+        """
+        # compute edge pixels
+        depth_im = rgbd_im.depth
+        depth_im = depth_im.apply(snf.gaussian_filter,
+                                  sigma=self._depth_gaussian_sigma)
+        depth_im_mask = depth_im.copy()
+        if segmask is not None:
+            depth_im_mask = depth_im.mask_binary(segmask)
+            
+        if visualize:
+            vis.figure()
+            vis.subplot(1,2,1)
+            vis.imshow(depth_im)
+            vis.subplot(1,2,2)
+            vis.imshow(depth_im_mask)
+            vis.show()
+
+            """
+            from visualization import Visualizer3D as vis3d
+            point_cloud_im = camera_intr.deproject_to_image(depth_im)
+            normal_cloud_im = point_cloud_im.normal_cloud_im()
+            point_cloud = point_cloud_im.to_point_cloud()
+            normal_cloud = normal_cloud_im.to_normal_cloud()
+            vis3d.figure()
+            vis3d.normals(normal_cloud, point_cloud,
+                          scale=0.05, subsample=20)
+            vis3d.points(point_cloud, subsample=20, scale=0.01, color=(0,0,1))
+            vis3d.show()
+            """
+
+        # project to get the point cloud
+        point_cloud_im = camera_intr.deproject_to_image(depth_im_mask)
+        normal_cloud_im = point_cloud_im.normal_cloud_im()
+        nonzero_px = depth_im_mask.nonzero_pixels()
+        num_nonzero_px = nonzero_px.shape[0]
+        
+        # randomly sample points and add to image
+        suction_points = []
+        while len(suction_points) < num_samples:
+
+            # sample a point uniformly at random 
+            ind = np.random.choice(num_nonzero_px, size=1, replace=False)[0]
+            center_px = np.array([nonzero_px[ind,1], nonzero_px[ind,0]])
+            center = Point(center_px, frame=camera_intr.frame)
+            axis = -normal_cloud_im[center.y, center.x]
+            depth = point_cloud_im[center.y, center.x][2]
+
+            # perturb axis
+            delta_theta = self._theta_rv.rvs(size=1)[0]
+            delta_phi = self._phi_rv.rvs(size=1)[0]
+            delta_T = RigidTransform.sph_coords_to_pose(delta_theta,
+                                                        delta_phi)
+            #axis = delta_T.rotation.dot(axis)
+
+            # perturb depth
+            delta_depth = self._depth_rv.rvs(size=1)[0]
+            depth = depth + delta_depth
+
+            # keep if the angle between the camera optical axis and the suction direction is less than a threshold
+            psi = np.arccos(axis.dot(np.array([0,0,1])))
+            if psi < self._max_suction_dir_optical_axis_angle:
+
+                # check distance to ensure sample diversity
+                candidate = SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)
+                suction_point_dists = [SuctionPoint2D.image_dist(suction_point, candidate, alpha=self._angle_dist_weight) for suction_point in suction_points]
+                if len(suction_points) == 0 or np.min(suction_point_dists) > self._min_suction_dist:
+
+                    if visualize:
+                        vis.figure()
+                        vis.imshow(depth_im)
+                        vis.scatter(center.x, center.y)
+                        vis.show()
+
+                    suction_points.append(candidate)
+
+        return suction_points
+        
 class ImageGraspSamplerFactory(object):
     """ Factory for image grasp samplers. """
     @staticmethod
-    def sampler(sampler_type, config, gripper_width):
+    def sampler(sampler_type, config):
         if sampler_type == 'antipodal_depth':
-            return AntipodalDepthImageGraspSampler(config, gripper_width)
+            return AntipodalDepthImageGraspSampler(config)
+        elif sampler_type == 'suction':
+            return DepthImageSuctionPointSampler(config)
         else:
             raise ValueError('Image grasp sampler type %s not supported!' %(sampler_type))

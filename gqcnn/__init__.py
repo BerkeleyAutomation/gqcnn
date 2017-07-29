@@ -5,11 +5,11 @@ from train_stats_logger import TrainStatsLogger
 from learning_analysis import ClassificationResult, RegressionResult, ConfusionMatrix
 from gqcnn_analyzer import GQCNNAnalyzer
 
-from grasp import Grasp2D
+from grasp import Grasp2D, SuctionPoint2D
 from visualizer import Visualizer
 from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
-from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
-from policy import Policy, GraspingPolicy, UniformRandomAntipodalGraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, QFunctionAntipodalGraspingPolicy, EpsilonGreedyQFunctionAntipodalGraspingPolicy, RgbdImageState, ParallelJawGrasp
+from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
+from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, QFunctionAntipodalGraspingPolicy, EpsilonGreedyQFunctionAntipodalGraspingPolicy, RgbdImageState, GraspAction
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 
@@ -18,10 +18,10 @@ __all__ = ['GQCNN',
            'ImageMode', 'TrainingMode', 'PreprocMode', 'InputDataMode',
            'TrainStatsLogger',
            'ClassificationResult', 'RegressionResult', 'ConfusionMatrix',
-           'Grasp2D',
-           'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'ImageGraspSamplerFactory'
-           'Visualizer', 'RobotGripper',
-           'ParallelJawGrasp', 'Policy', 'GraspingPolicy', 'UniformRandomAntipodalGraspingPolicy', 'AntipodalGraspingPolicy', 'CrossEntropyAntipodalGraspingPolicy',
+           'Grasp2D', 'SuctionPoint2D',
+           'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'DepthImageSuctionPointSampler', 'ImageGraspSamplerFactory'
+           'Visualizer',
+           'GraspAction', 'Policy', 'GraspingPolicy', 'UniformRandomGraspingPolicy', 'AntipodalGraspingPolicy', 'CrossEntropyAntipodalGraspingPolicy',
            'RgbdImageState',
            'NoValidGraspsException', 'NoAntipodalPairsFoundException',
            'GQCNNPredictionVisualizer']
