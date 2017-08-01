@@ -103,7 +103,7 @@ import time
 from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory
 
-from gqcnn import CrossEntropyAntipodalGraspingPolicy, RgbdImageState
+from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState
 from gqcnn import Visualizer as vis
 
 if __name__ == '__main__':
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     state = RgbdImageState(rgbd_im, camera_intr)
 
     # init policy
-    policy = CrossEntropyAntipodalGraspingPolicy(policy_config)
+    policy = CrossEntropyRobustGraspingPolicy(policy_config)
     policy_start = time.time()
     action = policy(state)
     logging.info('Planning took %.3f sec' %(time.time() - policy_start))

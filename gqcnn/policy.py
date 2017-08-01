@@ -4,6 +4,7 @@ Author: Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
 
+import cPickle as pkl
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -232,8 +233,8 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
         image = DepthImage(image_tensor[0,...])
         return GraspAction(grasp, 0.0, image)
 
-class AntipodalGraspingPolicy(GraspingPolicy):
-    """ Samples a set of antipodal grasp candidates in image space,
+class RobustGraspingPolicy(GraspingPolicy):
+    """ Samples a set of grasp candidates in image space,
     ranks the grasps by the predicted probability of success from a GQ-CNN,
     and returns the grasp with the highest probability of success.
 
@@ -247,8 +248,8 @@ class AntipodalGraspingPolicy(GraspingPolicy):
         number of grasps to sample
     gripper_width : float, optional
         width of the gripper in meters
-    gripper_name : str, optional
-        name of the gripper
+    logging_dir : str, optional
+        directory in which to save the sampled grasps and input images
     """
     def __init__(self, config):
         GraspingPolicy.__init__(self, config)
@@ -261,6 +262,9 @@ class AntipodalGraspingPolicy(GraspingPolicy):
         self._gripper_width = np.inf
         if 'gripper_width' in self.config.keys():
             self._gripper_width = self.config['gripper_width']
+        self._logging_dir = None
+        if 'logging_dir' in self.config.keys():
+            self._logging_dir = self.config['logging_dir']
 
     def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
@@ -302,6 +306,27 @@ class AntipodalGraspingPolicy(GraspingPolicy):
                                             visualize=self.config['vis']['grasp_sampling'],
                                             seed=None)
         num_grasps = len(grasps)
+
+        # save if specified
+        if self._logging_dir is not None:
+            if not os.path.exists(self._logging_dir):
+                raise ValueError('Logging directory %s does not exist' %(self._logging_dir))
+
+            # create output dir
+            test_case_id = utils.gen_experiment_id()
+            test_case_dir = os.path.join(self._logging_dir, 'test_case_%s' %(test_case_id))
+
+            # re-sample if the test case dir exists
+            while os.path.exists(test_case_dir):
+                test_case_id = utils.gen_experiment_id()
+                test_case_dir = os.path.join(self._logging_dir, 'test_case_%s' %(test_case_id))
+                
+            # create the directory and save
+            os.mkdir(test_case_dir)
+            candidate_actions_filename = os.path.join(test_case_dir, 'actions.pkl')
+            pkl.dump(grasps, open(candidate_actions_filename, 'wb'))
+            image_state_filename = os.path.join(test_case_dir, 'state.pkl')
+            pkl.dump(state, open(image_state_filename, 'wb'))
 
         # form tensors
         image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
@@ -388,8 +413,8 @@ class AntipodalGraspingPolicy(GraspingPolicy):
         # return action
         return GraspAction(grasp, q_value, image)
 
-class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
-    """ Optimizes a set of antipodal grasp candidates in image space using the 
+class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
+    """ Optimizes a set of grasp candidates in image space using the 
     cross entropy method:
     (1) sample an initial set of candidates
     (2) sort the candidates
@@ -420,12 +445,10 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         whether to set the random seed to enforce deterministic behavior
     gripper_width : float, optional
         width of the gripper in meters
-    gripper_name : str, optional
-        name of the gripper
     """
     def __init__(self, config):
         GraspingPolicy.__init__(self, config)
-        CrossEntropyAntipodalGraspingPolicy._parse_config(self)
+        CrossEntropyRobustGraspingPolicy._parse_config(self)
 
     def _parse_config(self):
         """ Parses the parameters of the policy. """
@@ -685,7 +708,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
         # return action
         return GraspAction(grasp, q_value, image)
         
-class QFunctionAntipodalGraspingPolicy(CrossEntropyAntipodalGraspingPolicy):
+class QFunctionRobustGraspingPolicy(CrossEntropyRobustGraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 
     cross entropy method with a GQ-CNN that estimates the Q-function
     for use in Q-learning.
@@ -720,12 +743,10 @@ class QFunctionAntipodalGraspingPolicy(CrossEntropyAntipodalGraspingPolicy):
         whether to set the random seed to enforce deterministic behavior
     gripper_width : float, optional
         width of the gripper in meters
-    gripper_name : str, optional
-        name of the gripper
     """
     def __init__(self, config):
-        CrossEntropyAntipodalGraspingPolicy.__init__(self, config)
-        QFunctionAntipodalGraspingPolicy._parse_config(self)
+        CrossEntropyRobustGraspingPolicy.__init__(self, config)
+        QFunctionRobustGraspingPolicy._parse_config(self)
         self._setup_gqcnn()
 
     def _parse_config(self):
@@ -754,7 +775,7 @@ class QFunctionAntipodalGraspingPolicy(CrossEntropyAntipodalGraspingPolicy):
                                        self._reinit_fc5)
         self.gqcnn.initialize_network(add_softmax=False)
         
-class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPolicy):
+class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space 
     using the cross entropy method with a GQ-CNN that estimates the
     Q-function for use in Q-learning, and chooses a random antipodal
@@ -769,7 +790,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
     epsilon : float
     """
     def __init__(self, config):
-        QFunctionAntipodalGraspingPolicy.__init__(self, config)
+        QFunctionRobustGraspingPolicy.__init__(self, config)
         self._parse_config()
 
     def _parse_config(self):
@@ -798,7 +819,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         :obj:`GraspAction`
             grasp to execute
         """
-        return CrossEntropyAntipodalGraspingPolicy.action(self, state)
+        return CrossEntropyRobustGraspingPolicy.action(self, state)
     
     def action(self, state):
         """ Plans the grasp with the highest probability of success on
@@ -817,7 +838,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         # take the greedy action with prob 1 - epsilon
         if np.random.rand() > self.epsilon:
             logging.debug('Taking greedy action')
-            return CrossEntropyAntipodalGraspingPolicy.action(self, state)
+            return CrossEntropyRobustGraspingPolicy.action(self, state)
 
         # otherwise take a random action
         logging.debug('Taking random action')

@@ -10,7 +10,7 @@ import perception
 from cv_bridge import CvBridge, CvBridgeError
 
 from autolab_core import YamlConfig
-from gqcnn import CrossEntropyAntipodalGraspingPolicy, RgbdImageState
+from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState
 from gqcnn import NoValidGraspsException, NoAntipodalPairsFoundException
 from gqcnn import Visualizer as vis
 
@@ -188,7 +188,7 @@ if __name__ == '__main__':
 
     # create a policy 
     rospy.loginfo('Creating Grasp Policy')
-    grasping_policy = CrossEntropyAntipodalGraspingPolicy(policy_cfg)
+    grasping_policy = CrossEntropyRobustGraspingPolicy(policy_cfg)
 
     # create a grasp planner object
     grasp_planner = GraspPlanner(cfg, cv_bridge, grasping_policy, grasp_pose_publisher)
