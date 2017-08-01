@@ -1,9 +1,9 @@
 dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/3dnet_kit_06_13_17
-model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/dex-net_2.0_pose_wise_06_15_17
-output_dir: /mnt/hdd/dex-net/data/analyses/max_activations/pose_wise
+model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/dex-net_2.0_image_wise_06_15_17
+output_dir: /mnt/hdd/dex-net/data/analyses/k_means_clustering/25_per_centroid/image_wise
 
 image_mode: depth_tf_table
-data_split: stable_pose_wise
+data_split: image_wise
 pose_data_format: tf_image
 
 layers: 

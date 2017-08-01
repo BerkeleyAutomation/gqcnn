@@ -135,5 +135,5 @@ if __name__ == '__main__':
         vis2d.xlabel('T-SNE Dim 0', fontsize=font_size)
         vis2d.ylabel('T-SNE Dim 1', fontsize=font_size)
         vis2d.title('T-SNE for {}'.format(layer), fontsize=font_size)
-        # vis2d.legend(loc='best')
+        vis2d.legend(loc='best')
         vis2d.savefig(os.path.join(output_dir, 'tsne_{}.pdf'.format(layer)), dpi=dpi)

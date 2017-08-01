@@ -735,11 +735,13 @@ class GQCNN(object):
                 if output_arr is None:
                     output_arr = gqcnn_output
                 else:
-                    np.r_[output_arr, gqcnn_output]
+                    output_arr = np.r_[output_arr, gqcnn_output]
 
                 i = end_ind
             if close_sess:
                 self.close_session()
+        # truncate extraneous values off of end of output_arr
+        output_arr = output_arr[:num_images]
         return output_arr
 
     def _build_network(self, input_im_node, input_pose_node,  drop_fc3=False, drop_fc4=False, fc3_drop_rate=0, fc4_drop_rate=0):

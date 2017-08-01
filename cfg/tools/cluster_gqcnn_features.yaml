@@ -1,0 +1,22 @@
+dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/3dnet_kit_06_13_17
+feature_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_tsne_analysis/feature_maps/image_wise
+output_dir: /mnt/hdd/dex-net/data/analyses/k_means_clustering/25_per_centroid/image_wise
+
+layers: 
+  # - conv1_1 
+  # - conv1_2
+  # - conv2_1
+  - conv2_2
+  - fc3
+  - fc4
+
+im_height: 32
+im_width: 32
+im_channels: 1
+
+kmeans:
+  k_values: [4, 8, 16, 20, 30, 50, 82, 100]
+  # k_values: [4]
+  num_samples_per_centroid: 25
+                                      
+vis: 0

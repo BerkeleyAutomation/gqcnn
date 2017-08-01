@@ -80,7 +80,11 @@ class Visualizer:
     def plot(*args, **kwargs):
         """ Plots lines """
         plt.plot(*args, **kwargs)
-    
+    @staticmethod
+    def legend(*args, **kwargs):
+        """ Plots legend """
+        plt.legend(*args, **kwargs)
+        
     @staticmethod
     def imshow(image, **kwargs):
         """ Displays an image.

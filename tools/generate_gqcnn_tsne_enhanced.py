@@ -15,6 +15,8 @@ from autolab_core import YamlConfig
 from gqcnn import InputDataMode, ImageFileTemplates
 from visualization import Visualizer2D as vis2d
 
+from perception import DepthImage 
+
 def read_pose_data(pose_arr, input_data_mode):
     """ Read the pose data """
     if input_data_mode == InputDataMode.TF_IMAGE:
@@ -78,6 +80,7 @@ if __name__ == '__main__':
     # iterate through the file indices and pull out the necessary label, pose, and image data
     logging.info('Loading label, pose, and image data')
     start_ind = 0
+    vis2d.figure()
     for filename in feature_keys:
         
         # extract file number
@@ -92,7 +95,15 @@ if __name__ == '__main__':
         pose_tensor = read_pose_data(np.load(os.path.join(dataset_dir, pose_filename))['arr_0'][feature_generation_indices[filename]], pose_data_format)
         metric_tensor = np.load(os.path.join(dataset_dir, metric_filename))['arr_0'][feature_generation_indices[filename]]
         image_tensor = np.load(os.path.join(dataset_dir, image_filename))['arr_0'][feature_generation_indices[filename]]
-        
+
+        for image, index in zip(image_tensor, feature_generation_indices[filename]):
+            vis2d.clf()
+            if (np.amax(image) - np.amin(image)) < .001: 
+                vis2d.imshow(DepthImage(image))
+                image_name = '{}_{}.png'.format(filename, index)
+                logging.info('Saving image ' + image_name)
+                vis2d.savefig(os.path.join('/mnt/hdd/dex-net/data/analyses/dumpster', image_name))
+
         label_tensor = 1 * (metric_tensor > metric_thresh)
         
         # allocate the image and pose tensors if they are None
@@ -107,7 +118,7 @@ if __name__ == '__main__':
         labels[start_ind:end_ind] = label_tensor
         images[start_ind:end_ind] = image_tensor
         start_ind = end_ind
-
+    IPython.embed()
     # plot
     logging.info('Beginning Plotting')
     for layer in layers:

@@ -32,6 +32,7 @@ class TopPatches(object):
 	""" Store the patches with the top responses """
 	def __init__(self, num_patches, w):
 		self.patches = [Patch(patch=np.zeros([w,w])) for i in range(num_patches)]
+		self.size = 0
 
 	@property
 	def responses(self):
@@ -42,6 +43,8 @@ class TopPatches(object):
 		if patch.resp > smallest_response:
 			smallest_index = np.where(self.responses == smallest_response)[0][0]
 			self.patches[smallest_index] = patch
+			if smallest_response == 0:
+				self.size += 1
 			return True
 		return False
 
@@ -172,6 +175,7 @@ if __name__ == "__main__":
 	receptive_field_sizes['conv1_2'] = 11
 	receptive_field_sizes['conv2_1'] = 17
 	receptive_field_sizes['conv2_2'] = 22
+	IPython.embed()
 
 	# iterate through each layer and calculate the max activations for it
 	for layer in layers:
@@ -211,6 +215,7 @@ if __name__ == "__main__":
 					for response in top_responses[::-1]:
 						# if the largest response in what's left is less than the smallest response in our set of saved resposnes, just break out and stop checking
 						if response <= np.min(top_patches[neuron_name].responses):
+							# logging.info("Breaking, Size: {}, Response: {}".format(top_patches[neuron_name].size, response))
 							break
 
 						# get the indices and location of the patch
@@ -263,28 +268,26 @@ if __name__ == "__main__":
 				if patch.i is None or patch.j is None:
 					logging.info('Found bad batch index data')
 					i +=1
-					break
-				for i, j in zip(patch.i, patch.j):
-					min_x = i - (patch.receptive_field / 2)
-					min_y = j - (patch.receptive_field / 2)
-					max_x = i + (patch.receptive_field / 2)
-					max_y = j + (patch.receptive_field / 2)
+					continue
+				for I, J in zip(patch.i, patch.j):
+					min_x = I - (patch.receptive_field / 2)
+					min_y = J - (patch.receptive_field / 2)
+					max_x = I + (patch.receptive_field / 2)
+					max_y = J + (patch.receptive_field / 2)
 					boxes.append(Box(np.asarray([min_x, min_y]), np.asarray([max_x, max_y]), 'None'))
 
-				if patch.image is None:
-					logging.info('Found empty patch')
-				else:
-					vis2d.imshow(DepthImage(patch.image))
-					if len(boxes) > 1:
-						logging.info('Multiple Boxes')
-					for box in boxes:
-						vis2d.box(box)
+				vis2d.imshow(DepthImage(patch.image))
+				if len(boxes) > 1:
+					logging.info('Multiple Boxes')
+				for box in boxes:
+					vis2d.box(box)
 
-					if vis_patches:
-						vis2d.show()
+				if vis_patches:
+					vis2d.show()
 
-					# save figure
-					vis2d.savefig(os.path.join(neuron_dir, "patch_{}.png".format(i)))
+				# save figure
+				vis2d.savefig(os.path.join(neuron_dir, "patch_{}.png".format(i)))
+			
 				i += 1
 
 	# close the gqcnn session
