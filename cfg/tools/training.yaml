@@ -104,6 +104,10 @@ gqcnn_config:
   im_height: 32
   im_width: 32
   im_channels: 1
+
+  # backend
+  backend: 'gpu'
+  
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_data_mode: tf_image
 

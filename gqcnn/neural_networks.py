@@ -9,28 +9,15 @@ import logging
 import numpy as np
 import os
 import sys
+import IPython
 
-from autolab_core import YamlConfig
-from gqcnn import InputDataMode
+from optimizer_constants import InputDataMode
 
 from neon.models import Model
-from neon.initializers import Gaussian, Constant
-from neon.layers import Conv, Pooling, LRN, Sequential, Affine, Dropout, Linear, Bias, Activation
+from neon.initializers import Kaiming
+from neon.layers import Conv, Pooling, LRN, Sequential, Affine, Dropout, Linear, Bias, Activation, MergeMultistream
 from neon.transforms import Rectlin, Softmax
-from neon.data import ArrayIterator
-
-# def reduce_shape(shape):
-#     """ Get shape of a layer for flattening """
-#     shape = [x.value for x in shape[1:]]
-#     f = lambda x, y: 1 if y is None else x * y
-#     return reduce(f, shape, 1)
-
-# class GQCnnDenoisingWeights(object):
-#     """ Struct helper for storing weights """
-
-#     def __init__(self):
-#         pass
-
+from neon.backends import gen_backend
 
 class GQCNN(object):
     """ Wrapper for GQ-CNN """
@@ -110,42 +97,6 @@ class GQCNN(object):
             # u, v, depth, theta, cx, cy
             self._pose_mean = self._pose_mean[:6]
             self._pose_std = self._pose_std[:6]
-
-    def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5, reinit_pc1=False):
-        """ Re-initializes final fully-connected layers for fine-tuning 
-
-        Parameters
-        ----------
-        reinit_fc3 : bool
-            whether to re-initialize fc3
-        reinit_fc4 : bool
-            whether to re-initialize fc4
-        reinit_fc5 : bool
-            whether to re-initialize fc5
-        reinit_pc1 : bool
-            whether to re-initiazlize pc1
-        """
-        with self._graph.as_default():
-            if reinit_pc1:
-                pc1_std = np.sqrt(2.0 / self.pc1_in_size)
-                self._weights.pc1W = tf.Variable(tf.truncated_normal([self.pc1_in_size, self.pc1_out_size],
-                                                       stddev=pc1_std), name='pc1W')
-                self._weights.pc1b = tf.Variable(tf.truncated_normal([self.pc1_out_size],
-                                                       stddev=pc1_std), name='pc1b')
-
-            if reinit_fc3:
-                fc3_std = np.sqrt(2.0 / (self.fc3_in_size))
-                self._weights.fc3W = tf.Variable(tf.truncated_normal([self.fc3_in_size, self.fc3_out_size], stddev=fc3_std))
-                self._weights.fc3b = tf.Variable(tf.truncated_normal([self.fc3_out_size], stddev=fc3_std))  
-            if reinit_fc4:
-                fc4_std = np.sqrt(2.0 / (self.fc4_in_size))
-                self._weights.fc4W_im = tf.Variable(tf.truncated_normal([self.fc4_in_size, self.fc4_out_size], stddev=fc4_std))
-                self._weights.fc4W_pose = tf.Variable(tf.truncated_normal([self.fc4_pose_in_size, self.fc4_out_size], stddev=fc4_std))
-                self._weights.fc4b = tf.Variable(tf.truncated_normal([self.fc4_out_size], stddev=fc4_std))
-            if reinit_fc5:
-                fc5_std = np.sqrt(2.0 / (self.fc5_in_size))
-                self._weights.fc5W = tf.Variable(tf.truncated_normal([self.fc5_in_size, self.fc5_out_size], stddev=fc5_std))
-                self._weights.fc5b = tf.Variable(tf.constant(0.0, shape=[self.fc5_out_size]))
     
     def _parse_config(self, config):
         """ Parses configuration file for this GQCNN 
@@ -156,6 +107,9 @@ class GQCNN(object):
             python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
             im_height, im_width, ... 
         """
+
+        # get backend type
+        self._backend = config['backend']
 
         # load tensor params
         self._batch_size = config['batch_size']
@@ -178,7 +132,6 @@ class GQCNN(object):
             # u, v, depth, theta, cx, cy
             self._pose_dim = 6
 
-
         # load architecture
         self._architecture = config['architecture']
         self._use_pc2 = False
@@ -189,7 +142,7 @@ class GQCNN(object):
         self.conv1_1_out_size = self._im_height / self._architecture['conv1_1']['pool_stride']
         self.conv1_2_out_size = self.conv1_1_out_size / self._architecture['conv1_2']['pool_stride']
         self.conv2_1_out_size = self.conv1_2_out_size / self._architecture['conv2_1']['pool_stride']
-        self.conv2_2_out_size = self.conv2_1 / self._architecture['conv2_2']['pool_stride']
+        self.conv2_2_out_size = self.conv2_1_out_size / self._architecture['conv2_2']['pool_stride']
         self.pc2_out_size = self._architecture['pc2']['out_size']
         self.pc1_in_size = self._pose_dim
         self.pc1_out_size = self._architecture['pc1']['out_size']
@@ -218,7 +171,7 @@ class GQCNN(object):
         self._pose_std = np.ones(self._pose_dim)
 
     def initialize_network(self, add_softmax=True):
-        """ Set up input nodes and builds network.
+        """ Sets up backend and builds network.
 
         Parameters
         ----------
@@ -226,13 +179,21 @@ class GQCNN(object):
             whether or not to add a softmax layer
         """
         
+        # first generate a neon backend
+        self._be = gen_backend(backend=self._backend, batch_size=self._batch_size)
+
         # if there is currently no model, ex. during initial training from scratch, then build a new network 
         if self._model is None:
         	self._model, self._layers = self._build_network()
+            
         # add softmax if specified
         if add_softmax:
             self.add_softmax_to_predict()
 
+    @property
+    def backend(self):
+        return self._backend
+    
     @property
     def batch_size(self):
         return self._batch_size
@@ -272,27 +233,15 @@ class GQCNN(object):
     @property
     def input_data_mode(self):
         return self._input_data_mode
+    
+    @property
+    def model(self):
+        return self._model
 
     @property
-    def input_im_node(self):
-        return self._input_im_node
-
-    @property
-    def input_pose_node(self):
-        return self._input_pose_node
-
-    @property
-    def output(self):
-        return self._output_tensor
-
-    @property
-    def weights(self):
-        return self._weights
-
-    @property
-    def graph(self):
-        return self._graph
-
+    def layers(self):
+        return self._layers
+    
     def update_im_mean(self, im_mean):
         """ Updates image mean to be used for normalization when predicting 
         
@@ -433,27 +382,6 @@ class GQCNN(object):
             if close_sess:
                 self.close_session()
         return output_arr
-		
-    @property
-    def filters(self):
-        """ Returns the set of conv1_1 filters 
-
-        Returns
-        -------
-        :obj:`tensorflow Tensor`
-            filters(weights) from conv1_1 of the network
-        """
-
-        close_sess = False
-        if self._sess is None:
-            close_sess = True
-            self.open_session()
-
-        filters = self._sess.run(self._weights.conv1_1W)
-
-        if close_sess:
-            self.close_session()
-        return filters
 
     def _build_network(self, drop_fc3=False, drop_fc4=False, fc3_drop_rate=0, fc4_drop_rate=0):
         """ Builds neural network 
@@ -485,22 +413,22 @@ class GQCNN(object):
         # calculate the padding so that input and output dimensions are the same, equivalent to SAME in TensorFlow
         # NOTE: WE ASSUME THAT THE HEIGHT AND WIDTH DIMENSIONS ARE ALWAYS EQUAL SO WE ONLY EVER COMPUTE ONE OF THEM
         stride = 1
-        out_dim = ceil(float(self._im_height) / float(stride))
+        out_dim = np.ceil(float(self._im_height) / float(stride))
 
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_1']['filt_dim'] - self._im_height, 0)
-        single_side_pad = total_pad // 2
+        single_side_pad = int(total_pad // 2)
 
         # build conv layer
         conv1_1 = Conv((self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['num_filt']), 
-        	init=Gaussian(___), bias=Constant(___),
+        	init=Kaiming(), bias=Kaiming(),
             padding=single_side_pad, activation=Rectlin(), name="conv1_1")
 
         # build norm layer
         norm1_1 = None
         if self._architecture['conv1_1']['norm']:
                 if self._architecture['conv1_1']['norm_type'] == "local_response":
-                	norm1_1 = LRN(___, alpha=self.normalization_radius, beta=self.normalization_beta, bpower=___, name="norm1_1")
+                	norm1_1 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm1_1")
 
         # build pool layer
         pool1_1_size = self._architecture['conv1_1']['pool_size']
@@ -520,22 +448,22 @@ class GQCNN(object):
         # calculate the padding so that input and output dimensions are the same, equivalent to SAME in TensorFlow
         # NOTE: WE ASSUME THAT THE HEIGHT AND WIDTH DIMENSIONS ARE ALWAYS EQUAL SO WE ONLY EVER COMPUTE ONE OF THEM
         stride = 1
-        out_dim = ceil(float(self.conv1_1_out_size) / float(stride))
+        out_dim = np.ceil(float(self.conv1_1_out_size) / float(stride))
 
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_2']['filt_dim'] - self.conv1_1_out_size, 0)
-        single_side_pad = total_pad // 2
+        single_side_pad = int(total_pad // 2)
 
         # build conv layer
         conv1_2 = Conv((self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['num_filt']), 
-        	init=Gaussian(___), bias=Constant(___),
+        	init=Kaiming(), bias=Kaiming(),
             padding=single_side_pad, activation=Rectlin(), name="conv1_2")
 
         # build norm layer
         norm1_2 = None
         if self._architecture['conv1_2']['norm']:
                 if self._architecture['conv1_2']['norm_type'] == "local_response":
-                	norm1_2 = LRN(___, alpha=self.normalization_radius, beta=self.normalization_beta, bpower=___, name="norm1_2")
+                	norm1_2 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm1_2")
 
         # build pool layer
         pool1_2_size = self._architecture['conv1_2']['pool_size']
@@ -553,22 +481,22 @@ class GQCNN(object):
         # calculate the padding so that input and output dimensions are the same, equivalent to SAME in TensorFlow
         # NOTE: WE ASSUME THAT THE HEIGHT AND WIDTH DIMENSIONS ARE ALWAYS EQUAL SO WE ONLY EVER COMPUTE ONE OF THEM
         stride = 1
-        out_dim = ceil(float(self.conv1_2_out_size) / float(stride))
+        out_dim = np.ceil(float(self.conv1_2_out_size) / float(stride))
 
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv2_1']['filt_dim'] - self.conv1_2_out_size, 0)
-        single_side_pad = total_pad // 2
+        single_side_pad = int(total_pad // 2)
 
         # build conv layer
         conv2_1 = Conv((self._architecture['conv2_1']['filt_dim'], self._architecture['conv2_1']['filt_dim'], self._architecture['conv2_1']['num_filt']), 
-        	init=Gaussian(___), bias=Constant(___),
+        	init=Kaiming(), bias=Kaiming(),
             padding=single_side_pad, activation=Rectlin(), name="conv2_1")
 
         # build norm layer
         norm2_1 = None
         if self._architecture['conv2_1']['norm']:
                 if self._architecture['conv2_1']['norm_type'] == "local_response":
-                	norm2_1 = LRN(___, alpha=self.normalization_radius, beta=self.normalization_beta, bpower=___, name="norm2_1")
+                	norm2_1 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm2_1")
 
         # build pool layer
         pool2_1_size = self._architecture['conv2_1']['pool_size']
@@ -586,22 +514,22 @@ class GQCNN(object):
         # calculate the padding so that input and output dimensions are the same, equivalent to SAME in TensorFlow
         # NOTE: WE ASSUME THAT THE HEIGHT AND WIDTH DIMENSIONS ARE ALWAYS EQUAL SO WE ONLY EVER COMPUTE ONE OF THEM
         stride = 1
-        out_dim = ceil(float(self.conv2_1_out_size) / float(stride))
+        out_dim = np.ceil(float(self.conv2_1_out_size) / float(stride))
 
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv2_2']['filt_dim'] - self.conv2_1_out_size, 0)
-        single_side_pad = total_pad // 2
+        single_side_pad = int(total_pad // 2)
 
         # build conv layer
         conv2_2 = Conv((self._architecture['conv2_2']['filt_dim'], self._architecture['conv2_2']['filt_dim'], self._architecture['conv2_2']['num_filt']), 
-        	init=Gaussian(___), bias=Constant(___),
+        	init=Kaiming(), bias=Kaiming(),
             padding=single_side_pad, activation=Rectlin(), name="conv2_2")
 
         # build norm layer
         norm2_2 = None
         if self._architecture['conv2_2']['norm']:
                 if self._architecture['conv2_2']['norm_type'] == "local_response":
-                	norm2_2 = LRN(___, alpha=self.normalization_radius, beta=self.normalization_beta, bpower=___, name="norm2_2")
+                	norm2_2 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm2_2")
 
         # build pool layer
         pool2_2_size = self._architecture['conv2_2']['pool_size']
@@ -617,7 +545,7 @@ class GQCNN(object):
 
         ################################################FC3#########################################################
         # build fully-connected layer
-        fc3 = Affine(nout=self.fc3_out_size, init=Gaussian(___), bias=Constant(___), activation=Rectlin(), name='fc3')
+        fc3 = Affine(nout=self.fc3_out_size, init=Kaiming(), bias=Kaiming(), activation=Rectlin(), name='fc3')
 
         # drop fc3 if necessary
         fc3_drop = None
@@ -626,8 +554,8 @@ class GQCNN(object):
         
         # add everything to the layers list
         im_path_layers.append(fc3)
-        if drop_fc3 is not None:
-        	im_path_layers.append(drop_fc3)
+        if fc3_drop is not None:
+        	im_path_layers.append(fc3_drop)
         ####################################################################################################################
 
         # form the image path 
@@ -638,14 +566,14 @@ class GQCNN(object):
 
         ################################################PC1#########################################################
         # build fully-connected layer
-        pc1 = Affine(nout=self.pc1_out_size, init=Gaussian(___), bias=Constant(___), activation=Rectlin(), name='pc1')
+        pc1 = Affine(nout=self.pc1_out_size, init=Kaiming(), bias=Kaiming(), activation=Rectlin(), name='pc1')
         pose_path_layers.append(pc1)
         ####################################################################################################################
 
         ################################################PC2#########################################################
         if self._use_pc2:
         	# build fully-connected layer
-            pc2 = Affine(nout=self.pc2_out_size, init=Gaussian(___), bias=Constant(___), activation=Rectlin(), name='pc2')
+            pc2 = Affine(nout=self.pc2_out_size, init=Kaiming(), bias=Kaiming(), activation=Rectlin(), name='pc2')
             pose_path_layers.append(pc2)
         ####################################################################################################################
 
@@ -658,7 +586,7 @@ class GQCNN(object):
 
         ################################################FC4#########################################################
         # build fully-connected layer
-        fc4 = Affine(nout=self.fc4_out_size, init=Gaussian(___), bias=Constant(___), activation=Rectlin(), name='fc4')
+        fc4 = Affine(nout=self.fc4_out_size, init=Kaiming(), bias=Kaiming(), activation=Rectlin(), name='fc4')
 
         # drop fc4 if necessary
         fc4_drop = None
@@ -667,14 +595,14 @@ class GQCNN(object):
         
         # add everything to the layers list
         combined_layers.append(fc4)
-        if drop_fc4 is not None:
-        	combined_layers.append(drop_fc4)
+        if fc4_drop is not None:
+        	combined_layers.append(fc4_drop)
         ####################################################################################################################
 
         ################################################FC5#########################################################
         # build fully-connected layer
-        fc5 = Linear(nout=self.fc5_out_size, init=Gaussian(___), name='fc5')
-        fc5_bias = Bias(init=Gaussian(___), name='fc5_bias')
+        fc5 = Linear(nout=self.fc5_out_size, init=Kaiming(), name='fc5')
+        fc5_bias = Bias(init=Kaiming(), name='fc5_bias')
 
         # add everything to the layers list
         combined_layers.append(fc5)
