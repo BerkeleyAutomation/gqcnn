@@ -241,6 +241,7 @@ models/model_XXXX/vis_conv : int
 import argparse
 import logging
 import time
+import os
 
 from autolab_core import YamlConfig
 from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
