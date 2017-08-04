@@ -276,6 +276,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             return []
 
         # compute_max_depth
+        min_depth = np.min(depth_im.data) + self._min_depth_offset
         max_depth = np.max(depth_im.data) + self._max_depth_offset
 
         # compute surface normals
@@ -304,7 +305,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         # form set of valid candidate point pairs
         sample_start = time()
-        max_grasp_width_px = Grasp2D(Point(np.zeros(2)), 0.0, max_depth,
+        max_grasp_width_px = Grasp2D(Point(np.zeros(2)), 0.0, min_depth,
                                      width = self._gripper_width,
                                      camera_intr=camera_intr).width_px
         normal_ip = edge_normals.dot(edge_normals.T)
@@ -379,6 +380,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
                             # sample depth between the min and max
                             min_depth = np.min(center_depth) + self._min_depth_offset
+                            max_depth = np.max(center_depth) + self._max_depth_offset
                             sample_depth = min_depth + (max_depth - min_depth) * np.random.rand()
                             candidate_grasp = Grasp2D(grasp_center_pt,
                                                       grasp_theta,
