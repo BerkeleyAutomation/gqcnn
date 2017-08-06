@@ -132,6 +132,10 @@ class GQCNN(object):
             # depth, cx, cy
             self._pose_mean = np.concatenate([self._pose_mean[2:3], self._pose_mean[4:6]])
             self._pose_std = np.concatenate([self._pose_std[2:3], self._pose_std[4:6]])
+        elif self._input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            # depth, phi
+            self._pose_mean = self._pose_mean[2:4]
+            self._pose_std = self._pose_std[2:4]
         elif self._input_data_mode == InputDataMode.RAW_IMAGE:
             # u, v, depth, theta
             self._pose_mean = self._pose_mean[:4]
@@ -438,6 +442,9 @@ class GQCNN(object):
         elif self._input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             # depth, cx, cy
             self._pose_dim = 3
+        elif self._input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            # depth, phi
+            self._pose_dim = 2
         elif self._input_data_mode == InputDataMode.RAW_IMAGE:
             # u, v, depth, theta
             self._pose_dim = 4

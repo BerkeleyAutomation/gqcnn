@@ -380,6 +380,8 @@ class SGDOptimizer(object):
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
+        elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            return pose_arr[:,2:4]
         else:
             raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))
 
@@ -510,6 +512,9 @@ class SGDOptimizer(object):
                 im_filename = self.im_filenames[k]
                 pose_filename = self.pose_filenames[k]
                 self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+                if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                    rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+                    self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
                 self.pose_mean += np.sum(self.pose_data[self.train_index_map[im_filename],:], axis=0)
                 num_summed += self.pose_data[self.train_index_map[im_filename]].shape[0]
             self.pose_mean = self.pose_mean / num_summed
@@ -518,6 +523,9 @@ class SGDOptimizer(object):
                 im_filename = self.im_filenames[k]
                 pose_filename = self.pose_filenames[k]
                 self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+                if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                    rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+                    self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
                 self.pose_std += np.sum((self.pose_data[self.train_index_map[im_filename],:] - self.pose_mean)**2, axis=0)
             self.pose_std = np.sqrt(self.pose_std / num_summed)
 
@@ -553,6 +561,9 @@ class SGDOptimizer(object):
             # depth, cx, cy
             self.gqcnn.update_pose_mean(np.concatenate([self.pose_mean[2:3], self.pose_mean[4:6]]))
             self.gqcnn.update_pose_std(np.concatenate([self.pose_std[2:3], self.pose_std[4:6]]))
+        elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            self.gqcnn.update_pose_mean(self.pose_mean[2:4])
+            self.gqcnn.update_pose_std(self.pose_std[2:4])
         elif self.input_data_mode == InputDataMode.RAW_IMAGE:
             # u, v, depth, theta
             self.gqcnn.update_pose_mean(self.pose_mean[:4])
@@ -793,6 +804,8 @@ class SGDOptimizer(object):
             self.pose_dim = 1 # depth
         elif self.input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             self.pose_dim = 3 # depth, cx, cy
+        elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            self.pose_dim = 2 # depth, phi
         elif self.input_data_mode == InputDataMode.RAW_IMAGE:
             self.pose_dim = 4 # u, v, theta, depth
         elif self.input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
@@ -1193,19 +1206,18 @@ class SGDOptimizer(object):
                     theta = 180.0
                     rot_map = cv2.getRotationMatrix2D(tuple(self.im_center), theta, 1)
                     train_image = cv2.warpAffine(train_image, rot_map, (self.im_height, self.im_width), flags=cv2.INTER_NEAREST)
-                    if self.pose_dim > 1:
-                        self.train_poses_arr[i,4] = -self.train_poses_arr[i,4]
-                        self.train_poses_arr[i,5] = -self.train_poses_arr[i,5]
+
+                    if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                        self.train_poses_arr[:,3] = -self.train_poses_arr[:,3]
                 # reflect left right with 50% probability
                 if np.random.rand() < 0.5:
                     train_image = np.fliplr(train_image)
-                    if self.pose_dim > 1:
-                        self.train_poses_arr[i,5] = -self.train_poses_arr[i,5]
                 # reflect up down with 50% probability
                 if np.random.rand() < 0.5:
                     train_image = np.flipud(train_image)
-                    if self.pose_dim > 1:
-                        self.train_poses_arr[i,4] = -self.train_poses_arr[i,4]
+
+                    if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                        self._train_poses_arr[:,3] = -self.train_poses_arr[:,3]
                 self.train_data_arr[i,:,:,0] = train_image
         return self.train_data_arr, self.train_poses_arr
 

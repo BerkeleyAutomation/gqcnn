@@ -215,6 +215,22 @@ class SuctionPoint2D(object):
         return self.camera_intr.frame
 
     @property
+    def angle(self):
+        """ The angle that the grasp pivot axis makes in image space. """
+        rotation_axis = np.cross(self.axis, np.array([0,0,1]))
+        rotation_axis_image = np.array([rotation_axis[0], rotation_axis[1]])
+        rotation_axis_image = rotation_axis_image / np.linalg.norm(rotation_axis_image)
+        angle = np.arccos(rotation_axis_image[0])
+        if rotation_axis[1] < 0:
+            angle = -angle
+        return angle
+
+    @property
+    def approach_angle(self):
+        """ The angle between the grasp approach axis and camera optical axis. """
+        return np.arccos(self.axis.dot(np.array([0,0,1])))
+
+    @property
     def feature_vec(self):
         """ Returns the feature vector for the suction point.
         v = [center, axis, depth]

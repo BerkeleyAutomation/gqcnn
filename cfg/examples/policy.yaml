@@ -30,7 +30,7 @@ policy:
     type: antipodal_depth
 
     # antipodality
-    friction_coef: 0.8
+    friction_coef: 1.0
     depth_grad_thresh: 0.0025
     depth_grad_gaussian_sigma: 1.0
     downsample_rate: 4
@@ -47,7 +47,7 @@ policy:
     depth_sample_win_height: 1
     depth_sample_win_width: 1
     min_depth_offset: 0.015
-    max_depth_offset: 0.0
+    max_depth_offset: 0.05
 
   # visualization
   vis:

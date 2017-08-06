@@ -242,6 +242,7 @@ import argparse
 import logging
 import os
 import time
+import os
 
 from autolab_core import YamlConfig
 from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
