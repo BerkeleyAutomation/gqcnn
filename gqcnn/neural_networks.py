@@ -10,11 +10,13 @@ import numpy as np
 import os
 import sys
 import IPython
+import scipy.stats as stats
 
-from optimizer_constants import InputDataMode
+from gqcnn import GQCNNPredictIterator, InputDataMode
 
 from neon.models import Model
 from neon.initializers import Kaiming
+from neon.initializers.initializer import Initializer
 from neon.layers import Conv, Pooling, LRN, Sequential, Affine, Dropout, Linear, Bias, Activation, MergeMultistream
 from neon.transforms import Rectlin, Softmax
 from neon.backends import gen_backend
@@ -58,7 +60,7 @@ class GQCNN(object):
         gqcnn_config = train_config['gqcnn_config']
 
         # create GQCNN object and initialize network
-        gqcnn = GQCNN(gqcnn_config, os.path.join(model_dir, model.prm))
+        gqcnn = GQCNN(gqcnn_config, os.path.join(model_dir, 'model.prm'))
         gqcnn.initialize_network()
         gqcnn.init_mean_and_std(model_dir)
 
@@ -170,7 +172,7 @@ class GQCNN(object):
         self._pose_mean = np.zeros(self._pose_dim)
         self._pose_std = np.ones(self._pose_dim)
 
-    def initialize_network(self, add_softmax=True):
+    def initialize_network(self):
         """ Sets up backend and builds network.
 
         Parameters
@@ -185,10 +187,13 @@ class GQCNN(object):
         # if there is currently no model, ex. during initial training from scratch, then build a new network 
         if self._model is None:
         	self._model, self._layers = self._build_network()
-            
+        else:
+            # else there is a model location specified and we have to instantiate it
+            self._model = Model(self._model)
+
         # add softmax if specified
-        if add_softmax:
-            self.add_softmax_to_predict()
+        # if add_softmax:
+        #     self.add_softmax_to_predict()
 
     @property
     def backend(self):
@@ -322,11 +327,11 @@ class GQCNN(object):
         """
         return self._pose_std
         
-    def add_softmax_to_predict(self):
-        """ Adds softmax layer and re-build network"""
-        softmax_layer = Activation(transform=Softmax(), name='softmax')
-        self._layers.append(softmax_layer)
-        self._model = Model(self._layers)
+    # def add_softmax_to_predict(self):
+    #     """ Adds softmax layer and re-build network"""
+    #     softmax_layer = Activation(transform=Softmax(), name='softmax')
+    #     self._layers.append(softmax_layer)
+    #     self._model = Model(self._layers)
 
     def update_batch_size(self, batch_size):
         """ Updates the prediction batch size 
@@ -349,39 +354,22 @@ class GQCNN(object):
             4D Tensor of poses to be predicted
         """
 
-        # setup prediction
+        # setup for prediction
         num_images = image_arr.shape[0]
         num_poses = pose_arr.shape[0]
-        output_arr = np.zeros([num_images, self.fc5_out_size])
+        # output_arr = np.zeros([num_images, self.fc5_out_size])
         if num_images != num_poses:
             raise ValueError('Must provide same number of images and poses')
+        # normalize image and pose data
+        image_arr = (image_arr - self._im_mean) / self._im_std
+        pose_arr = (pose_arr - self._pose_mean) / self._pose_std
 
-        # predict by filling in image array in batches
-        close_sess = False
-        with self._graph.as_default():
-            if self._sess is None:
-                close_sess = True
-                self.open_session()
-            i = 0
-            while i < num_images:
-                logging.debug('Predicting file %d' % (i))
-                dim = min(self._batch_size, num_images - i)
-                cur_ind = i
-                end_ind = cur_ind + dim
-                self._input_im_arr[:dim, :, :, :] = (
-                    image_arr[cur_ind:end_ind, :, :, :] - self._im_mean) / self._im_std
-                self._input_pose_arr[:dim, :] = (
-                    pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
+        # create Data Iterator
+        pred_iter = GQCNNPredictIterator(image_arr.reshape((image_arr.shape[0], self._im_width * self._im_width * self._num_channels)), pose_arr, lshape=[(self._im_height, self._im_width, self._num_channels), (pose_arr.shape[1], )], name='prediction_iterator')
 
-                gqcnn_output = self._sess.run(self._output_tensor,
-                                              feed_dict={self._input_im_node: self._input_im_arr,
-                                                         self._input_pose_node: self._input_pose_arr})
-                output_arr[cur_ind:end_ind, :] = gqcnn_output[:dim, :]
-
-                i = end_ind
-            if close_sess:
-                self.close_session()
-        return output_arr
+        # predict 
+        output_arr = self._model.get_outputs(pred_iter)
+        return output_arr[:image_arr.shape[0]]
 
     def _build_network(self, drop_fc3=False, drop_fc4=False, fc3_drop_rate=0, fc4_drop_rate=0):
         """ Builds neural network 
@@ -418,10 +406,10 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_1']['filt_dim'] - self._im_height, 0)
         single_side_pad = int(total_pad // 2)
-
+        ck = CustomKaiming()
         # build conv layer
         conv1_1 = Conv((self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['num_filt']), 
-        	init=Kaiming(), bias=Kaiming(),
+        	init=ck, bias=ck,
             padding=single_side_pad, activation=Rectlin(), name="conv1_1")
 
         # build norm layer
@@ -433,7 +421,10 @@ class GQCNN(object):
         # build pool layer
         pool1_1_size = self._architecture['conv1_1']['pool_size']
         pool1_1_stride = self._architecture['conv1_1']['pool_stride']
-        pool1_1 = Pooling((pool1_1_size, pool1_1_size), strides=pool1_1_stride, padding=single_side_pad, name='pool1_1')
+        if pool1_1_size == 1 and pool1_1_stride == 1:
+            pool1_1 = Pooling((pool1_1_size, pool1_1_size), strides=pool1_1_stride, name='pool1_1')
+        else:    
+            pool1_1 = Pooling((pool1_1_size, pool1_1_size), strides=pool1_1_stride, padding=single_side_pad, name='pool1_1')
 
         # add everything to the layers list
         im_path_layers.append(conv1_1)
@@ -453,10 +444,10 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_2']['filt_dim'] - self.conv1_1_out_size, 0)
         single_side_pad = int(total_pad // 2)
-
+        ck = CustomKaiming()
         # build conv layer
         conv1_2 = Conv((self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['num_filt']), 
-        	init=Kaiming(), bias=Kaiming(),
+        	init=ck, bias=ck,
             padding=single_side_pad, activation=Rectlin(), name="conv1_2")
 
         # build norm layer
@@ -468,7 +459,10 @@ class GQCNN(object):
         # build pool layer
         pool1_2_size = self._architecture['conv1_2']['pool_size']
         pool1_2_stride = self._architecture['conv1_2']['pool_stride']
-        pool1_2 = Pooling((pool1_2_size, pool1_2_size), strides=pool1_2_stride, padding=single_side_pad, name='pool1_2')
+        if pool1_2_size == 1 and pool1_2_stride == 1:
+            pool1_2 = Pooling((pool1_2_size, pool1_2_size), strides=pool1_2_stride, name='pool1_2')
+        else:
+            pool1_2 = Pooling((pool1_2_size, pool1_2_size), strides=pool1_2_stride, padding=1, name='pool1_2')
 
         # add everything to the layers list
         im_path_layers.append(conv1_2)
@@ -486,10 +480,10 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv2_1']['filt_dim'] - self.conv1_2_out_size, 0)
         single_side_pad = int(total_pad // 2)
-
+        ck = CustomKaiming()
         # build conv layer
         conv2_1 = Conv((self._architecture['conv2_1']['filt_dim'], self._architecture['conv2_1']['filt_dim'], self._architecture['conv2_1']['num_filt']), 
-        	init=Kaiming(), bias=Kaiming(),
+        	init=ck, bias=ck,
             padding=single_side_pad, activation=Rectlin(), name="conv2_1")
 
         # build norm layer
@@ -501,7 +495,10 @@ class GQCNN(object):
         # build pool layer
         pool2_1_size = self._architecture['conv2_1']['pool_size']
         pool2_1_stride = self._architecture['conv2_1']['pool_stride']
-        pool2_1 = Pooling((pool2_1_size, pool2_1_size), strides=pool2_1_stride, padding=single_side_pad, name='pool2_1')
+        if pool2_1_size == 1 and pool2_1_stride == 1:
+            pool2_1 = Pooling((pool2_1_size, pool2_1_size), strides=pool2_1_stride, name='pool2_1')
+        else:
+            pool2_1 = Pooling((pool2_1_size, pool2_1_size), strides=pool2_1_stride, padding=single_side_pad, name='pool2_1')
 
         # add everything to the layers list
         im_path_layers.append(conv2_1)
@@ -519,10 +516,10 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv2_2']['filt_dim'] - self.conv2_1_out_size, 0)
         single_side_pad = int(total_pad // 2)
-
+        ck = CustomKaiming()
         # build conv layer
         conv2_2 = Conv((self._architecture['conv2_2']['filt_dim'], self._architecture['conv2_2']['filt_dim'], self._architecture['conv2_2']['num_filt']), 
-        	init=Kaiming(), bias=Kaiming(),
+        	init=ck, bias=ck,
             padding=single_side_pad, activation=Rectlin(), name="conv2_2")
 
         # build norm layer
@@ -534,7 +531,10 @@ class GQCNN(object):
         # build pool layer
         pool2_2_size = self._architecture['conv2_2']['pool_size']
         pool2_2_stride = self._architecture['conv2_2']['pool_stride']
-        pool2_2 = Pooling((pool2_2_size, pool2_2_size), strides=pool2_2_stride, padding=single_side_pad, name='pool2_2')
+        if pool2_2_size == 1 and pool2_2_stride == 1:
+            pool2_2 = Pooling((pool2_2_size, pool2_2_size), strides=pool2_2_stride, name='pool2_2')
+        else:
+            pool2_2 = Pooling((pool2_2_size, pool2_2_size), strides=pool2_2_stride, padding=single_side_pad, name='pool2_2')
 
         # add everything to the layers list
         im_path_layers.append(conv2_2)
@@ -545,7 +545,8 @@ class GQCNN(object):
 
         ################################################FC3#########################################################
         # build fully-connected layer
-        fc3 = Affine(nout=self.fc3_out_size, init=Kaiming(), bias=Kaiming(), activation=Rectlin(), name='fc3')
+        ck = CustomKaiming()
+        fc3 = Affine(nout=self.fc3_out_size, init=ck, bias=ck, activation=Rectlin(), name='fc3')
 
         # drop fc3 if necessary
         fc3_drop = None
@@ -566,14 +567,15 @@ class GQCNN(object):
 
         ################################################PC1#########################################################
         # build fully-connected layer
-        pc1 = Affine(nout=self.pc1_out_size, init=Kaiming(), bias=Kaiming(), activation=Rectlin(), name='pc1')
+        ck = CustomKaiming()
+        pc1 = Affine(nout=self.pc1_out_size, init=ck, bias=ck, activation=Rectlin(), name='pc1')
         pose_path_layers.append(pc1)
         ####################################################################################################################
 
         ################################################PC2#########################################################
         if self._use_pc2:
         	# build fully-connected layer
-            pc2 = Affine(nout=self.pc2_out_size, init=Kaiming(), bias=Kaiming(), activation=Rectlin(), name='pc2')
+            pc2 = Affine(nout=self.pc2_out_size, init=Kaiming(local=False), bias=Kaiming(local=False), activation=Rectlin(), name='pc2')
             pose_path_layers.append(pc2)
         ####################################################################################################################
 
@@ -586,7 +588,8 @@ class GQCNN(object):
 
         ################################################FC4#########################################################
         # build fully-connected layer
-        fc4 = Affine(nout=self.fc4_out_size, init=Kaiming(), bias=Kaiming(), activation=Rectlin(), name='fc4')
+        ck = CustomKaiming()
+        fc4 = Affine(nout=self.fc4_out_size, init=ck, bias=ck, activation=Rectlin(), name='fc4')
 
         # drop fc4 if necessary
         fc4_drop = None
@@ -601,11 +604,29 @@ class GQCNN(object):
 
         ################################################FC5#########################################################
         # build fully-connected layer
-        fc5 = Linear(nout=self.fc5_out_size, init=Kaiming(), name='fc5')
-        fc5_bias = Bias(init=Kaiming(), name='fc5_bias')
+        ck = CustomKaiming()
+        fc5 = Linear(nout=self.fc5_out_size, init=ck, name='fc5')
+        fc5_bias = Bias(init=ck, name='fc5_bias')
 
         # add everything to the layers list
         combined_layers.append(fc5)
         combined_layers.append(fc5_bias)
 
+        softmax_layer = Activation(transform=Softmax(), name='softmax')
+        combined_layers.append(softmax_layer)
+
         return Model(layers=combined_layers), combined_layers
+
+class CustomKaiming(Initializer):
+    def __init__(self, name='CustomKaiming'):
+        super(CustomKaiming, self).__init__(name=name)
+        self.scale = None
+
+    def fill(self, param):
+        fan_in = param.shape[0]
+        if self.scale is None:
+            self.scale = np.sqrt(2. / fan_in)
+        upper_bound = 2 * self.scale
+        lower_bound = -1 * upper_bound 
+        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
+        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)

@@ -1,6 +1,9 @@
+from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
+from gqcnn_predict_iterator import GQCNNPredictIterator
+from gqcnn_train_iterator import GQCNNTrainIterator
+from gqcnn_dataset import GQCNNDataset
 from neural_networks import GQCNN
 from sgd_optimizer import SGDOptimizer
-from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 from learning_analysis import ClassificationResult, RegressionResult, ConfusionMatrix
 from gqcnn_analyzer import GQCNNAnalyzer
@@ -24,4 +27,6 @@ __all__ = ['GQCNN',
            'ParallelJawGrasp', 'Policy', 'GraspingPolicy', 'AntipodalGraspingPolicy', 'CrossEntropyAntipodalGraspingPolicy',
            'RgbdImageState',
            'NoValidGraspsException', 'NoAntipodalPairsFoundException',
-           'GQCNNPredictionVisualizer']
+           'GQCNNPredictionVisualizer',
+           'GQCNNPredictIterator', 'GQCNNTrainIterator',
+           'GQCNNDataset']

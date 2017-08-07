@@ -265,8 +265,7 @@ if __name__ == '__main__':
 	start_time = time.time()
 	gqcnn = GQCNN(gqcnn_config)
 	sgdOptimizer = SGDOptimizer(gqcnn, train_config)
-	with gqcnn.get_tf_graph().as_default():
-	    sgdOptimizer.optimize()
+	sgdOptimizer.optimize()
 	logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
 
 	# Prediction
@@ -296,6 +295,6 @@ if __name__ == '__main__':
 	gqcnn = GQCNN.load(model_dir)
 	sgdOptimizer = SGDOptimizer(gqcnn, train_config)
 	with gqcnn._graph.as_default():
-	        sgdOptimizer.optimize()
+			sgdOptimizer.optimize()
 	logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
 	"""
