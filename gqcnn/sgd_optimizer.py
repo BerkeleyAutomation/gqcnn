@@ -28,6 +28,7 @@ from neon.optimizers import GradientDescentMomentum, ExpSchedule, StepSchedule
 from neon.callbacks import Callbacks
 from neon.callbacks.callbacks import MetricCallback
 from neon.layers import GeneralizedCost
+from neon.backends import gen_backend
 
 class SGDOptimizer(object):
 	""" Optimizer for gqcnn object """
@@ -82,7 +83,7 @@ class SGDOptimizer(object):
 			raise ValueError('Optimizer %s not supported' %(self.cfg['optimizer']))
 
 	def _learning_schedule(self, decay_rate):
-		# return ExpSchedule(decay_rate)
+		return ExpSchedule(decay_rate)
 		epochs = [x for x in range(1, 25)]
 		lrs = [ 0.0094999988,
 				 0.0085737491,
@@ -132,7 +133,7 @@ class SGDOptimizer(object):
 		#  0.0018402583,
 		#  0.0017482453,
 		#  0.0015777914]
-		return StepSchedule(step_config=epochs, change=lrs)
+		# return StepSchedule(step_config=epochs, change=lrs)
 
 
 	def optimize(self):
@@ -154,7 +155,9 @@ class SGDOptimizer(object):
 		fc4_drop_rate = self.cfg['fc4_drop_rate']
 		
 		# build training and validation networks
-		self.gqcnn.initialize_network() # builds validation network inside gqcnn class
+		# self.gqcnn.initialize_network() # builds validation network inside gqcnn class
+		self._be = gen_backend(backend='gpu', batch_size=64)
+
 		self._train_model, _ = self.gqcnn._build_network(drop_fc3, drop_fc4, fc3_drop_rate, fc4_drop_rate) # builds training network with dropouts
 
 		# create loss
@@ -251,10 +254,3 @@ class SGDOptimizer(object):
 		self._data_iters = self._dataset.gen_iterators()
 		self._train_iter = self._data_iters['train']
 		self._val_iter = self._data_iters['test']
-
-# class CustomSchedule(Schedule):
-#     def __init__(self, decay_rate, decay_steps):
-#         self.decay_rate = decay_rate
-#         self.decay_steps = decay_steps
-
-#     def get_learning_rate(self, learning_rate, epoch):

@@ -15,7 +15,7 @@ import scipy.stats as stats
 from gqcnn import GQCNNPredictIterator, InputDataMode
 
 from neon.models import Model
-from neon.initializers import Kaiming
+from neon.initializers import Kaiming, Constant
 from neon.initializers.initializer import Initializer
 from neon.layers import Conv, Pooling, LRN, Sequential, Affine, Dropout, Linear, Bias, Activation, MergeMultistream
 from neon.transforms import Rectlin, Softmax
@@ -462,7 +462,7 @@ class GQCNN(object):
         if pool1_2_size == 1 and pool1_2_stride == 1:
             pool1_2 = Pooling((pool1_2_size, pool1_2_size), strides=pool1_2_stride, name='pool1_2')
         else:
-            pool1_2 = Pooling((pool1_2_size, pool1_2_size), strides=pool1_2_stride, padding=1, name='pool1_2')
+            pool1_2 = Pooling((pool1_2_size, pool1_2_size), strides=pool1_2_stride, padding=0, name='pool1_2')
 
         # add everything to the layers list
         im_path_layers.append(conv1_2)
@@ -606,7 +606,7 @@ class GQCNN(object):
         # build fully-connected layer
         ck = CustomKaiming()
         fc5 = Linear(nout=self.fc5_out_size, init=ck, name='fc5')
-        fc5_bias = Bias(init=ck, name='fc5_bias')
+        fc5_bias = Bias(init=Constant(val=0.0), name='fc5_bias')
 
         # add everything to the layers list
         combined_layers.append(fc5)
@@ -625,6 +625,7 @@ class CustomKaiming(Initializer):
     def fill(self, param):
         fan_in = param.shape[0]
         if self.scale is None:
+            print("recomputing scale")
             self.scale = np.sqrt(2. / fan_in)
         upper_bound = 2 * self.scale
         lower_bound = -1 * upper_bound 

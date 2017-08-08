@@ -318,12 +318,12 @@ class GQCNNTrainIterator(NervanaDataIterator):
 				pose_arr[start_ind:end_ind] = file_pose_data[:end_ind - start_ind]
 				label_arr[start_ind:end_ind] = file_label_data[:end_ind - start_ind]
 
-				# normalize images and poses
-				im_arr = (im_arr - self.im_mean) / self.im_std
-				pose_arr = (pose_arr - self.pose_mean[:pose_arr.shape[1]]) / self.pose_std[:pose_arr.shape[1]]
-
 				# update start index
 				start_ind = end_ind
+		
+			# normalize images and poses
+			im_arr = (im_arr - self.im_mean) / self.im_std
+			pose_arr = (pose_arr - self.pose_mean[:pose_arr.shape[1]]) / self.pose_std[:pose_arr.shape[1]]
 
 			# now flatten the image array for neon backend
 			im_arr_flat = im_arr.reshape((self.be.bsz, self.im_width * self.im_height * self.im_channels))

@@ -51,10 +51,10 @@ target_metric_name: robust_ferrari_canny
 metric_thresh: 0.002
 
 # denoising / synthetic data params
-multiplicative_denoising: 1
+multiplicative_denoising: 0
 gamma_shape: 1000.00
 
-symmetrize: 1
+symmetrize: 0
 
 morphological: 0
 morph_open_rate: 0.25
@@ -72,7 +72,7 @@ gradient_dropout_sigma: 0.5
 gradient_dropout_shape: 15
 gradient_dropout_scale: 0.001
 
-gaussian_process_denoising: 1
+gaussian_process_denoising: 0
 gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
