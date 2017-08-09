@@ -406,7 +406,7 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_1']['filt_dim'] - self._im_height, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming()
+        ck = CustomKaiming1()
         # build conv layer
         conv1_1 = Conv((self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['num_filt']), 
         	init=ck, bias=ck,
@@ -444,7 +444,7 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_2']['filt_dim'] - self.conv1_1_out_size, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming()
+        ck = CustomKaiming2()
         # build conv layer
         conv1_2 = Conv((self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['num_filt']), 
         	init=ck, bias=ck,
@@ -480,7 +480,7 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv2_1']['filt_dim'] - self.conv1_2_out_size, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming()
+        ck = CustomKaiming2()
         # build conv layer
         conv2_1 = Conv((self._architecture['conv2_1']['filt_dim'], self._architecture['conv2_1']['filt_dim'], self._architecture['conv2_1']['num_filt']), 
         	init=ck, bias=ck,
@@ -516,7 +516,7 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv2_2']['filt_dim'] - self.conv2_1_out_size, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming()
+        ck = CustomKaiming2()
         # build conv layer
         conv2_2 = Conv((self._architecture['conv2_2']['filt_dim'], self._architecture['conv2_2']['filt_dim'], self._architecture['conv2_2']['num_filt']), 
         	init=ck, bias=ck,
@@ -545,7 +545,7 @@ class GQCNN(object):
 
         ################################################FC3#########################################################
         # build fully-connected layer
-        ck = CustomKaiming()
+        ck = CustomKaiming3()
         fc3 = Affine(nout=self.fc3_out_size, init=ck, bias=ck, activation=Rectlin(), name='fc3')
 
         # drop fc3 if necessary
@@ -567,7 +567,7 @@ class GQCNN(object):
 
         ################################################PC1#########################################################
         # build fully-connected layer
-        ck = CustomKaiming()
+        ck = CustomKaiming4()
         pc1 = Affine(nout=self.pc1_out_size, init=ck, bias=ck, activation=Rectlin(), name='pc1')
         pose_path_layers.append(pc1)
         ####################################################################################################################
@@ -588,7 +588,7 @@ class GQCNN(object):
 
         ################################################FC4#########################################################
         # build fully-connected layer
-        ck = CustomKaiming()
+        ck = CustomKaiming5()
         fc4 = Affine(nout=self.fc4_out_size, init=ck, bias=ck, activation=Rectlin(), name='fc4')
 
         # drop fc4 if necessary
@@ -604,7 +604,7 @@ class GQCNN(object):
 
         ################################################FC5#########################################################
         # build fully-connected layer
-        ck = CustomKaiming()
+        ck = CustomKaiming6()
         fc5 = Linear(nout=self.fc5_out_size, init=ck, name='fc5')
         fc5_bias = Bias(init=Constant(val=0.0), name='fc5_bias')
 
@@ -625,9 +625,77 @@ class CustomKaiming(Initializer):
     def fill(self, param):
         fan_in = param.shape[0]
         if self.scale is None:
-            print("recomputing scale")
             self.scale = np.sqrt(2. / fan_in)
+            print(self.scale, param.shape)
+
         upper_bound = 2 * self.scale
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
+
+class CustomKaiming1(Initializer):
+    def __init__(self, name='CustomKaiming1'):
+        super(CustomKaiming1, self).__init__(name=name)
+        self.scale = 0.282842712475
+
+    def fill(self, param):
+        upper_bound = 2 * self.scale
+        lower_bound = -1 * upper_bound 
+        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
+        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
+
+class CustomKaiming2(Initializer):
+    def __init__(self, name='CustomKaiming2'):
+        super(CustomKaiming2, self).__init__(name=name)
+        self.scale = 0.0833333333333
+
+    def fill(self, param):
+        upper_bound = 2 * self.scale
+        lower_bound = -1 * upper_bound 
+        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
+        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
+
+class CustomKaiming3(Initializer):
+    def __init__(self, name='CustomKaiming3'):
+        super(CustomKaiming3, self).__init__(name=name)
+        self.scale = 0.011048543456
+
+    def fill(self, param):
+        upper_bound = 2 * self.scale
+        lower_bound = -1 * upper_bound 
+        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
+        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
+
+class CustomKaiming4(Initializer):
+    def __init__(self, name='CustomKaiming4'):
+        super(CustomKaiming4, self).__init__(name=name)
+        self.scale = 1.41421356237
+
+    def fill(self, param):
+        upper_bound = 2 * self.scale
+        lower_bound = -1 * upper_bound 
+        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
+        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
+
+class CustomKaiming5(Initializer):
+    def __init__(self, name='CustomKaiming5'):
+        super(CustomKaiming5, self).__init__(name=name)
+        self.scale = 0.0441081091391
+
+    def fill(self, param):
+        upper_bound = 2 * self.scale
+        lower_bound = -1 * upper_bound 
+        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
+        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
+
+class CustomKaiming6(Initializer):
+    def __init__(self, name='CustomKaiming6'):
+        super(CustomKaiming6, self).__init__(name=name)
+        self.scale = 0.0625
+
+    def fill(self, param):
+        upper_bound = 2 * self.scale
+        lower_bound = -1 * upper_bound 
+        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
+        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
+
