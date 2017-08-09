@@ -67,9 +67,12 @@ class Policy(object):
         """
         pass
 
+quality_fn = PlanarityGraspQualityFunction()
+q = quality_fn(state, grasps)
+q = quality_fn.quality(state, grasps)
+
 class GraspingPolicy(Policy):
     """ Policy for robust grasping with Grasp Quality Convolutional Neural Networks (GQ-CNN).
-
     Attributes
     ----------
     config : dict
@@ -171,8 +174,7 @@ class GraspingPolicy(Policy):
             translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
                                             depth_im.center[1] - grasp.center.data[0]])
             im_tf = depth_im_scaled
-            if isinstance(grasp, Grasp2D):
-                im_tf = depth_im_scaled.transform(translation, grasp.angle)
+            im_tf = depth_im_scaled.transform(translation, grasp.angle)
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
             image_tensor[i,...] = im_tf.raw_data
             
@@ -180,6 +182,8 @@ class GraspingPolicy(Policy):
                 pose_tensor[i] = grasp.depth
             elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.center.x, grasp.center.y])
+            elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
             else:
                 raise ValueError('Input data mode %s not supported' %(input_data_mode))
         logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
@@ -380,9 +384,14 @@ class RobustGraspingPolicy(GraspingPolicy):
                 ind = p[1]
                 depth = pose_tensor[ind][0]
                 image = DepthImage(image_tensor[ind,...])
-                grasp = Grasp2D(Point(image.center), 0.0, depth,
-                                width=self._gripper_width,
-                                camera_intr=scaled_camera_intr)
+                if grasp_type == 'parallel_jaw':
+                    grasp = Grasp2D(Point(image.center), 0.0, depth,
+                                    width=self._gripper_width,
+                                    camera_intr=scaled_camera_intr)
+                else:
+                    grasp = SuctionPoint2D(Point(image.center),
+                                           np.array([0,0,1]), depth,
+                                           camera_intr=scaled_camera_intr)
 
                 # plot
                 vis.subplot(d,d,i+1)
@@ -401,9 +410,14 @@ class RobustGraspingPolicy(GraspingPolicy):
         if self.config['vis']['grasp_plan']:
             scale_factor = float(self.gqcnn.im_width) / float(self._crop_width)
             scaled_camera_intr = camera_intr.resize(scale_factor)
-            grasp = Grasp2D(Point(image.center), 0.0, pose[0],
-                            width=self._gripper_width,
-                            camera_intr=scaled_camera_intr)
+            if grasp_type == 'parallel_jaw':
+                grasp = Grasp2D(Point(image.center), 0.0, pose[0],
+                                width=self._gripper_width,
+                                camera_intr=scaled_camera_intr)
+            elif grasp_type == 'suction':
+                grasp = SuctionPoint2D(Point(image.center),
+                                       np.array([0,0,1]), pose[0],
+                                       camera_intr=scaled_camera_intr)                
             vis.figure()
             vis.imshow(image)
             vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True)
@@ -515,6 +529,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             logging.warning('No valid grasps could be found')
             raise NoValidGraspsException()
 
+        grasp_type = 'parallel_jaw'
+        if isinstance(grasps[0], SuctionPoint2D):
+            grasp_type = 'suction'
+
         logging.debug('Computing the seed set took %.3f sec' %(time() - seed_set_start))
 
         # form tensors
@@ -589,10 +607,14 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                     ind = p[1]
                     depth = pose_tensor[ind][0]
                     image = DepthImage(image_tensor[ind,...])
-                    grasp = Grasp2D(Point(image.center), 0.0, depth,
-                                    width=self._gripper_width,
-                                    camera_intr=scaled_camera_intr)
-
+                    if grasp_type == 'parallel_jaw':
+                        grasp = Grasp2D(Point(image.center), 0.0, depth,
+                                        width=self._gripper_width,
+                                        camera_intr=scaled_camera_intr)
+                    elif grasp_type == 'suction':
+                        grasp = SuctionPoint2D(Point(image.center), np.array([0,0,1]),
+                                               depth,
+                                               camera_intr=scaled_camera_intr)
                     # plot
                     vis.subplot(d,d,i+1)
                     vis.imshow(image)
@@ -646,9 +668,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             # convert features to grasps
             grasps = []
             for grasp_vec in grasp_vecs:
-                grasps.append(Grasp2D.from_feature_vec(grasp_vec,
-                                                       width=self._gripper_width,
-                                                       camera_intr=camera_intr))
+                if grasp_type == 'parallel_jaw':
+                    grasps.append(Grasp2D.from_feature_vec(grasp_vec,
+                                                           width=self._gripper_width,
+                                                           camera_intr=camera_intr))
+                elif grasp_type == 'suction':
+                    grasps.append(SuctionPoint2D.from_feature_vec(grasp_vec,
+                                                                  camera_intr=camera_intr))
             num_grasps = len(grasps)
             if num_grasps == 0:
                 logging.warning('No valid grasps could be found')
@@ -696,12 +722,16 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if self.config['vis']['grasp_plan']:
             scale_factor = float(self.gqcnn.im_width) / float(self._crop_width)
             scaled_camera_intr = camera_intr.resize(scale_factor)
-            grasp = Grasp2D(Point(image.center), 0.0, pose[0],
-                            width=self._gripper_width,
-                            camera_intr=scaled_camera_intr)
+            if grasp_type == 'parallel_jaw':
+                grasp_vis = Grasp2D(Point(image.center), 0.0, pose[0],
+                                    width=self._gripper_width,
+                                    camera_intr=scaled_camera_intr)
+            elif grasp_type == 'suction':
+                grasp_vis = SuctionPoint2D(Point(image.center), np.array([0,0,1]),
+                                           pose[0], camera_intr=scaled_camera_intr)
             vis.figure()
             vis.imshow(image)
-            vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True)
+            vis.grasp(grasp_vis, scale=1.5, show_center=False, show_axis=True)
             vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, q_value))
             vis.show()
 

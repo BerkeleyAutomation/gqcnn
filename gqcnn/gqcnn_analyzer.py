@@ -188,6 +188,8 @@ class GQCNNAnalyzer(object):
                         pose_arr = pose_arr[:,2:3]
                     elif model_input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
                         pose_arr = np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
+                    elif model_input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                        pose_arr = pose_arr[:,2:4]
                     elif model_input_data_mode == InputDataMode.RAW_IMAGE:
                         pose_arr = pose_arr[:,:4]
                     elif model_input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:

@@ -67,7 +67,6 @@ class GQCNNPredictionVisualizer(object):
             logging.info('Recall on files: %.3f' %(classification_result.recall))
             mispred_ind = classification_result.mispredicted_indices()
             correct_ind = classification_result.correct_indices()
-            # IPython.embed()
 
             if self.datapoint_type == 'true_positive' or self.datapoint_type == 'true_negative':
                 vis_ind = correct_ind
@@ -89,10 +88,10 @@ class GQCNNPredictionVisualizer(object):
                     if classification_result.labels[ind] == 1:
                         continue
                 elif self.datapoint_type == 'false_positive':
-                    if classification_result.labels[ind] == 0:
+                    if classification_result.labels[ind] == 1:
                         continue
                 elif self.datapoint_type == 'false_negative':
-                    if classification_result.labels[ind] == 1:
+                    if classification_result.labels[ind] == 0:
                         continue
 
                 logging.info('Datapoint %d of files for %s' %(ind, im_filename))
@@ -245,12 +244,11 @@ class GQCNNPredictionVisualizer(object):
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
+        elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            return pose_arr[:,2:4]
         elif input_data_mode == InputDataMode.RAW_IMAGE:
             return pose_arr[:,:4]
         elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
             return pose_arr[:,:6]
-        elif input_data_mode == InputDataMode.REGRASPING:
-            # depth, approach angle, and delta angle for reorientation
-            return np.c_[pose_arr[:,2:3], pose_arr[:,4:5], pose_arr[:,6:7]]
         else:
             raise ValueError('Input data mode %s not supported' %(input_data_mode))

@@ -1,13 +1,13 @@
-model_dir: /mnt/hdd/dex-net/data/models/grasp_quality
-output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_training_performance
+model_dir: /home/autolab/Public/data/dex-net/data/models/suction/
+output_dir: /home/autolab/Public/data/dex-net/analyses/suction/training_performance
 
 out_rate: 1
 font_size: 15
 dpi: 100
 
 models:
-  mini_dexnet_all_trans_01_20_17_trained_06_18_17 :
-    tag: GQCNN (N=100)
+  gqcnn_adv_08_05_17:
+    tag: GQ-CNN-Adv-Suction
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
     vis_conv: 0

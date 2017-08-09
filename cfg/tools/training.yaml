@@ -1,5 +1,5 @@
 ### TRAINING CONFIGURATIONS ###
-mode: training
+mode: analysis
 
 # dataset 
 dataset_dir: /path/to/your/gqcnn/data/adv_synth

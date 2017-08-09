@@ -1021,8 +1021,8 @@ class SGDOptimizer(object):
                 num_remaining = self.train_batch_size - num_queued
 
                 # gen file index uniformly at random
-                file_num = np.random.choice(len(self.im_filenames_queue), size=1)[0]
-                train_data_filename = self.im_filenames_queue[file_num]
+                file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
+                train_data_filename = self.im_filenames_copy[file_num]
 
                 self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
                                          'arr_0'].astype(np.float32)
@@ -1217,7 +1217,7 @@ class SGDOptimizer(object):
                     train_image = np.flipud(train_image)
 
                     if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-                        self._train_poses_arr[:,3] = -self.train_poses_arr[:,3]
+                        self.train_poses_arr[:,3] = -self.train_poses_arr[:,3]
                 self.train_data_arr[i,:,:,0] = train_image
         return self.train_data_arr, self.train_poses_arr
 

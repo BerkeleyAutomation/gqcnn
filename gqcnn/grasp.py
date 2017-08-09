@@ -200,6 +200,9 @@ class SuctionPoint2D(object):
     def __init__(self, center, axis, depth, camera_intr=None):
         self.center = center
         self.axis = axis
+        if np.abs(np.linalg.norm(self.axis) - 1.0) > 1e-3:
+            raise ValueError('Illegal axis. Must be norm 1.')
+
         self.depth = depth
         # if camera_intr is none use default primesense camera intrinsics
         if not camera_intr:
@@ -245,8 +248,6 @@ class SuctionPoint2D(object):
         ----------
         v : :obj:`numpy.ndarray`
             feature vector, see Grasp2D.feature_vec
-        width : float
-            grasp opening width, in meters
         camera_intr : :obj:`perception.CameraIntrinsics`
             frame of reference for camera that the grasp corresponds to
         """
@@ -254,6 +255,7 @@ class SuctionPoint2D(object):
         center_px = v[:2]
         axis = v[2:5]
         depth = v[5]
+        axis = axis / np.linalg.norm(axis)
 
         # compute center and angle
         center = Point(center_px, camera_intr.frame)
