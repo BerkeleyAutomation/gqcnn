@@ -11,12 +11,14 @@ import os
 import sys
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import IPython
 
 from autolab_core import YamlConfig
 
 import optimizer_constants
 from optimizer_constants import InputDataMode
+
+from spatial_transformer import transformer
+
 
 def reduce_shape(shape):
     """ Get shape of a layer for flattening """
@@ -224,6 +226,17 @@ class GQCNN(object):
         layer_height = self._im_height
         layer_width = self._im_width
         layer_channels = self._num_channels
+      
+        # transform layer
+        if self._use_spacial_transformer:
+            num_transform_params = self._architecture['spatial_transformer']['num_transform_params']
+            transformW = tf.Variable(tf.zeros([layer_height * layer_width * layer_channels, num_transform_params]), name='transformW')
+
+            initial = np.array([[0.5, 0, 0], [0, 0.5, 0]])
+            initial = initial.astype('float32')
+            initial = initial.flatten()
+
+            transformb = tf.Variable(initial_value=initial, name='transformb')
 
         # conv1_1
         conv1_1_filt_dim = cfg['conv1_1']['filt_dim']
@@ -372,6 +385,10 @@ class GQCNN(object):
         # create empty weight object and fill it up
         self._weights = GQCnnWeights()
 
+        if self._use_spacial_transformer:
+            self._weights.transformW = transformW
+            self._weights.transformb = transformb
+
         self._weights.conv1_1W = conv1_1W
         self._weights.conv1_1b = conv1_1b
         self._weights.conv1_2W = conv1_2W
@@ -445,6 +462,9 @@ class GQCNN(object):
         self._use_pc2 = False
         if self._architecture['pc2']['out_size'] > 0:
             self._use_pc2 = True
+        self._use_spacial_transformer = False
+        if 'spatial_transformer' in self._architecture.keys():
+            self._use_spacial_transformer = True
 
         # get in and out sizes of fully-connected layer for possible re-initialization
         self.pc2_out_size = self._architecture['pc2']['out_size']
@@ -767,9 +787,20 @@ class GQCNN(object):
         :obj:`tensorflow Tensor`
             output of network
         """
+        # transform layer
+        if self._use_spacial_transformer:
+            # build localisation network
+            loc_network = tf.matmul(tf.zeros([self._batch_size, self._im_height * self._im_width * self._num_channels]), self._weights.transformW) + self._weights.transformb
+            
+            # build transform layer
+            transform_layer = transformer(input_im_node, loc_network, (self._architecture['spatial_transformer']['out_size'], self._architecture['spatial_transformer']['out_size']))
 
         # conv1_1
-        conv1_1h = tf.nn.relu(tf.nn.conv2d(input_im_node, self._weights.conv1_1W, strides=[
+        if self._use_spacial_transformer:
+            conv1_1h = tf.nn.relu(tf.nn.conv2d(transform_layer, self._weights.conv1_1W, strides=[
+                                1, 1, 1, 1], padding='SAME') + self._weights.conv1_1b)
+        else:
+            conv1_1h = tf.nn.relu(tf.nn.conv2d(input_im_node, self._weights.conv1_1W, strides=[
                                 1, 1, 1, 1], padding='SAME') + self._weights.conv1_1b)
         if self._architecture['conv1_1']['norm']:
                 if self._architecture['conv1_1']['norm_type'] == "local_response":

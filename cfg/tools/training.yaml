@@ -1,11 +1,11 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /home/autolab/Public/data/dex-net/data/grasp_quality_regression/adv_synth
-output_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality
+dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/mini_dexnet_all_trans_01_20_17
+output_dir: /mnt/hdd/dex-net/data/models/grasp_quality
 
 # general optimization parameters
 train_batch_size: 64
-val_batch_size: 16
+val_batch_size: 64
 num_epochs: 25     # number of epochs to train for
 eval_frequency: 1000  # how often to get validation error 
 save_frequency: 1000  # how often to save output
@@ -94,7 +94,7 @@ drop_fc4: 0
 fc4_drop_rate: 0
 
 # debugging params
-debug: 1
+debug: 0
 debug_num_files: 300
 
 ### GQCNN CONFIG ###
@@ -107,10 +107,13 @@ gqcnn_config:
   input_data_mode: tf_image
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the DeepOptimizer's config file
-  batch_size: 16
+  batch_size: 64
 
   # architecture
   architecture:
+    # spatial_transformer:
+    #   out_size: 32
+    #   num_transform_params: 6
     conv1_1:
       filt_dim: 5
       num_filt: 32

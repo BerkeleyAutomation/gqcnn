@@ -2,7 +2,7 @@
 GQCNN training script using DeepOptimizer
 Author: Vishal Satish
 """
-from gqcnn import GQCNN, DeepOptimizer, GQCNNAnalyzer
+from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
 from autolab_core import YamlConfig
 import time
 import logging
@@ -28,9 +28,9 @@ def get_elapsed_time(time_in_seconds):
 # Training from Scratch
 start_time = time.time()
 gqcnn = GQCNN(gqcnn_config)
-deepOptimizer = DeepOptimizer(gqcnn, train_config)
+sgdOptimizer = SGDOptimizer(gqcnn, train_config)
 with gqcnn.get_tf_graph().as_default():
-    deepOptimizer.optimize()
+    sgdOptimizer.optimize()
 logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
 
 
