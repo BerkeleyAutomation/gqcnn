@@ -146,7 +146,7 @@ class Visualizer:
         plt.plot(bottom[:,0], bottom[:,1], linewidth=line_width, color=color, linestyle=style)
 
     @staticmethod
-    def grasp(grasp, width=10.0, color='r', arrow_len=4, arrow_head_len = 2, arrow_head_width = 3,
+    def grasp(grasp, width=None, color='r', arrow_len=4, arrow_head_len = 2, arrow_head_width = 3,
               arrow_width = 1, jaw_len=3, jaw_width = 3.0,
               grasp_center_size=7.5, grasp_center_thickness=2.5,
               grasp_center_style='+', grasp_axis_width=1,
