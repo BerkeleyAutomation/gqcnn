@@ -179,7 +179,6 @@ class Grasp2D(object):
 
         # axis distances
         axis_dist = np.arccos(np.abs(g1.axis.dot(g2.axis)))
-
         return point_dist + alpha * axis_dist
 
 class SuctionPoint2D(object):

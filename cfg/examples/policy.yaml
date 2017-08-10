@@ -8,7 +8,8 @@ calib_dir: data/calib
 # policy params
 policy:
   # gqcnn params
-  gqcnn_model: /home/user/data/models/GQ-Image-Wise
+  #gqcnn_model: /home/user/data/models/GQ-Image-Wise
+  gqcnn_model: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_vgg_dexnet_large_v1_01_24_17
   
   # optimization params
   num_seed_samples: 200
@@ -17,6 +18,7 @@ policy:
   gmm_refit_p: 0.25
   gmm_component_frac: 0.4
   gmm_reg_covar: 0.01
+
 
   # general params
   deterministic: 1
@@ -43,6 +45,7 @@ policy:
     angle_dist_weight: 5.0
 
     # depth sampling
+    depth_sampling_mode: uniform
     depth_samples_per_grasp: 1
     depth_sample_win_height: 1
     depth_sample_win_width: 1

@@ -67,10 +67,6 @@ class Policy(object):
         """
         pass
 
-quality_fn = PlanarityGraspQualityFunction()
-q = quality_fn(state, grasps)
-q = quality_fn.quality(state, grasps)
-
 class GraspingPolicy(Policy):
     """ Policy for robust grasping with Grasp Quality Convolutional Neural Networks (GQ-CNN).
     Attributes

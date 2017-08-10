@@ -1,17 +1,17 @@
 # dataset params
-dataset_dir: /home/autolab/Public/data/dex-net/data/suction/mini_dexnet_08_05_17/tensors 
+dataset_dir: /home/autolab/Public/data/dex-net/data/suction/mini_dexnet_08_08_17/tensors 
 
 image_mode: depth_tf_table
 data_format: tf_image_suction
-metric_name: robust_min_singular
-metric_thresh: 0.1
+metric_name: robust_ferrari_canny
+metric_thresh: 0.002
 gripper_width_m: 0.05
 
 # gqcnn params
-model_dir: /home/autolab/Public/data/dex-net/data/models/suction/gqcnn_adv_08_05_17
+model_dir: /home/autolab/Public/data/dex-net/data/models/suction/gqcnn_adv_ferrari_canny_08_08_17
 
 # vis params
-datapoint_type: true_negative # which datapoints to visualize, possible values are true positive, false positive, true negative, false negative
+datapoint_type: false_positive # which datapoints to visualize, possible values are true positive, false positive, true negative, false negative
 display_image_type: depth
 font_size: 15
 samples_per_object: 2
