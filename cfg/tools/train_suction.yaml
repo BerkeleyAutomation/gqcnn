@@ -2,7 +2,7 @@
 mode: training
 
 # dataset 
-dataset_dir: /home/autolab/Public/data/dex-net/data/suction/mini_dexnet_08_08_17/tensors
+dataset_dir: /home/autolab/Public/data/dex-net/data/suction/kit_08_10_17/tensors
 output_dir: /home/autolab/Public/data/dex-net/data/models/suction
 model_dir: /path/to/your/pretrained/gqcnn/model
 mode: training
@@ -138,7 +138,7 @@ gqcnn_config:
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 64
+      num_filt: 32
       pool_size: 1
       pool_stride: 1
       norm: 1
