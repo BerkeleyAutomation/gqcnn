@@ -301,6 +301,7 @@ class GQCNN(object):
         layer_height = layer_height / cfg['conv2_2']['pool_stride']
         layer_width = layer_width / cfg['conv2_2']['pool_stride']
         layer_channels = conv2_2_num_filt
+        conv_output_size = layer_height * layer_width * layer_channels
 
         use_conv3 = False
         if 'conv3_1' in cfg.keys():
@@ -337,10 +338,10 @@ class GQCNN(object):
             layer_width = layer_width / cfg['conv3_2']['pool_stride']
             layer_channels = conv3_2_num_filt
 
+            conv_output_size = layer_height * layer_width * layer_channels
+
         # fc3
-        fc3_in_size = conv2_2_size
-        if use_conv3:
-            fc3_in_size = conv3_2_size
+        fc3_in_size = conv_output_size
         fc3_out_size = cfg['fc3']['out_size']
         fc3_std = np.sqrt(2.0 / fc3_in_size)
         fc3W = tf.Variable(tf.truncated_normal([fc3_in_size, fc3_out_size], stddev=fc3_std), name='fc3W')
