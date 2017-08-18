@@ -2,8 +2,8 @@
 mode: training
 
 # dataset 
-dataset_dir: /home/autolab/Public/data/dex-net/data/suction/kit_08_10_17/tensors
-output_dir: /home/autolab/Public/data/dex-net/data/models/suction
+dataset_dir: /mnt/data/jmahler/suction/datasets/kit_high_res_08_17_17/tensors
+output_dir: /mnt/data/jmahler/suction/models
 model_dir: /path/to/your/pretrained/gqcnn/model
 mode: training
 
@@ -11,8 +11,8 @@ mode: training
 train_batch_size: 64
 val_batch_size: 16
 num_epochs: 25     # number of epochs to train for
-eval_frequency: 5000  # how often to get validation error 
-save_frequency: 5000  # how often to save output
+eval_frequency: 20000  # how often to get validation error 
+save_frequency: 20000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
@@ -50,8 +50,8 @@ num_tensor_channels: 1
 
 num_random_files: 100
 
-target_metric_name: robust_ferrari_canny
-metric_thresh: 0.002
+target_metric_name: robust_wrench_resistance
+metric_thresh: 0.01
 
 # denoising / synthetic data params
 multiplicative_denoising: 1
@@ -104,8 +104,8 @@ debug_num_files: 300
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 32
-  im_width: 32
+  im_height: 96
+  im_width: 96
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_data_mode: tf_image_suction
@@ -116,31 +116,31 @@ gqcnn_config:
   # architecture
   architecture:
     conv1_1:
-      filt_dim: 5
-      num_filt: 32
+      filt_dim: 9
+      num_filt: 16
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv1_2:
-      filt_dim: 3
-      num_filt: 32
+      filt_dim: 5
+      num_filt: 16
       pool_size: 2
       pool_stride: 2
       norm: 1
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 32
+      num_filt: 16
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 32
-      pool_size: 1
-      pool_stride: 1
+      num_filt: 16
+      pool_size: 2
+      pool_stride: 2
       norm: 1
       norm_type: local_response
     pc1:
@@ -148,9 +148,9 @@ gqcnn_config:
     pc2:
       out_size: 0
     fc3:
-      out_size: 1024
+      out_size: 256
     fc4:
-      out_size: 512
+      out_size: 256
     fc5:
       out_size: 2
 
