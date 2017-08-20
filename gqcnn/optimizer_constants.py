@@ -49,3 +49,4 @@ class InputDataMode:
     TF_IMAGE_PERSPECTIVE = 'tf_image_with_perspective'
     RAW_IMAGE = 'raw_image'
     RAW_IMAGE_PERSPECTIVE = 'raw_image_with_perspective'
+    TF_IMAGE_SUCTION = 'tf_image_suction'

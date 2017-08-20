@@ -1,14 +1,14 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/hdd/dex-net/data/gqcnn/grasp_quality/mini_dexnet_all_trans_01_20_17
-output_dir: /mnt/hdd/dex-net/data/models/grasp_quality
+dataset_dir: /mnt/hdd/dex-net/data/suction/mini_dexnet_08_13_17/tensors
+output_dir: /mnt/hdd/dex-net/data/models/suction
 
 # general optimization parameters
 train_batch_size: 64
-val_batch_size: 64
+val_batch_size: 16
 num_epochs: 25     # number of epochs to train for
-eval_frequency: 1000  # how often to get validation error 
-save_frequency: 1000  # how often to save output
+eval_frequency: 10000  # how often to get validation error 
+save_frequency: 10000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
@@ -40,14 +40,14 @@ reinit_fc5: 0
 image_mode: depth_tf_table
 training_mode: classification
 preproc_mode: none
-input_data_mode: tf_image
+input_data_mode: tf_image_suction
 num_tensor_channels: 1
 pos_weight: 0.1
 
 num_random_files: 100
 
-target_metric_name: robust_ferrari_canny
-metric_thresh: 0.002
+target_metric_name: robust_wrench_resistance
+metric_thresh: 0.0075
 
 # denoising / synthetic data params
 multiplicative_denoising: 1
@@ -94,8 +94,8 @@ drop_fc4: 0
 fc4_drop_rate: 0
 
 # debugging params
-debug: 0
-debug_num_files: 300
+debug: 1
+debug_num_files: 1000000
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -104,10 +104,10 @@ gqcnn_config:
   im_width: 32
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
-  input_data_mode: tf_image
+  input_data_mode: tf_image_suction
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the DeepOptimizer's config file
-  batch_size: 64
+  batch_size: 16
 
   # architecture
   architecture:
@@ -143,7 +143,7 @@ gqcnn_config:
       norm: 1
       norm_type: local_response
     pc1:
-      out_size: 4
+      out_size: 64
     pc2:
       out_size: 0
     fc3:

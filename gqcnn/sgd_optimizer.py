@@ -383,6 +383,8 @@ class SGDOptimizer(object):
             return pose_arr[:,:4]
         elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
             return pose_arr[:,:6]
+        elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            return pose_arr[:,2:4]
         else:
             raise ValueError('Input data mode %s not supported' %(input_data_mode))
 
@@ -551,6 +553,10 @@ class SGDOptimizer(object):
             # u, v, depth, theta, cx, cy
             self.gqcnn.update_pose_mean(self.pose_mean[:6])
             self.gqcnn.update_pose_std(self.pose_std[:6])
+        elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            # depth, theta
+            self.gqcnn.update_pose_mean(self.pose_mean[2:4])
+            self.gqcnn.update_pose_std(self.pose_std[2:4])
 
         # compute normalization parameters of the network
         logging.info('Computing metric stats')
@@ -779,6 +785,8 @@ class SGDOptimizer(object):
             self.pose_dim = 4 # u, v, theta, depth
         elif self.input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
             self.pose_dim = 6 # u, v, theta, depth cx, cy
+        elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            self.pose_dim = 2 # depth, theta
         else:
             raise ValueError('Input data mode %s not understood' %(self.input_data_mode))
         self.num_files = len(self.im_filenames)
@@ -838,7 +846,7 @@ class SGDOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0 or len(self.obj_id_filenames) == 0 or len(self.stable_pose_filenames) == 0:
+        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
 
         # subsample files
@@ -849,8 +857,10 @@ class SGDOptimizer(object):
         self.im_filenames = [self.im_filenames[k] for k in filename_indices]
         self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
         self.label_filenames = [self.label_filenames[k] for k in filename_indices]
-        self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
-        self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
+        if len(self.obj_id_filenames) > 0:
+            self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
+        if len(self.stable_pose_filenames) > 0:    
+            self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
     def _setup_output_dirs(self):
         """ Setup output directories """
