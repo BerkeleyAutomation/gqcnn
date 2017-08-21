@@ -797,6 +797,11 @@ class GQCNN(object):
 
     def _build_merge_stream(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layers, inference=False):
         logging.info('Building Merge Stream')
+        
+        # first check if first layer is a merge layer
+        if layers[layers.keys()[0]]['type'] != 'fc_merge':
+            raise ValueError('First layer in merge stream must be a fc_merge layer')
+            
         prev_layer = "start"
         last_index = len(layers.keys()) - 1
         for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
