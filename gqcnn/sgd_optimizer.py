@@ -145,7 +145,7 @@ class SGDOptimizer(object):
         with tf.name_scope('validation_network'):
             self.gqcnn.initialize_network() # builds validation network inside gqcnn class
         with tf.name_scope('training_network'):
-            self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node, drop_fc3, drop_fc4, fc3_drop_rate , fc4_drop_rate)
+            self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node)
 
         # form loss
         # part 1: error

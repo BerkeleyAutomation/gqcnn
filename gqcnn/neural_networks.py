@@ -12,15 +12,12 @@ import sys
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-import IPython
-
 from autolab_core import YamlConfig
-
-import optimizer_constants
-from optimizer_constants import InputDataMode
+from gqcnn import InputDataMode
 
 from spatial_transformer import transformer
 
+import IPython
 
 def reduce_shape(shape):
     """ Get shape of a layer for flattening """
@@ -31,17 +28,9 @@ def reduce_shape(shape):
 
 class GQCnnWeights(object):
     """ Struct helper for storing weights """
-
+    weights = {}
     def __init__(self):
         pass
-
-
-class GQCnnDenoisingWeights(object):
-    """ Struct helper for storing weights """
-
-    def __init__(self):
-        pass
-
 
 class GQCNN(object):
     """ Wrapper for grasp quality CNN """
@@ -55,6 +44,7 @@ class GQCNN(object):
             im_height, im_width, ...
         """
         self._sess = None
+        self._weights = None
         self._graph = tf.Graph()
         self._parse_config(config)
 
@@ -140,6 +130,10 @@ class GQCNN(object):
             # u, v, depth, theta, cx, cy
             self._pose_mean = self._pose_mean[:6]
             self._pose_std = self._pose_std[:6]
+        elif self._input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            # depth, theta
+            self._pose_mean = self._pose_mean[2:4]
+            self._pose_std = self._pose_std[2:4]
 
     def init_weights_file(self, model_filename):
         """ Initialize network weights from the specified model 
@@ -153,7 +147,7 @@ class GQCNN(object):
         # read the input image
         with self._graph.as_default():
 
-            # read in filenames
+            # create new tf checkpoint reader
             reader = tf.train.NewCheckpointReader(model_filename)
 
             # create empty weight object
@@ -220,206 +214,6 @@ class GQCNN(object):
                 self._weights.fc5W = tf.Variable(tf.truncated_normal([self.fc5_in_size, self.fc5_out_size], stddev=fc5_std))
                 self._weights.fc5b = tf.Variable(tf.constant(0.0, shape=[self.fc5_out_size]))
     
-    def init_weights_gaussian(self):
-        """ Initializes weights for network from scratch using Gaussian Distribution """
-
-        # init pool size variables
-        cfg = self._architecture
-        layer_height = self._im_height
-        layer_width = self._im_width
-        layer_channels = self._num_channels
-      
-        # transform layer
-        if self._use_spatial_transformer:
-            num_transform_params = self._architecture['spatial_transformer']['num_transform_params']
-            transformW = tf.Variable(tf.zeros([layer_height * layer_width * layer_channels, num_transform_params]), name='transformW')
-
-            initial = np.array([[0.5, 0, 0], [0, 0.5, 0]])
-            initial = initial.astype('float32')
-            initial = initial.flatten()
-
-            transformb = tf.Variable(initial_value=initial, name='transformb')
-
-        # conv1_1
-        conv1_1_filt_dim = cfg['conv1_1']['filt_dim']
-        conv1_1_num_filt = cfg['conv1_1']['num_filt']
-        conv1_1_size = layer_height * layer_width * conv1_1_num_filt
-        conv1_1_shape = [conv1_1_filt_dim, conv1_1_filt_dim, layer_channels, conv1_1_num_filt]
-
-        conv1_1_num_inputs = conv1_1_filt_dim**2 * layer_channels
-        conv1_1_std = np.sqrt(2.0 / (conv1_1_num_inputs))
-        conv1_1W = tf.Variable(tf.truncated_normal(conv1_1_shape, stddev=conv1_1_std), name='conv1_1W')
-        conv1_1b = tf.Variable(tf.truncated_normal([conv1_1_num_filt], stddev=conv1_1_std), name='conv1_1b')
-
-        layer_height = layer_height / cfg['conv1_1']['pool_stride']
-        layer_width = layer_width / cfg['conv1_1']['pool_stride']
-        layer_channels = conv1_1_num_filt
-
-        # conv1_2
-        conv1_2_filt_dim = cfg['conv1_2']['filt_dim']
-        conv1_2_num_filt = cfg['conv1_2']['num_filt']
-        conv1_2_size = layer_height * layer_width * conv1_2_num_filt
-        conv1_2_shape = [conv1_2_filt_dim, conv1_2_filt_dim, layer_channels, conv1_2_num_filt]
-
-        conv1_2_num_inputs = conv1_2_filt_dim**2 * layer_channels
-        conv1_2_std = np.sqrt(2.0 / (conv1_2_num_inputs))
-        conv1_2W = tf.Variable(tf.truncated_normal(conv1_2_shape, stddev=conv1_2_std), name='conv1_2W')
-        conv1_2b = tf.Variable(tf.truncated_normal([conv1_2_num_filt], stddev=conv1_2_std), name='conv1_2b')
-
-        layer_height = layer_height / cfg['conv1_2']['pool_stride']
-        layer_width = layer_width / cfg['conv1_2']['pool_stride']
-        layer_channels = conv1_2_num_filt
-
-        # conv2_1
-        conv2_1_filt_dim = cfg['conv2_1']['filt_dim']
-        conv2_1_num_filt = cfg['conv2_1']['num_filt']
-        conv2_1_size = layer_height * layer_width * conv2_1_num_filt
-        conv2_1_shape = [conv2_1_filt_dim, conv2_1_filt_dim, layer_channels, conv2_1_num_filt]
-
-        conv2_1_num_inputs = conv2_1_filt_dim**2 * layer_channels
-        conv2_1_std = np.sqrt(2.0 / (conv2_1_num_inputs))
-        conv2_1W = tf.Variable(tf.truncated_normal(conv2_1_shape, stddev=conv2_1_std), name='conv2_1W')
-        conv2_1b = tf.Variable(tf.truncated_normal([conv2_1_num_filt], stddev=conv2_1_std), name='conv2_1b')
-
-        layer_height = layer_height / cfg['conv2_1']['pool_stride']
-        layer_width = layer_width / cfg['conv2_1']['pool_stride']
-        layer_channels = conv2_1_num_filt
-
-        # conv2_2
-        conv2_2_filt_dim = cfg['conv2_2']['filt_dim']
-        conv2_2_num_filt = cfg['conv2_2']['num_filt']
-        conv2_2_size = layer_height * layer_width * conv2_2_num_filt
-        conv2_2_shape = [conv2_2_filt_dim, conv2_2_filt_dim, layer_channels, conv2_2_num_filt]
-
-        conv2_2_num_inputs = conv2_2_filt_dim**2 * layer_channels
-        conv2_2_std = np.sqrt(2.0 / (conv2_2_num_inputs))
-        conv2_2W = tf.Variable(tf.truncated_normal(conv2_2_shape, stddev=conv2_2_std), name='conv2_2W')
-        conv2_2b = tf.Variable(tf.truncated_normal([conv2_2_num_filt], stddev=conv2_2_std), name='conv2_2b')
-
-        layer_height = layer_height / cfg['conv2_2']['pool_stride']
-        layer_width = layer_width / cfg['conv2_2']['pool_stride']
-        layer_channels = conv2_2_num_filt
-
-        use_conv3 = False
-        if 'conv3_1' in cfg.keys():
-            use_conv3 = True
-
-        if use_conv3:
-            # conv3_1
-            conv3_1_filt_dim = cfg['conv3_1']['filt_dim']
-            conv3_1_num_filt = cfg['conv3_1']['num_filt']
-            conv3_1_size = layer_height * layer_width * conv3_1_num_filt
-            conv3_1_shape = [conv3_1_filt_dim, conv3_1_filt_dim, layer_channels, conv3_1_num_filt]
-            
-            conv3_1_num_inputs = conv3_1_filt_dim**2 * layer_channels
-            conv3_1_std = np.sqrt(2.0 / (conv3_1_num_inputs))
-            conv3_1W = tf.Variable(tf.truncated_normal(conv3_1_shape, stddev=conv3_1_std), name='conv3_1W')
-            conv3_1b = tf.Variable(tf.truncated_normal([conv3_1_num_filt], stddev=conv3_1_std), name='conv3_1b')
-            
-            layer_height = layer_height / cfg['conv3_1']['pool_stride']
-            layer_width = layer_width / cfg['conv3_1']['pool_stride']
-            layer_channels = conv3_1_num_filt
-
-            # conv3_2
-            conv3_2_filt_dim = cfg['conv3_2']['filt_dim']
-            conv3_2_num_filt = cfg['conv3_2']['num_filt']
-            conv3_2_size = layer_height * layer_width * conv3_2_num_filt
-            conv3_2_shape = [conv3_2_filt_dim, conv3_2_filt_dim, layer_channels, conv3_2_num_filt]
-            
-            conv3_2_num_inputs = conv3_2_filt_dim**2 * layer_channels
-            conv3_2_std = np.sqrt(2.0 / (conv3_2_num_inputs))
-            conv3_2W = tf.Variable(tf.truncated_normal(conv3_2_shape, stddev=conv3_2_std), name='conv3_2W')
-            conv3_2b = tf.Variable(tf.truncated_normal([conv3_2_num_filt], stddev=conv3_2_std), name='conv3_2b')
-            
-            layer_height = layer_height / cfg['conv3_2']['pool_stride']
-            layer_width = layer_width / cfg['conv3_2']['pool_stride']
-            layer_channels = conv3_2_num_filt
-
-        # fc3
-        fc3_in_size = conv2_2_size
-        if use_conv3:
-            fc3_in_size = conv3_2_size
-        fc3_out_size = cfg['fc3']['out_size']
-        fc3_std = np.sqrt(2.0 / fc3_in_size)
-        fc3W = tf.Variable(tf.truncated_normal([fc3_in_size, fc3_out_size], stddev=fc3_std), name='fc3W')
-        fc3b = tf.Variable(tf.truncated_normal([fc3_out_size], stddev=fc3_std), name='fc3b')
-
-        # pc1
-        pc1_in_size = self._pose_dim
-        pc1_out_size = cfg['pc1']['out_size']
-
-        pc1_std = np.sqrt(2.0 / pc1_in_size)
-        pc1W = tf.Variable(tf.truncated_normal([pc1_in_size, pc1_out_size],
-                                               stddev=pc1_std), name='pc1W')
-        pc1b = tf.Variable(tf.truncated_normal([pc1_out_size],
-                                               stddev=pc1_std), name='pc1b')
-
-        # pc2
-        pc2_in_size = pc1_out_size
-        pc2_out_size = cfg['pc2']['out_size']
-
-        if pc2_out_size > 0:
-            pc2_std = np.sqrt(2.0 / pc2_in_size)
-            pc2W = tf.Variable(tf.truncated_normal([pc2_in_size, pc2_out_size],
-                                                   stddev=pc2_std), name='pc2W')
-            pc2b = tf.Variable(tf.truncated_normal([pc2_out_size],
-                                                   stddev=pc2_std), name='pc2b')
-
-        # fc4
-        fc4_im_in_size = fc3_out_size
-        if pc2_out_size == 0:
-            fc4_pose_in_size = pc1_out_size
-        else:
-            fc4_pose_in_size = pc2_out_size
-        fc4_out_size = cfg['fc4']['out_size']
-        fc4_std = np.sqrt(2.0 / (fc4_im_in_size + fc4_pose_in_size))
-        fc4W_im = tf.Variable(tf.truncated_normal([fc4_im_in_size, fc4_out_size], stddev=fc4_std), name='fc4W_im')
-        fc4W_pose = tf.Variable(tf.truncated_normal([fc4_pose_in_size, fc4_out_size], stddev=fc4_std), name='fc4W_pose')
-        fc4b = tf.Variable(tf.truncated_normal([fc4_out_size], stddev=fc4_std), name='fc4b')
-
-        # fc5
-        fc5_in_size = fc4_out_size
-        fc5_out_size = cfg['fc5']['out_size']
-        fc5_std = np.sqrt(2.0 / (fc5_in_size))
-        fc5W = tf.Variable(tf.truncated_normal([fc5_in_size, fc5_out_size], stddev=fc5_std), name='fc5W')
-        fc5b = tf.Variable(tf.constant(0.0, shape=[fc5_out_size]), name='fc5b')
-
-        # create empty weight object and fill it up
-        self._weights = GQCnnWeights()
-
-        if self._use_spatial_transformer:
-            self._weights.transformW = transformW
-            self._weights.transformb = transformb
-
-        self._weights.conv1_1W = conv1_1W
-        self._weights.conv1_1b = conv1_1b
-        self._weights.conv1_2W = conv1_2W
-        self._weights.conv1_2b = conv1_2b
-        self._weights.conv2_1W = conv2_1W
-        self._weights.conv2_1b = conv2_1b
-        self._weights.conv2_2W = conv2_2W
-        self._weights.conv2_2b = conv2_2b
-        
-        if use_conv3:
-            self._weights.conv3_1W = conv3_1W
-            self._weights.conv3_1b = conv3_1b
-            self._weights.conv3_2W = conv3_2W
-            self._weights.conv3_2b = conv3_2b
-
-        self._weights.fc3W = fc3W
-        self._weights.fc3b = fc3b
-        self._weights.fc4W_im = fc4W_im
-        self._weights.fc4W_pose = fc4W_pose
-        self._weights.fc4b = fc4b
-        self._weights.fc5W = fc5W
-        self._weights.fc5b = fc5b
-        self._weights.pc1W = pc1W
-        self._weights.pc1b = pc1b
-
-        if pc2_out_size > 0:
-            self._weights.pc2W = pc2W
-            self._weights.pc2b = pc2b
-
     def _parse_config(self, config):
         """ Parses configuration file for this GQCNN 
 
@@ -487,16 +281,19 @@ class GQCNN(object):
             self.fc4_pose_in_size = self.pc2_out_size
 
         # load normalization constants
-        self.normalization_radius = config['radius']
-        self.normalization_alpha = config['alpha']
-        self.normalization_beta = config['beta']
-        self.normalization_bias = config['bias']
+        self._normalization_radius = config['radius']
+        self._normalization_alpha = config['alpha']
+        self._normalization_beta = config['beta']
+        self._normalization_bias = config['bias']
 
         # initialize means and standard deviation to be 0 and 1, respectively
         self._im_mean = 0
         self._im_std = 1
         self._pose_mean = np.zeros(self._pose_dim)
         self._pose_std = np.ones(self._pose_dim)
+
+        # create empty holder for feature handles
+        self._feature_tensors = {}
 
     def initialize_network(self, add_softmax=True):
         """ Set up input nodes and builds network.
@@ -515,9 +312,12 @@ class GQCNN(object):
                 tf.float32, (self._batch_size, self._pose_dim))
 
             # build network
-            self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node)
+            self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, inference=True)
             if add_softmax:
                 self.add_softmax_to_predict()
+
+        if self._weights is None:
+            self._wegihts = GQCnnWeights()
 
     def open_session(self):
         """ Open tensorflow session """
@@ -768,8 +568,271 @@ class GQCNN(object):
         # truncate extraneous values off of end of output_arr
         output_arr = output_arr[:num_images]
         return output_arr
+    
+    def _build_spatial_transformer(input_node, input_height, input_width, input_channels, num_transform_params, output_width, output_height, name):
+        logging.info('Building spatial transformer layer: {}'.format(name))
+        # initialize weights
+        if self._weights.weights.contains('{}_weights'.format(name)):
+            transformW = self._weights.weights['{}_weights'.format(name)]
+            transformb = self._weights.weights['{}_bias'.format(name)]
+        else:
+            transformW = tf.Variable(tf.zeros([input_height * input_width * input_channels, num_transform_params]), name='{}_weights'.format(name))
 
-    def _build_network(self, input_im_node, input_pose_node,  drop_fc3=False, drop_fc4=False, fc3_drop_rate=0, fc4_drop_rate=0):
+            initial = np.array([[0.5, 0, 0], [0, 0.5, 0]])
+            initial = initial.astype('float32')
+            initial = initial.flatten()
+            transformb = tf.Variable(initial_value=initial, name='{}_bias'.format(name))
+            
+            self._weights.weights['{}_weights'.format(name)] = transformW
+            self._weights.weights['{}_bias'.format(name)] = transformb
+
+        # build localisation network
+        loc_network = tf.matmul(tf.zeros([self._batch_size, input_height * input_width * input_channels]), transformW) + transformb
+            
+        # build transform layer
+        transform_layer = transformer(input_node, loc_network, (output_width, output_height))
+
+        # add output to feature dict
+        self._feature_tensors[name] = transform_layer
+
+        return transform_layer, output_height, output_width, input_channels
+
+    def _build_conv_layer(input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False):
+        logging.info('Building convolutional layer: {}'.format(name))
+        # initialize weights
+        if self._weights.weights.contains('{}_weights'.format(name)):
+            convW = self._weights.weights['{}_weights'.format(name)]
+            convb = self._weights.weights['{}_bias'.format(name)] 
+        else:
+            convW_shape = [filter_h, filter_w, input_channels, num_filt]
+
+            fan_in = filter_h * filter_w * input_channels
+            std = np.sqrt(2.0 / (fan_in))
+            convW = tf.Variable(tf.truncated_normal(convW_shape, stddev=std), name='{}_weights'.format(name))
+            convb = tf.Variable(tf.truncated_normal([num_filt], stddev=std), name='{}_bias'.format(name))
+
+            self._weights.weights['{}_weights'.format(name)] = convW
+            self._weights.weights['{}_bias'.format(name)] = convb
+
+        out_height = input_height / pool_stride_h
+        out_width = input_width / pool_stride_w
+        out_channels = num_filt
+
+        # build layer
+        convh = tf.nn.relu(tf.nn.conv2d(input_node, convW, strides=[
+                                1, 1, 1, 1], padding='SAME') + convb)
+        if norm:
+            convh = tf.nn.local_response_normalization(convh,
+                                                            depth_radius=self._normalization_radius,
+                                                            alpha=self._normalization_alpha,
+                                                            beta=self._normalization_beta,
+                                                            bias=self._normalization_bias)
+
+        pool = tf.nn.max_pool(convh,
+                                ksize=[1, pool_size, pool_size, 1],
+                                strides=[1, pool_stride_h,
+                                        pool_stride_w, 1],
+                                padding='SAME')
+
+        # add output to feature dict
+        self._feature_tensors[name] = pool
+
+        return pool, out_height, out_width, out_channels
+
+    def _build_fc_layer(input_node, fan_in, out_size, name, input_is_conv, drop_rate=0.0, final_fc_layer=False, inference=False):
+        logging.info('Building fully connected layer: {}'.format(name))
+        # initialize weights
+        if self._weights.weights.contains('{}_weights'.format(name)):
+            fcW = self._weights.weights['{}_weights'.format(name)]
+            fcb = self._weights.weights['{}_bias'.format(name)] 
+        else:
+            std = np.sqrt(2.0 / (fan_in))
+
+            fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std), name='{}_weights'.format(name))
+            if final_fc_layer:
+                fcb = tf.Variable(tf.constant(0.0, shape=[out_size]), name='{}_bias'.format(name))
+            else:
+                fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std), name='{}_bias'.format(name))
+
+            self._weights.weights['{}_weights'.format(name)] = fcW
+            self._weights.weights['{}_bias'.format(name)] = fcb
+
+        # build layer
+        if input_is_conv:
+            input_num_nodes = reduce_shape(input_node.get_shape())
+            input_flat = tf.reshape(input_node, [-1, input_num_nodes])
+            fc = tf.nn.relu(tf.matmul(input_flat, fcW) + fcb)
+        else:
+            fc = tf.nn.relu(tf.matmul(input_node, fcW) + fcb)
+
+        if drop_rate > 0 and not inference:
+            fc = tf.nn.dropout(fc, drop_rate)
+
+        # add output to feature dict
+        self._feature_tensors[name] = fc
+
+        return fc, out_size
+
+    def _build_pc_layer(input_node, fan_in, out_size, name):
+        logging.info('Building Fully-Connected Pose Layer: {}'.format(name))
+        # initialize weights
+        if self._weights.weights.contains('{}_weights'.format(name)):
+            pcW = self._weights.weights['{}_weights'.format(name)]
+            pcb = self._weights.weights['{}_bias'.format(name)] 
+        else:
+            std = np.sqrt(2.0 / (fan_in))
+
+            pcW = tf.Variable(tf.truncated_normal([fan_in, out_size],
+                                               stddev=pc1_std), name='pc1W')
+            pcb = tf.Variable(tf.truncated_normal([out_size],
+                                               stddev=pc1_std), name='pc1b')
+
+            self._weights.weights['{}_weights'.format(name)] = pcW
+            self._weights.weights['{}_bias'.format(name)] = pcb
+
+        # build layer
+        pc = tf.nn.relu(tf.matmul(input_node, pcW) +
+                        pcb)
+
+        # add output to feature dict
+        self._feature_tensors[name] = pc
+
+        return pc, out_size
+
+    def _build_fc_merge(input_fc_node_1, input_fc_node_2, fan_in_1, fan_in_2, out_size, name, drop_rate=0.0, inference=False):
+        logging.info('Building Merge Layer: {}'.format(name))
+        # initialize weights
+        if self._weights.weights.contains('{}_input_1_weights'.format(name)):
+            input1W = self._weights.weights['{}_input_1_weights'.format(name)]
+            input2W = self._weights.weights['{}_input_2_weights'.format(name)]
+            fcb = self._weights.weights['{}_bias'.format(name)] 
+        else:
+            std = np.sqrt(2.0 / (fan_in_1 + fan_in_2))
+            input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std), name='{}_input_1_weights'.format(name))
+            input2W = tf.Variable(tf.truncated_normal([fan_in_2, out_size], stddev=std), name='{}_input_2_weights'.format(name))
+            fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std), name='{}_bias'.format(name))
+
+            self._weights.weights['{}_input_1_weights'.format(name)] = input1W
+            self._weights.weights['{}_input_2_weights'.format(name)] = input2W
+            self._weights.weights['{}_bias'.format(name)] = fcb
+
+        # build layer
+        fc = tf.nn.relu(tf.matmul(input_fc_node_1, input1W) +
+                                tf.matmul(input_fc_node_2, input2W) +
+                                fcb)
+        if drop_rate > 0 and not inference:
+            fc = tf.nn.dropout(fc, drop_rate)
+
+        # add output to feature dict
+        self._feature_tensors[name] = fc
+
+        return fc, out_size
+
+    def _build_residual_layer(input_node, name):
+        raise NotImplementedError('Residual Layers have not been implemented')
+
+    def _build_im_stream(input_node, input_height, input_width, input_channels, layers, inference=False):
+        logging.info('Building Image Stream')
+        output_node = input_node
+        prev_layer = "start"
+        for layer_name, layer_config in layers.iteritems():
+            layer_type = layer_config['type']
+            if layer_type == 'spatial_transformer':
+                output_node, input_height, input_width, input_channels = _build_spatial_transformer(output_node, input_height, input_width, input_channels,
+                    layer_config['num_transform_params'], layer_config['out_size'], layer_config['out_size'], layer_name)
+                prev_layer = layer_type
+            elif layer_type == 'conv':
+                if prev_layer == 'fc':
+                    raise ValueError('Cannot have conv layer after fc layer')
+                output_node, input_height, input_width, input_channels = _build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filter_dim'],
+                    layer_config['filter_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
+                    norm=layer_config['norm'])
+                prev_layer = layer_type
+            elif layer_type == 'fc':
+                prev_layer_is_conv = False
+                if prev_layer == 'conv':
+                    prev_layer_is_conv = True
+                    fan_in = input_height * input_width * input_channels
+                if 'dropout_rate' in layer_config.keys():
+                    output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate=layer_config['drop_rate'], inference=inference)
+                else:
+                    output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, inference=inference)
+                prev_layer = layer_type
+            elif layer_type == 'pc':
+                raise ValueError('Cannot have pose-connected layer in image stream')
+            elif layer_type == 'fc_merge':
+                raise ValueError("Cannot have merge layer in image stream")
+            elif layer_type == 'residual':
+                output_node = _build_residual_layer(output_node, layer_name)
+                prev_layer = layer_type
+            else:
+                raise ValueError("Unsupported layer type: {}".format(layer_type))
+
+        return output_node, fan_out
+
+    def _build_pose_stream(input_node, fan_in, layers, inference=False):
+        logging.info('Building Pose Stream')
+        output_node = input_node
+        prev_layer = "start"
+        for layer_name, layer_config in layers.iteritems():
+            layer_type = layer_config['type']
+            if layer_type == 'spatial_transformer':
+                raise ValueError('Cannot have spatial transformer in pose stream')
+            elif layer_type == 'conv':
+               raise ValueError('Cannot have conv layer in pose stream')
+            elif layer_type == 'fc':
+                raise ValueError('Cannot have fc layer in pose stream')
+            elif layer_type == 'pc':
+                output_node, fan_in = _build_pc_layer(output_node, fan_in, layer_config['out_size'], layer_name)
+                prev_layer = layer_type
+            elif layer_type == 'fc_merge':
+                raise ValueError("Cannot have merge layer in pose stream")
+            elif layer_type == 'residual':
+                output_node = _build_residual_layer(output_node, layer_name)
+                prev_layer = layer_type
+            else:
+                raise ValueError("Unsupported layer type: {}".format(layer_type))
+
+        return output_node, fan_in
+
+    def _build_merge_stream(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layers, inference=False):
+        logging.info('Building Merge Stream')
+        prev_layer = "start"
+        last_index = len(layers.keys()) - 1
+        for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
+            layer_type = layer_config['type']
+            if layer_type == 'spatial_transformer':
+                raise ValueError('Cannot have spatial transformer in merge stream')
+            elif layer_type == 'conv':
+               raise ValueError('Cannot have conv layer in merge stream')
+            elif layer_type == 'fc':
+                # TODO: Clean this giant if statement up
+                if layer_index == last_index:
+                    if 'dropout_rate' in layer_config.keys():
+                        output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, final_fc_layer=True, drop_rate=layer_config['drop_rate'], inference=inference)
+                    else:
+                        output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, final_fc_layer=True, inference=inference)
+                else:
+                    if 'dropout_rate' in layer_config.keys():
+                        output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate=layer_config['drop_rate'], inference=inference)
+                    else:
+                        output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, inference=inference)
+                prev_layer = layer_type
+            elif layer_type == 'pc':  
+                raise ValueError('Cannot have pose-connected layer in merge stream')
+            elif layer_type == 'fc_merge':
+                if 'dropout_rate' in layer_config.keys():
+                    output_node, fan_in = _build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, drop_rate=layer_config['drop_rate'], inference=inference)
+                else:
+                    output_node, fan_in = _build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, drop_rate=layer_config['drop_rate'], inference=inference)
+            elif layer_type == 'residual':
+                output_node = _build_residual_layer(output_node, layer_name)
+                prev_layer = layer_type
+            else:
+                raise ValueError("Unsupported layer type: {}".format(layer_type))
+        return output_node
+
+    def _build_network(self, input_im_node, input_pose_node, inference=False):
         """ Builds neural network 
 
         Parameters
@@ -778,198 +841,13 @@ class GQCNN(object):
             network input image placeholder
         input_pose_node : :obj:`tensorflow Placeholder`
             network input pose placeholder
-        drop_fc3 : bool
-            boolean value whether to drop third fully-connected layer or not to reduce over_fitting
-        drop_fc4 : bool
-            boolean value whether to drop fourth fully-connected layer or not to reduce over_fitting
-        fc3_drop_rate : float
-            drop rate for third fully-connected layer
-        fc4_drop_rate : float
-            drop rate for fourth fully-connected layer
 
         Returns
         -------
         :obj:`tensorflow Tensor`
             output of network
         """
-        # transform layer
-        if self._use_spatial_transformer:
-            # build localisation network
-            loc_network = tf.matmul(tf.zeros([self._batch_size, self._im_height * self._im_width * self._num_channels]), self._weights.transformW) + self._weights.transformb
-            
-            # build transform layer
-            transform_layer = transformer(input_im_node, loc_network, (self._architecture['spatial_transformer']['out_size'], self._architecture['spatial_transformer']['out_size']))
-
-        # conv1_1
-        if self._use_spatial_transformer:
-            conv1_1h = tf.nn.relu(tf.nn.conv2d(transform_layer, self._weights.conv1_1W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv1_1b)
-        else:
-            conv1_1h = tf.nn.relu(tf.nn.conv2d(input_im_node, self._weights.conv1_1W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv1_1b)
-        if self._architecture['conv1_1']['norm']:
-                if self._architecture['conv1_1']['norm_type'] == "local_response":
-                	conv1_1h = tf.nn.local_response_normalization(conv1_1h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
-        pool1_1_size = self._architecture['conv1_1']['pool_size']
-        pool1_1_stride = self._architecture['conv1_1']['pool_stride']
-        pool1_1 = tf.nn.max_pool(conv1_1h,
-                                ksize=[1, pool1_1_size, pool1_1_size, 1],
-                                strides=[1, pool1_1_stride,
-                                        pool1_1_stride, 1],
-                                padding='SAME')
-        conv1_1_num_nodes = reduce_shape(pool1_1.get_shape())
-        conv1_1_flat = tf.reshape(pool1_1, [-1, conv1_1_num_nodes])
-
-        # conv1_2
-        conv1_2h = tf.nn.relu(tf.nn.conv2d(pool1_1, self._weights.conv1_2W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv1_2b)
-        if self._architecture['conv1_2']['norm']:
-                if self._architecture['conv1_2']['norm_type'] == "local_response":
-                	conv1_2h = tf.nn.local_response_normalization(conv1_2h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
-        pool1_2_size = self._architecture['conv1_2']['pool_size']
-        pool1_2_stride = self._architecture['conv1_2']['pool_stride']
-        pool1_2 = tf.nn.max_pool(conv1_2h,
-                                ksize=[1, pool1_2_size, pool1_2_size, 1],
-                                strides=[1, pool1_2_stride,
-                                        pool1_2_stride, 1],
-                                padding='SAME')
-        conv1_2_num_nodes = reduce_shape(pool1_2.get_shape())
-        conv1_2_flat = tf.reshape(pool1_2, [-1, conv1_2_num_nodes])
-
-        # conv2_1
-        conv2_1h = tf.nn.relu(tf.nn.conv2d(pool1_2, self._weights.conv2_1W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv2_1b)
-        if self._architecture['conv2_1']['norm']:
-                if self._architecture['conv2_1']['norm_type'] == "local_response":
-                	conv2_1h = tf.nn.local_response_normalization(conv2_1h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
-        pool2_1_size = self._architecture['conv2_1']['pool_size']
-        pool2_1_stride = self._architecture['conv2_1']['pool_stride']
-        pool2_1 = tf.nn.max_pool(conv2_1h,
-                                ksize=[1, pool2_1_size, pool2_1_size, 1],
-                                strides=[1, pool2_1_stride,
-                                        pool2_1_stride, 1],
-                                padding='SAME')
-        conv2_1_num_nodes = reduce_shape(pool2_1.get_shape())
-        conv2_1_flat = tf.reshape(pool2_1, [-1, conv2_1_num_nodes])
-
-        # conv2_2
-        conv2_2h = tf.nn.relu(tf.nn.conv2d(pool2_1, self._weights.conv2_2W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv2_2b)
-        if self._architecture['conv2_2']['norm']:
-                if self._architecture['conv2_2']['norm_type'] == "local_response":
-                	conv2_2h = tf.nn.local_response_normalization(conv2_2h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
-        pool2_2_size = self._architecture['conv2_2']['pool_size']
-        pool2_2_stride = self._architecture['conv2_2']['pool_stride']
-        pool2_2 = tf.nn.max_pool(conv2_2h,
-                                ksize=[1, pool2_2_size, pool2_2_size, 1],
-                                strides=[1, pool2_2_stride,
-                                        pool2_2_stride, 1],
-                                padding='SAME')
-        conv2_2_num_nodes = reduce_shape(pool2_2.get_shape())
-        conv2_2_flat = tf.reshape(pool2_2, [-1, conv2_2_num_nodes])
-
-        if self._use_conv3:
-                # conv3_1
-                conv3_1h = tf.nn.relu(tf.nn.conv2d(pool2_2, self._weights.conv3_1W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv3_1b)
-                if self._architecture['conv3_1']['norm']:
-                	if self._architecture['conv3_1']['norm_type'] == "local_response":
-                        	conv3_1h = tf.nn.local_response_normalization(conv3_1h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
-                pool3_1_size = self._architecture['conv3_1']['pool_size']
-                pool3_1_stride = self._architecture['conv3_1']['pool_stride']
-                pool3_1 = tf.nn.max_pool(conv3_1h,
-                                        ksize=[1, pool3_1_size, pool3_1_size, 1],
-                                        strides=[1, pool3_1_stride,
-                                                pool3_1_stride, 1],
-                                        padding='SAME')
-                conv3_1_num_nodes = reduce_shape(pool3_1.get_shape())
-                conv3_1_flat = tf.reshape(pool3_1, [-1, conv3_1_num_nodes])
-
-                # conv3_2
-                conv3_2h = tf.nn.relu(tf.nn.conv2d(pool3_1, self._weights.conv3_2W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv3_2b)
-                if self._architecture['conv3_2']['norm']:
-                	if self._architecture['conv3_2']['norm_type'] == "local_response":
-                        	conv3_2h = tf.nn.local_response_normalization(conv3_2h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
-                pool3_2_size = self._architecture['conv3_2']['pool_size']
-                pool3_2_stride = self._architecture['conv3_2']['pool_stride']
-                pool3_2 = tf.nn.max_pool(conv3_2h,
-                                        ksize=[1, pool3_2_size, pool3_2_size, 1],
-                                        strides=[1, pool3_2_stride,
-                                                pool3_2_stride, 1],
-                                        padding='SAME')
-                conv3_2_num_nodes = reduce_shape(pool3_2.get_shape())
-                conv3_2_flat = tf.reshape(pool3_2, [-1, conv3_2_num_nodes])
-
-        # fc3
-        if self._use_conv3:
-                fc3 = tf.nn.relu(tf.matmul(conv3_2_flat, self._weights.fc3W) +
-                                self._weights.fc3b)
-        else:
-                fc3 = tf.nn.relu(tf.matmul(conv2_2_flat, self._weights.fc3W) +
-                                self._weights.fc3b)
-
-        # drop fc3 if necessary
-        if drop_fc3:
-                fc3 = tf.nn.dropout(fc3, fc3_drop_rate)
-
-        # pc1
-        pc1 = tf.nn.relu(tf.matmul(input_pose_node, self._weights.pc1W) +
-                        self._weights.pc1b)
-
-        if self._use_pc2:
-                # pc2
-                pc2 = tf.nn.relu(tf.matmul(pc1, self._weights.pc2W) +
-                                self._weights.pc2b)
-                # fc4
-                fc4 = tf.nn.relu(tf.matmul(fc3, self._weights.fc4W_im) +
-                                tf.matmul(pc2, self._weights.fc4W_pose) +
-                                self._weights.fc4b)
-        else:
-                # fc4
-                fc4 = tf.nn.relu(tf.matmul(fc3, self._weights.fc4W_im) +
-                                tf.matmul(pc1, self._weights.fc4W_pose) +
-                                self._weights.fc4b)
-
-        # drop fc4 if necessary
-        if drop_fc4:
-                fc4 = tf.nn.dropout(fc4, fc4_drop_rate)
-
-        # fc5
-        fc5 = tf.matmul(fc4, self._weights.fc5W) + self._weights.fc5b
-
-        # form intermediate layer tensors for feature analysis
-        self._feature_tensors = {}
-        self._feature_tensors['conv1_1'] = pool1_1
-        self._feature_tensors['conv1_2'] = pool1_2
-        self._feature_tensors['conv2_1'] = pool2_1
-        self._feature_tensors['conv2_2'] = pool2_2
-        self._feature_tensors['fc3'] = fc3
-        self._feature_tensors['fc4'] = fc4
-        self._feature_tensors['fc5'] = fc5
-
-        return fc5
+        logging.info('Building Network')
+        output_im_stream fan_out_im = _build_im_stream(input_im_node, self.im_height, self.im_width, self.im_channels, self._architecture['im_stream'], inference=inference)
+        output_pose_stream, fan_out_pose = _build_pose_stream(input_pose_node, self.pose_dim self._architecture['pose_stream'], inference=inference)
+        return _build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)
