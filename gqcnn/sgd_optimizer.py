@@ -252,8 +252,9 @@ class SGDOptimizer(object):
                 self._check_dead_queue()
 
                 # run optimization
-                _, l, lr, predictions, batch_labels, output, train_images, pose_node = self.sess.run(
-                        [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], options=GeneralConstants.timeout_option)
+		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+                _, l, lr, predictions, batch_labels, output, train_images, pose_node, _ = self.sess.run(
+                        [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, extra_update_ops], options=GeneralConstants.timeout_option)
                 
                 ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
                 softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])

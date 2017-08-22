@@ -702,17 +702,11 @@ class GQCNN(object):
 
     def _build_batch_norm(self, input_node, ep, inference=False):
         output_node = input_node
-        batch_size = input_node.get_shape().as_list()[-1]
-        mean, variance = tf.nn.moments(input_node, axes=[0, 1, 2])
-        beta = tf.get_variable('batch_norm_beta', batch_size, tf.float32,
-                               initializer=tf.constant_initializer(0.0, tf.float32))
-        gamma = tf.get_variable('batch_norm_gamma', batch_size, tf.float32,
-                                initializer=tf.constant_initializer(1.0, tf.float32))
-        output_node = tf.nn.batch_normalization(output_node, mean, variance, beta, gamma, ep)
-
-        return output_node
+        output_node = tf.layers.batch_normalization(output_node, training=inference, epsilon = ep)
+	return output_node
 
     def _build_residual_layer(self, input_node, input_channels, fan_in, num_filt, filt_h, filt_w, name, inference=False):
+	logging.info('Building Residual Layer: {}'.format(name))
         if '{}_conv1_weights'.format(name) in self._weights.weights.keys():
             conv1W = self._weights.weights['{}_conv1_weights'.format(name)]
             conv1b = self._weights.weights['{}_conv1_bias'.format(name)]
@@ -720,10 +714,11 @@ class GQCNN(object):
             conv2b = self._weights.weights['{}_conv2_bias'.format(name)] 
         else:
             std = np.sqrt(2.0 / fan_in)
-            conv_shape = [filt_h, filt_w, input_channels, num_filt]
-            conv1W = tf.Variable(tf.truncated_normal(conv_shape, stddev=std), name='{}_conv1_weights'.format(name))
+            conv1_shape = [filt_h, filt_w, input_channels, num_filt]
+	    conv2_shape = [filt_h, filt_w, num_filt, num_filt]
+            conv1W = tf.Variable(tf.truncated_normal(conv1_shape, stddev=std), name='{}_conv1_weights'.format(name))
             conv1b = tf.Variable(tf.truncated_normal([num_filt], stddev=std), name='{}_conv1_bias'.format(name))
-            conv2W = tf.Variable(tf.truncated_normal(conv_shape, stddev=std), name='{}_conv2_weights'.format(name))
+            conv2W = tf.Variable(tf.truncated_normal(conv2_shape, stddev=std), name='{}_conv2_weights'.format(name))
             conv2b = tf.Variable(tf.truncated_normal([num_filt], stddev=std), name='{}_conv2_bias'.format(name))
 
 
@@ -778,7 +773,9 @@ class GQCNN(object):
             elif layer_type == 'fc_merge':
                 raise ValueError("Cannot have merge layer in image stream")
             elif layer_type == 'residual':
-                output_node = self._build_residual_layer(output_node, self._num_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
+		# TODO: currently we are assuming the layer before a res layer must be conv layer, fix this
+		fan_in = input_height * input_width * input_channels 
+                output_node = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
                 layer_config['filt_dim'], layer_name)
                 prev_layer = layer_type
             else:

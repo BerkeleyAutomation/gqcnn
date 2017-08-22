@@ -132,7 +132,7 @@ gqcnn_config:
         norm: 1
       res1_1:
         type: residual
-        num_filt: 64
+        num_filt: 32
         filt_dim: 3
       conv1_3:
         type: conv
@@ -150,7 +150,7 @@ gqcnn_config:
         norm: 1
       res1_2:
         type: residual
-        num_filt: 64
+        num_filt: 32
         filt_dim: 3
       conv1_5:
         type: conv
@@ -175,7 +175,7 @@ gqcnn_config:
         norm: 1
       res2_1: 
         type: residual
-        num_filt: 64
+        num_filt: 32
         filt_dim: 3
       conv2_3:
         type: conv
