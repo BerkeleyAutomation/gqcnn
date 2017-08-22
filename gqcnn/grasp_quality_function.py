@@ -11,6 +11,7 @@ from time import time
 
 import scipy.ndimage.filters as snf
 
+import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from gqcnn import Grasp2D, SuctionPoint2D, GQCNN, InputDataMode
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage
@@ -250,6 +251,58 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
 
         return np.array(qualities)
 
+class ComApproachPlanaritySuctionQualityFunction(ApproachPlanaritySuctionQualityFunction):
+    """A approach planarity suction metric that ranks sufficiently planar points by their distance to the object COM. """
+
+    def __init__(self, config):
+        """Create approach planarity suction metric. """
+        self._planarity_thresh = 0.001
+
+        ApproachPlanaritySuctionQualityFunction.__init__(self, config)
+
+    def quality(self, state, actions, params=None): 
+        """Given a suction point, compute a score based on a best-fit 3D plane of the neighboring points.
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            An RgbdImageState instance that encapsulates rgbd_im, camera_intr, segmask, full_observed.
+        action: :obj:`SuctionPoint2D`
+            A suction grasp in image space that encapsulates center, approach direction, depth, camera_intr.
+        params: dict
+            Stores params used in computing suction quality.
+
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp
+        """
+        # compute planarity
+        sse = ApproachPlanaritySuctionQualityFunction.quality(self, state, actions, params=params)
+
+        if params['vis']['hist']:
+            plt.figure()
+            utils.histogram(sse, 100, (np.min(sse), np.max(sse)), normalized=False, plot=True)
+            plt.show()
+
+        # compute object centroid
+        object_com = state.rgbd_im.center
+        if state.segmask is not None:
+            nonzero_px = state.segmask.nonzero_pixels()
+            object_com = np.mean(nonzero_px, axis=0)
+
+        # threshold
+        qualities = []
+        for k, action in enumerate(actions):
+            q = max(state.rgbd_im.height, state.rgbd_im.width)
+            if np.abs(sse[k]) < self._planarity_thresh:
+                grasp_center = np.array([action.center.y, action.center.x])
+                q = np.linalg.norm(grasp_center - object_com)
+
+            qualities.append(-q)
+
+        return np.array(qualities)
+        
 class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
     """A approach planarity suction metric. """
 
@@ -311,38 +364,6 @@ class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
             qualities.append(quality)
 
         return np.array(qualities)
-
-        """
-        qualities = []
-
-        # deproject points
-        point_cloud_image = state.camera_intr.deproject_to_image(state.rgbd_im.depth)
-        smooth_depth_im = state.rgbd_im.depth.apply(snf.gaussian_filter,
-                                                    sigma=self._depth_smooth_sigma)
-        Gx, Gy = np.gradient(smooth_depth_im.data)
-        Gxx, Gxy = np.gradient(Gx)
-        _, Gyy = np.gradient(Gy)
-
-        # compute Gaussian curvature for each point
-        for i, action in enumerate(actions):
-            if not isinstance(action, SuctionPoint2D):
-                raise ValueError('This function can only be used to evaluate suction quality')
-            
-            # compute curvature
-            v = int(action.center.x)
-            u = int(action.center.y)
-            gxx = Gxx[u,v]
-            gyy = Gyy[u,v]
-            gxy = Gxy[u,v]
-            gx = Gx[u,v]
-            gy = Gy[u,v]
-            curvature = (gxx * gyy - gxy**2) / (1 + gx**2 + gy**2)**2
-
-            # add qualities
-            qualities.append(-curvature)
-
-        return np.array(qualities)
-        """
 
 class GQCnnQualityFunction(GraspQualityFunction):
     def __init__(self, config):
@@ -476,6 +497,8 @@ class GraspQualityFunctionFactory(object):
             return BestFitPlanaritySuctionQualityFunction(config)
         elif metric_type == 'approach_planarity':
             return ApproachPlanaritySuctionQualityFunction(config)
+        elif metric_type == 'com_approach_planarity':
+            return ComApproachPlanaritySuctionQualityFunction(config)
         elif metric_type == 'gaussian_curvature':
             return GaussianCurvatureSuctionQualityFunction(config)
         elif metric_type == 'gqcnn':
