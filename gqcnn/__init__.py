@@ -6,6 +6,7 @@ from learning_analysis import ClassificationResult, RegressionResult, ConfusionM
 from gqcnn_analyzer import GQCNNAnalyzer
 
 from grasp import Grasp2D, SuctionPoint2D
+from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
 from visualizer import Visualizer
 from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
@@ -24,4 +25,5 @@ __all__ = ['GQCNN',
            'GraspAction', 'Policy', 'GraspingPolicy', 'UniformRandomGraspingPolicy', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy',
            'RgbdImageState',
            'NoValidGraspsException', 'NoAntipodalPairsFoundException',
-           'GQCNNPredictionVisualizer']
+           'GQCNNPredictionVisualizer',
+           'GraspQualityFunction', 'SuctionQualityFunction', 'BestFitPlanaritySuctionQualityFunction', 'ApproachPlanaritySuctionQualityFunction', 'GQCnnQualityFunction', 'GraspQualityFunctionFactory']

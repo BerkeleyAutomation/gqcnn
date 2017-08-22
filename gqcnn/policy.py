@@ -18,9 +18,8 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage
 
-from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
+from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode, GraspQualityFunctionFactory, NoValidGraspsException
 from gqcnn import Visualizer as vis
-from gqcnn import NoValidGraspsException
 
 FIGSIZE = 16
 SEED = 5234709
@@ -91,28 +90,20 @@ class GraspingPolicy(Policy):
         self._gripper_width = config['gripper_width']
         self._crop_height = config['crop_height']
         self._crop_width = config['crop_width']
+
+        # init grasp sampler
         self._sampling_config = config['sampling']
         self._sampling_config['gripper_width'] = self._gripper_width
-        self._gqcnn_model_dir = config['gqcnn_model']
         sampler_type = self._sampling_config['type']
-        
-        # init grasp sampler
         self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
                                                                self._sampling_config)
-        
-        # init GQ-CNN
-        self._gqcnn = GQCNN.load(self._gqcnn_model_dir)
 
-        # open tensorflow session for gqcnn
-        self._gqcnn.open_session()
-
-    def __del__(self):
-        try:
-            self._gqcnn.close_session()
-        except:
-            pass
-        del self
-
+        # init grasp quality function
+        self._metric_config = config['metric']
+        metric_type = self._metric_config['type']
+        self._grasp_quality_fn = GraspQualityFunctionFactory.quality_function(metric_type,
+                                                                              self._metric_config)
+ 
     @property
     def config(self):
         """ Returns the policy parameters. """
@@ -124,6 +115,11 @@ class GraspingPolicy(Policy):
         return self._grasp_sampler
 
     @property
+    def grasp_quality_fn(self):
+        """ Returns the grasp sampler. """
+        return self._grasp_quality_fn
+
+    @property
     def gqcnn(self):
         """ Returns the GQ-CNN. """
         return self._gqcnn
@@ -133,57 +129,6 @@ class GraspingPolicy(Policy):
         """ Returns an action for a given state.
         """
         pass
-
-    def grasps_to_tensors(self, grasps, state):
-        """ Converts a list of grasps to an image and pose tensor.
-
-        Attributes
-        ----------
-        grasps : :obj:`list` of :obj:`Grasp2D`
-            list of image grassps to convert
-        state : :obj:`RgbdImageState`
-            RGB-D image to plan grasps on
-
-        Returns
-        -------
-        image_arr : :obj:`numpy.ndarray`
-            4D Tensor of image to be predicted
-        pose_arr : :obj:`numpy.ndarray`
-            2D Tensor of depth values
-        """
-        # parse params
-        gqcnn_im_height = self.gqcnn.im_height
-        gqcnn_im_width = self.gqcnn.im_width
-        gqcnn_num_channels = self.gqcnn.num_channels
-        gqcnn_pose_dim = self.gqcnn.pose_dim
-        input_data_mode = self.gqcnn.input_data_mode
-        num_grasps = len(grasps)
-        depth_im = state.rgbd_im.depth
-
-        # allocate tensors
-        tensor_start = time()
-        image_tensor = np.zeros([num_grasps, gqcnn_im_height, gqcnn_im_width, gqcnn_num_channels])
-        pose_tensor = np.zeros([num_grasps, gqcnn_pose_dim])
-        scale = float(gqcnn_im_height) / self._crop_height
-        depth_im_scaled = depth_im.resize(scale)
-        for i, grasp in enumerate(grasps):
-            translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
-                                            depth_im.center[1] - grasp.center.data[0]])
-            im_tf = depth_im_scaled
-            im_tf = depth_im_scaled.transform(translation, grasp.angle)
-            im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
-            image_tensor[i,...] = im_tf.raw_data
-            
-            if input_data_mode == InputDataMode.TF_IMAGE:
-                pose_tensor[i] = grasp.depth
-            elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.center.x, grasp.center.y])
-            elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
-            else:
-                raise ValueError('Input data mode %s not supported' %(input_data_mode))
-        logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
-        return image_tensor, pose_tensor
 
 class UniformRandomGraspingPolicy(GraspingPolicy):
     """ Returns a grasp uniformly at random. """
@@ -229,9 +174,7 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
         grasp = grasps[0]
 
         # form tensors
-        image_tensor, pose_tensor = self.grasps_to_tensors([grasp], state)
-        image = DepthImage(image_tensor[0,...])
-        return GraspAction(grasp, 0.0, image)
+        return GraspAction(grasp, 0.0, state.rgbd_im.depth)
 
 class RobustGraspingPolicy(GraspingPolicy):
     """ Samples a set of grasp candidates in image space,
@@ -270,7 +213,6 @@ class RobustGraspingPolicy(GraspingPolicy):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
         """
-        # sort
         num_grasps = len(grasps)
         grasps_and_predictions = zip(np.arange(num_grasps), q_value)
         grasps_and_predictions.sort(key = lambda x : x[1], reverse=True)
@@ -328,100 +270,34 @@ class RobustGraspingPolicy(GraspingPolicy):
             image_state_filename = os.path.join(test_case_dir, 'state.pkl')
             pkl.dump(state, open(image_state_filename, 'wb'))
 
-        # form tensors
-        image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
-        if self.config['vis']['tf_images']:
-            # read vis params
-            k = self.config['vis']['k']
-            d = utils.sqrt_ceil(k)
-
-            # display grasp transformed images
-            vis.figure(size=(FIGSIZE,FIGSIZE))
-            for i, image_tf in enumerate(image_tensor[:k,...]):
-                depth = pose_tensor[i][0]
-                vis.subplot(d,d,i+1)
-                vis.imshow(DepthImage(image_tf))
-                vis.title('Image %d: d=%.3f' %(i, depth))
-            vis.show()
-
-        # predict grasps
-        predict_start = time()
-        output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        q_values = output_arr[:,-1]
-        logging.debug('Prediction took %.3f sec' %(time()-predict_start))
-
+        # compute grasp quality
+        compute_start = time()
+        q_values = self._grasp_quality_fn(state, grasps, params=self._config)
+        logging.debug('Grasp evaluation took %.3f sec' %(time()-compute_start))
+        
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
+            norm_q_values = (q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
             vis.figure(size=(FIGSIZE,FIGSIZE))
             vis.imshow(rgbd_im.depth)
-            for grasp, q in zip(grasps, q_values):
-                vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
+            for grasp, q in zip(grasps, norm_q_values):
+                vis.grasp(grasp, scale=1.0, show_center=False, show_axis=True,
                           color=plt.cm.RdYlBu(q))
             vis.title('Sampled grasps')
-            vis.show()
-
-        if self.config['vis']['grasp_ranking']:
-            # read vis params
-            k = self.config['vis']['k']
-            d = utils.sqrt_ceil(k)
-
-            # form camera intr for the thumbnail (to compute gripper width)
-            scale_factor = float(self.gqcnn.im_width) / float(self._crop_width)
-            scaled_camera_intr = camera_intr.resize(scale_factor)
-
-            # sort grasps
-            q_values_and_indices = zip(q_values, np.arange(num_grasps))
-            q_values_and_indices.sort(key = lambda x : x[0], reverse=True)
-
-            vis.figure(size=(FIGSIZE,FIGSIZE))
-            for i, p in enumerate(q_values_and_indices[:k]):
-                # read stats for grasp
-                q_value = p[0]
-                ind = p[1]
-                depth = pose_tensor[ind][0]
-                image = DepthImage(image_tensor[ind,...])
-                if grasp_type == 'parallel_jaw':
-                    grasp = Grasp2D(Point(image.center), 0.0, depth,
-                                    width=self._gripper_width,
-                                    camera_intr=scaled_camera_intr)
-                else:
-                    grasp = SuctionPoint2D(Point(image.center),
-                                           np.array([0,0,1]), depth,
-                                           camera_intr=scaled_camera_intr)
-
-                # plot
-                vis.subplot(d,d,i+1)
-                vis.imshow(image)
-                vis.grasp(grasp, scale=1.5)
-                vis.title('K=%d: d=%.3f, q=%.3f' %(i, depth, q_value))
             vis.show()
 
         # select grasp
         index = self.select(grasps, q_values)
         grasp = grasps[index]
         q_value = q_values[index]
-        image = DepthImage(image_tensor[index,...])
-        pose = pose_tensor[index,...]
-        depth = pose[0]
         if self.config['vis']['grasp_plan']:
-            scale_factor = float(self.gqcnn.im_width) / float(self._crop_width)
-            scaled_camera_intr = camera_intr.resize(scale_factor)
-            if grasp_type == 'parallel_jaw':
-                grasp = Grasp2D(Point(image.center), 0.0, pose[0],
-                                width=self._gripper_width,
-                                camera_intr=scaled_camera_intr)
-            elif grasp_type == 'suction':
-                grasp = SuctionPoint2D(Point(image.center),
-                                       np.array([0,0,1]), pose[0],
-                                       camera_intr=scaled_camera_intr)                
             vis.figure()
-            vis.imshow(image)
-            vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True)
-            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, q_value))
+            vis.imshow(state.rgbd_im.depth)
+            vis.grasp(grasp, scale=2.0, show_axis=True)
+            vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth, q_value))
             vis.show()
 
-        # return action
-        return GraspAction(grasp, q_value, image)
+        return GraspAction(grasp, q_value, state.rgbd_im.depth)
 
 class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     """ Optimizes a set of grasp candidates in image space using the 
@@ -531,47 +407,14 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
         logging.info('Computing the seed set took %.3f sec' %(time() - seed_set_start))
 
-        # form tensors
-        image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
-        if self.config['vis']['tf_images']:
-            # read vis params
-            k = self.config['vis']['k']
-            d = utils.sqrt_ceil(k)
-
-            # display grasp transformed images
-            vis.figure(size=(FIGSIZE,FIGSIZE))
-            for i, image_tf in enumerate(image_tensor[:k,...]):
-                depth = pose_tensor[i][0]
-                vis.subplot(d,d,i+1)
-                vis.imshow(DepthImage(image_tf))
-                vis.title('Image %d: d=%.3f' %(i, depth))
-
-            # display grasp transformed images
-            vis.figure(size=(FIGSIZE,FIGSIZE))
-            for i in range(d):
-                image_tf = image_tensor[i,...]
-                depth = pose_tensor[i][0]
-                grasp = grasps[i]
-
-                vis.subplot(d,2,2*i+1)
-                vis.imshow(rgbd_im.depth)
-                vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True)
-                vis.title('Grasp %d: d=%.3f' %(i, depth))
-
-                vis.subplot(d,2,2*i+2)
-                vis.imshow(DepthImage(image_tf))
-                vis.title('TF image %d: d=%.3f' %(i, depth))
-            vis.show()
-
         # iteratively refit and sample
         for j in range(self._num_iters):
             logging.info('CEM iter %d' %(j))
 
             # predict grasps
             predict_start = time()
-            output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-            q_values = output_arr[:,-1]
-            logging.info('Prediction took %.3f sec' %(time()-predict_start))
+            q_values = self._grasp_quality_fn(state, grasps, params=self._config)
+            logging.debug('Prediction took %.3f sec' %(time()-predict_start))
 
             # sort grasps
             q_values_and_indices = zip(q_values, np.arange(num_grasps))
@@ -579,43 +422,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
             if self.config['vis']['grasp_candidates']:
                 # display each grasp on the original image, colored by predicted success
+                norm_q_values = (q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
                 vis.figure(size=(FIGSIZE,FIGSIZE))
                 vis.imshow(rgbd_im.depth)
-                for grasp, q in zip(grasps, q_values):
+                for grasp, q in zip(grasps, norm_q_values):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                               color=plt.cm.RdYlBu(q))
                 vis.title('Sampled grasps iter %d' %(j))
-                vis.show()
-
-            if self.config['vis']['grasp_ranking']:
-                # read vis params
-                k = self.config['vis']['k']
-                d = utils.sqrt_ceil(k)
-
-                # form camera intr for the thumbnail (to compute gripper width)
-                scale_factor = float(self.gqcnn.im_width) / float(self._crop_width)
-                scaled_camera_intr = camera_intr.resize(scale_factor)
-
-                vis.figure(size=(FIGSIZE,FIGSIZE))
-                for i, p in enumerate(q_values_and_indices[:k]):
-                    # read stats for grasp
-                    q_value = p[0]
-                    ind = p[1]
-                    depth = pose_tensor[ind][0]
-                    image = DepthImage(image_tensor[ind,...])
-                    if grasp_type == 'parallel_jaw':
-                        grasp = Grasp2D(Point(image.center), 0.0, depth,
-                                        width=self._gripper_width,
-                                        camera_intr=scaled_camera_intr)
-                    elif grasp_type == 'suction':
-                        grasp = SuctionPoint2D(Point(image.center), np.array([0,0,1]),
-                                               depth,
-                                               camera_intr=scaled_camera_intr)
-                    # plot
-                    vis.subplot(d,d,i+1)
-                    vis.imshow(image)
-                    vis.grasp(grasp, scale=1.5)
-                    vis.title('K=%d: d=%.3f, q=%.3f' %(i, depth, q_value))
                 vis.show()
 
             # fit elite set
@@ -628,9 +441,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
             if self.config['vis']['elite_grasps']:
                 # display each grasp on the original image, colored by predicted success
+                norm_q_values = (elite_q_values - np.min(elite_q_values)) / (np.max(elite_q_values) - np.min(elite_q_values))
                 vis.figure(size=(FIGSIZE,FIGSIZE))
                 vis.imshow(rgbd_im.depth)
-                for grasp, q in zip(elite_grasps, elite_q_values):
+                for grasp, q in zip(elite_grasps, norm_q_values):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                               color=plt.cm.RdYlBu(q))
                 vis.title('Elite grasps iter %d' %(j))
@@ -655,55 +469,46 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             logging.info('GMM fitting with %d components took %.3f sec' %(num_components, train_duration))
 
             # sample the next grasps
-            sample_start = time()
-            grasp_vecs, _ = gmm.sample(n_samples=self._num_gmm_samples)
-            grasp_vecs = elite_grasp_std * grasp_vecs + elite_grasp_mean
-            sample_duration = time() - sample_start
-            logging.info('GMM sampling took %.3f sec' %(sample_duration))
-
-            # convert features to grasps
             grasps = []
-            for grasp_vec in grasp_vecs:
-                if grasp_type == 'parallel_jaw':
-                    grasps.append(Grasp2D.from_feature_vec(grasp_vec,
-                                                           width=self._gripper_width,
-                                                           camera_intr=camera_intr))
-                elif grasp_type == 'suction':
-                    grasps.append(SuctionPoint2D.from_feature_vec(grasp_vec,
-                                                                  camera_intr=camera_intr))
+            while len(grasps) < self._num_gmm_samples:
+                # sample from GMM
+                sample_start = time()
+                grasp_vecs, _ = gmm.sample(n_samples=self._num_gmm_samples)
+                grasp_vecs = elite_grasp_std * grasp_vecs + elite_grasp_mean
+                sample_duration = time() - sample_start
+                logging.debug('GMM sampling took %.3f sec' %(sample_duration))
+
+                # convert features to grasps and store if in segmask
+                for grasp_vec in grasp_vecs:
+                    if grasp_type == 'parallel_jaw':
+                        grasp = Grasp2D.from_feature_vec(grasp_vec,
+                                                         width=self._gripper_width,
+                                                         camera_intr=camera_intr)
+                    elif grasp_type == 'suction':
+                        grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
+                                                                camera_intr=camera_intr)
+                    if state.segmask is None or \
+                       np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0):
+                        grasps.append(grasp)
+
+            # check num grasps
             num_grasps = len(grasps)
             if num_grasps == 0:
                 logging.warning('No valid grasps could be found')
                 raise NoValidGraspsException()
 
-            # form tensors
-            image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
-            if self.config['vis']['tf_images']:
-                # read vis params
-                k = self.config['vis']['k']
-                d = utils.sqrt_ceil(k)
-
-                # display grasp transformed images
-                vis.figure(size=(FIGSIZE,FIGSIZE))
-                for i, image_tf in enumerate(image_tensor[:k,...]):
-                    depth = pose_tensor[i][0]
-                    vis.subplot(d,d,i+1)
-                    vis.imshow(DepthImage(image_tf))
-                    vis.title('Image %d: d=%.3f' %(i, depth))
-                vis.show()
-          
         # predict final set of grasps
         predict_start = time()
-        output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        q_values = output_arr[:,-1]
-        logging.info('Final prediction took %.3f sec' %(time()-predict_start))
+        q_values = self._grasp_quality_fn(state, grasps, params=self._config)
+        logging.debug('Final prediction took %.3f sec' %(time()-predict_start))
 
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
+            norm_q_values = (q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
             vis.figure(size=(FIGSIZE,FIGSIZE))
             vis.imshow(rgbd_im.depth)
-            for grasp, q in zip(grasps, q_values):
-                vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
+            for grasp, q in zip(grasps, norm_q_values):
+                vis.grasp(grasp, scale=1.0, show_center=False, show_axis=True,
                           color=plt.cm.RdYlBu(q))
             vis.title('Final sampled grasps')
             vis.show()
@@ -712,27 +517,16 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         index = self.select(grasps, q_values)
         grasp = grasps[index]
         q_value = q_values[index]
-        image = DepthImage(image_tensor[index,...])
-        pose = pose_tensor[index,...]
-        depth = pose[0]
         if self.config['vis']['grasp_plan']:
-            scale_factor = float(self.gqcnn.im_width) / float(self._crop_width)
-            scaled_camera_intr = camera_intr.resize(scale_factor)
-            if grasp_type == 'parallel_jaw':
-                grasp_vis = Grasp2D(Point(image.center), 0.0, pose[0],
-                                    width=self._gripper_width,
-                                    camera_intr=scaled_camera_intr)
-            elif grasp_type == 'suction':
-                grasp_vis = SuctionPoint2D(Point(image.center), np.array([0,0,1]),
-                                           pose[0], camera_intr=scaled_camera_intr)
             vis.figure()
-            vis.imshow(image)
-            vis.grasp(grasp_vis, scale=1.5, show_center=False, show_axis=True)
-            vis.title('Best Grasp: d=%.3f, q=%.3f' %(depth, q_value))
+            vis.imshow(rgbd_im.depth)
+            vis.grasp(grasp, scale=1.0, show_center=True, show_axis=True)
+            vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth,
+                                                     q_value))
             vis.show()
 
         # return action
-        return GraspAction(grasp, q_value, image)
+        return GraspAction(grasp, q_value, state.rgbd_im.depth)
         
 class QFunctionRobustGraspingPolicy(CrossEntropyRobustGraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 

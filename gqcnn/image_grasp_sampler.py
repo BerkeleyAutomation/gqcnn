@@ -442,6 +442,8 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
         # read params
         self._max_suction_dir_optical_axis_angle = np.deg2rad(self._config['max_suction_dir_optical_axis_angle'])
+        self._max_dist_from_center = self._config['max_dist_from_center']
+        self._max_num_samples = self._config['max_num_samples']
 
         self._min_theta = -np.deg2rad(self._config['delta_theta'])
         self._max_theta = np.deg2rad(self._config['delta_theta'])
@@ -551,7 +553,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         # randomly sample points and add to image
         suction_points = []
         num_tries = 0
-        while len(suction_points) < num_samples and num_tries < 10000:
+        while len(suction_points) < num_samples and num_tries < self._max_num_samples:
             # update number of tries
             num_tries += 1
 
@@ -575,7 +577,9 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
             # keep if the angle between the camera optical axis and the suction direction is less than a threshold
             psi = np.arccos(axis.dot(np.array([0,0,1])))
-            if psi < self._max_suction_dir_optical_axis_angle:
+            dist_from_center = np.linalg.norm(center_px - np.array(depth_im.center[1], depth_im.center[0]))
+            if psi < self._max_suction_dir_optical_axis_angle and \
+               dist_from_center < self._max_dist_from_center:
 
                 # check distance to ensure sample diversity
                 candidate = SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)

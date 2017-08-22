@@ -19,7 +19,6 @@ policy:
   gmm_component_frac: 0.4
   gmm_reg_covar: 0.01
 
-
   # general params
   deterministic: 1
   gripper_width: 0.05
