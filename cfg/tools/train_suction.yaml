@@ -2,8 +2,8 @@
 mode: training
 
 # dataset 
-dataset_dir: /home/autolab/Public/data/dex-net/data/suction/mini_dexnet_08_08_17/tensors
-output_dir: /home/autolab/Public/data/dex-net/data/models/suction
+dataset_dir: /mnt/hdd/dex-net/data/suction/mini_dexnet_08_13_17/tensors
+output_dir: /mnt/hdd/dex-net/data/models/suction
 model_dir: /path/to/your/pretrained/gqcnn/model
 mode: training
 
@@ -50,8 +50,8 @@ num_tensor_channels: 1
 
 num_random_files: 100
 
-target_metric_name: robust_ferrari_canny
-metric_thresh: 0.002
+target_metric_name: robust_wrench_resistance
+metric_thresh: 0.0075
 
 # denoising / synthetic data params
 multiplicative_denoising: 1
@@ -117,40 +117,40 @@ gqcnn_config:
   architecture:
     conv1_1:
       filt_dim: 5
-      num_filt: 32
+      num_filt: 16
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv1_2:
       filt_dim: 3
-      num_filt: 32
+      num_filt: 16
       pool_size: 2
       pool_stride: 2
       norm: 1
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 32
+      num_filt: 16
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 64
+      num_filt: 16
       pool_size: 1
       pool_stride: 1
       norm: 1
       norm_type: local_response
     pc1:
-      out_size: 64
+      out_size: 32
     pc2:
       out_size: 0
     fc3:
-      out_size: 1024
-    fc4:
       out_size: 512
+    fc4:
+      out_size: 256
     fc5:
       out_size: 2
 

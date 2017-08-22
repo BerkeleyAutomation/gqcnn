@@ -296,8 +296,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             return []
 
         # compute_max_depth
-        min_depth = np.min(depth_im.data) + self._min_depth_offset
-        max_depth = np.max(depth_im.data) + self._max_depth_offset
+        min_depth = np.min(depth_im_mask.data[depth_im_mask.data > 0]) + self._min_depth_offset
+        max_depth = np.max(depth_im_mask.data[depth_im_mask.data > 0]) + self._max_depth_offset
 
         # compute surface normals
         normal_start = time()
@@ -550,7 +550,10 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         
         # randomly sample points and add to image
         suction_points = []
-        while len(suction_points) < num_samples:
+        num_tries = 0
+        while len(suction_points) < num_samples and num_tries < 10000:
+            # update number of tries
+            num_tries += 1
 
             # sample a point uniformly at random 
             ind = np.random.choice(num_nonzero_px, size=1, replace=False)[0]

@@ -529,7 +529,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if isinstance(grasps[0], SuctionPoint2D):
             grasp_type = 'suction'
 
-        logging.debug('Computing the seed set took %.3f sec' %(time() - seed_set_start))
+        logging.info('Computing the seed set took %.3f sec' %(time() - seed_set_start))
 
         # form tensors
         image_tensor, pose_tensor = self.grasps_to_tensors(grasps, state)
@@ -565,13 +565,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
         # iteratively refit and sample
         for j in range(self._num_iters):
-            logging.debug('CEM iter %d' %(j))
+            logging.info('CEM iter %d' %(j))
 
             # predict grasps
             predict_start = time()
             output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
             q_values = output_arr[:,-1]
-            logging.debug('Prediction took %.3f sec' %(time()-predict_start))
+            logging.info('Prediction took %.3f sec' %(time()-predict_start))
 
             # sort grasps
             q_values_and_indices = zip(q_values, np.arange(num_grasps))
@@ -652,14 +652,14 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
             gmm.fit(elite_grasp_arr)
             train_duration = time() - train_start
-            logging.debug('GMM fitting with %d components took %.3f sec' %(num_components, train_duration))
+            logging.info('GMM fitting with %d components took %.3f sec' %(num_components, train_duration))
 
             # sample the next grasps
             sample_start = time()
             grasp_vecs, _ = gmm.sample(n_samples=self._num_gmm_samples)
             grasp_vecs = elite_grasp_std * grasp_vecs + elite_grasp_mean
             sample_duration = time() - sample_start
-            logging.debug('GMM sampling took %.3f sec' %(sample_duration))
+            logging.info('GMM sampling took %.3f sec' %(sample_duration))
 
             # convert features to grasps
             grasps = []
@@ -696,7 +696,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
         q_values = output_arr[:,-1]
-        logging.debug('Final prediction took %.3f sec' %(time()-predict_start))
+        logging.info('Final prediction took %.3f sec' %(time()-predict_start))
 
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
