@@ -112,10 +112,10 @@ gqcnn_config:
   # architecture
   architecture: 
     im_stream:
-      # spatial_transformer:
-      #   type: spatial_transformer
-      #   out_size: 32
-      #   num_transform_params: 6
+      spatial_transformer:
+        type: spatial_transformer
+        out_size: 32
+        num_transform_params: 6
       conv1_1:
         type: conv
         filt_dim: 5
@@ -130,10 +130,6 @@ gqcnn_config:
         pool_size: 1
         pool_stride: 1  
         norm: 1
-      res1_1:
-        type: residual
-        num_filt: 32
-        filt_dim: 3
       conv1_3:
         type: conv
         filt_dim: 5
@@ -148,10 +144,6 @@ gqcnn_config:
         pool_size: 1
         pool_stride: 1  
         norm: 1
-      res1_2:
-        type: residual
-        num_filt: 32
-        filt_dim: 3
       conv1_5:
         type: conv
         filt_dim: 3
@@ -173,10 +165,6 @@ gqcnn_config:
         pool_size: 1
         pool_stride: 1
         norm: 1
-      res2_1: 
-        type: residual
-        num_filt: 32
-        filt_dim: 3
       conv2_3:
         type: conv
         filt_dim: 3
