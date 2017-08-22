@@ -94,7 +94,7 @@ drop_fc4: 0
 fc4_drop_rate: 0
 
 # debugging params
-debug: 1
+debug: 0
 debug_num_files: 1000000
 
 ### GQCNN CONFIG ###
@@ -125,11 +125,32 @@ gqcnn_config:
         norm: 0
       conv1_2:
         type: conv
+        filt_dim: 5
+        num_filt: 32
+        pool_size: 1
+        pool_stride: 1  
+        norm: 1
+      conv1_3:
+        type: conv
+        filt_dim: 5
+        num_filt: 32
+        pool_size: 1
+        pool_stride: 1  
+        norm: 0
+      conv1_4:
+        type: conv
+        filt_dim: 3
+        num_filt: 32
+        pool_size: 1
+        pool_stride: 1  
+        norm: 1
+      conv1_5:
+        type: conv
         filt_dim: 3
         num_filt: 32
         pool_size: 2
         pool_stride: 2
-        norm: 1
+        norm: 0
       conv2_1:
         type: conv
         filt_dim: 3
@@ -143,6 +164,20 @@ gqcnn_config:
         num_filt: 32
         pool_size: 1
         pool_stride: 1
+        norm: 1
+      conv2_3:
+        type: conv
+        filt_dim: 3
+        num_filt: 16
+        pool_size: 1
+        pool_stride: 1  
+        norm: 0
+      conv2_4:
+        type: conv
+        filt_dim: 3
+        num_filt: 16
+        pool_size: 1
+        pool_stride: 1  
         norm: 1
       fc3:
         type: fc

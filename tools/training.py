@@ -10,7 +10,7 @@ import logging
 #setup logger
 logging.getLogger().setLevel(logging.INFO)
 
-train_config = YamlConfig('cfg/tools/training.yaml')
+train_config = YamlConfig('cfg/tools/deep_gqcnn.yaml')
 gqcnn_config = train_config['gqcnn_config']
 
 def get_elapsed_time(time_in_seconds):

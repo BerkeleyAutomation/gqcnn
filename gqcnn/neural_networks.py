@@ -26,7 +26,7 @@ def reduce_shape(shape):
     return reduce(f, shape, 1)
 
 
-class GQCnnWeights(object):
+class GQCNNWeights(object):
     """ Struct helper for storing weights """
     weights = {}
     def __init__(self):
@@ -44,7 +44,7 @@ class GQCNN(object):
             im_height, im_width, ...
         """
         self._sess = None
-        self._weights = None
+        self._weights = GQCNNWeights()
         self._graph = tf.Graph()
         self._parse_config(config)
 
@@ -95,7 +95,7 @@ class GQCNN(object):
         :obj:`GQCnnWeights`
             network weights
         """
-        return self._weights
+        return self._weights.weights
 
     def init_mean_and_std(self, model_dir):
         """ Initializes the mean and std to use for data normalization during prediction 
@@ -255,31 +255,7 @@ class GQCNN(object):
 
         # load architecture
         self._architecture = config['architecture']
-        self._use_conv3 = False
-        if 'conv3_1' in self._architecture.keys():
-            self._use_conv3 = True
-        self._use_pc2 = False
-        if self._architecture['pc2']['out_size'] > 0:
-            self._use_pc2 = True
-        self._use_spatial_transformer = False
-        if 'spatial_transformer' in self._architecture.keys():
-            self._use_spatial_transformer = True
-
-        # get in and out sizes of fully-connected layer for possible re-initialization
-        self.pc2_out_size = self._architecture['pc2']['out_size']
-        self.pc1_out_size = self._architecture['pc1']['out_size']
-        self.fc3_in_size = self._architecture['pc2']['out_size']
-        self.fc3_out_size = self._architecture['fc3']['out_size']
-        self.fc4_in_size = self._architecture['fc3']['out_size']
-        self.fc4_out_size = self._architecture['fc4']['out_size'] 
-        self.fc5_in_size = self._architecture['fc4']['out_size']
-        self.fc5_out_size = self._architecture['fc5']['out_size']
-
-        if self.pc2_out_size == 0:
-            self.fc4_pose_in_size = self.pc1_out_size
-        else:
-            self.fc4_pose_in_size = self.pc2_out_size
-
+       	
         # load normalization constants
         self._normalization_radius = config['radius']
         self._normalization_alpha = config['alpha']
@@ -303,7 +279,6 @@ class GQCNN(object):
         add_softmax : float
             whether or not to add a softmax layer
         """
-
         with self._graph.as_default():
             # setup tf input placeholders and build network
             self._input_im_node = tf.placeholder(
@@ -315,9 +290,6 @@ class GQCNN(object):
             self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, inference=True)
             if add_softmax:
                 self.add_softmax_to_predict()
-
-        if self._weights is None:
-            self._wegihts = GQCnnWeights()
 
     def open_session(self):
         """ Open tensorflow session """
@@ -493,7 +465,7 @@ class GQCNN(object):
         # setup prediction
         num_images = image_arr.shape[0]
         num_poses = pose_arr.shape[0]
-        output_arr = np.zeros([num_images, self.fc5_out_size])
+        output_arr = np.zeros([num_images, 2])
         if num_images != num_poses:
             raise ValueError('Must provide same number of images and poses')
 
@@ -569,10 +541,10 @@ class GQCNN(object):
         output_arr = output_arr[:num_images]
         return output_arr
     
-    def _build_spatial_transformer(input_node, input_height, input_width, input_channels, num_transform_params, output_width, output_height, name):
+    def _build_spatial_transformer(self, input_node, input_height, input_width, input_channels, num_transform_params, output_width, output_height, name):
         logging.info('Building spatial transformer layer: {}'.format(name))
         # initialize weights
-        if self._weights.weights.contains('{}_weights'.format(name)):
+        if '{}_weights'.format(name) in self._weights.weights.keys():
             transformW = self._weights.weights['{}_weights'.format(name)]
             transformb = self._weights.weights['{}_bias'.format(name)]
         else:
@@ -597,10 +569,10 @@ class GQCNN(object):
 
         return transform_layer, output_height, output_width, input_channels
 
-    def _build_conv_layer(input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False):
+    def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False):
         logging.info('Building convolutional layer: {}'.format(name))
         # initialize weights
-        if self._weights.weights.contains('{}_weights'.format(name)):
+        if '{}_weights'.format(name) in self._weights.weights.keys():
             convW = self._weights.weights['{}_weights'.format(name)]
             convb = self._weights.weights['{}_bias'.format(name)] 
         else:
@@ -639,10 +611,10 @@ class GQCNN(object):
 
         return pool, out_height, out_width, out_channels
 
-    def _build_fc_layer(input_node, fan_in, out_size, name, input_is_conv, drop_rate=0.0, final_fc_layer=False, inference=False):
+    def _build_fc_layer(self, input_node, fan_in, out_size, name, input_is_conv, drop_rate=0.0, final_fc_layer=False, inference=False):
         logging.info('Building fully connected layer: {}'.format(name))
         # initialize weights
-        if self._weights.weights.contains('{}_weights'.format(name)):
+        if '{}_weights'.format(name) in self._weights.weights.keys():
             fcW = self._weights.weights['{}_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
         else:
@@ -673,19 +645,19 @@ class GQCNN(object):
 
         return fc, out_size
 
-    def _build_pc_layer(input_node, fan_in, out_size, name):
+    def _build_pc_layer(self, input_node, fan_in, out_size, name):
         logging.info('Building Fully-Connected Pose Layer: {}'.format(name))
         # initialize weights
-        if self._weights.weights.contains('{}_weights'.format(name)):
+        if '{}_weights'.format(name) in self._weights.weights.keys():
             pcW = self._weights.weights['{}_weights'.format(name)]
             pcb = self._weights.weights['{}_bias'.format(name)] 
         else:
             std = np.sqrt(2.0 / (fan_in))
 
             pcW = tf.Variable(tf.truncated_normal([fan_in, out_size],
-                                               stddev=pc1_std), name='pc1W')
+                                               stddev=std), name='{}_weights'.format(name))
             pcb = tf.Variable(tf.truncated_normal([out_size],
-                                               stddev=pc1_std), name='pc1b')
+                                               stddev=std), name='{}_bias'.format(name))
 
             self._weights.weights['{}_weights'.format(name)] = pcW
             self._weights.weights['{}_bias'.format(name)] = pcb
@@ -699,10 +671,10 @@ class GQCNN(object):
 
         return pc, out_size
 
-    def _build_fc_merge(input_fc_node_1, input_fc_node_2, fan_in_1, fan_in_2, out_size, name, drop_rate=0.0, inference=False):
+    def _build_fc_merge(self, input_fc_node_1, input_fc_node_2, fan_in_1, fan_in_2, out_size, name, drop_rate=0.0, inference=False):
         logging.info('Building Merge Layer: {}'.format(name))
         # initialize weights
-        if self._weights.weights.contains('{}_input_1_weights'.format(name)):
+        if '{}_input_1_weights'.format(name) in self._weights.weights.keys():
             input1W = self._weights.weights['{}_input_1_weights'.format(name)]
             input2W = self._weights.weights['{}_input_2_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
@@ -728,24 +700,24 @@ class GQCNN(object):
 
         return fc, out_size
 
-    def _build_residual_layer(input_node, name):
+    def _build_residual_layer(self, input_node, name):
         raise NotImplementedError('Residual Layers have not been implemented')
 
-    def _build_im_stream(input_node, input_height, input_width, input_channels, layers, inference=False):
+    def _build_im_stream(self, input_node, input_height, input_width, input_channels, layers, inference=False):
         logging.info('Building Image Stream')
         output_node = input_node
         prev_layer = "start"
         for layer_name, layer_config in layers.iteritems():
             layer_type = layer_config['type']
             if layer_type == 'spatial_transformer':
-                output_node, input_height, input_width, input_channels = _build_spatial_transformer(output_node, input_height, input_width, input_channels,
+                output_node, input_height, input_width, input_channels = self._build_spatial_transformer(output_node, input_height, input_width, input_channels,
                     layer_config['num_transform_params'], layer_config['out_size'], layer_config['out_size'], layer_name)
                 prev_layer = layer_type
             elif layer_type == 'conv':
                 if prev_layer == 'fc':
                     raise ValueError('Cannot have conv layer after fc layer')
-                output_node, input_height, input_width, input_channels = _build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filter_dim'],
-                    layer_config['filter_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
+                output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filt_dim'],
+                    layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
                     norm=layer_config['norm'])
                 prev_layer = layer_type
             elif layer_type == 'fc':
@@ -754,23 +726,23 @@ class GQCNN(object):
                     prev_layer_is_conv = True
                     fan_in = input_height * input_width * input_channels
                 if 'dropout_rate' in layer_config.keys():
-                    output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate=layer_config['drop_rate'], inference=inference)
+                    output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate=layer_config['drop_rate'], inference=inference)
                 else:
-                    output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, inference=inference)
+                    output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, inference=inference)
                 prev_layer = layer_type
             elif layer_type == 'pc':
                 raise ValueError('Cannot have pose-connected layer in image stream')
             elif layer_type == 'fc_merge':
                 raise ValueError("Cannot have merge layer in image stream")
             elif layer_type == 'residual':
-                output_node = _build_residual_layer(output_node, layer_name)
+                output_node = self._build_residual_layer(output_node, layer_name)
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
 
-        return output_node, fan_out
+        return output_node, fan_in
 
-    def _build_pose_stream(input_node, fan_in, layers, inference=False):
+    def _build_pose_stream(self, input_node, fan_in, layers, inference=False):
         logging.info('Building Pose Stream')
         output_node = input_node
         prev_layer = "start"
@@ -783,19 +755,19 @@ class GQCNN(object):
             elif layer_type == 'fc':
                 raise ValueError('Cannot have fc layer in pose stream')
             elif layer_type == 'pc':
-                output_node, fan_in = _build_pc_layer(output_node, fan_in, layer_config['out_size'], layer_name)
+                output_node, fan_in = self._build_pc_layer(output_node, fan_in, layer_config['out_size'], layer_name)
                 prev_layer = layer_type
             elif layer_type == 'fc_merge':
                 raise ValueError("Cannot have merge layer in pose stream")
             elif layer_type == 'residual':
-                output_node = _build_residual_layer(output_node, layer_name)
+                output_node = self._build_residual_layer(output_node, layer_name)
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
 
         return output_node, fan_in
 
-    def _build_merge_stream(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layers, inference=False):
+    def _build_merge_stream(self, input_stream_1, input_stream_2, fan_in_1, fan_in_2, layers, inference=False):
         logging.info('Building Merge Stream')
         
         # first check if first layer is a merge layer
@@ -813,25 +785,25 @@ class GQCNN(object):
             elif layer_type == 'fc':
                 # TODO: Clean this giant if statement up
                 if layer_index == last_index:
-                    if 'dropout_rate' in layer_config.keys():
-                        output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, final_fc_layer=True, drop_rate=layer_config['drop_rate'], inference=inference)
+                    if 'drop_rate' in layer_config.keys():
+                        output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, final_fc_layer=True, drop_rate=layer_config['drop_rate'], inference=inference)
                     else:
-                        output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, final_fc_layer=True, inference=inference)
+                        output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, final_fc_layer=True, inference=inference)
                 else:
-                    if 'dropout_rate' in layer_config.keys():
-                        output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate=layer_config['drop_rate'], inference=inference)
+                    if 'drop_rate' in layer_config.keys():
+                        output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, drop_rate=layer_config['drop_rate'], inference=inference)
                     else:
-                        output_node, fan_in = _build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, inference=inference)
+                        output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, inference=inference)
                 prev_layer = layer_type
             elif layer_type == 'pc':  
                 raise ValueError('Cannot have pose-connected layer in merge stream')
             elif layer_type == 'fc_merge':
-                if 'dropout_rate' in layer_config.keys():
-                    output_node, fan_in = _build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, drop_rate=layer_config['drop_rate'], inference=inference)
+                if 'drop_rate' in layer_config.keys():
+                    output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, drop_rate=layer_config['drop_rate'], inference=inference)
                 else:
-                    output_node, fan_in = _build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, drop_rate=layer_config['drop_rate'], inference=inference)
+                    output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, inference=inference)
             elif layer_type == 'residual':
-                output_node = _build_residual_layer(output_node, layer_name)
+                output_node = self._build_residual_layer(output_node, layer_name)
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
@@ -853,6 +825,6 @@ class GQCNN(object):
             output of network
         """
         logging.info('Building Network')
-        output_im_stream fan_out_im = _build_im_stream(input_im_node, self.im_height, self.im_width, self.im_channels, self._architecture['im_stream'], inference=inference)
-        output_pose_stream, fan_out_pose = _build_pose_stream(input_pose_node, self.pose_dim self._architecture['pose_stream'], inference=inference)
-        return _build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)
+        output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, self._architecture['im_stream'], inference=inference)
+        output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'], inference=inference)
+        return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)

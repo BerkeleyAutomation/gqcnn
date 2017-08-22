@@ -107,7 +107,7 @@ class SGDOptimizer(object):
             self.sess.close()
             
             # cleanup
-            for layer_weights in self.weights.__dict__.values():
+            for layer_weights in self.weights.values():
                 del layer_weights
             del self.saver
             del self.sess
@@ -143,9 +143,14 @@ class SGDOptimizer(object):
         
         # build training and validation networks
         with tf.name_scope('validation_network'):
-            self.gqcnn.initialize_network() # builds validation network inside gqcnn class
+		logging.info('Building Validation Network')
+		self.gqcnn.initialize_network() # builds validation network inside gqcnn class
         with tf.name_scope('training_network'):
-            self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node)
+		logging.info('Building Training Network')
+		self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node)
+	
+	# once weights have been initialized create tf Saver for weights
+	self.saver = tf.train.Saver()
 
         # form loss
         # part 1: error
@@ -160,7 +165,7 @@ class SGDOptimizer(object):
                 loss = self._create_loss()
 
         # part 2: regularization
-        layer_weights = self.weights.__dict__.values()
+        layer_weights = self.weights.values()
         with tf.name_scope('regularization'):
             regularizers = tf.nn.l2_loss(layer_weights[0])
             for w in layer_weights[1:]:
@@ -177,11 +182,11 @@ class SGDOptimizer(object):
             staircase=True)
 
         # setup variable list
-        var_list = self.weights.__dict__.values()
+        var_list = self.weights.values()
         if self.cfg['fine_tune'] and self.cfg['update_fc_only']:
-            var_list = [v for k, v in self.weights.__dict__.iteritems() if k.find('conv') == -1]
+            var_list = [v for k, v in self.weights.iteritems() if k.find('conv') == -1]
         elif self.cfg['fine_tune'] and self.cfg['update_conv0_only'] and self.use_conv0:
-            var_list = [v for k, v in self.weights.__dict__.iteritems() if k.find('conv0') > -1]
+            var_list = [v for k, v in self.weights.iteritems() if k.find('conv0') > -1]
 
         # create optimizer
         with tf.name_scope('optimizer'):
@@ -210,7 +215,7 @@ class SGDOptimizer(object):
             logging.info('Cleaning and Preparing to Exit Optimization')
                 
             # cleanup
-            for layer_weights in self.weights.__dict__.values():
+            for layer_weights in self.weights.values():
                 del layer_weights
             del self.saver
             del self.sess
@@ -247,8 +252,8 @@ class SGDOptimizer(object):
                 self._check_dead_queue()
 
                 # run optimization
-                _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, pose_node = self.sess.run(
-                        [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
+                _, l, lr, predictions, batch_labels, output, train_images, pose_node = self.sess.run(
+                        [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], options=GeneralConstants.timeout_option)
                 
                 ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
                 softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
@@ -324,7 +329,7 @@ class SGDOptimizer(object):
             self.term_event.set()
             if not self.forceful_exit:
                 self.sess.close() 
-                for layer_weights in self.weights.__dict__.values():
+                for layer_weights in self.weights.values():
                     del layer_weights
                 del self.saver
                 del self.sess
@@ -351,7 +356,7 @@ class SGDOptimizer(object):
         self.sess.close()
             
         # cleanup
-        for layer_weights in self.weights.__dict__.values():
+        for layer_weights in self.weights.values():
             del layer_weights
         del self.saver
         del self.sess
@@ -444,14 +449,11 @@ class SGDOptimizer(object):
             # this assumes that a gqcnn was passed in that was initialized with weights from a model using GQCNN.load(), so all that has to
             # be done is to possibly reinitialize fc3/fc4/fc5
             self.gqcnn.reinitialize_layers(self.cfg['reinit_fc3'], self.cfg['reinit_fc4'], self.cfg['reinit_fc5'])
-        else:
-            self.gqcnn.init_weights_gaussian()
 
         # get weights
         self.weights = self.gqcnn.get_weights()
 
         # open a tf session for the gqcnn object and store it also as the optimizer session
-        self.saver = tf.train.Saver()
         self.sess = self.gqcnn.open_session()
 
         # setup term event/dead event
