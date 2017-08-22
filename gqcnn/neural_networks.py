@@ -700,8 +700,51 @@ class GQCNN(object):
 
         return fc, out_size
 
-    def _build_residual_layer(self, input_node, name):
-        raise NotImplementedError('Residual Layers have not been implemented')
+    def _build_batch_norm(self, input_node, ep, inference=False):
+        output_node = input_node
+        batch_size = input_node.get_shape().as_list()[-1]
+        mean, variance = tf.nn.moments(input_node, axes=[0, 1, 2])
+        beta = tf.get_variable('batch_norm_beta', batch_size, tf.float32,
+                               initializer=tf.constant_initializer(0.0, tf.float32))
+        gamma = tf.get_variable('batch_norm_gamma', batch_size, tf.float32,
+                                initializer=tf.constant_initializer(1.0, tf.float32))
+        output_node = tf.nn.batch_normalization(output_node, mean, variance, beta, gamma, ep)
+
+        return output_node
+
+    def _build_residual_layer(self, input_node, input_channels, fan_in, num_filt, filt_h, filt_w, name, inference=False):
+        if '{}_conv1_weights'.format(name) in self._weights.weights.keys():
+            conv1W = self._weights.weights['{}_conv1_weights'.format(name)]
+            conv1b = self._weights.weights['{}_conv1_bias'.format(name)]
+            conv2W = self._weights.weights['{}_conv2_weights'.format(name)]
+            conv2b = self._weights.weights['{}_conv2_bias'.format(name)] 
+        else:
+            std = np.sqrt(2.0 / fan_in)
+            conv_shape = [filt_h, filt_w, input_channels, num_filt]
+            conv1W = tf.Variable(tf.truncated_normal(conv_shape, stddev=std), name='{}_conv1_weights'.format(name))
+            conv1b = tf.Variable(tf.truncated_normal([num_filt], stddev=std), name='{}_conv1_bias'.format(name))
+            conv2W = tf.Variable(tf.truncated_normal(conv_shape, stddev=std), name='{}_conv2_weights'.format(name))
+            conv2b = tf.Variable(tf.truncated_normal([num_filt], stddev=std), name='{}_conv2_bias'.format(name))
+
+
+            self._weights.weights['{}_conv1_weights'.format(name)] = conv1W
+            self._weights.weights['{}_conv1_bias'.format(name)] = conv1b
+            self._weights.weights['{}_conv2_weights'.format(name)] = conv2W
+            self._weights.weights['{}_conv2_bias'.format(name)] = conv2b
+
+        #  implemented as x = BN + ReLU + Conv + BN + ReLU + Conv
+        EP = .001
+        output_node = input_node
+        output_node = self._build_batch_norm(output_node, EP)
+        output_node = tf.nn.relu(output_node)
+        output_node = tf.nn.conv2d(output_node, conv1W, strides=[1, 1, 1, 1], padding='SAME') + conv1b
+        output_node = self._build_batch_norm(output_node, EP)
+        output_node = tf.nn.relu(output_node)
+        output_node = tf.nn.conv2d(output_node, conv2W, strides=[1, 1, 1, 1], padding='SAME') + conv2b
+        output_node = input_node + output_node
+
+        return output_node 
+
 
     def _build_im_stream(self, input_node, input_height, input_width, input_channels, layers, inference=False):
         logging.info('Building Image Stream')
@@ -735,7 +778,8 @@ class GQCNN(object):
             elif layer_type == 'fc_merge':
                 raise ValueError("Cannot have merge layer in image stream")
             elif layer_type == 'residual':
-                output_node = self._build_residual_layer(output_node, layer_name)
+                output_node = self._build_residual_layer(output_node, self._num_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
+                layer_config['filt_dim'], layer_name)
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
@@ -760,7 +804,7 @@ class GQCNN(object):
             elif layer_type == 'fc_merge':
                 raise ValueError("Cannot have merge layer in pose stream")
             elif layer_type == 'residual':
-                output_node = self._build_residual_layer(output_node, layer_name)
+                raise ValueError('Cannot have residual in pose stream')
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
@@ -803,7 +847,7 @@ class GQCNN(object):
                 else:
                     output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, inference=inference)
             elif layer_type == 'residual':
-                output_node = self._build_residual_layer(output_node, layer_name)
+                raise ValueError('Cannot have residual in merge stream')
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
