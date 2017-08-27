@@ -559,7 +559,7 @@ class GQCNN(object):
             self._weights.weights['{}_bias'.format(name)] = transformb
 
         # build localisation network
-        loc_network = tf.matmul(tf.zeros([self._batch_size, input_height * input_width * input_channels]), transformW) + transformb
+	loc_network = tf.matmul(tf.zeros([input_node.get_shape().as_list()[0], input_height * input_width * input_channels]), transformW) + transformb
             
         # build transform layer
         transform_layer = transformer(input_node, loc_network, (output_width, output_height))

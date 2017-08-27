@@ -12,6 +12,7 @@ save_frequency: 10000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
+visualize_border_distortion: 0
 
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
@@ -76,12 +77,13 @@ gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
 
-border_distortion: 0
+border_distortion: 1
 border_grad_sigma: 1.0
-border_grad_thresh: 0.075
+border_grad_thresh: 0.005
 border_poisson_mean: 5.0
-border_radius_shape: 5
+border_radius_shape: 3.75
 border_radius_scale: 0.4
+border_fill_type: machine_max
 
 background_denoising: 0
 background_rate: 0.25
@@ -94,7 +96,7 @@ drop_fc4: 0
 fc4_drop_rate: 0
 
 # debugging params
-debug: 1
+debug: 0
 debug_num_files: 1000000
 
 ### GQCNN CONFIG ###

@@ -1139,10 +1139,19 @@ class SGDOptimizer(object):
             for i in range(self.num_images):
                 train_image = self.train_data_arr[i,:,:,0]
                 grad_mag = sf.gaussian_gradient_magnitude(train_image, sigma=self.cfg['border_grad_sigma'])
+		vmin = 0
+		vmax = .7
+		if self.cfg['visualize_border_distortion']:
+		    plt.clf()
+		    plt.subplot(1, 2, 1)
+                    plt.imshow(grad_mag, cmap=plt.cm.gray_r)
                 high_gradient_px = np.where(grad_mag > self.cfg['border_grad_thresh'])
                 high_gradient_px = np.c_[high_gradient_px[0], high_gradient_px[1]]
                 num_nonzero = high_gradient_px.shape[0]
+		if num_nonzero == 0:
+		    continue
                 num_dropout_regions = ss.poisson.rvs(self.cfg['border_poisson_mean']) 
+#		logging.info('Num_dropouts:{}'.format(num_dropout_regions))
 
                 # sample ellipses
                 dropout_centers = np.random.choice(num_nonzero, size=num_dropout_regions)
@@ -1155,12 +1164,18 @@ class SGDOptimizer(object):
                     dropout_center = high_gradient_px[ind, :]
                     x_radius = x_radii[j]
                     y_radius = y_radii[j]
+#		    logging.info('Center {}: {}, x_radius: {}, y_radius: {}'.format(j, dropout_center, x_radius, y_radius))
                     dropout_px_y, dropout_px_x = sd.ellipse(dropout_center[0], dropout_center[1], y_radius, x_radius, shape=train_image.shape)
-                    if np.random.rand() < 0.5:
-                        train_image[dropout_px_y, dropout_px_x] = 0.0
-                    else:
-                        train_image[dropout_px_y, dropout_px_x] = train_image[dropout_center[0], dropout_center[1]]
-
+		    if self.cfg['border_fill_type'] == 'zero':
+                    	train_image[dropout_px_y, dropout_px_x] = 0.0
+		    elif self.cfg['border_fill_type'] == 'inf':
+			train_image[dropout_px_y, dropout_px_x] = np.inf
+		    elif self.cfg['border_fill_type'] == 'machine_max':
+			train_image[dropout_px_y, dropout_px_x] = np.finfo(np.float64).max
+		if self.cfg['visualize_border_distortion']:
+		    plt.subplot(1, 2, 2)
+		    plt.imshow(train_image, cmap=plt.cm.gray_r, vmin=vmin, vmax=vmax)
+	            plt.show()
                 self.train_data_arr[i,:,:,0] = train_image
 
         # randomly replace background pixels with constant depth

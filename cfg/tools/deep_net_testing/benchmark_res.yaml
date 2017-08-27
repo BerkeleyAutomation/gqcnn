@@ -1,13 +1,13 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/data/jmahler/suction/datasets/mini_dexnet_08_13_17/tensors
+dataset_dir: /mnt/data/jmahler/suction/datasets/kit_08_17_17/tensors
 output_dir: /home/vsatish/Data/dexnet/data/models/suction
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
 num_epochs: 25     # number of epochs to train for
-eval_frequency: 10000  # how often to get validation error 
+eval_frequency: 20000  # how often to get validation error 
 save_frequency: 10000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
@@ -25,7 +25,7 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: .66   # number of times to go through training datapoints before stepping down decay rate
+decay_step_multiplier: .5   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -37,10 +37,10 @@ reinit_fc3: 0
 reinit_fc4: 0
 reinit_fc5: 0
 
-image_mode: depth
+image_mode: depth_tf_table
 training_mode: classification
 preproc_mode: none
-input_data_mode: raw_image_with_perspective
+input_data_mode: tf_image_suction
 num_tensor_channels: 1
 pos_weight: 0.1
 
@@ -104,7 +104,7 @@ gqcnn_config:
   im_width: 32
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
-  input_data_mode: raw_image_with_perspective
+  input_data_mode: tf_image_suction
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the DeepOptimizer's config file
   batch_size: 16
@@ -112,10 +112,10 @@ gqcnn_config:
   # architecture
   architecture: 
     im_stream:
-      spatial_transformer:
-        type: spatial_transformer
-        out_size: 32
-        num_transform_params: 6
+      # spatial_transformer:
+      #   type: spatial_transformer
+      #   out_size: 32
+      #   num_transform_params: 6
       conv1_1:
         type: conv
         filt_dim: 5
@@ -125,32 +125,15 @@ gqcnn_config:
         norm: 0
       conv1_2:
         type: conv
-        filt_dim: 5
-        num_filt: 32
-        pool_size: 1
-        pool_stride: 1  
-        norm: 1
-      conv1_3:
-        type: conv
-        filt_dim: 5
-        num_filt: 32
-        pool_size: 1
-        pool_stride: 1  
-        norm: 0
-      conv1_4:
-        type: conv
-        filt_dim: 3
-        num_filt: 32
-        pool_size: 1
-        pool_stride: 1  
-        norm: 1
-      conv1_5:
-        type: conv
         filt_dim: 3
         num_filt: 32
         pool_size: 2
         pool_stride: 2
-        norm: 0
+        norm: 1
+      res1_2:
+        type: residual
+        num_filt: 32
+        filt_dim: 3
       conv2_1:
         type: conv
         filt_dim: 3
@@ -164,20 +147,6 @@ gqcnn_config:
         num_filt: 32
         pool_size: 1
         pool_stride: 1
-        norm: 1
-      conv2_3:
-        type: conv
-        filt_dim: 3
-        num_filt: 16
-        pool_size: 1
-        pool_stride: 1  
-        norm: 0
-      conv2_4:
-        type: conv
-        filt_dim: 3
-        num_filt: 16
-        pool_size: 1
-        pool_stride: 1  
         norm: 1
       fc3:
         type: fc
