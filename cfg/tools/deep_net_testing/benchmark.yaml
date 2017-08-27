@@ -13,6 +13,7 @@ vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
 visualize_border_distortion: 0
+distort_val_data: 1
 
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
