@@ -13,7 +13,7 @@ import autolab_core.utils as utils
 from autolab_core import YamlConfig, Point
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
-from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
+from gqcnn import Grasp2D, SuctionPoint2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
 from gqcnn import Visualizer as vis2d
 
 import IPython
@@ -96,6 +96,8 @@ class GQCNNPredictionVisualizer(object):
 
                 logging.info('Datapoint %d of files for %s' %(ind, im_filename))
                 logging.info('Depth: %.3f' %(hand_poses_tensor[ind, 2]))
+                if self.cfg['data_format'] == 'tf_image_suction':
+                    logging.info('Angle: %.3f' %(np.rad2deg(hand_poses_tensor[ind, 3])))
 
                 data = image_tensor[ind,...]
                 if self.display_image_type == RenderMode.SEGMASK:
@@ -111,12 +113,15 @@ class GQCNNPredictionVisualizer(object):
                 elif self.display_image_type == RenderMode.GD:
                     image = GdImage(data)
 
+                grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
+                if self.cfg['data_format'] == 'tf_image_suction':
+                    grasp = SuctionPoint2D(Point(image.center, 'img'), np.array([1,0,0]), hand_poses_tensor[ind, 2])
+
                 vis2d.figure()
 
                 if self.display_image_type == RenderMode.RGBD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.color)
-                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
                     grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                     vis2d.subplot(1,2,2)
@@ -125,7 +130,6 @@ class GQCNNPredictionVisualizer(object):
                 elif self.display_image_type == RenderMode.GD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.gray)
-                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
                     grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                     vis2d.subplot(1,2,2)
@@ -133,7 +137,6 @@ class GQCNNPredictionVisualizer(object):
                     vis2d.grasp(grasp)
                 else:
                     vis2d.imshow(image)
-                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
                     grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                 vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(ind,

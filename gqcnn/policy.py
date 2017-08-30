@@ -88,8 +88,6 @@ class GraspingPolicy(Policy):
         # store parameters
         self._config = config
         self._gripper_width = config['gripper_width']
-        self._crop_height = config['crop_height']
-        self._crop_width = config['crop_width']
 
         # init grasp sampler
         self._sampling_config = config['sampling']
