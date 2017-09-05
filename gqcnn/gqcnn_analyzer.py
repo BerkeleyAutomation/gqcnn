@@ -121,9 +121,7 @@ class GQCNNAnalyzer(object):
                         plt.imshow(filt, cmap=plt.cm.gray)
                         plt.axis('off')
                     figname = os.path.join(model_output_dir, 'conv1_filters.pdf')
-                    plt.savefig(figname, dpi=dpi)
-                    exit(0)
-                
+                    plt.savefig(figname, dpi=self.dpi)
             else:
                 model = pkl.load(open(os.path.join(model_subdir, 'model.pkl')))
                 train_indices_filename = os.path.join(model_subdir, 'train_index_map.pkl')

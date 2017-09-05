@@ -248,7 +248,7 @@ class SGDOptimizer(object):
                 self._check_dead_queue()
 
                 # run optimization
-                _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, pose_node = self.sess.run(
+                _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, train_poses = self.sess.run(
                         [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
 
                 ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
@@ -259,6 +259,10 @@ class SGDOptimizer(object):
                 logging.debug('Pred nonzero ' + str(np.sum(np.argmax(predictions, axis=1))))
                 logging.debug('True nonzero ' + str(np.sum(batch_labels)))
 
+                if np.isnan(l) or np.any(np.isnan(train_poses)):
+                    import IPython
+                    IPython.embed()
+                
                 # log output
                 if step % self.log_frequency == 0:
                     elapsed_time = time.time() - start_time
@@ -515,8 +519,10 @@ class SGDOptimizer(object):
                 if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                     rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
                     self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
-                self.pose_mean += np.sum(self.pose_data[self.train_index_map[im_filename],:], axis=0)
-                num_summed += self.pose_data[self.train_index_map[im_filename]].shape[0]
+                pose_data = self.pose_data[self.train_index_map[im_filename],:]
+                pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
+                self.pose_mean += np.sum(pose_data, axis=0)
+                num_summed += pose_data.shape[0]
             self.pose_mean = self.pose_mean / num_summed
 
             for k in random_file_indices.tolist():
@@ -526,7 +532,9 @@ class SGDOptimizer(object):
                 if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                     rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
                     self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
-                self.pose_std += np.sum((self.pose_data[self.train_index_map[im_filename],:] - self.pose_mean)**2, axis=0)
+                pose_data = self.pose_data[self.train_index_map[im_filename],:]
+                pose_data = pose_data[np.isfinite(pose_data[:,3]), :]
+                self.pose_std += np.sum((pose_data - self.pose_mean)**2, axis=0)
             self.pose_std = np.sqrt(self.pose_std / num_summed)
 
             self.pose_std[self.pose_std==0] = 1.0
@@ -534,6 +542,10 @@ class SGDOptimizer(object):
             np.save(self.pose_mean_filename, self.pose_mean)
             np.save(self.pose_std_filename, self.pose_std)
 
+        if np.any(np.isnan(self.pose_mean)) or np.any(np.isnan(self.pose_std)):
+            IPython.embed()
+            exit(0)
+            
         if self.cfg['fine_tune']:
             out_mean_filename = os.path.join(self.experiment_dir, 'mean.npy')
             out_std_filename = os.path.join(self.experiment_dir, 'std.npy')
@@ -1034,6 +1046,9 @@ class SGDOptimizer(object):
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
                 np.random.shuffle(train_ind)
+                if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                    tp_tmp = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
+                    train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
                 upper = min(num_remaining, train_ind.shape[
                             0], self.max_training_examples_per_load)
                 ind = train_ind[:upper]
