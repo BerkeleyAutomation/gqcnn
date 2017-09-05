@@ -221,8 +221,10 @@ class SuctionPoint2D(object):
         """ The angle that the grasp pivot axis makes in image space. """
         rotation_axis = np.cross(self.axis, np.array([0,0,1]))
         rotation_axis_image = np.array([rotation_axis[0], rotation_axis[1]])
-        rotation_axis_image = rotation_axis_image / np.linalg.norm(rotation_axis_image)
-        angle = np.arccos(rotation_axis_image[0])
+        angle = 0
+        if np.linalg.norm(rotation_axis) > 0:
+            rotation_axis_image = rotation_axis_image / np.linalg.norm(rotation_axis_image)
+            angle = np.arccos(rotation_axis_image[0])
         if rotation_axis[1] < 0:
             angle = -angle
         return angle
@@ -282,9 +284,9 @@ class SuctionPoint2D(object):
         suction_axis_camera = self.axis
         
         # convert to 3D pose
-        suction_z_camera = suction_axis_camera
-        suction_x_camera = np.array([-suction_z_camera[1], suction_z_camera[0], 0])
-        suction_x_camera = suction_x_camera / np.linalg.norm(suction_x_camera)
+        suction_x_camera = suction_axis_camera
+        suction_z_camera = np.array([-suction_x_camera[1], suction_x_camera[0], 0])
+        suction_z_camera = suction_z_camera / np.linalg.norm(suction_z_camera)
         suction_y_camera = np.cross(suction_z_camera, suction_x_camera)
         suction_rot_camera = np.c_[suction_x_camera, suction_y_camera, suction_z_camera]
 
@@ -317,6 +319,6 @@ class SuctionPoint2D(object):
         point_dist = np.linalg.norm(g1.center.data - g2.center.data)
 
         # axis distances
-        axis_dist = np.arccos(np.abs(g1.axis.dot(g2.axis)))
+        axis_dist = np.arccos(min(np.abs(g1.axis.dot(g2.axis)), 1.0))
 
         return point_dist + alpha * axis_dist

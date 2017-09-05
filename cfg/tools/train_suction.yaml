@@ -2,8 +2,8 @@
 mode: training
 
 # dataset 
-dataset_dir: /mnt/data/jmahler/suction/datasets/mini_dexnet_08_30_17/tensors
-output_dir: /mnt/data/jmahler/suction/models
+dataset_dir: /home/autolab/Public/data/dex-net/data/suction/kit_high_res_08_17_17/tensors
+output_dir: /home/autolab/Public/data/dex-net/data/models/suction
 model_dir: /path/to/your/pretrained/gqcnn/model
 mode: training
 
@@ -29,7 +29,11 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
+<<<<<<< HEAD
 decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate
+=======
+decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
+>>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -50,11 +54,20 @@ num_tensor_channels: 1
 
 num_random_files: 100
 
+<<<<<<< HEAD
 target_metric_name: robust_suction_wrench_resistance
 metric_thresh: 0.36
+=======
+target_metric_name: robust_wrench_resistance
+<<<<<<< Updated upstream
+metric_thresh: 0.0075
+=======
+metric_thresh: 0.01
+>>>>>>> Stashed changes
+>>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
 
 # denoising / synthetic data params
-multiplicative_denoising: 1
+multiplicative_denoising: 0
 gamma_shape: 1000.00
 
 symmetrize: 1
@@ -75,10 +88,10 @@ gradient_dropout_sigma: 0.5
 gradient_dropout_shape: 15
 gradient_dropout_scale: 0.001
 
-gaussian_process_denoising: 1
+gaussian_process_denoising: 0
 gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
-gaussian_process_sigma: 0.005
+gaussian_process_sigma: 0.0
 
 border_distortion: 0
 border_grad_sigma: 1.0
@@ -104,8 +117,8 @@ debug_num_files: 300
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 32
-  im_width: 32
+  im_height: 96
+  im_width: 96
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_data_mode: tf_image_suction
@@ -116,14 +129,22 @@ gqcnn_config:
   # architecture
   architecture:
     conv1_1:
+<<<<<<< HEAD
       filt_dim: 7
+=======
+      filt_dim: 5
+>>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
       num_filt: 16
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv1_2:
+<<<<<<< HEAD
       filt_dim: 5
+=======
+      filt_dim: 3
+>>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
       num_filt: 16
       pool_size: 2
       pool_stride: 2
@@ -139,16 +160,32 @@ gqcnn_config:
     conv2_2:
       filt_dim: 3
       num_filt: 16
+<<<<<<< HEAD
+=======
+<<<<<<< Updated upstream
+>>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
       pool_size: 1
       pool_stride: 1
+=======
+      pool_size: 2
+      pool_stride: 2
+>>>>>>> Stashed changes
       norm: 1
       norm_type: local_response
     pc1:
-      out_size: 64
+      out_size: 32
     pc2:
       out_size: 0
     fc3:
+<<<<<<< HEAD
       out_size: 256
+=======
+<<<<<<< Updated upstream
+      out_size: 512
+=======
+      out_size: 256
+>>>>>>> Stashed changes
+>>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
     fc4:
       out_size: 256
     fc5:
