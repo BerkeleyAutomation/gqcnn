@@ -18,7 +18,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage
 
-from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode, GraspQualityFunctionFactory, NoValidGraspsException
+from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode, GraspQualityFunctionFactory, GQCnnQualityFunction, NoValidGraspsException
 from gqcnn import Visualizer as vis
 
 FIGSIZE = 16
@@ -523,8 +523,15 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                                      q_value))
             vis.show()
 
+        # form return image
+        image = state.rgbd_im.depth
+        if isinstance(self._grasp_quality_fn, GQCnnQualityFunction):
+            image_arr, _ = self._grasp_quality_fn.grasps_to_tensors([grasp], state)
+            image = DepthImage(image_arr[0,...],
+                               frame=state.rgbd_im.frame)
+
         # return action
-        return GraspAction(grasp, q_value, state.rgbd_im.depth)
+        return GraspAction(grasp, q_value, image)
         
 class QFunctionRobustGraspingPolicy(CrossEntropyRobustGraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 

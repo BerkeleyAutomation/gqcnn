@@ -464,14 +464,18 @@ class GQCNN(object):
         if 'conv3_1' in self._architecture.keys():
             self._use_conv3 = True
         self._use_pc2 = False
-        if self._architecture['pc2']['out_size'] > 0:
+        if 'pc2' in self._architecture.keys() and self._architecture['pc2']['out_size'] > 0:
             self._use_pc2 = True
 
         # get in and out sizes of fully-connected layer for possible re-initialization
-        self.pc2_out_size = self._architecture['pc2']['out_size']
+        self.pc2_out_size = 0
+        if self._use_pc2:
+            self.pc2_out_size = self._architecture['pc2']['out_size']
         self.pc1_in_size = self._pose_dim
         self.pc1_out_size = self._architecture['pc1']['out_size']
-        self.fc3_in_size = self._architecture['pc2']['out_size']
+        self.fc3_in_size = self._architecture['pc1']['out_size']
+        if self._use_pc2:        
+            self.fc3_in_size = self._architecture['pc2']['out_size']
         self.fc3_out_size = self._architecture['fc3']['out_size']
         self.fc4_in_size = self._architecture['fc3']['out_size']
         self.fc4_out_size = self._architecture['fc4']['out_size'] 
