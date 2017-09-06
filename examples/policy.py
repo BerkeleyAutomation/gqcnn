@@ -1,4 +1,4 @@
-~"""
+"""
 Displays robust grasps planned using a GQ-CNN-based policy on a set of saved RGB-D images.
 The default configuration is cfg/examples/policy.yaml.
 
