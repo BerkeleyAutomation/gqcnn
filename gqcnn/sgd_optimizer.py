@@ -16,6 +16,7 @@ import scipy.ndimage.filters as sf
 import scipy.ndimage.morphology as snm
 import scipy.stats as ss
 import skimage.draw as sd
+import skimage.restoration as sr
 import signal
 import sys
 import shutil
@@ -24,6 +25,7 @@ import time
 import urllib
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from tensorflow.python.framework import ops
 import yaml
 from autolab_core import YamlConfig
 import autolab_core.utils as utils
@@ -85,10 +87,9 @@ class SGDOptimizer(object):
 			optimizer
 		"""    
 		if self.cfg['optimizer'] == 'momentum':
-			return tf.train.MomentumOptimizer(learning_rate,
-												   self.momentum_rate).minimize(loss,
-																		   global_step=batch,
-																		   var_list=var_list)
+			optimizer = tf.train.MomentumOptimizer(learning_rate, self.momentum_rate)
+			return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
+
 		elif self.cfg['optimizer'] == 'adam':
 			return tf.train.AdamOptimizer(learning_rate).minimize(loss,
 																	   global_step=batch,
@@ -115,7 +116,7 @@ class SGDOptimizer(object):
 	def _launch_tensorboard(self):
 		""" Launches Tensorboard to visualize training """
 		logging.info("Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
-		os.system('tensorboard --logdir=' + self.summary_dir + " &>/dev/null &")
+		os.system('tensorboard --port=6009 --logdir=' + self.summary_dir + " &>/dev/null &")
 
 	def _close_tensorboard(self):
 		""" Closes Tensorboard """
@@ -143,14 +144,14 @@ class SGDOptimizer(object):
 		
 		# build training and validation networks
 		with tf.name_scope('validation_network'):
-		logging.info('Building Validation Network')
-		self.gqcnn.initialize_network() # builds validation network inside gqcnn class
+			logging.info('Building Validation Network')
+			self.gqcnn.initialize_network() # builds validation network inside gqcnn class
 		with tf.name_scope('training_network'):
-		logging.info('Building Training Network')
-		self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node)
-	
-	# once weights have been initialized create tf Saver for weights
-	self.saver = tf.train.Saver()
+			logging.info('Building Training Network')
+			self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node)
+
+		# once weights have been initialized create tf Saver for weights
+		self.saver = tf.train.Saver()
 
 		# form loss
 		# part 1: error
@@ -190,8 +191,21 @@ class SGDOptimizer(object):
 
 		# create optimizer
 		with tf.name_scope('optimizer'):
-			optimizer = self._create_optimizer(loss, batch, var_list, learning_rate)
+			optimizer, true_optimizer = self._create_optimizer(loss, batch, var_list, learning_rate)
+			gradients = true_optimizer.compute_gradients(loss, var_list)
+			for gradient, variable in gradients:
+      				if isinstance(gradient, ops.IndexedSlices):
+        				grad_values = gradient.values
+      				else:
+        				grad_values = gradient
 
+      				if grad_values is not None:
+        				var_name = variable.name.replace(":", "_")
+          				tf.summary.histogram("gradients/%s" % var_name, grad_values, collections=['histogram'])
+		
+		self.merged_histogram_summaries = tf.summary.merge_all('histogram')		
+		self._setup_summaries()
+			
 		def handler(signum, frame):
 			logging.info('caught CTRL+C, exiting...')
 			self.term_event.set()
@@ -252,10 +266,15 @@ class SGDOptimizer(object):
 				self._check_dead_queue()
 
 				# run optimization
-		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+				extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+				#check_numeric_op = tf.add_check_numerics_ops()
 				_, l, lr, predictions, batch_labels, output, train_images, pose_node, _ = self.sess.run(
 						[optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, extra_update_ops], options=GeneralConstants.timeout_option)
-				
+				if np.isnan(l):
+					IPython.embed()				
+				output_reshaped = output.reshape((-1,))
+				if len(np.where(output_reshaped == 0.0)[0]) > 0:
+					IPython.embed()				
 				ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
 				softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 				
@@ -313,7 +332,9 @@ class SGDOptimizer(object):
 				if not self.tensorboard_has_launched:
 					self.tensorboard_has_launched = True
 					self._launch_tensorboard()
-
+							
+				# self.summary_writer.add_summary(self.sess.run([self.merged_histogram_summaries], feed_dict={self.gqcnn.input_im_node:train_images, self.gqcnn.input_pose_node:pose_node}))
+				# self.summary_writer.add_summary(merged_histogram_summaries)
 			# get final logs
 			val_error = self._error_rate_in_batches()
 			logging.info('Final validation error: %.1f%%' %val_error)
@@ -414,7 +435,7 @@ class SGDOptimizer(object):
 
 		# create a tf summary writer with the specified summary directory
 		self.summary_writer = tf.summary.FileWriter(self.summary_dir)
-
+		self.gqcnn.set_summary_writer(self.summary_writer)
 		# initialize the variables again now that we have added some new ones
 		with self.sess.as_default():
 			tf.global_variables_initializer().run()
@@ -481,6 +502,8 @@ class SGDOptimizer(object):
 			for k in random_file_indices.tolist():
 				im_filename = self.im_filenames[k]
 				im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
+				if self.cfg['border_distortion']:
+					self._distort(im_data, only_dropout=True)
 				self.data_mean += np.sum(im_data[self.train_index_map[im_filename], :, :, :])
 				num_summed += im_data[self.train_index_map[im_filename], :, :, :].shape[0]
 			self.data_mean = self.data_mean / (num_summed * self.im_height * self.im_width)
@@ -509,15 +532,25 @@ class SGDOptimizer(object):
 				im_filename = self.im_filenames[k]
 				pose_filename = self.pose_filenames[k]
 				self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
-				self.pose_mean += np.sum(self.pose_data[self.train_index_map[im_filename],:], axis=0)
-				num_summed += self.pose_data[self.train_index_map[im_filename]].shape[0]
+				if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                    			rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+                    			self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
+                		pose_data = self.pose_data[self.train_index_map[im_filename],:]
+                		pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
+                		self.pose_mean += np.sum(pose_data, axis=0)
+                		num_summed += pose_data.shape[0]
 			self.pose_mean = self.pose_mean / num_summed
 
 			for k in random_file_indices.tolist():
 				im_filename = self.im_filenames[k]
 				pose_filename = self.pose_filenames[k]
 				self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
-				self.pose_std += np.sum((self.pose_data[self.train_index_map[im_filename],:] - self.pose_mean)**2, axis=0)
+				if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                    			rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+                    			self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
+                		pose_data = self.pose_data[self.train_index_map[im_filename],:]
+                		pose_data = pose_data[np.isfinite(pose_data[:,3]), :]
+                		self.pose_std += np.sum((pose_data - self.pose_mean)**2, axis=0)
 			self.pose_std = np.sqrt(self.pose_std / num_summed)
 
 			self.pose_std[self.pose_std==0] = 1.0
@@ -765,6 +798,7 @@ class SGDOptimizer(object):
 		if self.total_pct < 0 or self.total_pct > 1:
 			raise ValueError('Train percentage must be in range [0,1]')
 
+		self.gqcnn.set_mask_and_inpaint(self.cfg['mask_and_inpaint'])
 		
 	def _read_data_params(self):
 		""" Read data parameters from configuration file """
@@ -864,6 +898,11 @@ class SGDOptimizer(object):
 			self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
 		if len(self.stable_pose_filenames) > 0:    
 			self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
+		
+		# create copy of image, pose, and label filenames because original cannot be accessed by load and enqueue op in the case that 		     the error_rate_in_batches method is sorting the original
+		self.im_filenames_copy = self.im_filenames[:]
+		self.pose_filenames_copy = self.pose_filenames[:]
+		self.label_filenames_copy = self.label_filenames[:]
 
 	def _setup_output_dirs(self):
 		""" Setup output directories """
@@ -961,15 +1000,15 @@ class SGDOptimizer(object):
 		self._setup_tensorflow()
 
 		# setup summaries for visualizing metrics in tensorboard
-		self._setup_summaries()
+#		self._setup_summaries()
+		
+		self._num_original_train_images_saved = 0
+		self._num_distorted_train_images_saved = 0
+		self._num_original_val_images_saved = 0
+		self._num_distorted_val_images_saved = 0
   
 	def _load_and_enqueue(self):
 		""" Loads and Enqueues a batch of images for training """
-
-		train_data = np.zeros(
-			[self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
-		train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
-		label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
 
 		# read parameters of gaussian process
 		self.gp_rescale_factor = self.cfg['gaussian_process_scaling_factor']
@@ -986,19 +1025,26 @@ class SGDOptimizer(object):
 			start_i = 0
 			end_i = 0
 			file_num = 0
+
+			# init buffers
+			train_data = np.zeros(
+                        [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
+                	train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
+                	label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
+
 			while start_i < self.train_batch_size:
 				# compute num remaining
 				num_remaining = self.train_batch_size - num_queued
 
 				# gen file index uniformly at random
-				file_num = np.random.choice(len(self.im_filenames), size=1)[0]
-				train_data_filename = self.im_filenames[file_num]
+				file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
+				train_data_filename = self.im_filenames_copy[file_num]
 
 				self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
 										 'arr_0'].astype(np.float32)
-				self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames[file_num]))[
+				self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames_copy[file_num]))[
 										  'arr_0'].astype(np.float32)
-				self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames[file_num]))[
+				self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
 										  'arr_0'].astype(np.float32)
 
 				if self.pose_dim == 1 and self.train_poses_arr.shape[1] == 6:
@@ -1007,6 +1053,9 @@ class SGDOptimizer(object):
 				# get batch indices uniformly at random
 				train_ind = self.train_index_map[train_data_filename]
 				np.random.shuffle(train_ind)
+				if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                     			tp_tmp = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
+                    		        train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
 				upper = min(num_remaining, train_ind.shape[
 							0], self.max_training_examples_per_load)
 				ind = train_ind[:upper]
@@ -1018,12 +1067,39 @@ class SGDOptimizer(object):
 				self.train_poses_arr = self.train_poses_arr[ind, :]
 				self.train_label_arr = self.train_label_arr[ind]
 				self.num_images = self.train_data_arr.shape[0]
+				
+				# save undistorted train images 
+				if self.cfg['save_original_train_images']:
+					if self._num_original_train_images_saved < self.cfg['num_original_train_images']:
+						output_dir = os.path.join(self.experiment_dir, 'original_train_images')
+						if not os.path.exists(output_dir):
+							os.mkdir(output_dir)
+						np.savez_compressed(os.path.join(output_dir, 'original_image_{}'.format(self._num_original_train_images_saved)), self.train_data_arr[0, :, :, 0])
+						self._num_original_train_images_saved += 1	
 
 				# add noises to images
-				self._distort(self.train_data_arr, self.train_poses_arr)
+				if self.cfg['mask_and_inpaint']:
+					mask_arr = np.zeros((self.train_data_arr.shape[0], self.train_data_arr.shape[1], self.train_data_arr.shape[2], self.num_tensor_channels))
+					mask_arr[:, :, :, 0] = self.train_data_arr[:, :, :, 0]
+					self.train_data_arr = mask_arr
+					self.train_data_arr, self.train_poses_arr = self._distort(self.train_data_arr, self.train_poses_arr, mask_and_inpaint=True)
+				else:
+					self.train_data_arr, self.train_poses_arr = self._distort(self.train_data_arr, self.train_poses_arr)
+
+				# save distorted train images 
+                                if self.cfg['save_distorted_train_images']:
+                                        if self._num_distorted_train_images_saved < self.cfg['num_distorted_train_images']:
+						output_dir = os.path.join(self.experiment_dir, 'distorted_train_images')
+                                                if not os.path.exists(output_dir):
+                                                        os.mkdir(output_dir)
+                                                np.savez_compressed(os.path.join(output_dir, 'distorted_image_{}'.format(self._num_distorted_train_images_saved)), self.train_data_arr[0, :, :, 0])
+                                                self._num_distorted_train_images_saved += 1
 
 				# subtract mean
-				self.train_data_arr = (self.train_data_arr - self.data_mean) / self.data_std
+				if self.cfg['mask_and_inpaint']:
+					self.train_data_arr[:, :, :, 0] = (self.train_data_arr[:, :, :, 0] - self.data_mean) / self.data_std
+				else:
+					self.train_data_arr = (self.train_data_arr - self.data_mean) / self.data_std
 				self.train_poses_arr = (self.train_poses_arr - self.pose_mean) / self.pose_std
 		
 				# normalize labels
@@ -1062,16 +1138,16 @@ class SGDOptimizer(object):
 		logging.info('Queue Thread Exiting')
 		self.queue_thread_exited = True
 
-	def _distort(self, im_arr, pose_arr):
+	def _distort(self, im_arr, pose_arr=None, only_dropout=False, mask_and_inpaint=False):
 		""" Adds noise to a batch of images and poses"""
 		# denoising and synthetic data generation
-		if self.cfg['multiplicative_denoising']:
+		if self.cfg['multiplicative_denoising'] and not only_dropout:
 			mult_samples = ss.gamma.rvs(self.gamma_shape, scale=self.gamma_scale, size=len(im_arr))
 			mult_samples = mult_samples[:,np.newaxis,np.newaxis,np.newaxis]
 			im_arr = im_arr * np.tile(mult_samples, [1, self.im_height, self.im_width, self.im_channels])
 
 		# randomly dropout regions of the image for robustness
-		if self.cfg['image_dropout']:
+		if self.cfg['image_dropout'] and not only_dropout:
 			for i in range(len(im_arr)):
 				if np.random.rand() < self.cfg['image_dropout_rate']:
 					image = self.im_arr[i,:,:,0]
@@ -1096,7 +1172,7 @@ class SGDOptimizer(object):
 					im_arr[i,:,:,0] = image
 
 		# dropout a region around the areas of the image with high gradient
-		if self.cfg['gradient_dropout']:
+		if self.cfg['gradient_dropout'] and not only_dropout:
 			for i in range(len(im_arr)):
 				if np.random.rand() < self.cfg['gradient_dropout_rate']:
 					image = im_arr[i,:,:,0]
@@ -1107,7 +1183,7 @@ class SGDOptimizer(object):
 				im_arr[i,:,:,0] = image
 
 		# add correlated Gaussian noise
-		if self.cfg['gaussian_process_denoising']:
+		if self.cfg['gaussian_process_denoising'] and not only_dropout:
 			for i in range(len(im_arr)):
 				if np.random.rand() < self.cfg['gaussian_process_rate']:
 					image = im_arr[i,:,:,0]
@@ -1117,7 +1193,7 @@ class SGDOptimizer(object):
 					im_arr[i,:,:,0] = image
 
 		# run open and close filters to 
-		if self.cfg['morphological']:
+		if self.cfg['morphological'] and not only_dropout:
 			for i in range(len(im_arr)):
 				image = im_arr[i,:,:,0]
 				sample = np.random.rand()
@@ -1137,52 +1213,76 @@ class SGDOptimizer(object):
 		# randomly dropout borders of the image for robustness
 		if self.cfg['border_distortion']:
 			for i in range(len(im_arr)):
-				image = self.im_arr[i,:,:,0]
-				grad_mag = sf.gaussian_gradient_magnitude(image, sigma=self.cfg['border_grad_sigma'])
-				if self.cfg['visualize_border_distortion']:
-					plt.clf()
-					plt.subplot(1, 2, 1)
-					plt.imshow(grad_mag, cmap=plt.cm.gray_r)
-				high_gradient_px = np.where(grad_mag > self.cfg['border_grad_thresh'])
-				high_gradient_px = np.c_[high_gradient_px[0], high_gradient_px[1]]
-				num_nonzero = high_gradient_px.shape[0]
-				if num_nonzero == 0:
-					continue
-				num_dropout_regions = ss.poisson.rvs(self.cfg['border_poisson_mean']) 
-				# logging.info('Num_dropouts:{}'.format(num_dropout_regions))
+				if np.random.rand() < self.cfg['border_distortion_rate']:
+					image = im_arr[i,:,:,0]
+					original = image.copy()
+					mask = np.zeros(image.shape)
+					grad_mag = sf.gaussian_gradient_magnitude(image, sigma=self.cfg['border_grad_sigma'])
+					if self.cfg['visualize_border_distortion']:
+						plt.clf()
+						plt.subplot(1, 2, 1)
+						plt.imshow(grad_mag, cmap=plt.cm.gray_r)
+					high_gradient_px = np.where(grad_mag > self.cfg['border_grad_thresh'])
+					high_gradient_px = np.c_[high_gradient_px[0], high_gradient_px[1]]
+					num_nonzero = high_gradient_px.shape[0]
+					if num_nonzero == 0:
+						continue
+					num_dropout_regions = ss.poisson.rvs(self.cfg['border_poisson_mean']) 
+					# logging.info('Num_dropouts:{}'.format(num_dropout_regions))
 
-				# sample ellipses
-				dropout_centers = np.random.choice(num_nonzero, size=num_dropout_regions)
-				x_radii = ss.gamma.rvs(self.cfg['border_radius_shape'], scale=self.cfg['border_radius_scale'], size=num_dropout_regions)
-				y_radii = ss.gamma.rvs(self.cfg['border_radius_shape'], scale=self.cfg['border_radius_scale'], size=num_dropout_regions)
+					# sample ellipses
+					dropout_centers = np.random.choice(num_nonzero, size=num_dropout_regions)
+					x_radii = ss.gamma.rvs(self.cfg['border_radius_shape'], scale=self.cfg['border_radius_scale'], size=num_dropout_regions)
+					y_radii = ss.gamma.rvs(self.cfg['border_radius_shape'], scale=self.cfg['border_radius_scale'], size=num_dropout_regions)
 
-				# set interior pixels to zero or one
-				for j in range(num_dropout_regions):
-					ind = dropout_centers[j]
-					dropout_center = high_gradient_px[ind, :]
-					x_radius = x_radii[j]
-					y_radius = y_radii[j]
-					# logging.info('Center {}: {}, x_radius: {}, y_radius: {}'.format(j, dropout_center, x_radius, y_radius))
-					dropout_px_y, dropout_px_x = sd.ellipse(dropout_center[0], dropout_center[1], y_radius, x_radius, shape=train_image.shape)
+					# set interior pixels to zero or one
+					for j in range(num_dropout_regions):
+						ind = dropout_centers[j]
+						dropout_center = high_gradient_px[ind, :]
+						x_radius = x_radii[j]
+						y_radius = y_radii[j]
+						# logging.info('Center {}: {}, x_radius: {}, y_radius: {}'.format(j, dropout_center, x_radius, y_radius))
+						dropout_px_y, dropout_px_x = sd.ellipse(dropout_center[0], dropout_center[1], y_radius, x_radius, shape=image.shape)
 					
-					if self.cfg['border_fill_type'] == 'zero':
-						image[dropout_px_y, dropout_px_x] = 0.0
-					elif self.cfg['border_fill_type'] == 'inf':
-						image[dropout_px_y, dropout_px_x] = np.inf
-					elif self.cfg['border_fill_type'] == 'machine_max':
-						image[dropout_px_y, dropout_px_x] = np.finfo(np.float64).max
+						if self.cfg['border_fill_type'] == 'zero':
+							image[dropout_px_y, dropout_px_x] = 0.0
+							mask[dropout_px_y, dropout_px_x] = 1
+						elif self.cfg['border_fill_type'] == 'inf':
+							image[dropout_px_y, dropout_px_x] = np.inf
+							mask[dropout_px_y, dropout_px_x] = np.inf
+						elif self.cfg['border_fill_type'] == 'machine_max':
+							image[dropout_px_y, dropout_px_x] = np.finfo(np.float64).max
+							mask[dropout_px_y, dropout_px_x] = np.finfo(np.float64).max
 				
-				if self.cfg['visualize_border_distortion']:
-					vmin = 0
-					vmax = .7
-					plt.subplot(1, 2, 2)
-					plt.imshow(train_image, cmap=plt.cm.gray_r, vmin=vmin, vmax=vmax)
-					plt.show()
-				self.image_arr[i,:,:,0] = image
+					if self.cfg['visualize_border_distortion']:
+						vmin = 0
+						vmax = .7
+						plt.subplot(1, 2, 2)
+						plt.imshow(image, cmap=plt.cm.gray_r, vmin=vmin, vmax=vmax)
+						plt.show()
+					if mask_and_inpaint:
+						image = sr.inpaint.inpaint_biharmonic(image, mask)
+						image = image.reshape((32, 32, 1))
+						mask = mask.reshape((32, 32, 1))
+						image = np.c_[image, mask]
+						inpainted_image = image[:, :, 0]
+						mask = image[:, :, 1]
+						if self.cfg['visualize_border_distort_mask_inpaint']:
+							plt.clf()
+							plt.subplot(1, 3, 1)
+							plt.imshow(original, cmap=plt.cm.gray_r)
+							plt.subplot(1, 3, 2)
+							plt.imshow(inpainted_image, cmap=plt.cm.gray_r)
+							plt.subplot(1, 3, 3)
+							plt.imshow(mask, cmap=plt.cm.gray)
+							plt.show()
+						im_arr[i] = image
+					else: 
+						im_arr[i,:,:,0] = image
 
 
 		# randomly replace background pixels with constant depth
-		if self.cfg['background_denoising']:
+		if self.cfg['background_denoising'] and not only_dropout:
 			for i in range(len(im_arr)):
 				image = self.im_arr[i,:,:,0]                
 				if np.random.rand() < self.cfg['background_rate']:
@@ -1190,7 +1290,7 @@ class SGDOptimizer(object):
 				im_arr[i,:,:,0] = image
 
 		# symmetrize images and poses
-		if self.cfg['symmetrize']:
+		if self.cfg['symmetrize'] and not only_dropout:
 			for i in range(len(im_arr)):
 				image = im_arr[i,:,:,0]
 				# rotate with 50% probability
@@ -1198,18 +1298,18 @@ class SGDOptimizer(object):
 					theta = 180.0
 					rot_map = cv2.getRotationMatrix2D(tuple(self.im_center), theta, 1)
 					image = cv2.warpAffine(image, rot_map, (self.im_height, self.im_width), flags=cv2.INTER_NEAREST)
-					if self.pose_dim > 1:
+					if self.pose_dim > 4:
 						pose_arr[i,4] = -pose_arr[i,4]
 						pose_arr[i,5] = -pose_arr[i,5]
 				# reflect left right with 50% probability
 				if np.random.rand() < 0.5:
 					image = np.fliplr(image)
-					if self.pose_dim > 1:
+					if self.pose_dim > 4:
 						pose_arr[i,5] = -pose_arr[i,5]
 				# reflect up down with 50% probability
 				if np.random.rand() < 0.5:
 					image = np.flipud(image)
-					if self.pose_dim > 1:
+					if self.pose_dim > 4:
 						pose_arr[i,4] = -pose_arr[i,4]
 				im_arr[i,:,:,0] = image
 
@@ -1233,14 +1333,20 @@ class SGDOptimizer(object):
 			data = np.load(os.path.join(self.data_dir, data_filename))['arr_0']
 			poses = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
 			labels = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
-
+			
+		        val_indices = self.val_index_map[data_filename]
+		
 			# if no datapoints from this file are in validation then just continue
-			if len(self.val_index_map[data_filename]) == 0:
+			if len(val_indices) == 0:
 				continue
+		
+			if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                        	tp_tmp = self._read_pose_data(poses.copy(), self.input_data_mode)
+                        	val_indices = val_indices[np.isfinite(tp_tmp[val_indices,1])]
 
-			data = data[self.val_index_map[data_filename],...]
-			poses = self._read_pose_data(poses[self.val_index_map[data_filename],:], self.input_data_mode)
-			labels = labels[self.val_index_map[data_filename],...]
+			data = data[val_indices,...]
+			poses = self._read_pose_data(poses[val_indices, :], self.input_data_mode)
+			labels = labels[val_indices,...]
 
 			if self.training_mode == TrainingMode.REGRESSION:
 				if self.preproc_mode == PreprocMode.NORMALIZATION:
@@ -1248,11 +1354,34 @@ class SGDOptimizer(object):
 			elif self.training_mode == TrainingMode.CLASSIFICATION:
 				labels = 1 * (labels > self.metric_thresh)
 				labels = labels.astype(np.uint8)
+			
+			# save undistorted validation images 
+                        if self.cfg['save_original_val_images']:
+                                if self._num_original_val_images_saved < self.cfg['num_original_val_images']:
+                                        output_dir = os.path.join(self.experiment_dir, 'original_val_images')
+                                        if not os.path.exists(output_dir):
+                                        	os.mkdir(output_dir)
+                                        np.savez_compressed(os.path.join(output_dir, 'original_image_{}'.format(self._num_original_val_images_saved)), data[0, :, :, 0])
+                                        self._num_original_val_images_saved += 1
+
+ 			if self.cfg['mask_and_inpaint']:
+                                        mask_data = np.zeros((data.shape[0], data.shape[1], data.shape[2], self.num_tensor_channels))
+                                        mask_data[:, :, :, 0] = data[:, :, :, 0]
+                                        data = mask_data
 
 			# get predictions
-			if self.cfg['distort_val_data']
+			if self.cfg['distort_val_data']:
 				self._distort(data, poses)
 			predictions = self.gqcnn.predict(data, poses)
+			
+			# save distorted validation images 
+                        if self.cfg['save_distorted_val_images']:
+                        	if self._num_distorted_val_images_saved < self.cfg['num_distorted_val_images']:
+                                        output_dir = os.path.join(self.experiment_dir, 'distorted_val_images')
+                                        if not os.path.exists(output_dir):
+                                        	os.mkdir(output_dir)
+                                        np.savez_compressed(os.path.join(output_dir, 'distorted_image_{}'.format(self._num_distorted_val_images_saved)), data[0, :, :, 0])
+                                       	self._num_distorted_val_images_saved += 1
 
 			# get error rate
 			if self.training_mode == TrainingMode.CLASSIFICATION:

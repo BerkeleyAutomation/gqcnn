@@ -5,11 +5,13 @@ Author: Jeff Mahler
 
 import copy
 import json
+from collections import OrderedDict
 import logging
 import numpy as np
 import os
 import sys
 import tensorflow as tf
+import tensorflow.contrib.framework as tcf 
 import matplotlib.pyplot as plt
 
 from autolab_core import YamlConfig
@@ -65,7 +67,7 @@ class GQCNN(object):
         # get config dict with architecture and other basic configurations for GQCNN from config.json in model directory
         config_file = os.path.join(model_dir, 'config.json')
         with open(config_file) as data_file:    
-            train_config = json.load(data_file)
+            train_config = json.load(data_file, object_pairs_hook=OrderedDict)
 
         gqcnn_config = train_config['gqcnn_config']
 
@@ -135,7 +137,7 @@ class GQCNN(object):
             self._pose_mean = self._pose_mean[2:4]
             self._pose_std = self._pose_std[2:4]
 
-    def init_weights_file(self, model_filename):
+    def init_weights_file(self, ckpt_file):
         """ Initialize network weights from the specified model 
 
         Parameters
@@ -143,49 +145,22 @@ class GQCNN(object):
         model_filename :obj: str
             path to model to be loaded into weights
         """
-
-        # read the input image
         with self._graph.as_default():
-
             # create new tf checkpoint reader
-            reader = tf.train.NewCheckpointReader(model_filename)
-
+            reader = tf.train.NewCheckpointReader(ckpt_file)
+		
             # create empty weight object
-            self._weights = GQCnnWeights()
-
-            # read in conv1 & conv2
-            self._weights.conv1_1W = tf.Variable(reader.get_tensor("conv1_1W"))
-            self._weights.conv1_1b = tf.Variable(reader.get_tensor("conv1_1b"))
-            self._weights.conv1_2W = tf.Variable(reader.get_tensor("conv1_2W"))
-            self._weights.conv1_2b = tf.Variable(reader.get_tensor("conv1_2b"))
-            self._weights.conv2_1W = tf.Variable(reader.get_tensor("conv2_1W"))
-            self._weights.conv2_1b = tf.Variable(reader.get_tensor("conv2_1b"))
-            self._weights.conv2_2W = tf.Variable(reader.get_tensor("conv2_2W"))
-            self._weights.conv2_2b = tf.Variable(reader.get_tensor("conv2_2b"))
-
-            # if conv3 is to be used, read in conv3
-            if self._use_conv3:
-                self._weights.conv3_1W = tf.Variable(reader.get_tensor("conv3_1W"))
-                self._weights.conv3_1b = tf.Variable(reader.get_tensor("conv3_1b"))
-                self._weights.conv3_2W = tf.Variable(reader.get_tensor("conv3_2W"))
-                self._weights.conv3_2b = tf.Variable(reader.get_tensor("conv3_2b"))
-
-            # read in pc1
-            self._weights.pc1W = tf.Variable(reader.get_tensor("pc1W"))
-            self._weights.pc1b = tf.Variable(reader.get_tensor("pc1b"))
-
-            # if pc2 is to be used, read in pc2
-            if self._use_pc2:
-                self._weights.pc2W = tf.Variable(reader.get_tensor("pc2W"))
-                self._weights.pc2b = tf.Variable(reader.get_tensor("pc2b"))
-
-            self._weights.fc3W = tf.Variable(reader.get_tensor("fc3W"))
-            self._weights.fc3b = tf.Variable(reader.get_tensor("fc3b"))
-            self._weights.fc4W_im = tf.Variable(reader.get_tensor("fc4W_im"))
-            self._weights.fc4W_pose = tf.Variable(reader.get_tensor("fc4W_pose"))
-            self._weights.fc4b = tf.Variable(reader.get_tensor("fc4b"))
-            self._weights.fc5W = tf.Variable(reader.get_tensor("fc5W"))
-            self._weights.fc5b = tf.Variable(reader.get_tensor("fc5b"))
+            self._weights = GQCNNWeights()
+	    
+	    ckpt_vars = tcf.list_variables(ckpt_file)
+	    full_var_names = []
+	    short_names = []
+	    for variable, shape in ckpt_vars:
+	    	full_var_names.append(variable)
+		short_names.append(variable.split('/')[-1])
+	    
+	    for full_var_name, short_name in zip(full_var_names, short_names):
+		self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
 
     def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5):
         """ Re-initializes final fully-connected layers for fine-tuning 
@@ -270,6 +245,9 @@ class GQCNN(object):
 
         # create empty holder for feature handles
         self._feature_tensors = {}
+	
+	self._summary_writer = None
+	self._mask_and_inpaint = False
 
     def initialize_network(self, add_softmax=True):
         """ Set up input nodes and builds network.
@@ -356,6 +334,12 @@ class GQCNN(object):
     @property
     def sess(self):
         return self._sess
+    
+    def set_mask_and_inpaint(self, mask_and_inpaint):
+	self._mask_and_inpaint = mask_and_inpaint
+    
+    def set_summary_writer(self, summary_writer):
+	self._summary_writer = summary_writer
 
     def update_im_mean(self, im_mean):
         """ Updates image mean to be used for normalization when predicting 
@@ -481,8 +465,13 @@ class GQCNN(object):
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
                 end_ind = cur_ind + dim
-                self._input_im_arr[:dim, :, :, :] = (
-                    image_arr[cur_ind:end_ind, :, :, :] - self._im_mean) / self._im_std
+
+		if self._mask_and_inpaint:
+			self._input_im_arr[:dim, :, :, 0] = (
+                                image_arr[cur_ind:end_ind, :, :, 0] - self._im_mean) / self._im_std
+		else:
+                	self._input_im_arr[:dim, :, :, :] = (
+                    		image_arr[cur_ind:end_ind, :, :, :] - self._im_mean) / self._im_std
                 self._input_pose_arr[:dim, :] = (
                     pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
 
@@ -541,6 +530,9 @@ class GQCNN(object):
         output_arr = output_arr[:num_images]
         return output_arr
     
+    def _leaky_relu(self, x, alpha=.1):
+	return tf.maximum(alpha * x, x)
+    
     def _build_spatial_transformer(self, input_node, input_height, input_width, input_channels, num_transform_params, output_width, output_height, name):
         logging.info('Building spatial transformer layer: {}'.format(name))
         # initialize weights
@@ -569,47 +561,66 @@ class GQCNN(object):
 
         return transform_layer, output_height, output_width, input_channels
 
-    def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False):
+    def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, inference=False):
         logging.info('Building convolutional layer: {}'.format(name))
-        # initialize weights
-        if '{}_weights'.format(name) in self._weights.weights.keys():
-            convW = self._weights.weights['{}_weights'.format(name)]
-            convb = self._weights.weights['{}_bias'.format(name)] 
-        else:
-            convW_shape = [filter_h, filter_w, input_channels, num_filt]
+        
+	with tf.name_scope(name):
+	    # initialize weights
+            if '{}_weights'.format(name) in self._weights.weights.keys():
+            	convW = self._weights.weights['{}_weights'.format(name)]
+            	convb = self._weights.weights['{}_bias'.format(name)] 
+            else:
+            	convW_shape = [filter_h, filter_w, input_channels, num_filt]
 
-            fan_in = filter_h * filter_w * input_channels
-            std = np.sqrt(2.0 / (fan_in))
-            convW = tf.Variable(tf.truncated_normal(convW_shape, stddev=std), name='{}_weights'.format(name))
-            convb = tf.Variable(tf.truncated_normal([num_filt], stddev=std), name='{}_bias'.format(name))
+            	fan_in = filter_h * filter_w * input_channels
+            	std = np.sqrt(2.0 / (fan_in))
+            	convW = tf.Variable(tf.truncated_normal(convW_shape, stddev=std), name='{}_weights'.format(name))
+            	convb = tf.Variable(tf.truncated_normal([num_filt], stddev=std), name='{}_bias'.format(name))
 
-            self._weights.weights['{}_weights'.format(name)] = convW
-            self._weights.weights['{}_bias'.format(name)] = convb
+            	self._weights.weights['{}_weights'.format(name)] = convW
+            	self._weights.weights['{}_bias'.format(name)] = convb
+	    
+	    if not inference:
+	    	tf.summary.histogram('weights', convW, collections=["histogram"])
+            	tf.summary.histogram('bias', convb, collections=["histogram"])
 
-        out_height = input_height / pool_stride_h
-        out_width = input_width / pool_stride_w
-        out_channels = num_filt
+            out_height = input_height / pool_stride_h
+            out_width = input_width / pool_stride_w
+            out_channels = num_filt
 
-        # build layer
-        convh = tf.nn.relu(tf.nn.conv2d(input_node, convW, strides=[
-                                1, 1, 1, 1], padding='SAME') + convb)
-        if norm:
-            convh = tf.nn.local_response_normalization(convh,
+            # build layer
+            convh = tf.nn.conv2d(input_node, convW, strides=[
+                                1, 1, 1, 1], padding='SAME') + convb
+	    
+	    if not inference:
+	    	tf.summary.histogram('layer_raw', convh, collections=["histogram"])
+
+	    convh = self._leaky_relu(convh)
+	    
+	    if not inference:
+	    	tf.summary.histogram('layer_act', convh, collections=["histogram"])
+
+            if norm:
+            	convh = tf.nn.local_response_normalization(convh,
                                                             depth_radius=self._normalization_radius,
                                                             alpha=self._normalization_alpha,
                                                             beta=self._normalization_beta,
                                                             bias=self._normalization_bias)
+		if not inference:
+			tf.summary.histogram('layer_norm', convh, collections=["histogram"])
 
-        pool = tf.nn.max_pool(convh,
+            pool = tf.nn.max_pool(convh,
                                 ksize=[1, pool_size, pool_size, 1],
                                 strides=[1, pool_stride_h,
                                         pool_stride_w, 1],
                                 padding='SAME')
+	    
+	    if not inference:
+	    	tf.summary.histogram('layer_pool', pool, collections=["histogram"])	    
 
-        # add output to feature dict
-        self._feature_tensors[name] = pool
-
-        return pool, out_height, out_width, out_channels
+            # add output to feature dict
+            self._feature_tensors[name] = pool	    
+	    return pool, out_height, out_width, out_channels
 
     def _build_fc_layer(self, input_node, fan_in, out_size, name, input_is_conv, drop_rate=0.0, final_fc_layer=False, inference=False):
         logging.info('Building fully connected layer: {}'.format(name))
@@ -633,9 +644,9 @@ class GQCNN(object):
         if input_is_conv:
             input_num_nodes = reduce_shape(input_node.get_shape())
             input_flat = tf.reshape(input_node, [-1, input_num_nodes])
-            fc = tf.nn.relu(tf.matmul(input_flat, fcW) + fcb)
+            fc = self._leaky_relu(tf.matmul(input_flat, fcW) + fcb)
         else:
-            fc = tf.nn.relu(tf.matmul(input_node, fcW) + fcb)
+            fc = self._leaky_relu(tf.matmul(input_node, fcW) + fcb)
 
         if drop_rate > 0 and not inference:
             fc = tf.nn.dropout(fc, drop_rate)
@@ -663,7 +674,7 @@ class GQCNN(object):
             self._weights.weights['{}_bias'.format(name)] = pcb
 
         # build layer
-        pc = tf.nn.relu(tf.matmul(input_node, pcW) +
+        pc = self._leaky_relu(tf.matmul(input_node, pcW) +
                         pcb)
 
         # add output to feature dict
@@ -689,7 +700,7 @@ class GQCNN(object):
             self._weights.weights['{}_bias'.format(name)] = fcb
 
         # build layer
-        fc = tf.nn.relu(tf.matmul(input_fc_node_1, input1W) +
+        fc = self._leaky_relu(tf.matmul(input_fc_node_1, input1W) +
                                 tf.matmul(input_fc_node_2, input2W) +
                                 fcb)
         if drop_rate > 0 and not inference:
@@ -731,10 +742,10 @@ class GQCNN(object):
         EP = .001
         output_node = input_node
         output_node = self._build_batch_norm(output_node, EP)
-        output_node = tf.nn.relu(output_node)
+        output_node = self._leaky_relu(output_node)
         output_node = tf.nn.conv2d(output_node, conv1W, strides=[1, 1, 1, 1], padding='SAME') + conv1b
         output_node = self._build_batch_norm(output_node, EP)
-        output_node = tf.nn.relu(output_node)
+        output_node = self._leaky_relu(output_node)
         output_node = tf.nn.conv2d(output_node, conv2W, strides=[1, 1, 1, 1], padding='SAME') + conv2b
         output_node = input_node + output_node
 
@@ -756,7 +767,7 @@ class GQCNN(object):
                     raise ValueError('Cannot have conv layer after fc layer')
                 output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filt_dim'],
                     layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
-                    norm=layer_config['norm'])
+                    norm=layer_config['norm'], inference=inference)
                 prev_layer = layer_type
             elif layer_type == 'fc':
                 prev_layer_is_conv = False
@@ -866,6 +877,9 @@ class GQCNN(object):
             output of network
         """
         logging.info('Building Network')
-        output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, self._architecture['im_stream'], inference=inference)
-        output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'], inference=inference)
-        return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)
+	with tf.name_scope('im_stream'):
+        	output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, self._architecture['im_stream'], inference=inference)
+        with tf.name_scope('pose_stream'):
+		output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'], inference=inference)
+        with tf.name_scope('merge_stream'):
+		return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)
