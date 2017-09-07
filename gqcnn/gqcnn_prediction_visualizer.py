@@ -77,9 +77,9 @@ class GQCNNPredictionVisualizer(object):
             # visualize
             for ind in vis_ind:
                 # limit the number of sampled datapoints displayed per object
-                num_visualized += 1
                 if num_visualized >= self.samples_per_object:
                     break
+                num_visualized += 1
 
                 # don't visualize the datapoints that we don't want
                 if self.datapoint_type == 'true_positive':
