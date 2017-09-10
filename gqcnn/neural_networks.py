@@ -119,31 +119,32 @@ class GQCNN(object):
 
         # slice out the variables we want based on the input pose_dim, which
         # is dependent on the input data mode used to train the model
-        if self._input_data_mode == InputDataMode.TF_IMAGE:
-            # depth
-            if isinstance(self.pose_mean, numbers.Number) \
-               or len(self.pose_mean.shape) == 0 \
-               or self.pose_mean.shape[0] == 1:
-                self._pose_mean = self.pose_mean
-            else:
-                self._pose_mean = self._pose_mean[2]
-                self._pose_std = self._pose_std[2]
-        elif self._input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-            # depth, cx, cy
-            self._pose_mean = np.concatenate([self._pose_mean[2:3], self._pose_mean[4:6]])
-            self._pose_std = np.concatenate([self._pose_std[2:3], self._pose_std[4:6]])
-        elif self._input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-            # depth, phi
-            self._pose_mean = self._pose_mean[2:4]
-            self._pose_std = self._pose_std[2:4]
-        elif self._input_data_mode == InputDataMode.RAW_IMAGE:
-            # u, v, depth, theta
-            self._pose_mean = self._pose_mean[:4]
-            self._pose_std = self._pose_std[:4]
-        elif self._input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
-            # u, v, depth, theta, cx, cy
-            self._pose_mean = self._pose_mean[:6]
-            self._pose_std = self._pose_std[:6]
+        if self._pose_mean.shape[0] == 7:
+            if self._input_data_mode == InputDataMode.TF_IMAGE:
+                # depth
+                if isinstance(self.pose_mean, numbers.Number) \
+                   or len(self.pose_mean.shape) == 0 \
+                   or self.pose_mean.shape[0] == 1:
+                    self._pose_mean = self.pose_mean
+                else:
+                    self._pose_mean = self._pose_mean[2]
+                    self._pose_std = self._pose_std[2]
+            elif self._input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+                # depth, cx, cy
+                self._pose_mean = np.concatenate([self._pose_mean[2:3], self._pose_mean[4:6]])
+                self._pose_std = np.concatenate([self._pose_std[2:3], self._pose_std[4:6]])
+            elif self._input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                # depth, phi
+                self._pose_mean = self._pose_mean[2:4]
+                self._pose_std = self._pose_std[2:4]
+            elif self._input_data_mode == InputDataMode.RAW_IMAGE:
+                # u, v, depth, theta
+                self._pose_mean = self._pose_mean[:4]
+                self._pose_std = self._pose_std[:4]
+            elif self._input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
+                # u, v, depth, theta, cx, cy
+                self._pose_mean = self._pose_mean[:6]
+                self._pose_std = self._pose_std[:6]
 
     def init_weights_file(self, model_filename):
         """ Initialize network weights from the specified model 
@@ -164,38 +165,72 @@ class GQCNN(object):
             self._weights = GQCnnWeights()
 
             # read in conv1 & conv2
-            self._weights.conv1_1W = tf.Variable(reader.get_tensor("conv1_1W"), name="conv1_1W")
-            self._weights.conv1_1b = tf.Variable(reader.get_tensor("conv1_1b"), name="conv1_1b")
-            self._weights.conv1_2W = tf.Variable(reader.get_tensor("conv1_2W"), name="conv1_2W")
-            self._weights.conv1_2b = tf.Variable(reader.get_tensor("conv1_2b"), name="conv1_2b")
-            self._weights.conv2_1W = tf.Variable(reader.get_tensor("conv2_1W"), name="conv2_1W")
-            self._weights.conv2_1b = tf.Variable(reader.get_tensor("conv2_1b"), name="conv2_1b")
-            self._weights.conv2_2W = tf.Variable(reader.get_tensor("conv2_2W"), name="conv2_2W")
-            self._weights.conv2_2b = tf.Variable(reader.get_tensor("conv2_2b"), name="conv2_2b")
+            try:
+                self._weights.conv1_1W = tf.Variable(reader.get_tensor("conv1_1W"), name="conv1_1W")
+                self._weights.conv1_1b = tf.Variable(reader.get_tensor("conv1_1b"), name="conv1_1b")
+                self._weights.conv1_2W = tf.Variable(reader.get_tensor("conv1_2W"), name="conv1_2W")
+                self._weights.conv1_2b = tf.Variable(reader.get_tensor("conv1_2b"), name="conv1_2b")
+                self._weights.conv2_1W = tf.Variable(reader.get_tensor("conv2_1W"), name="conv2_1W")
+                self._weights.conv2_1b = tf.Variable(reader.get_tensor("conv2_1b"), name="conv2_1b")
+                self._weights.conv2_2W = tf.Variable(reader.get_tensor("conv2_2W"), name="conv2_2W")
+                self._weights.conv2_2b = tf.Variable(reader.get_tensor("conv2_2b"), name="conv2_2b")
 
-            # if conv3 is to be used, read in conv3
-            if self._use_conv3:
-                self._weights.conv3_1W = tf.Variable(reader.get_tensor("conv3_1W"), name="conv3_1W")
-                self._weights.conv3_1b = tf.Variable(reader.get_tensor("conv3_1b"), name="conv3_1b")
-                self._weights.conv3_2W = tf.Variable(reader.get_tensor("conv3_2W"), name="conv3_2W")
-                self._weights.conv3_2b = tf.Variable(reader.get_tensor("conv3_2b"), name="conv3_2b")
+                # if conv3 is to be used, read in conv3
+                if self._use_conv3:
+                    self._weights.conv3_1W = tf.Variable(reader.get_tensor("conv3_1W"), name="conv3_1W")
+                    self._weights.conv3_1b = tf.Variable(reader.get_tensor("conv3_1b"), name="conv3_1b")
+                    self._weights.conv3_2W = tf.Variable(reader.get_tensor("conv3_2W"), name="conv3_2W")
+                    self._weights.conv3_2b = tf.Variable(reader.get_tensor("conv3_2b"), name="conv3_2b")
 
-            # read in pc1
-            self._weights.pc1W = tf.Variable(reader.get_tensor("pc1W"), name="pc1W")
-            self._weights.pc1b = tf.Variable(reader.get_tensor("pc1b"), name="pc1b")
+                # read in pc1
+                self._weights.pc1W = tf.Variable(reader.get_tensor("pc1W"), name="pc1W")
+                self._weights.pc1b = tf.Variable(reader.get_tensor("pc1b"), name="pc1b")
+                
+                # if pc2 is to be used, read in pc2
+                if self._use_pc2:
+                    self._weights.pc2W = tf.Variable(reader.get_tensor("pc2W"), name="pc2W")
+                    self._weights.pc2b = tf.Variable(reader.get_tensor("pc2b"), name="pc2b")
 
-            # if pc2 is to be used, read in pc2
-            if self._use_pc2:
-                self._weights.pc2W = tf.Variable(reader.get_tensor("pc2W"), name="pc2W")
-                self._weights.pc2b = tf.Variable(reader.get_tensor("pc2b"), name="pc2b")
+                self._weights.fc3W = tf.Variable(reader.get_tensor("fc3W"), name="fc3W")
+                self._weights.fc3b = tf.Variable(reader.get_tensor("fc3b"), name="fc3b")
+                self._weights.fc4W_im = tf.Variable(reader.get_tensor("fc4W_im"), name="fc4W_im")
+                self._weights.fc4W_pose = tf.Variable(reader.get_tensor("fc4W_pose"), name="fc4W_pose")
+                self._weights.fc4b = tf.Variable(reader.get_tensor("fc4b"), name="fc4b")
+                self._weights.fc5W = tf.Variable(reader.get_tensor("fc5W"), name="fc5W")
+                self._weights.fc5b = tf.Variable(reader.get_tensor("fc5b"), name="fc5b")
+            except:
+                self._weights.conv1_1W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv1_1/conv1_1_weights"), name="conv1_1W")
+                self._weights.conv1_1b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv1_1/conv1_1_bias"), name="conv1_1b")
+                self._weights.conv1_2W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv1_2/conv1_2_weights"), name="conv1_2W")
+                self._weights.conv1_2b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv1_2/conv1_2_bias"), name="conv1_2b")
+                self._weights.conv2_1W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_1/conv2_1_weights"), name="conv2_1W")
+                self._weights.conv2_1b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_1/conv2_1_bias"), name="conv2_1b")
+                self._weights.conv2_2W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_2/conv2_2_weights"), name="conv2_2W")
+                self._weights.conv2_2b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_2/conv2_2_bias"), name="conv2_2b")
 
-            self._weights.fc3W = tf.Variable(reader.get_tensor("fc3W"), name="fc3W")
-            self._weights.fc3b = tf.Variable(reader.get_tensor("fc3b"), name="fc3b")
-            self._weights.fc4W_im = tf.Variable(reader.get_tensor("fc4W_im"), name="fc4W_im")
-            self._weights.fc4W_pose = tf.Variable(reader.get_tensor("fc4W_pose"), name="fc4W_pose")
-            self._weights.fc4b = tf.Variable(reader.get_tensor("fc4b"), name="fc4b")
-            self._weights.fc5W = tf.Variable(reader.get_tensor("fc5W"), name="fc5W")
-            self._weights.fc5b = tf.Variable(reader.get_tensor("fc5b"), name="fc5b")
+                # if conv3 is to be used, read in conv3
+                if self._use_conv3:
+                    self._weights.conv3_1W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv3_1/conv3_1_weights"), name="conv3_1W")
+                    self._weights.conv3_1b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv3_1/conv3_1_bias"), name="conv3_1b")
+                    self._weights.conv3_2W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv3_1/conv3_2_weights"), name="conv3_2W")
+                    self._weights.conv3_2b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv3_1/conv3_2_bias"), name="conv3_2b")
+
+                # read in pc1
+                self._weights.pc1W = tf.Variable(reader.get_tensor("validation_network/pose_stream/pc1_weights"), name="pc1W")
+                self._weights.pc1b = tf.Variable(reader.get_tensor("validation_network/pose_stream/pc1_bias"), name="pc1b")
+                
+                # if pc2 is to be used, read in pc2
+                if self._use_pc2:
+                    self._weights.pc2W = tf.Variable(reader.get_tensor("validation_network/pose_stream/pc2_weights"), name="pc2W")
+                    self._weights.pc2b = tf.Variable(reader.get_tensor("validation_network/pose_stream/pc2_bias"), name="pc2b")
+
+                self._weights.fc3W = tf.Variable(reader.get_tensor("validation_network/im_stream/fc3_weights"), name="fc3W")
+                self._weights.fc3b = tf.Variable(reader.get_tensor("validation_network/im_stream/fc3_bias"), name="fc3b")
+                self._weights.fc4W_im = tf.Variable(reader.get_tensor("validation_network/merge_stream/fc4_input_1_weights"), name="fc4W_im")
+                self._weights.fc4W_pose = tf.Variable(reader.get_tensor("validation_network/merge_stream/fc4_input_2_weights"), name="fc4W_pose")
+                self._weights.fc4b = tf.Variable(reader.get_tensor("validation_network/merge_stream/fc4_bias"), name="fc4b")
+                self._weights.fc5W = tf.Variable(reader.get_tensor("validation_network/merge_stream/fc5_weights"), name="fc5W")
+                self._weights.fc5b = tf.Variable(reader.get_tensor("validation_network/merge_stream/fc5_bias"), name="fc5b")
 
     def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5, reinit_pc1=False):
         """ Re-initializes final fully-connected layers for fine-tuning 
@@ -786,12 +821,11 @@ class GQCNN(object):
         conv1_1h = tf.nn.relu(tf.nn.conv2d(input_im_node, self._weights.conv1_1W, strides=[
                                 1, 1, 1, 1], padding='SAME') + self._weights.conv1_1b)
         if self._architecture['conv1_1']['norm']:
-                if self._architecture['conv1_1']['norm_type'] == "local_response":
-                	conv1_1h = tf.nn.local_response_normalization(conv1_1h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
+            conv1_1h = tf.nn.local_response_normalization(conv1_1h,
+                                                          depth_radius=self.normalization_radius,
+                                                          alpha=self.normalization_alpha,
+                                                          beta=self.normalization_beta,
+                                                          bias=self.normalization_bias)
         pool1_1_size = self._architecture['conv1_1']['pool_size']
         pool1_1_stride = self._architecture['conv1_1']['pool_stride']
         pool1_1 = tf.nn.max_pool(conv1_1h,
@@ -806,12 +840,11 @@ class GQCNN(object):
         conv1_2h = tf.nn.relu(tf.nn.conv2d(pool1_1, self._weights.conv1_2W, strides=[
                                 1, 1, 1, 1], padding='SAME') + self._weights.conv1_2b)
         if self._architecture['conv1_2']['norm']:
-                if self._architecture['conv1_2']['norm_type'] == "local_response":
-                	conv1_2h = tf.nn.local_response_normalization(conv1_2h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
+            conv1_2h = tf.nn.local_response_normalization(conv1_2h,
+                                                          depth_radius=self.normalization_radius,
+                                                          alpha=self.normalization_alpha,
+                                                          beta=self.normalization_beta,
+                                                          bias=self.normalization_bias)
         pool1_2_size = self._architecture['conv1_2']['pool_size']
         pool1_2_stride = self._architecture['conv1_2']['pool_stride']
         pool1_2 = tf.nn.max_pool(conv1_2h,
@@ -826,12 +859,11 @@ class GQCNN(object):
         conv2_1h = tf.nn.relu(tf.nn.conv2d(pool1_2, self._weights.conv2_1W, strides=[
                                 1, 1, 1, 1], padding='SAME') + self._weights.conv2_1b)
         if self._architecture['conv2_1']['norm']:
-                if self._architecture['conv2_1']['norm_type'] == "local_response":
-                	conv2_1h = tf.nn.local_response_normalization(conv2_1h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
+            conv2_1h = tf.nn.local_response_normalization(conv2_1h,
+                                                          depth_radius=self.normalization_radius,
+                                                          alpha=self.normalization_alpha,
+                                                          beta=self.normalization_beta,
+                                                          bias=self.normalization_bias)
         pool2_1_size = self._architecture['conv2_1']['pool_size']
         pool2_1_stride = self._architecture['conv2_1']['pool_stride']
         pool2_1 = tf.nn.max_pool(conv2_1h,
@@ -846,12 +878,11 @@ class GQCNN(object):
         conv2_2h = tf.nn.relu(tf.nn.conv2d(pool2_1, self._weights.conv2_2W, strides=[
                                 1, 1, 1, 1], padding='SAME') + self._weights.conv2_2b)
         if self._architecture['conv2_2']['norm']:
-                if self._architecture['conv2_2']['norm_type'] == "local_response":
-                	conv2_2h = tf.nn.local_response_normalization(conv2_2h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
+            conv2_2h = tf.nn.local_response_normalization(conv2_2h,
+                                                          depth_radius=self.normalization_radius,
+                                                          alpha=self.normalization_alpha,
+                                                          beta=self.normalization_beta,
+                                                          bias=self.normalization_bias)
         pool2_2_size = self._architecture['conv2_2']['pool_size']
         pool2_2_stride = self._architecture['conv2_2']['pool_stride']
         pool2_2 = tf.nn.max_pool(conv2_2h,
@@ -867,12 +898,11 @@ class GQCNN(object):
                 conv3_1h = tf.nn.relu(tf.nn.conv2d(pool2_2, self._weights.conv3_1W, strides=[
                                 1, 1, 1, 1], padding='SAME') + self._weights.conv3_1b)
                 if self._architecture['conv3_1']['norm']:
-                	if self._architecture['conv3_1']['norm_type'] == "local_response":
-                        	conv3_1h = tf.nn.local_response_normalization(conv3_1h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
+                    conv3_1h = tf.nn.local_response_normalization(conv3_1h,
+                                                                  depth_radius=self.normalization_radius,
+                                                                  alpha=self.normalization_alpha,
+                                                                  beta=self.normalization_beta,
+                                                                  bias=self.normalization_bias)
                 pool3_1_size = self._architecture['conv3_1']['pool_size']
                 pool3_1_stride = self._architecture['conv3_1']['pool_stride']
                 pool3_1 = tf.nn.max_pool(conv3_1h,
@@ -887,12 +917,11 @@ class GQCNN(object):
                 conv3_2h = tf.nn.relu(tf.nn.conv2d(pool3_1, self._weights.conv3_2W, strides=[
                                 1, 1, 1, 1], padding='SAME') + self._weights.conv3_2b)
                 if self._architecture['conv3_2']['norm']:
-                	if self._architecture['conv3_2']['norm_type'] == "local_response":
-                        	conv3_2h = tf.nn.local_response_normalization(conv3_2h,
-                                                                depth_radius=self.normalization_radius,
-                                                                alpha=self.normalization_alpha,
-                                                                beta=self.normalization_beta,
-                                                                bias=self.normalization_bias)
+                    conv3_2h = tf.nn.local_response_normalization(conv3_2h,
+                                                                  depth_radius=self.normalization_radius,
+                                                                  alpha=self.normalization_alpha,
+                                                                  beta=self.normalization_beta,
+                                                                  bias=self.normalization_bias)
                 pool3_2_size = self._architecture['conv3_2']['pool_size']
                 pool3_2_stride = self._architecture['conv3_2']['pool_stride']
                 pool3_2 = tf.nn.max_pool(conv3_2h,

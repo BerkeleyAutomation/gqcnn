@@ -148,7 +148,7 @@ class Visualizer:
     @staticmethod
     def grasp(grasp, width=None, color='r', arrow_len=4, arrow_head_len = 2, arrow_head_width = 3,
               arrow_width = 1, jaw_len=3, jaw_width = 3.0,
-              grasp_center_size=7.5, grasp_center_thickness=2.5,
+              grasp_center_size=1, grasp_center_thickness=2.5,
               grasp_center_style='+', grasp_axis_width=1,
               grasp_axis_style='--', line_width=8.0, show_center=True, show_axis=False, scale=1.0):
         """
@@ -190,8 +190,10 @@ class Visualizer:
         # set vars for suction
         skip_jaws = False
         if isinstance(grasp, SuctionPoint2D):
-            show_center = True
-            skip_jaws = True
+            grasp_center_style = '.'
+            grasp_center_size = 25
+            plt.scatter(grasp.center.x, grasp.center.y, c=color, marker=grasp_center_style, s=scale*grasp_center_size)
+            return
 
         # plot grasp center
         if show_center:

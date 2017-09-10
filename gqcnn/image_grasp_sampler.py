@@ -455,8 +455,11 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         self._phi_rv = ss.uniform(loc=self._min_phi,
                                   scale=self._max_phi-self._min_phi)
 
+        self._mean_depth = 0.0
+        if 'mean_depth' in self._config.keys():
+            self._mean_depth = self._config['mean_depth']
         self._sigma_depth = self._config['sigma_depth']
-        self._depth_rv = ss.norm(0.0, self._sigma_depth**2)
+        self._depth_rv = ss.norm(self._mean_depth, self._sigma_depth**2)
 
         self._min_suction_dist = self._config['min_suction_dist']
         self._angle_dist_weight = self._config['angle_dist_weight']

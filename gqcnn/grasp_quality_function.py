@@ -14,7 +14,9 @@ import scipy.ndimage.filters as snf
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from gqcnn import Grasp2D, SuctionPoint2D, GQCNN, InputDataMode
-from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage
+from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage
+
+from gqcnn import Visualizer as vis
 
 # constant for display
 FIGSIZE = 16
@@ -160,7 +162,7 @@ class BestFitPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
                 vis2d.show()
 
-            quality = -self._sum_of_squared_residuals(w, A, b) # evaluate how well best-fit plane describles all points in window.            
+            quality = np.exp(-self._sum_of_squared_residuals(w, A, b)) # evaluate how well best-fit plane describles all points in window.            
             qualities.append(quality)
 
         return np.array(qualities)
@@ -246,7 +248,7 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
                 vis2d.show()
 
-            quality = -self._sum_of_squared_residuals(w, A, b) # evaluate how well best-fit plane describles all points in window.            
+            quality = np.exp(-self._sum_of_squared_residuals(w, A, b)) # evaluate how well best-fit plane describles all points in window.            
             qualities.append(quality)
 
         return np.array(qualities)
@@ -356,7 +358,7 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
                 vis2d.show()
 
-            quality = -self._sum_of_squared_residuals(w, A, b) # evaluate how well best-fit plane describles all points in window.            
+            quality = np.exp(-self._sum_of_squared_residuals(w, A, b)) # evaluate how well best-fit plane describles all points in window.            
             qualities.append(quality)
 
         return np.array(qualities)
@@ -409,7 +411,7 @@ class ComApproachPlanaritySuctionQualityFunction(ApproachPlanaritySuctionQuality
                 grasp_center = np.array([action.center.y, action.center.x])
                 q = np.linalg.norm(grasp_center - object_com)
 
-            qualities.append(-q)
+            qualities.append(np.exp(-q))
 
         return np.array(qualities)
 
@@ -419,6 +421,9 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
     def __init__(self, config):
         """Create approach planarity suction metric. """
         self._planarity_pctile = config['planarity_pctile']
+        self._planarity_abs_thresh = 0
+        if 'planarity_abs_thresh' in config.keys():
+            self._planarity_abs_thresh = np.exp(-config['planarity_abs_thresh'])
 
         DiscApproachPlanaritySuctionQualityFunction.__init__(self, config)
 
@@ -440,11 +445,11 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
             Array of the quality for each grasp
         """
         # compute planarity
-        sse = DiscApproachPlanaritySuctionQualityFunction.quality(self, state, actions, params=params)
+        sse_q = DiscApproachPlanaritySuctionQualityFunction.quality(self, state, actions, params=params)
 
         if params['vis']['hist']:
             plt.figure()
-            utils.histogram(sse, 100, (np.min(sse), np.max(sse)), normalized=False, plot=True)
+            utils.histogram(sse_q, 100, (np.min(sse_q), np.max(sse_q)), normalized=False, plot=True)
             plt.show()
 
         # compute object centroid
@@ -454,15 +459,17 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
             object_com = np.mean(nonzero_px, axis=0)
 
         # threshold
-        planarity_thresh = abs(np.percentile(sse, 100-self._planarity_pctile))
+        planarity_thresh = abs(np.percentile(sse_q, 100-self._planarity_pctile))
         qualities = []
+        max_q = max(state.rgbd_im.height, state.rgbd_im.width)
         for k, action in enumerate(actions):
-            q = max(state.rgbd_im.height, state.rgbd_im.width)
-            if np.abs(sse[k]) < planarity_thresh:
+            q = max_q
+            if sse_q[k] > planarity_thresh or sse_q[k] > self._planarity_abs_thresh:
                 grasp_center = np.array([action.center.y, action.center.x])
                 q = np.linalg.norm(grasp_center - object_com)
 
-            qualities.append(-q)
+            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
+            qualities.append(q)
 
         return np.array(qualities)
         
@@ -523,8 +530,90 @@ class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
             curvature = (fxx * fyy - fxy**2) / ((1 + fx**2 + fy**2)**2)
 
             # store quality
-            quality = -np.abs(curvature)
+            quality = np.exp(-np.abs(curvature))
             qualities.append(quality)
+
+        return np.array(qualities)
+
+class DiscCurvatureSuctionQualityFunction(GaussianCurvatureSuctionQualityFunction):
+    def __init__(self, config):
+        """Create approach planarity suction metric. """
+        self._radius = config['radius']
+        SuctionQualityFunction.__init__(self, config)
+
+    def _points_in_window(self, point_cloud_image, action, segmask=None):
+        """Retrieve all points on the object in a disc of size self._window_size. """
+        # read indices
+        im_shape = point_cloud_image.shape
+        i_start = int(max(action.center.y-self._window_size/2, 0))
+        j_start = int(max(action.center.x-self._window_size/2, 0))
+        i_end = int(min(i_start+self._window_size, im_shape[0]))
+        j_end = int(min(j_start+self._window_size, im_shape[1]))
+        step = int(1 / self._sample_rate)
+
+        # read 3D points in the window
+        points = point_cloud_image[i_start:i_end:step, j_start:j_end:step]
+        stacked_points = points.reshape(points.shape[0]*points.shape[1], -1)
+        
+        # check the distance from the center point
+        contact_point = point_cloud_image[int(action.center.y),
+                                          int(action.center.x)]
+        dists = np.linalg.norm(stacked_points - contact_point, axis=1)
+        stacked_points = stacked_points[dists <= self._radius]
+
+        # form the matrices for plane-fitting
+        return stacked_points
+
+class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction):
+    def __init__(self, config):
+        """Create approach planarity suction metric. """
+        self._curvature_pctile = config['curvature_pctile']
+
+        DiscCurvatureSuctionQualityFunction.__init__(self, config)
+
+    def quality(self, state, actions, params=None): 
+        """Given a suction point, compute a score based on the Gaussian curvature.
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            An RgbdImageState instance that encapsulates rgbd_im, camera_intr, segmask, full_observed.
+        action: :obj:`SuctionPoint2D`
+            A suction grasp in image space that encapsulates center, approach direction, depth, camera_intr.
+        params: dict
+            Stores params used in computing suction quality.
+
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp
+        """
+        # compute planarity
+        curvature_q = DiscCurvatureSuctionQualityFunction.quality(self, state, actions, params=params)
+
+        if params['vis']['hist']:
+            plt.figure()
+            utils.histogram(curvature, 100, (np.min(curvature), np.max(curvature)), normalized=False, plot=True)
+            plt.show()
+
+        # compute object centroid
+        object_com = state.rgbd_im.center
+        if state.segmask is not None:
+            nonzero_px = state.segmask.nonzero_pixels()
+            object_com = np.mean(nonzero_px, axis=0)
+
+        # threshold
+        curvature_q_thresh = abs(np.percentile(curvature_q, 100-self._curvature_pctile))
+        qualities = []
+        max_q = max(state.rgbd_im.height, state.rgbd_im.width)
+        for k, action in enumerate(actions):
+            q = max_q
+            if curvature_q[k] > curvature_q_thresh:
+                grasp_center = np.array([action.center.y, action.center.x])
+                q = np.linalg.norm(grasp_center - object_com)
+
+            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
+            qualities.append(q)
 
         return np.array(qualities)
 
@@ -633,7 +722,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         image_tensor, pose_tensor = self.grasps_to_tensors(actions, state)
         if params is not None and params['vis']['tf_images']:
             # read vis params
-            k = self.config['vis']['k']
+            k = params['vis']['k']
             d = utils.sqrt_ceil(k)
 
             # display grasp transformed images
@@ -668,6 +757,10 @@ class GraspQualityFunctionFactory(object):
             return ComDiscApproachPlanaritySuctionQualityFunction(config)
         elif metric_type == 'gaussian_curvature':
             return GaussianCurvatureSuctionQualityFunction(config)
+        elif metric_type == 'disc_curvature':
+            return DiscCurvatureSuctionQualityFunction(config)
+        elif metric_type == 'com_disc_curvature':
+            return ComDiscCurvatureSuctionQualityFunction(config)
         elif metric_type == 'gqcnn':
             return GQCnnQualityFunction(config)
         else:

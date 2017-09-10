@@ -420,7 +420,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
             if self.config['vis']['grasp_candidates']:
                 # display each grasp on the original image, colored by predicted success
-                norm_q_values = (q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
+                norm_q_values = q_values #(q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
                 vis.figure(size=(FIGSIZE,FIGSIZE))
                 vis.imshow(rgbd_im.depth)
                 for grasp, q in zip(grasps, norm_q_values):
@@ -502,7 +502,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
-            norm_q_values = (q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
+            norm_q_values = q_values #(q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
             vis.figure(size=(FIGSIZE,FIGSIZE))
             vis.imshow(rgbd_im.depth)
             for grasp, q in zip(grasps, norm_q_values):
