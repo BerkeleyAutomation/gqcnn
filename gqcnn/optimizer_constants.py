@@ -22,6 +22,7 @@ class ImageFileTemplates:
     hand_poses_template = 'hand_poses'
     object_labels_template = 'object_labels'
     pose_labels_template = 'pose_labels'
+    gripper_params_template = 'gripper_params'
 
 # enum for image modalities
 class ImageMode:
@@ -43,10 +44,15 @@ class PreprocMode:
     NORMALIZATION = 'normalized'
     NONE = 'none'
 
-# enum for input data formats
-class InputDataMode:
+# enum for input pose data formats
+class InputPoseMode:
     TF_IMAGE = 'tf_image'
     TF_IMAGE_PERSPECTIVE = 'tf_image_with_perspective'
     RAW_IMAGE = 'raw_image'
     RAW_IMAGE_PERSPECTIVE = 'raw_image_with_perspective'
     TF_IMAGE_SUCTION = 'tf_image_suction'
+
+# enum for input gripper data formats
+class InputGripperMode:
+    WIDTH = 'width'
+    NONE = 'none'

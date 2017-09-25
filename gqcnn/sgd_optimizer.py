@@ -34,7 +34,7 @@ import collections
 import IPython
 
 from learning_analysis import ClassificationResult, RegressionResult
-from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
+from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputPoseMode, InputGripperMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 
 class SGDOptimizer(object):
@@ -270,11 +270,6 @@ class SGDOptimizer(object):
 				#check_numeric_op = tf.add_check_numerics_ops()
 				_, l, lr, predictions, batch_labels, output, train_images, pose_node, _ = self.sess.run(
 						[optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, extra_update_ops], options=GeneralConstants.timeout_option)
-				if np.isnan(l):
-					IPython.embed()				
-				output_reshaped = output.reshape((-1,))
-				if len(np.where(output_reshaped == 0.0)[0]) > 0:
-					IPython.embed()				
 				ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
 				softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 				
@@ -386,34 +381,40 @@ class SGDOptimizer(object):
 		# exit
 		logging.info('Exiting Optimization')
 
-	def _read_pose_data(self, pose_arr, input_data_mode):
+	def _read_pose_data(self, pose_arr, input_pose_mode):
 		""" Read the pose data and slice it according to the specified input_data_mode
 
 		Parameters
 		----------
 		pose_arr: :obj:`ndArray`
 			full pose data array read in from file
-		input_data_mode: :obj:`InputDataMode`
-			enum for input data mode, see optimizer_constants.py for all
-			possible input data modes 
+		input_pose_mode: :enum:`InputPoseMode`
+			enum for input pose mode, see optimizer_constants.py for all
+			possible input pose modes 
 
 		Returns
 		-------
 		:obj:`ndArray`
-			sliced pose_data corresponding to input data mode
+			sliced pose_data corresponding to input pose mode
 		"""
-		if input_data_mode == InputDataMode.TF_IMAGE:
+		if input_pose_mode == InputPoseMode.TF_IMAGE:
 			return pose_arr[:,2:3]
-		elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+		elif input_pose_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
 			return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-		elif input_data_mode == InputDataMode.RAW_IMAGE:
+		elif input_pose_mode == InputPoseMode.RAW_IMAGE:
 			return pose_arr[:,:4]
-		elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
+		elif input_pose_mode == InputPoseMode.RAW_IMAGE_PERSPECTIVE:
 			return pose_arr[:,:6]
-		elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+		elif input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
 			return pose_arr[:,2:4]
 		else:
-			raise ValueError('Input data mode %s not supported' %(input_data_mode))
+			raise ValueError('Input pose mode {} not supported'.format(input_pose_mode))
+
+    def _read_gripper_data(self, gripper_param_arr, input_gripper_mode):
+        if input_gripper_mode == InputGripperMode.WIDTH:
+            return gripper_param_arr[:, 2:3]
+        else:
+            raise ValueError('Input gripper mode {} not supportd'.format(input_gripper_mode))
 
 	def _setup_summaries(self):
 		""" Sets up placeholders for summary values and creates summary writer """
@@ -558,6 +559,46 @@ class SGDOptimizer(object):
 			np.save(self.pose_mean_filename, self.pose_mean)
 			np.save(self.pose_std_filename, self.pose_std)
 
+        # compute gripper param mean
+        logging.info('Computing gripper mean')
+        self.gripper_mean_filename = os.path.join(self.experiment_dir, 'gripper_mean.npy')
+        self.gripper_std_filename = os.path.join(self.experiment_dir, 'gripper_std.npy')
+        if self.cfg['fine_tune']:
+            self.gripper_mean = self.gqcnn.get_gripper_mean()
+            self.gripper_std = self.gqcnn.get_gripper_std()
+        else:
+            self.gripper_mean = np.zeros(self.gripper_shape)
+            self.gripper_std = np.zeros(self.gripper_shape)
+            num_summed = 0
+            random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
+            for k in random_file_indices.tolist():
+                gripper_filename = self.gripper_filenames[k]
+                self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
+                if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                                rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+                                self.pose
+                        pose_data = self.pose_data[self.train_index_map[im_filename],:]
+                        pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
+                        self.pose_mean += np.sum(pose_data, axis=0)
+                        num_summed += pose_data.shape[0]
+            self.pose_mean = self.pose_mean / num_summed
+
+            for k in random_file_indices.tolist():
+                im_filename = self.im_filenames[k]
+                pose_filename = self.pose_filenames[k]
+                self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+                if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                                rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+                                self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
+                        pose_data = self.pose_data[self.train_index_map[im_filename],:]
+                        pose_data = pose_data[np.isfinite(pose_data[:,3]), :]
+                        self.pose_std += np.sum((pose_data - self.pose_mean)**2, axis=0)
+            self.pose_std = np.sqrt(self.pose_std / num_summed)
+
+            self.pose_std[self.pose_std==0] = 1.0
+
+            np.save(self.pose_mean_filename, self.pose_mean)
+            np.save(self.pose_std_filename, self.pose_std)
 		if self.cfg['fine_tune']:
 			out_mean_filename = os.path.join(self.experiment_dir, 'mean.npy')
 			out_std_filename = os.path.join(self.experiment_dir, 'std.npy')

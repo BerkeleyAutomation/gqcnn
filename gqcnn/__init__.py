@@ -1,4 +1,4 @@
-from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
+from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputPoseMode, InputGripperMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 from learning_analysis import ClassificationResult, RegressionResult, ConfusionMatrix
 from neural_networks import GQCNN
@@ -15,7 +15,7 @@ from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 __all__ = ['GQCNN', 
            'SGDOptimizer',
            'GQCNNAnalyzer',
-           'ImageMode', 'TrainingMode', 'PreprocMode', 'InputDataMode',
+           'ImageMode', 'TrainingMode', 'PreprocMode', 'InputPoseMode', 'InputGripperMode',
            'TrainStatsLogger',
            'ClassificationResult', 'RegressionResult', 'ConfusionMatrix',
            'Grasp2D',
