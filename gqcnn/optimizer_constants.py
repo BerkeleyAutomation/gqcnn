@@ -10,7 +10,7 @@ class GeneralConstants:
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
 
 # enum for templates for file reading
-class ImageFileTemplates:
+class FileTemplates:
     binary_im_tensor_template = 'binary_ims_raw'
     depth_im_tensor_template = 'depth_ims_raw'
     binary_im_tf_tensor_template = 'binary_ims_tf'
@@ -23,6 +23,7 @@ class ImageFileTemplates:
     object_labels_template = 'object_labels'
     pose_labels_template = 'pose_labels'
     gripper_params_template = 'gripper_params'
+    FILENAME_PLACEHOLDER = 'FILENAME_PLACEHOLDER'
 
 # enum for image modalities
 class ImageMode:

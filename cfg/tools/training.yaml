@@ -104,14 +104,12 @@ background_rate: 0.25
 background_min_depth: 0.0
 background_max_depth: 0.65
 
-drop_fc3: 0
-fc3_drop_rate: 0
-drop_fc4: 0
-fc4_drop_rate: 0
-
 # debugging params
 debug: 0
 debug_num_files: 1000000
+
+# tensorflow summary params
+save_histograms: 0
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -120,7 +118,8 @@ gqcnn_config:
   im_width: 32
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
-  input_data_mode: tf_image_generic_gripper
+  input_pose_mode: tf_image
+  input_gripper_mode: width
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the DeepOptimizer's config file
   batch_size: 16
@@ -166,6 +165,10 @@ gqcnn_config:
     pose_stream:
       pc1:
         type: pc
+        out_size: 64
+    gripper_stream:
+      gc1:
+        type: gc
         out_size: 64
     merge_stream:
       fc4:
