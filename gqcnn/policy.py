@@ -17,7 +17,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage
 
-from gqcnn import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
+from gqcnn import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputPoseMode
 from gqcnn import Visualizer as vis
 from gqcnn import NoValidGraspsException
 
@@ -172,9 +172,9 @@ class GraspingPolicy(Policy):
             im_tf = im_tf.resize((gqcnn_im_height, gqcnn_im_width))
             image_tensor[i,...] = im_tf.raw_data
             
-            if input_data_mode == InputDataMode.TF_IMAGE:
+            if input_data_mode == InputPoseMode.TF_IMAGE:
                 pose_tensor[i] = grasp.depth
-            elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+            elif input_data_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.center.x, grasp.center.y])
             else:
                 raise ValueError('Input data mode %s not supported' %(input_data_mode))
