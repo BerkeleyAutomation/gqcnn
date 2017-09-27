@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/hdd/dex-net/data/grasp_quality/bar_clamp_05_10cm/tensors
+dataset_dir: /home/vsatish/Data/dexnet/data/grasp_quality/bar_clamp_05_10cm/tensors
 output_dir: /home/vsatish/Data/dexnet/data/models/generic_gripper
 
 # general optimization parameters

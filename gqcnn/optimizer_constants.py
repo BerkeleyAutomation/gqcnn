@@ -23,7 +23,7 @@ class FileTemplates:
     object_labels_template = 'object_labels'
     pose_labels_template = 'pose_labels'
     gripper_params_template = 'gripper_params'
-    FILENAME_PLACEHOLDER = 'FILENAME_PLACEHOLDER'
+    FILENAME_PLACEHOLDER = '-11111111111111'
 
 # enum for image modalities
 class ImageMode:

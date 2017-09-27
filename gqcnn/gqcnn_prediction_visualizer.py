@@ -13,7 +13,7 @@ import autolab_core.utils as utils
 from autolab_core import YamlConfig, Point
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
-from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
+from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputPoseMode, ImageMode, FileTemplates
 from gqcnn import Visualizer as vis2d
 
 import IPython
@@ -192,23 +192,23 @@ class GQCNNPredictionVisualizer(object):
         logging.info('Reading filenames')
         all_filenames = os.listdir(self.data_dir)
         if self.image_mode== ImageMode.BINARY:
-            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.binary_im_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.binary_im_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH:
-            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.depth_im_tensor_template) > -1]
         elif self.image_mode== ImageMode.BINARY_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.binary_im_tf_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.binary_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.COLOR_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.color_im_tf_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.color_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.GRAY_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.gray_im_tf_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.gray_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tf_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.depth_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH_TF_TABLE:
-            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tf_table_tensor_template) > -1]
+            self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.depth_im_tf_table_tensor_template) > -1]
         else:
             raise ValueError('Image mode %s not supported.' %(self.image_mode))
 
-        self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
+        self.pose_filenames = [f for f in all_filenames if f.find(FileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
 
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
@@ -216,7 +216,7 @@ class GQCNNPredictionVisualizer(object):
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check that all file categories were found
-        if len(self.im_filenames) == 0 or len(self.label_filenames) == 0 or len(self.label_filenames) == 0:
+        if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
             raise ValueError('1 or more required training files could not be found')
 
     def _compute_indices(self):
@@ -241,15 +241,15 @@ class GQCNNPredictionVisualizer(object):
         :obj:`ndArray`
             sliced pose_data corresponding to input data mode
         """
-        if input_data_mode == InputDataMode.TF_IMAGE:
+        if input_data_mode == InputPoseMode.TF_IMAGE:
             return pose_arr[:,2:3]
-        elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+        elif input_data_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-        elif input_data_mode == InputDataMode.RAW_IMAGE:
+        elif input_data_mode == InputPoseMode.RAW_IMAGE:
             return pose_arr[:,:4]
-        elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
+        elif input_data_mode == InputPoseMode.RAW_IMAGE_PERSPECTIVE:
             return pose_arr[:,:6]
-        elif input_data_mode == InputDataMode.REGRASPING:
+        elif input_data_mode == InputPoseMode.REGRASPING:
             # depth, approach angle, and delta angle for reorientation
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:5], pose_arr[:,6:7]]
         else:

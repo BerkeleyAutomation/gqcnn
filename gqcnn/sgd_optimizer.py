@@ -31,7 +31,7 @@ from autolab_core import YamlConfig
 import autolab_core.utils as utils
 import collections
 
-import IPython
+import IPython as ip
 
 from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputPoseMode, InputGripperMode, GeneralConstants, FileTemplates
@@ -138,7 +138,7 @@ class SGDOptimizer(object):
 		with tf.name_scope('training_network'):
 			logging.info('Building Training Network')
 			if self.gripper_dim > 0:
-				self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node, gripper_param=self.input_gripper_node)
+				self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node, input_gripper_node=self.input_gripper_node)
 			else:
 				self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node)
 
@@ -393,6 +393,8 @@ class SGDOptimizer(object):
 		:obj:`ndArray`
 			sliced pose_data corresponding to input pose mode
 		"""
+		if len(pose_arr.shape) == 1:
+			pose_arr = np.asarray([pose_arr])
 		if input_pose_mode == InputPoseMode.TF_IMAGE:
 			# depth
 			return pose_arr[:,2:3]
@@ -412,6 +414,8 @@ class SGDOptimizer(object):
 			raise ValueError('Input pose mode {} not supported'.format(input_pose_mode))
 
 	def _read_gripper_data(self, gripper_param_arr, input_gripper_mode):
+		if len(gripper_param_arr.shape) == 1:
+			gripper_param_arr = np.asarray([gripper_param_arr])
 		if input_gripper_mode == InputGripperMode.WIDTH:
 			return gripper_param_arr[:, 2:3]
 		else:
@@ -586,7 +590,7 @@ class SGDOptimizer(object):
 			random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
 			for k in random_file_indices.tolist():
 				im_filename = self.im_filenames[k]
-				gripper_filename = self.gripper_filenames[k]
+				gripper_filename = self.gripper_param_filenames[k]
 				self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
 				gripper_data = self.gripper_data[self.train_index_map[im_filename],:]
 				self.gripper_mean += np.sum(gripper_data, axis=0)
@@ -595,13 +599,13 @@ class SGDOptimizer(object):
 
 			for k in random_file_indices.tolist():
 				im_filename = self.im_filenames[k]
-				gripper_filename = self.gripper_filenames[k]
+				gripper_filename = self.gripper_param_filenames[k]
 				self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
 				gripper_data = self.gripper_data[self.train_index_map[im_filename],:]
 				self.gripper_std += np.sum((gripper_data - self.gripper_mean)**2, axis=0)
 			self.gripper_std = np.sqrt(self.gripper_std / num_summed)
 
-			# self.gripper_std[self.gripper_std==0] = 1.0
+			self.gripper_std[self.gripper_std==0] = 1.0
 
 			np.save(self.gripper_mean_filename, self.gripper_mean)
 			np.save(self.gripper_std_filename, self.gripper_std)
@@ -853,6 +857,7 @@ class SGDOptimizer(object):
 
 		self.train_im_data = np.load(os.path.join(self.data_dir, self.im_filenames[0]))['arr_0']
 		self.pose_data = np.load(os.path.join(self.data_dir, self.pose_filenames[0]))['arr_0']
+	        self.gripper_data = np.load(os.path.join(self.data_dir, self.gripper_param_filenames[0]))['arr_0']
 		self.metric_data = np.load(os.path.join(self.data_dir, self.label_filenames[0]))['arr_0']
 		self.images_per_file = self.train_im_data.shape[0]
 		self.im_height = self.train_im_data.shape[1]
@@ -861,6 +866,7 @@ class SGDOptimizer(object):
 		self.im_center = np.array([float(self.im_height-1)/2, float(self.im_width-1)/2])
 		self.num_tensor_channels = self.cfg['num_tensor_channels']
 		self.pose_shape = self.pose_data.shape[1]
+	        self.gripper_shape = self.gripper_data.shape[1]
 		self.input_pose_mode = self.cfg['input_pose_mode']
 		self.input_gripper_mode = self.cfg['input_gripper_mode']
 		
@@ -925,15 +931,15 @@ class SGDOptimizer(object):
 		# since these are not required in the dataset, we fill them with FileTemplates.FILENAME_PLACEHOLDER just to prevent sorting exceptions down the line 
 		# however, if they do not exist then exceptions will be thrown if the user tries to use object_wise/pose_wise splits 
 		# or tries to input the gripper paramters to the network during training
-		self.obj_id_filenames = [f if f.find(FileTemplates.object_labels_template) > -1 else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+		self.obj_id_filenames = [f if (f.find(FileTemplates.object_labels_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
 		self._obj_files_exist = True
-		if self.obj_id_filenames[0] == -1:
+		if self.obj_id_filenames[0] == FileTemplates.FILENAME_PLACEHOLDER:
 			self._obj_files_exist = False
-		self.stable_pose_filenames = [f if f.find(FileTemplates.pose_labels_template) > -1 else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+		self.stable_pose_filenames = [f if (f.find(FileTemplates.pose_labels_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
 		self._stable_pose_files_exist = True
-		if self.stable_pose_filenames[0] == -1:
+		if self.stable_pose_filenames[0] == FileTemplates.FILENAME_PLACEHOLDER:
 			self._stable_pose_files_exist = False
-		self.gripper_param_filenames = [f if f.find(FileTemplates.gripper_params_template) > -1 else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+		self.gripper_param_filenames = [f if (f.find(FileTemplates.gripper_params_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
 
 		if self.debug:
 			# sort
@@ -1079,7 +1085,7 @@ class SGDOptimizer(object):
 
 		# setup summaries for visualizing metrics in tensorboard
 		# do this here if we are not saving histograms, else it will be done later after gradient/weight/etc. histograms have been setup
-		if not self.save_histograms
+		if not self.save_histograms:
 			self._setup_summaries()
 		
 		self._num_original_train_images_saved = 0
@@ -1129,7 +1135,7 @@ class SGDOptimizer(object):
 				self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
 										  'arr_0'].astype(np.float32)
 				if self.gripper_dim > 0:
-					self.train_gripper_arr = np.load(os.path.join(self.data_dir, self.gripper_filenames_copy[file_num]))[
+					self.train_gripper_arr = np.load(os.path.join(self.data_dir, self.gripper_param_filenames_copy[file_num]))[
 										  'arr_0'].astype(np.float32)
 
 				# TODOD: Remove this?
@@ -1207,7 +1213,7 @@ class SGDOptimizer(object):
 				train_poses[start_i:end_i,:] = self._read_pose_data(self.train_poses_arr, self.input_pose_mode)
 				label_data[start_i:end_i] = self.train_label_arr
 				if self.gripper_dim > 0:
-					train_gripper[start_i:end_i] = self.train_gripper_arr
+					train_gripper[start_i:end_i] = self._read_gripper_data(self.train_gripper_arr, self.input_gripper_mode)
 
 				del self.train_data_arr
 				del self.train_poses_arr
@@ -1225,7 +1231,7 @@ class SGDOptimizer(object):
 					if self.gripper_dim > 0:
 						self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_data,
 												self.train_poses_batch: train_poses,
-												self.train_gripper_batch: train_gripper
+												self.train_gripper_batch: train_gripper,
 												self.train_labels_batch: label_data})
 					else:
 						self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_data,
@@ -1449,13 +1455,13 @@ class SGDOptimizer(object):
 			if len(val_indices) == 0:
 				continue
 		
-			if self.pose_data_mode == InputPoseMode.TF_IMAGE_SUCTION:
+			if self.input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
 				tp_tmp = self._read_pose_data(poses.copy(), self.input_pose_mode)
 				val_indices = val_indices[np.isfinite(tp_tmp[val_indices,1])]
 
 			data = data[val_indices,...]
 			poses = self._read_pose_data(poses[val_indices, :], self.input_pose_mode)
-			if gripper_dim > 0:
+			if self.gripper_dim > 0:
 				gripper_params = self._read_gripper_data(gripper_params[val_indices, :], self.input_gripper_mode)
 			labels = labels[val_indices,...]
 

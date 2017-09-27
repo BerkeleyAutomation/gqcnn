@@ -18,7 +18,7 @@ import time
 
 from gqcnn import GQCNN, ClassificationResult
 
-from optimizer_constants import InputDataMode, ImageMode
+from optimizer_constants import InputPoseMode, ImageMode
 
 binary_im_tf_tensor_template = 'binary_ims_tf'
 depth_im_tf_tensor_template = 'depth_ims_tf'
@@ -184,13 +184,13 @@ class GQCNNAnalyzer(object):
 
                 if model_type == 'gqcnn':
                     # slice correct part of pose_arr corresponding to input_data_mode used for training model
-                    if model_input_data_mode == InputDataMode.TF_IMAGE:
+                    if model_input_data_mode == InputPoseMode.TF_IMAGE:
                         pose_arr = pose_arr[:,2:3]
-                    elif model_input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+                    elif model_input_data_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
                         pose_arr = np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-                    elif model_input_data_mode == InputDataMode.RAW_IMAGE:
+                    elif model_input_data_mode == InputPoseMode.RAW_IMAGE:
                         pose_arr = pose_arr[:,:4]
-                    elif model_input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
+                    elif model_input_data_mode == InputPoseMode.RAW_IMAGE_PERSPECTIVE:
                         pose_arr = pose_arr[:,:6]
                     else:
                         raise ValueError('Input data mode %s not supported' %(model_input_data_mode))

@@ -114,6 +114,8 @@ class GQCNN(object):
 		:obj:`ndArray`
 			sliced pose_data corresponding to input pose mode
 		"""
+		if len(pose_arr.shape) == 1:
+			pose_arr = np.asarray([pose_arr])
 		if input_pose_mode == InputPoseMode.TF_IMAGE:
 			# depth
 			return pose_arr[:,2:3]
@@ -133,6 +135,8 @@ class GQCNN(object):
 			raise ValueError('Input pose mode {} not supported'.format(input_pose_mode))
 
 	def _read_gripper_data(self, gripper_param_arr, input_gripper_mode):
+		if len(gripper_param_arr.shape) == 1:
+			gripper_param_arr = np.asarray([gripper_param_arr])
 		if input_gripper_mode == InputGripperMode.WIDTH:
 			return gripper_param_arr[:, 2:3]
 		else:
@@ -177,15 +181,15 @@ class GQCNN(object):
 			# create empty weight object
 			self._weights = GQCNNWeights()
 		
-		ckpt_vars = tcf.list_variables(ckpt_file)
-		full_var_names = []
-		short_names = []
-		for variable, shape in ckpt_vars:
-			full_var_names.append(variable)
-		short_names.append(variable.split('/')[-1])
+            		ckpt_vars = tcf.list_variables(ckpt_file)
+            		full_var_names = []
+		    	short_names = []
+		    	for variable, shape in ckpt_vars:
+			    	full_var_names.append(variable)
+		        	short_names.append(variable.split('/')[-1])
 		
-		for full_var_name, short_name in zip(full_var_names, short_names):
-		self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
+		    	for full_var_name, short_name in zip(full_var_names, short_names):
+		        	self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
 
 	def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5):
 		""" Re-initializes final fully-connected layers for fine-tuning 
@@ -545,13 +549,13 @@ class GQCNN(object):
 		# setup for prediction
 		num_images = image_arr.shape[0]
 		num_poses = pose_arr.shape[0]
-		if gripper_arr:
+		if gripper_arr is not None:
 			num_gripper_parameters = gripper_arr.shape[0]
 
 		output_arr = np.zeros([num_images, 2])
 		if num_images != num_poses:
 			raise ValueError('Must provide same number of images and poses')
-		if gripper_arr:
+		if gripper_arr is not None:
 			if num_images != num_gripper_parameters:
 				raise ValueError('Must provide same number of images and gripper parameters')
 
@@ -579,11 +583,11 @@ class GQCNN(object):
 				self._input_pose_arr[:dim, :] = (
 					pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
 
-				if gripper_arr:
+				if gripper_arr is not None:
 					self._input_gripper_arr[:dim, :] = (
 						gripper_arr[cur_ind:end_ind, :] - self._gripper_mean) / self._gripper_std					
 
-				if gripper_arr:
+				if gripper_arr is not None:
 					gqcnn_output = self._sess.run(self._output_tensor,
 													  feed_dict={self._input_im_node: self._input_im_arr,
 																 self._input_pose_node: self._input_pose_arr,
@@ -678,8 +682,7 @@ class GQCNN(object):
 		return transform_layer, output_height, output_width, input_channels
 
 	def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, inference=False):
-		logging.info('Building convolutional layer: {}'.format(name))
-		
+		logging.info('Building convolutional layer: {}'.format(name))		
 		with tf.name_scope(name):
 			# initialize weights
 			if '{}_weights'.format(name) in self._weights.weights.keys():
@@ -836,7 +839,7 @@ class GQCNN(object):
 	def _build_fc_merge(self, input_fc_node_1, input_fc_node_2, fan_in_1, fan_in_2, out_size, name, input_fc_node_3=None, fan_in_3=None, drop_rate=0.0, inference=False):
 		logging.info('Building Merge Layer: {}'.format(name))
 		
-		if input_fc_node_3:
+		if input_fc_node_3 is not None:
 			# initialize weights
 			if '{}_input_1_weights'.format(name) in self._weights.weights.keys():
 				input1W = self._weights.weights['{}_input_1_weights'.format(name)]
@@ -965,8 +968,8 @@ class GQCNN(object):
 			elif layer_type == 'fc_merge':
 				raise ValueError("Cannot have merge layer in image stream")
 			elif layer_type == 'residual':
-		# TODO: currently we are assuming the layer before a res layer must be conv layer, fix this
-		fan_in = input_height * input_width * input_channels 
+				# TODO: currently we are assuming the layer before a res layer must be conv layer, fix this
+				fan_in = input_height * input_width * input_channels 
 				output_node = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
 				layer_config['filt_dim'], layer_name)
 				prev_layer = layer_type
@@ -1059,11 +1062,11 @@ class GQCNN(object):
 				raise ValueError('Cannot have pose-connected layer in merge stream')
 			elif layer_type == 'fc_merge':
 				#TODO: Clean this giant if statement up
-				if input_stream_3:
+				if input_stream_3 is not None:
 					if 'drop_rate' in layer_config.keys():
-						output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, input_stream_3=input_stream_3, fan_in_3=fan_in_3, drop_rate=layer_config['drop_rate'], inference=inference)
+						output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, input_fc_node_3=input_stream_3, fan_in_3=fan_in_3, drop_rate=layer_config['drop_rate'], inference=inference)
 					else:
-						output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, input_stream_3=input_stream_3, fan_in_3=fan_in_3, inference=inference)
+						output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, input_fc_node_3=input_stream_3, fan_in_3=fan_in_3, inference=inference)
 				else:
 					if 'drop_rate' in layer_config.keys():
 						output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, drop_rate=layer_config['drop_rate'], inference=inference)
@@ -1099,7 +1102,7 @@ class GQCNN(object):
 			output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, self._architecture['im_stream'], inference=inference)
 		with tf.name_scope('pose_stream'):
 			output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'], inference=inference)
-		if input_gripper_node:
+		if input_gripper_node is not None:
 			with tf.name_scope('gripper_stream'):
 				output_gripper_stream, fan_out_gripper = self._build_gripper_stream(input_gripper_node, self._gripper_dim, self._architecture['gripper_stream'], inference=inference)
 			with tf.name_scope('merge_stream'):
