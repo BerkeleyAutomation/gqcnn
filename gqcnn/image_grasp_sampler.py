@@ -59,7 +59,8 @@ class ImageGraspSampler(object):
         self._gripper_width = gripper_width
 
     def sample(self, rgbd_im, camera_intr, num_samples,
-               segmask=None, seed=None, visualize=False):
+               segmask=None, seed=None, visualize=False,
+               filters=[]):
         """
         Samples a set of 2D grasps from a given RGB-D image.
         
@@ -77,6 +78,8 @@ class ImageGraspSampler(object):
             number to use in random seed (None if no seed)
         visualize : bool
             whether or not to show intermediate samples (for debugging)
+        filters: `list` of :obj:`GraspFilter`
+            filters which reject samples which don't match each of the filters
 
         Returns
         -------
@@ -92,7 +95,7 @@ class ImageGraspSampler(object):
         logging.debug('Sampling 2d candidates')
         sampling_start = time()
         grasps = self._sample(rgbd_im, camera_intr, num_samples,
-                              segmask=segmask, visualize=visualize)
+                              segmask=segmask, visualize=visualize, filters=filters)
         sampling_stop = time()
         logging.debug('Sampled %d grasps from image' %(len(grasps)))
         logging.debug('Sampling grasps took %.3f sec' %(sampling_stop - sampling_start))
@@ -100,7 +103,7 @@ class ImageGraspSampler(object):
 
     @abstractmethod
     def _sample(self, rgbd_im, camera_intr, num_samples, segmask=None,
-                visualize=False):
+                visualize=False, filters=[]):
         """
         Sample a set of 2D grasp candidates from a depth image.
         Subclasses must override.
@@ -117,6 +120,8 @@ class ImageGraspSampler(object):
             binary image segmenting out the object of interest
         visualize : bool
             whether or not to show intermediate samples (for debugging)
+        filters: `list` of :obj:`GraspFilter`
+            filters which reject samples which don't match each of the filters
  
         Returns
         -------
@@ -205,7 +210,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         return normals
 
     def _sample(self, rgbd_im, camera_intr, num_samples, segmask=None,
-                visualize=False):
+                visualize=False, filters=[]):
         """
         Sample a set of 2D grasp candidates from a depth image.
 
@@ -221,6 +226,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             binary image segmenting out the object of interest
         visualize : bool
             whether or not to show intermediate samples (for debugging)
+        filters: `list` of :obj:`GraspFilter`
+            filters which reject samples which don't match each of the filters
  
         Returns
         -------
@@ -229,7 +236,10 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         """
         # sample antipodal pairs in image space
         grasps = self._sample_antipodal_grasps(rgbd_im, camera_intr, num_samples,
-                                               segmask=segmask, visualize=visualize)
+                                               segmask=segmask, visualize=visualize, 
+                                               filters=filters)
+        for grasp_filter in filters:
+            grasps = grasp_filter.filter(grasps)
         return grasps
 
     def _sample_antipodal_grasps(self, rgbd_im, camera_intr, num_samples,
@@ -251,7 +261,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             binary image segmenting out the object of interest
         visualize : bool
             whether or not to show intermediate samples (for debugging)
- 
+
         Returns
         -------
         :obj:`list` of :obj:`Grasp2D`
@@ -388,7 +398,6 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                                                       width=self._gripper_width,
                                                       camera_intr=camera_intr)
                             grasps.append(candidate_grasp)
-
         # return sampled grasps
         return grasps
 

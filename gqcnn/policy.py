@@ -213,7 +213,7 @@ class AntipodalGraspingPolicy(GraspingPolicy):
     """
     def __init__(self, config):
         GraspingPolicy.__init__(self, config)
-
+        self.filters = [ReachabilityFilter()]
         self._parse_config()
 
     def _parse_config(self):
@@ -261,7 +261,8 @@ class AntipodalGraspingPolicy(GraspingPolicy):
                                             self._num_grasp_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
-                                            seed=None)
+                                            seed=None,
+                                            filters=self.filters)
         num_grasps = len(grasps)
 
         # form tensors
@@ -387,6 +388,7 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
     def __init__(self, config):
         GraspingPolicy.__init__(self, config)
         CrossEntropyAntipodalGraspingPolicy._parse_config(self)
+        self.filters = [ReachabilityFilter()]
 
     def _parse_config(self):
         """ Parses the parameters of the policy. """
@@ -447,7 +449,8 @@ class CrossEntropyAntipodalGraspingPolicy(GraspingPolicy):
                                             self._num_seed_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
-                                            seed=self._seed)
+                                            seed=self._seed,
+                                            filters=self.filters)
         num_grasps = len(grasps)
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
@@ -732,6 +735,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
     def __init__(self, config):
         QFunctionAntipodalGraspingPolicy.__init__(self, config)
         self._parse_config()
+        self.filters = [ReachabilityFilter()]
 
     def _parse_config(self):
         """ Parses the parameters of the policy. """
@@ -797,7 +801,8 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
                                             self._num_seed_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
-                                            seed=self._seed)
+                                            seed=self._seed,
+                                            filters=self.filters)
         
         num_grasps = len(grasps)
         if num_grasps == 0:
