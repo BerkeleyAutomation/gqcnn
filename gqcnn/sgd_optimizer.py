@@ -116,7 +116,7 @@ class SGDOptimizer(object):
 	def _launch_tensorboard(self):
 		""" Launches Tensorboard to visualize training """
 		logging.info("Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
-		os.system('tensorboard --port=6009 --logdir=' + self.summary_dir + " &>/dev/null &")
+		os.system('tensorboard --logdir=' + self.summary_dir + " &>/dev/null &")
 
 	def _close_tensorboard(self):
 		""" Closes Tensorboard """
