@@ -1106,7 +1106,7 @@ class GQCNN(object):
 				output_gripper_stream, fan_out_gripper = self._build_gripper_stream(input_gripper_node, self._gripper_dim, self._architecture['gripper_stream'], inference=inference)
 			if 'gripper_pose_merge_stream' in self._architecture.keys():
 				with tf.name_scope('gripper_pose_merge_stream'):
-					output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(ouput_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, self._architecture['gripper_pose_merge_stream'], inference=inference)
+					output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(output_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, self._architecture['gripper_pose_merge_stream'], inference=inference)
 				with tf.name_scope('merge_stream'):
 					return self._build_merge_stream(output_im_stream, output_gripper_pose_merge_stream, fan_out_im, fan_out_gripper_pose_merge_stream, self._architecture['merge_stream'], inference=inference)[0]
 			else:
