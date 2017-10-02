@@ -933,7 +933,7 @@ class GQCNN(object):
 		# add output to feature dict
 		self._feature_tensors[name] = output_node
 
-		return output_node 
+		return output_node, num_filt  
 
 
 	def _build_im_stream(self, input_node, input_height, input_width, input_channels, layers, inference=False):
@@ -975,11 +975,11 @@ class GQCNN(object):
 				# TODO: currently we are assuming the layer before a res layer must be conv layer, fix this
 				fan_in = input_height * input_width * input_channels
 				if first_residual:
-					output_node = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
+					output_node, input_channels = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
 						layer_config['filt_dim'], layer_name, first=True)
 					first_residual = False
 				else:
-					output_node = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
+					output_node, input_channels = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
 						layer_config['filt_dim'], layer_name)
 				prev_layer = layer_type
 			else:
