@@ -153,8 +153,8 @@ class GQCNN(object):
 		# load in means and stds 
 		# pose format is: grasp center row, grasp center col, gripper depth, grasp theta, crop center row, crop center col, grip width
 		# gripper format is: min_width, force_limit, max_width, finger_radius
-		self._im_mean = np.load(os.path.join(model_dir, 'mean.npy'))
-		self._im_std = np.load(os.path.join(model_dir, 'std.npy'))
+		self._im_mean = np.load(os.path.join(model_dir, 'image_mean.npy'))
+		self._im_std = np.load(os.path.join(model_dir, 'image_std.npy'))
 		self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
 		self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
 		self._gripper_mean = np.load(os.path.join(model_dir, 'gripper_mean.npy'))
