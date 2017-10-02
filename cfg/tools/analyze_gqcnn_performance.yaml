@@ -14,7 +14,5 @@ models:
     im_height: 32
     im_width: 32
     im_channels: 1
-    input_pose_mode: tf_image
-    input_gripper_mode: width
     replace: 0
     vis_conv: 0
