@@ -180,16 +180,15 @@ class GQCNN(object):
 		
 			# create empty weight object
 			self._weights = GQCNNWeights()
-		
-					ckpt_vars = tcf.list_variables(ckpt_file)
-					full_var_names = []
-				short_names = []
-				for variable, shape in ckpt_vars:
-					full_var_names.append(variable)
-					short_names.append(variable.split('/')[-1])
-		
-				for full_var_name, short_name in zip(full_var_names, short_names):
-					self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
+			ckpt_vars = tcf.list_variables(ckpt_file)
+			full_var_names = []
+			short_names = []
+			for variable, shape in ckpt_vars:
+				full_var_names.append(variable)
+				short_names.append(variable.split('/')[-1])
+	
+			for full_var_name, short_name in zip(full_var_names, short_names):
+				self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
 
 	def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5):
 		""" Re-initializes final fully-connected layers for fine-tuning 
