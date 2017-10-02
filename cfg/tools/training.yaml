@@ -165,21 +165,21 @@ gqcnn_config:
     pose_stream:
       pc1:
         type: pc
-        out_size: 64
+        out_size: 32
     gripper_stream:
       gc1:
         type: gc
+        out_size: 32
+    gripper_pose_merge_stream:
+      gp_fc1:
+        type: fc_merge
         out_size: 64
+        drop_rate: 0.5
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 256
-        drop_rate: .5
-      fc5: 
-        type: fc
-        out_size: 128
-        drop_rate: .5   
-      fc6:
+        out_size: 512  
+      fc5:
         type: fc
         final_layer: True
         out_size: 2
