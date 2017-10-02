@@ -24,7 +24,7 @@ num_original_val_images: 50
 save_distorted_val_images: 0
 num_distorted_val_images: 50
 
-mask_and_inpaint: 0
+mask_and_inpaint: 1
 
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
@@ -54,7 +54,7 @@ image_mode: depth_tf_table
 training_mode: classification
 preproc_mode: none
 input_data_mode: tf_image_suction
-num_tensor_channels: 1
+num_tensor_channels: 2
 pos_weight: 0.1
 
 num_random_files: 100
@@ -63,10 +63,10 @@ target_metric_name: robust_suction_wrench_resistance
 metric_thresh: 0.36
 
 # denoising / synthetic data params
-multiplicative_denoising: 0
+multiplicative_denoising: 1
 gamma_shape: 1000.00
 
-symmetrize: 0
+symmetrize: 1
 
 morphological: 0
 morph_open_rate: 0.25
@@ -84,12 +84,12 @@ gradient_dropout_sigma: 0.5
 gradient_dropout_shape: 15
 gradient_dropout_scale: 0.001
 
-gaussian_process_denoising: 0
+gaussian_process_denoising: 1
 gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
 
-border_distortion: 0
+border_distortion: 1
 border_distortion_rate: .5
 border_grad_sigma: 1.0
 border_grad_thresh: 0.005
@@ -117,7 +117,7 @@ gqcnn_config:
   # basic data metrics
   im_height: 32
   im_width: 32
-  im_channels: 1
+  im_channels: 2
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_data_mode: tf_image_suction
 

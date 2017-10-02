@@ -1,13 +1,13 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /home/vsatish/Data/dexnet/data/grasp_quality/bar_clamp_05_10cm/tensors
+dataset_dir: /home/vsatish/Data/dexnet/data/grasp_quality/mini_dexnet_5_10cm/tensors
 output_dir: /home/vsatish/Data/dexnet/data/models/generic_gripper
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
 num_epochs: 25     # number of epochs to train for
-eval_frequency: 10000  # how often to get validation error 
+eval_frequency: 1000  # how often to get validation error 
 save_frequency: 10000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
@@ -173,8 +173,13 @@ gqcnn_config:
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 512   
-      fc5:
+        out_size: 256
+        drop_rate: .5
+      fc5: 
+        type: fc
+        out_size: 128
+        drop_rate: .5   
+      fc6:
         type: fc
         final_layer: True
         out_size: 2

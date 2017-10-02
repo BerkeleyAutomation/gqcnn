@@ -1,16 +1,18 @@
 # dataset params
-dataset_dir: /home/autolab/Public/drive/projects/dex-net/data/grasp_quality/3dnet_kit_04_09_17 
+dataset_dir: /home/vsatish/Data/dexnet/data/grasp_quality/bar_clamp_5_10cm/tensors 
 
 image_mode: depth_tf_table
-data_format: tf_image
+input_pose_mode: tf_image
+input_gripper_mode: width
 metric_name: robust_ferrari_canny
 metric_thresh: 0.002
 gripper_width_m: .05
 
 # gqcnn params
-model_dir: /home/autolab/Public/drive/projects/dex-net/data/models/grasp_quality/gqcnn_test_network
+model_dir: /home/vsatish/Data/dexnet/data/models/generic_gripper/bar_clamp_5_10cm_09_30_17
 
 # vis params
 datapoint_type: true_positive # which datapoints to visualize, possible values are true positive, false positive, true negative, false negative
+samples_per_object: 100
 display_image_type: depth
 font_size: 15
