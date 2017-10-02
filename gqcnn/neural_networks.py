@@ -746,7 +746,7 @@ class GQCNN(object):
 
 			return pool, out_height, out_width, out_channels
 
-	def _build_fc_layer(self, input_node, fan_in, out_size, name, input_is_conv, drop_rate=0.0, final_fc_layer=False, inference=False):
+	def _build_fc_layer(self, input_node, fan_in, out_size, name, input_is_multi, drop_rate=0.0, final_fc_layer=False, inference=False):
 		logging.info('Building fully connected layer: {}'.format(name))
 		
 		# initialize weights
@@ -766,7 +766,7 @@ class GQCNN(object):
 			self._weights.weights['{}_bias'.format(name)] = fcb
 
 		# build layer
-		if input_is_conv:
+		if input_is_multi:
 			input_num_nodes = reduce_shape(input_node.get_shape())
 			input_flat = tf.reshape(input_node, [-1, input_num_nodes])
 			fc = self._leaky_relu(tf.matmul(input_flat, fcW) + fcb)
@@ -957,15 +957,15 @@ class GQCNN(object):
 					norm=layer_config['norm'], inference=inference)
 				prev_layer = layer_type
 			elif layer_type == 'fc':
-				prev_layer_is_conv = False
+				prev_layer_is_conv_or_res = False
 				first_residual = True
-				if prev_layer == 'conv':
-					prev_layer_is_conv = True
+				if prev_layer == 'conv' or prev_layer == 'residual':
+					prev_layer_is_conv_or_res = True
 					fan_in = input_height * input_width * input_channels
 				if 'dropout_rate' in layer_config.keys():
-					output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate=layer_config['drop_rate'], inference=inference)
+					output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv_or_res, drop_rate=layer_config['drop_rate'], inference=inference)
 				else:
-					output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, inference=inference)
+					output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv_or_res, inference=inference)
 				prev_layer = layer_type
 			elif layer_type == 'pc':
 				raise ValueError('Cannot have pose-connected layer in image stream')
