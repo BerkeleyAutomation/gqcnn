@@ -131,34 +131,57 @@ gqcnn_config:
       #   type: spatial_transformer
       #   out_size: 32
       #   num_transform_params: 6
-      conv1_1:
-        type: conv
-        filt_dim: 5
+      # conv1_1:
+      #   type: conv
+      #   filt_dim: 5
+      #   num_filt: 32
+      #   pool_size: 1
+      #   pool_stride: 1  
+      #   norm: 0
+      # conv1_2:
+      #   type: conv
+      #   filt_dim: 3
+      #   num_filt: 32
+      #   pool_size: 2
+      #   pool_stride: 2
+      #   norm: 1
+      # conv2_1:
+      #   type: conv
+      #   filt_dim: 3
+      #   num_filt: 32
+      #   pool_size: 1
+      #   pool_stride: 1  
+      #   norm: 0
+      # conv2_2:
+      #   type: conv
+      #   filt_dim: 3
+      #   num_filt: 32
+      #   pool_size: 1
+      #   pool_stride: 1
+      #   norm: 1
+      res1_1:
+        type: residual
         num_filt: 32
-        pool_size: 1
-        pool_stride: 1  
-        norm: 0
-      conv1_2:
+        filt_dim: 5
+      res1_2:
+        type: residual
+        num_filt: 32
+        filt_dim: 3
+      conv1_1:
         type: conv
         filt_dim: 3
         num_filt: 32
         pool_size: 2
         pool_stride: 2
         norm: 1
-      conv2_1:
-        type: conv
-        filt_dim: 3
+      res2_1:
+        type: residual
         num_filt: 32
-        pool_size: 1
-        pool_stride: 1  
-        norm: 0
-      conv2_2:
-        type: conv
         filt_dim: 3
+      res2_2:
+        type: residual
         num_filt: 32
-        pool_size: 1
-        pool_stride: 1
-        norm: 1
+        filt_dim: 3
       fc3:
         type: fc
         out_size: 1024
