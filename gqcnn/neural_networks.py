@@ -896,7 +896,7 @@ class GQCNN(object):
 		output_node = tf.layers.batch_normalization(output_node, training=inference, epsilon = ep)
 		return output_node
 
-	def _build_residual_layer(self, input_node, input_channels, fan_in, num_filt, filt_h, filt_w, name, inference=False):
+	def _build_residual_layer(self, input_node, input_channels, fan_in, num_filt, filt_h, filt_w, name, first=False, inference=False):
 		logging.info('Building Residual Layer: {}'.format(name))
 		if '{}_conv1_weights'.format(name) in self._weights.weights.keys():
 			conv1W = self._weights.weights['{}_conv1_weights'.format(name)]
@@ -921,8 +921,9 @@ class GQCNN(object):
 		#  implemented as x = BN + ReLU + Conv + BN + ReLU + Conv
 		EP = .001
 		output_node = input_node
-		output_node = self._build_batch_norm(output_node, EP)
-		output_node = self._leaky_relu(output_node)
+		if not first:
+			output_node = self._build_batch_norm(output_node, EP)
+			output_node = self._leaky_relu(output_node)
 		output_node = tf.nn.conv2d(output_node, conv1W, strides=[1, 1, 1, 1], padding='SAME') + conv1b
 		output_node = self._build_batch_norm(output_node, EP)
 		output_node = self._leaky_relu(output_node)
@@ -939,13 +940,16 @@ class GQCNN(object):
 		logging.info('Building Image Stream')
 		output_node = input_node
 		prev_layer = "start"
+		first_residual = True
 		for layer_name, layer_config in layers.iteritems():
 			layer_type = layer_config['type']
 			if layer_type == 'spatial_transformer':
+				first_residual = True
 				output_node, input_height, input_width, input_channels = self._build_spatial_transformer(output_node, input_height, input_width, input_channels,
 					layer_config['num_transform_params'], layer_config['out_size'], layer_config['out_size'], layer_name)
 				prev_layer = layer_type
 			elif layer_type == 'conv':
+				first_residual = True
 				if prev_layer == 'fc':
 					raise ValueError('Cannot have conv layer after fc layer')
 				output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filt_dim'],
@@ -954,6 +958,7 @@ class GQCNN(object):
 				prev_layer = layer_type
 			elif layer_type == 'fc':
 				prev_layer_is_conv = False
+				first_residual = True
 				if prev_layer == 'conv':
 					prev_layer_is_conv = True
 					fan_in = input_height * input_width * input_channels
@@ -968,9 +973,14 @@ class GQCNN(object):
 				raise ValueError("Cannot have merge layer in image stream")
 			elif layer_type == 'residual':
 				# TODO: currently we are assuming the layer before a res layer must be conv layer, fix this
-				fan_in = input_height * input_width * input_channels 
-				output_node = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
-				layer_config['filt_dim'], layer_name)
+				fan_in = input_height * input_width * input_channels
+				if first_residual:
+					output_node = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
+						layer_config['filt_dim'], layer_name, first=True)
+					first_residual = False
+				else:
+					output_node = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
+						layer_config['filt_dim'], layer_name)
 				prev_layer = layer_type
 			else:
 				raise ValueError("Unsupported layer type: {}".format(layer_type))
