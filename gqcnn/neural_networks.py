@@ -181,15 +181,15 @@ class GQCNN(object):
 			# create empty weight object
 			self._weights = GQCNNWeights()
 		
-            		ckpt_vars = tcf.list_variables(ckpt_file)
-            		full_var_names = []
-		    	short_names = []
-		    	for variable, shape in ckpt_vars:
-			    	full_var_names.append(variable)
-		        	short_names.append(variable.split('/')[-1])
+					ckpt_vars = tcf.list_variables(ckpt_file)
+					full_var_names = []
+				short_names = []
+				for variable, shape in ckpt_vars:
+					full_var_names.append(variable)
+					short_names.append(variable.split('/')[-1])
 		
-		    	for full_var_name, short_name in zip(full_var_names, short_names):
-		        	self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
+				for full_var_name, short_name in zip(full_var_names, short_names):
+					self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
 
 	def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5):
 		""" Re-initializes final fully-connected layers for fine-tuning 
@@ -1105,14 +1105,14 @@ class GQCNN(object):
 		if input_gripper_node is not None:
 			with tf.name_scope('gripper_stream'):
 				output_gripper_stream, fan_out_gripper = self._build_gripper_stream(input_gripper_node, self._gripper_dim, self._architecture['gripper_stream'], inference=inference)
-            if 'gripper_pose_merge_stream' in self._architecture.keys():
-                with tf.name_scope('gripper_pose_merge_stream'):
-                    output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(ouput_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, self._architecture['gripper_pose_merge_stream'], inference=inference)
-                with tf.name_scope('merge_stream'):
-                    return self._build_merge_stream(output_im_stream, output_gripper_pose_merge_stream, fan_out_im, fan_out_gripper_pose_merge_stream, self._architecture['merge_stream'], inference=inference)[0]
-            else:
-    			with tf.name_scope('merge_stream'):
-    				return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], input_stream_3=output_gripper_stream, fan_in_3=fan_out_gripper, inference=inference)[0]
+			if 'gripper_pose_merge_stream' in self._architecture.keys():
+				with tf.name_scope('gripper_pose_merge_stream'):
+					output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(ouput_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, self._architecture['gripper_pose_merge_stream'], inference=inference)
+				with tf.name_scope('merge_stream'):
+					return self._build_merge_stream(output_im_stream, output_gripper_pose_merge_stream, fan_out_im, fan_out_gripper_pose_merge_stream, self._architecture['merge_stream'], inference=inference)[0]
+			else:
+				with tf.name_scope('merge_stream'):
+					return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], input_stream_3=output_gripper_stream, fan_in_3=fan_out_gripper, inference=inference)[0]
 		else:
 			with tf.name_scope('merge_stream'):
 				return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)[0]
