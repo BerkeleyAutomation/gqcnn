@@ -1077,7 +1077,7 @@ class GQCNN(object):
 				prev_layer = layer_type
 			else:
 				raise ValueError("Unsupported layer type: {}".format(layer_type))
-		return output_node
+		return output_node, fan_in
 
 	def _build_network(self, input_im_node, input_pose_node, input_gripper_node=None, inference=False):
 		""" Builds neural network 
@@ -1105,8 +1105,14 @@ class GQCNN(object):
 		if input_gripper_node is not None:
 			with tf.name_scope('gripper_stream'):
 				output_gripper_stream, fan_out_gripper = self._build_gripper_stream(input_gripper_node, self._gripper_dim, self._architecture['gripper_stream'], inference=inference)
-			with tf.name_scope('merge_stream'):
-				return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], input_stream_3=output_gripper_stream, fan_in_3=fan_out_gripper, inference=inference)
+            if 'gripper_pose_merge_stream' in self._architecture.keys():
+                with tf.name_scope('gripper_pose_merge_stream'):
+                    output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(ouput_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, self._architecture['gripper_pose_merge_stream'], inference=inference)
+                with tf.name_scope('merge_stream'):
+                    return self._build_merge_stream(output_im_stream, output_gripper_pose_merge_stream, fan_out_im, fan_out_gripper_pose_merge_stream, self._architecture['merge_stream'], inference=inference)[0]
+            else:
+    			with tf.name_scope('merge_stream'):
+    				return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], input_stream_3=output_gripper_stream, fan_in_3=fan_out_gripper, inference=inference)[0]
 		else:
 			with tf.name_scope('merge_stream'):
-				return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)
+				return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)[0]
