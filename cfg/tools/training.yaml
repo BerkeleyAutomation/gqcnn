@@ -37,7 +37,7 @@ eval_total_train_error: 0
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.005
+base_lr: 0.01
 decay_step_multiplier: .66   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
@@ -163,10 +163,10 @@ gqcnn_config:
         type: residual
         num_filt: 32
         filt_dim: 5
-      res1_2:
-        type: residual
-        num_filt: 32
-        filt_dim: 3
+      #res1_2:
+      #  type: residual
+      #  num_filt: 32
+      #  filt_dim: 3
       conv1_1:
         type: conv
         filt_dim: 3
@@ -178,13 +178,18 @@ gqcnn_config:
         type: residual
         num_filt: 32
         filt_dim: 3
-      res2_2:
-        type: residual
-        num_filt: 32
-        filt_dim: 3
+      #res2_2:
+      #  type: residual
+      #  num_filt: 32
+      #  filt_dim: 3
       fc3:
         type: fc
-        out_size: 1024
+        out_size: 512
+        drop_rate: 0.5
+      fc4: 
+        type: fc
+        out_size: 512
+        drop_rate: 0.3
     pose_stream:
       pc1:
         type: pc
@@ -199,10 +204,18 @@ gqcnn_config:
         out_size: 64
         drop_rate: 0.5
     merge_stream:
-      fc4:
-        type: fc_merge
-        out_size: 512  
       fc5:
+        type: fc_merge
+        out_size: 512
+        drop_rate: 0.5
+      fc6:
+        type: fc
+        out_size: 512
+        drop_rate: 0.5
+      fc7: 
+        type: fc
+        out_size: 128   
+      fc8:
         type: fc
         final_layer: True
         out_size: 2

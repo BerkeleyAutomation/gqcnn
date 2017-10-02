@@ -18,12 +18,7 @@ import time
 
 from gqcnn import GQCNN, ClassificationResult
 
-from optimizer_constants import InputPoseMode, ImageMode
-
-binary_im_tf_tensor_template = 'binary_ims_tf'
-depth_im_tf_tensor_template = 'depth_ims_tf'
-depth_im_tf_table_tensor_template = 'depth_ims_tf_table'
-hand_poses_template = 'hand_poses'
+from optimizer_constants import InputPoseMode, ImageMode, InputGripperMode, FileTemplates
 
 class GQCNNAnalyzer(object):
     """ Analyzes GQCNN models """

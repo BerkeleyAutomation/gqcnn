@@ -1,12 +1,12 @@
-model_dir: /home/vsatish/Data/dexnet/data/models/suction
-output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_training_performance
+model_dir: /home/vsatish/Data/dexnet/data/models/generic_gripper/
+output_dir: /home/vsatish/Data/dexnet/data/analyses/generic_gripper_training/
 
 out_rate: 1
 font_size: 15
 dpi: 100
 
 models:
-  mini_dexnet_09_05_17:
+  model_lllyedcbys:
     tag: GQCNN (N=100)
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
@@ -14,6 +14,7 @@ models:
     im_height: 32
     im_width: 32
     im_channels: 1
-    input_data_mode: tf_image_suction
+    input_pose_mode: tf_image
+    input_gripper_mode: width
     replace: 0
     vis_conv: 0
