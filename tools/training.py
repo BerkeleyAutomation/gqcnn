@@ -15,7 +15,6 @@ gqcnn_config = train_config['gqcnn_config']
 
 def get_elapsed_time(time_in_seconds):
 	""" Helper function to get elapsed time """
-	print (time_in_seconds)
 	if time_in_seconds < 60:
 		return '%.1f seconds' % (time_in_seconds)
 	elif time_in_seconds < 3600:
