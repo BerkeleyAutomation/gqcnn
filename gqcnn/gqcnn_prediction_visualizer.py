@@ -1,5 +1,5 @@
 """
-Visualize the predictions of a GQCNN on a dataset Visualizes TP, TN, FP, FN..
+Visualize the predictions of a GQCNN on a dataset Visualizes TP, TN, FP, FN.
 Author: Vishal Satish 
 """
 import copy
@@ -13,10 +13,10 @@ import autolab_core.utils as utils
 from autolab_core import YamlConfig, Point
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
-from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputPoseMode, ImageMode, FileTemplates
+from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputPoseMode,InputGripperMode, ImageMode, FileTemplates
 from gqcnn import Visualizer as vis2d
 
-import IPython
+import IPython as ip
 
 class GQCNNPredictionVisualizer(object):
     """ Class to visualize predictions of GQCNN on a specified dataset. Visualizes TP, TN, FP, FN. """
@@ -44,6 +44,8 @@ class GQCNNPredictionVisualizer(object):
             im_filename = self.im_filenames[i]
             pose_filename = self.pose_filenames[i]
             label_filename = self.label_filenames[i]
+            if self.input_gripper_mode is not 'None':
+                gripper_filename = self.gripper_filenames[i]
 
             logging.info('Loading Image File: ' + im_filename + ' Pose File: ' + pose_filename + ' Label File: ' + label_filename)
 
@@ -52,11 +54,16 @@ class GQCNNPredictionVisualizer(object):
             label_tensor = 1 * (metric_tensor > self.metric_thresh)
             image_tensor = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
             hand_poses_tensor = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+            if self.input_gripper_mode is not 'None':
+                gripper_params_tensor = self._read_gripper_data(np.load(os.path.join(self.data_dir, gripper_filename))['arr_0'], self.input_gripper_mode)
 
-            pose_tensor = self._read_pose_data(hand_poses_tensor, self.input_data_mode)
+            pose_tensor = self._read_pose_data(hand_poses_tensor, self.input_pose_mode)
 
             # score with neural network
-            pred_p_success_tensor = self._gqcnn.predict(image_tensor, pose_tensor)
+            if self.input_gripper_mode is not 'None':
+                pred_p_success_tensor = self._gqcnn.predict(image_tensor, pose_tensor, gripper_arr=gripper_params_tensor)
+            else:
+                pred_p_success_tensor = self._gqcnn.predict(image_tensor, pose_tensor)
 
             # compute results
             classification_result = ClassificationResult([pred_p_success_tensor],
@@ -67,12 +74,12 @@ class GQCNNPredictionVisualizer(object):
             logging.info('Recall on files: %.3f' %(classification_result.recall))
             mispred_ind = classification_result.mispredicted_indices()
             correct_ind = classification_result.correct_indices()
-            # IPython.embed()
 
             if self.datapoint_type == 'true_positive' or self.datapoint_type == 'true_negative':
                 vis_ind = correct_ind
             else:
                 vis_ind = mispred_ind
+
             num_visualized = 0
             # visualize
             for ind in vis_ind:
@@ -112,8 +119,11 @@ class GQCNNPredictionVisualizer(object):
                 elif self.display_image_type == RenderMode.GD:
                     image = GdImage(data)
 
+                print(gripper_params_tensor[ind][0])
+                if gripper_params_tensor[ind][0] > 0.06:
+                    print('continuing')
+                    continue
                 vis2d.figure()
-
                 if self.display_image_type == RenderMode.RGBD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.color)
@@ -134,10 +144,11 @@ class GQCNNPredictionVisualizer(object):
                     vis2d.grasp(grasp)
                 else:
                     vis2d.imshow(image)
-                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
+                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], gripper_params_tensor[ind])
                     grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
-                vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(ind,
+                vis2d.title('Datapoint %d: Gripper Params: %s Pred: %.3f Label: %.3f' %(ind,
+                                                                     str(gripper_params_tensor[ind]),
                                                                      classification_result.pred_probs[ind,1],
                                                                      classification_result.labels[ind]))
                 vis2d.show()
@@ -168,7 +179,8 @@ class GQCNNPredictionVisualizer(object):
         # analysis params
         self.datapoint_type = self.cfg['datapoint_type']
         self.image_mode = self.cfg['image_mode']
-        self.input_data_mode = self.cfg['data_format']
+        self.input_pose_mode = self.cfg['input_pose_mode']
+        self.input_gripper_mode = self.cfg['input_gripper_mode']
         self.target_metric_name = self.cfg['metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
         self.gripper_width_m = self.cfg['gripper_width_m']
@@ -186,7 +198,7 @@ class GQCNNPredictionVisualizer(object):
         self._gqcnn.open_session()
 
     def _setup_data_filenames(self):
-        """ Setup image and pose data filenames, subsample files, check validity of filenames/image mode """
+        """ Setup image, pose, and possibly gripper data filenames, subsample files, check validity of filenames/image mode """
 
         # read in filenames of training data(poses, images, labels)
         logging.info('Reading filenames')
@@ -210,10 +222,14 @@ class GQCNNPredictionVisualizer(object):
 
         self.pose_filenames = [f for f in all_filenames if f.find(FileTemplates.hand_poses_template) > -1]
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
+        if self.input_gripper_mode is not 'None':
+            self.gripper_filenames = [f for f in all_filenames if f.find(FileTemplates.gripper_params_template) > -1]
 
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
+        if self.input_gripper_mode is not 'None':
+            self.gripper_filenames.sort(key = lambda x: int(x[-9:-4]))
 
         # check that all file categories were found
         if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
@@ -254,3 +270,9 @@ class GQCNNPredictionVisualizer(object):
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:5], pose_arr[:,6:7]]
         else:
             raise ValueError('Input data mode %s not supported' %(input_data_mode))
+
+    def _read_gripper_data(self, gripper_param_arr, input_gripper_mode):
+        if input_gripper_mode == InputGripperMode.WIDTH:
+            return gripper_param_arr[:, 2:3]
+        else:
+            raise ValueError('Input gripper mode {} not supportd'.format(input_gripper_mode))
