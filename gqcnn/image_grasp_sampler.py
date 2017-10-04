@@ -236,8 +236,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         """
         # sample antipodal pairs in image space
         grasps = self._sample_antipodal_grasps(rgbd_im, camera_intr, num_samples,
-                                               segmask=segmask, visualize=visualize, 
-                                               filters=filters)
+                                               segmask=segmask, visualize=visualize)
         for grasp_filter in filters:
             grasps = grasp_filter.filter(grasps)
         return grasps

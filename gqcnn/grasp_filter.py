@@ -5,6 +5,10 @@ Author: Chris Correa
 """
 from abc import ABCMeta, abstractmethod
 
+from autolab_core import RigidTransform
+
+DEFAULT_T_CAMERA_WORLD = '/home/autolab/Public/alan/calib/primesense_overhead/primesense_overhead_to_world.tf'
+
 class GraspFilter(object):
     __metaclass__ = ABCMeta
 
@@ -29,8 +33,14 @@ class GraspFilter(object):
         pass
 
 class ReachabilityFilter(GraspFilter):
-    def __init__(self):
-        T_camera_world = RigidTransform.load('/home/autolab/Public/alan/calib/primesense_overhead/primesense_overhead_to_world.tf')
+    def __init__(self, T_camera_world=None,
+                 arm_name='left'):
+        if T_camera_world is None:
+            T_camera_world = RigidTransform.load(DEFAULT_T_CAMERA_WORLD)
+        self.T_camera_world = T_camera_world
+
+        from yumipy import YuMiArm
+        self.arm = YuMiArm(arm_name)
 
     def filter(self, grasps):
         """
@@ -46,8 +56,7 @@ class ReachabilityFilter(GraspFilter):
         :obj:'list' of :obj:'Grasp2D'
             list of 2D grasp candidates that pass through the filter
         """
-        arm = YuMiArm('right')
         def filter_grasp(grasp):
-            T_grasp_camera = grasp.pose
-            return arm.is_pose_reachable(T_grasp_camera * self.T_camera_world)
-        return filter(arm.is_pose_reachable, grasps)
+            T_grasp_camera = grasp.pose()
+            return self.arm.is_pose_reachable(T_grasp_camera * self.T_camera_world)
+        return filter(self.arm.is_pose_reachable, grasps)

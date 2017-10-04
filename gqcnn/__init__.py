@@ -9,6 +9,7 @@ from grasp import Grasp2D
 from visualizer import Visualizer
 from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
+from grasp_filter import ReachabilityFilter
 from policy import Policy, GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, QFunctionAntipodalGraspingPolicy, EpsilonGreedyQFunctionAntipodalGraspingPolicy, RgbdImageState, ParallelJawGrasp
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 

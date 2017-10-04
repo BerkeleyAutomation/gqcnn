@@ -8,7 +8,7 @@ calib_dir: data/calib
 # policy params
 policy:
   # gqcnn params
-  gqcnn_model: /home/user/data/models/GQ-Image-Wise
+  gqcnn_model: /home/autolab/Public/data/dex-net/data/models/grasp_quality/GQ-Image-Wise
   
   # optimization params
   num_seed_samples: 200
@@ -37,7 +37,7 @@ policy:
     max_rejection_samples: 4000
 
     # distance
-    max_dist_from_center: 160
+    max_dist_from_center: 10000
     min_dist_from_boundary: 45
     min_grasp_dist: 2.5
     angle_dist_weight: 5.0

@@ -17,7 +17,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage
 
-from gqcnn import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
+from gqcnn import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputDataMode, ReachabilityFilter
 from gqcnn import Visualizer as vis
 from gqcnn import NoValidGraspsException
 
