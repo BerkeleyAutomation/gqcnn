@@ -417,7 +417,9 @@ class SGDOptimizer(object):
 		if len(gripper_param_arr.shape) == 1:
 			gripper_param_arr = np.asarray([gripper_param_arr])
 		if input_gripper_mode == InputGripperMode.WIDTH:
-			return gripper_param_arr[:, 2:3]
+			return gripper_param_arr[:, 0:1]
+        	elif input_gripper_mode == InputGripperMode.ALL:
+            		return gripper_param_arr
 		else:
 			raise ValueError('Input gripper mode {} not supportd'.format(input_gripper_mode))
 
@@ -889,6 +891,8 @@ class SGDOptimizer(object):
 			self.gripper_dim = 1 # width
 		elif self.input_gripper_mode == InputGripperMode.NONE:
 			self.gripper_dim = 0 # no gripper channel
+        	elif self.input_gripper_mode == InputGripperMode.ALL:
+            		self.gripper_dim = 4 # width, palm depth, fx, fy
 		else:
 			raise ValueError('Input gripper mode %s not understood' %(self.input_gripper_mode))
 

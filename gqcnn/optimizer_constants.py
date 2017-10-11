@@ -56,4 +56,5 @@ class InputPoseMode:
 # enum for input gripper data formats
 class InputGripperMode:
     WIDTH = 'width'
+    ALL = 'all'
     NONE = 'none'
