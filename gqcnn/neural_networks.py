@@ -139,8 +139,8 @@ class GQCNN(object):
 			gripper_param_arr = np.asarray([gripper_param_arr])
 		if input_gripper_mode == InputGripperMode.WIDTH:
 			return gripper_param_arr[:, 0:1]
-        	elif input_gripper_mode == InputGripperMode.ALL:
-            		return gripper_param_arr
+		elif input_gripper_mode == InputGripperMode.ALL:
+			return gripper_param_arr
 		else:
 			raise ValueError('Input gripper mode {} not supportd'.format(input_gripper_mode))
 
@@ -260,8 +260,8 @@ class GQCNN(object):
 			self._gripper_dim = 1 # width
 		elif self._input_gripper_mode == InputGripperMode.NONE:
 			self._gripper_dim = 0 # no gripper channel
-        	elif self._input_gripper_mode == InputGripperMode.ALL:
-            		self._gripper_dim = 4 # width, palm depth, fx, fy
+		elif self._input_gripper_mode == InputGripperMode.ALL:
+			self._gripper_dim = 4 # width, palm depth, fx, fy
 		else:
 			raise ValueError('Input gripper mode %s not understood' %(self._input_gripper_mode))
 

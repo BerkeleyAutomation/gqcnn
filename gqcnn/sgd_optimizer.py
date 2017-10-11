@@ -418,8 +418,8 @@ class SGDOptimizer(object):
 			gripper_param_arr = np.asarray([gripper_param_arr])
 		if input_gripper_mode == InputGripperMode.WIDTH:
 			return gripper_param_arr[:, 0:1]
-        	elif input_gripper_mode == InputGripperMode.ALL:
-            		return gripper_param_arr
+		elif input_gripper_mode == InputGripperMode.ALL:
+			return gripper_param_arr
 		else:
 			raise ValueError('Input gripper mode {} not supportd'.format(input_gripper_mode))
 
@@ -579,38 +579,39 @@ class SGDOptimizer(object):
 			np.save(self.pose_std_filename, self.pose_std)
 
 		# compute gripper param mean
-		logging.info('Computing gripper mean')
-		self.gripper_mean_filename = os.path.join(self.experiment_dir, 'gripper_mean.npy')
-		self.gripper_std_filename = os.path.join(self.experiment_dir, 'gripper_std.npy')
-		if self.cfg['fine_tune']:
-			self.gripper_mean = self.gqcnn.get_gripper_mean()
-			self.gripper_std = self.gqcnn.get_gripper_std()
-		else:
-			self.gripper_mean = np.zeros(self.gripper_shape)
-			self.gripper_std = np.zeros(self.gripper_shape)
-			num_summed = 0
-			random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
-			for k in random_file_indices.tolist():
-				im_filename = self.im_filenames[k]
-				gripper_filename = self.gripper_param_filenames[k]
-				self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
-				gripper_data = self.gripper_data[self.train_index_map[im_filename],:]
-				self.gripper_mean += np.sum(gripper_data, axis=0)
-				num_summed += gripper_data.shape[0]
-			self.gripper_mean = self.gripper_mean / num_summed
+		if self.gripper_dim > 0:
+			logging.info('Computing gripper mean')
+			self.gripper_mean_filename = os.path.join(self.experiment_dir, 'gripper_mean.npy')
+			self.gripper_std_filename = os.path.join(self.experiment_dir, 'gripper_std.npy')
+			if self.cfg['fine_tune']:
+				self.gripper_mean = self.gqcnn.get_gripper_mean()
+				self.gripper_std = self.gqcnn.get_gripper_std()
+			else:
+				self.gripper_mean = np.zeros(self.gripper_shape)
+				self.gripper_std = np.zeros(self.gripper_shape)
+				num_summed = 0
+				random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
+				for k in random_file_indices.tolist():
+					im_filename = self.im_filenames[k]
+					gripper_filename = self.gripper_param_filenames[k]
+					self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
+					gripper_data = self.gripper_data[self.train_index_map[im_filename],:]
+					self.gripper_mean += np.sum(gripper_data, axis=0)
+					num_summed += gripper_data.shape[0]
+				self.gripper_mean = self.gripper_mean / num_summed
 
-			for k in random_file_indices.tolist():
-				im_filename = self.im_filenames[k]
-				gripper_filename = self.gripper_param_filenames[k]
-				self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
-				gripper_data = self.gripper_data[self.train_index_map[im_filename],:]
-				self.gripper_std += np.sum((gripper_data - self.gripper_mean)**2, axis=0)
-			self.gripper_std = np.sqrt(self.gripper_std / num_summed)
+				for k in random_file_indices.tolist():
+					im_filename = self.im_filenames[k]
+					gripper_filename = self.gripper_param_filenames[k]
+					self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
+					gripper_data = self.gripper_data[self.train_index_map[im_filename],:]
+					self.gripper_std += np.sum((gripper_data - self.gripper_mean)**2, axis=0)
+				self.gripper_std = np.sqrt(self.gripper_std / num_summed)
 
-			self.gripper_std[self.gripper_std==0] = 1.0
+				self.gripper_std[self.gripper_std==0] = 1.0
 
-			np.save(self.gripper_mean_filename, self.gripper_mean)
-			np.save(self.gripper_std_filename, self.gripper_std)
+				np.save(self.gripper_mean_filename, self.gripper_mean)
+				np.save(self.gripper_std_filename, self.gripper_std)
 
 		if self.cfg['fine_tune']:
 			out_mean_filename = os.path.join(self.experiment_dir, 'image_mean.npy')
@@ -859,7 +860,7 @@ class SGDOptimizer(object):
 
 		self.train_im_data = np.load(os.path.join(self.data_dir, self.im_filenames[0]))['arr_0']
 		self.pose_data = np.load(os.path.join(self.data_dir, self.pose_filenames[0]))['arr_0']
-	        self.gripper_data = np.load(os.path.join(self.data_dir, self.gripper_param_filenames[0]))['arr_0']
+			self.gripper_data = np.load(os.path.join(self.data_dir, self.gripper_param_filenames[0]))['arr_0']
 		self.metric_data = np.load(os.path.join(self.data_dir, self.label_filenames[0]))['arr_0']
 		self.images_per_file = self.train_im_data.shape[0]
 		self.im_height = self.train_im_data.shape[1]
@@ -868,7 +869,7 @@ class SGDOptimizer(object):
 		self.im_center = np.array([float(self.im_height-1)/2, float(self.im_width-1)/2])
 		self.num_tensor_channels = self.cfg['num_tensor_channels']
 		self.pose_shape = self.pose_data.shape[1]
-	        self.gripper_shape = self.gripper_data.shape[1]
+			self.gripper_shape = self.gripper_data.shape[1]
 		self.input_pose_mode = self.cfg['input_pose_mode']
 		self.input_gripper_mode = self.cfg['input_gripper_mode']
 		
@@ -891,8 +892,8 @@ class SGDOptimizer(object):
 			self.gripper_dim = 1 # width
 		elif self.input_gripper_mode == InputGripperMode.NONE:
 			self.gripper_dim = 0 # no gripper channel
-        	elif self.input_gripper_mode == InputGripperMode.ALL:
-            		self.gripper_dim = 4 # width, palm depth, fx, fy
+		elif self.input_gripper_mode == InputGripperMode.ALL:
+			self.gripper_dim = 4 # width, palm depth, fx, fy
 		else:
 			raise ValueError('Input gripper mode %s not understood' %(self.input_gripper_mode))
 
