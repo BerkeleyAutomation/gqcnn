@@ -7,10 +7,6 @@ calib_dir: data/calib
 
 # policy params
 policy:
-  # gqcnn params
-  #gqcnn_model: /home/user/data/models/GQ-Image-Wise
-  gqcnn_model: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_vgg_dexnet_large_v1_01_24_17
-  
   # optimization params
   num_seed_samples: 200
   num_gmm_samples: 50
@@ -22,8 +18,9 @@ policy:
   # general params
   deterministic: 1
   gripper_width: 0.05
-  crop_height: 96
-  crop_width: 96
+
+  # logging params
+  logging_dir: /path/to/your/logs
 
   # sampling params
   sampling:
@@ -50,6 +47,13 @@ policy:
     depth_sample_win_width: 1
     min_depth_offset: 0.015
     max_depth_offset: 0.05
+
+  # metric
+  metric:
+    type: gqcnn
+    gqcnn_model: /path/to/your/GQ-ImageWise
+    crop_height: 96
+    crop_width: 96
 
   # visualization
   vis:

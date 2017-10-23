@@ -45,6 +45,22 @@ class RgbdImageState(object):
         self.segmask = segmask
         self.fully_observed = fully_observed
 
+    def save(self, save_dir):
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        color_image_filename = os.path.join(save_dir, 'color.png')
+        depth_image_filename = os.path.join(save_dir, 'depth.npy')
+        camera_intr_filename = os.path.join(save_dir, 'camera.intr')
+        segmask_filename = os.path.join(save_dir, 'segmask.npy')
+        state_filename = os.path.join(save_dir, 'state.pkl')
+        self.rgbd_im.color.save(color_image_filename)
+        self.rgbd_im.depth.save(depth_image_filename)
+        self.camera_intr.save(camera_intr_filename)
+        if self.segmask is not None:
+            self.segmask.save(segmask_filename)
+        if self.fully_observed is not None:
+            pkl.dump(self.fully_observed, state_filename)
+        
 class GraspAction(object):
     """ Action to encapsulate parallel jaw grasps.
     """
@@ -53,6 +69,16 @@ class GraspAction(object):
         self.q_value = q_value
         self.image = image
 
+    def save(self, save_dir):
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
+        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
+        image_filename = os.path.join(save_dir, 'tf_image.npy')
+        pkl.dump(self.grasp, open(grasp_filename, 'wb'))
+        pkl.dump(self.q_value, open(q_value_filename, 'wb'))
+        self.image.save(image_filename)
+        
 class Policy(object):
     """ Abstract policy class. """
     __metaclass__ = ABCMeta
@@ -352,6 +378,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if 'gripper_width' in self.config.keys():
             self._gripper_width = self.config['gripper_width']
 
+        # optional, logging dir
+        self._logging_dir = None
+        if 'logging_dir' in self.config.keys():
+            self._logging_dir = self.config['logging_dir']
+            if not os.path.exists(self._logging_dir):
+                os.mkdir(self._logging_dir)
+            
     def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
@@ -382,6 +415,16 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if not isinstance(state, RgbdImageState):
             raise ValueError('Must provide an RGB-D image state.')
 
+        if self._logging_dir is not None:
+            policy_id = utils.gen_experiment_id()
+            policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
+            while os.path.exists(policy_dir):
+                policy_id = utils.gen_experiment_id()
+                policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
+            os.mkdir(policy_dir)
+            state_dir = os.path.join(policy_dir, 'state')
+            state.save(state_dir)
+        
         # parse state
         rgbd_im = state.rgbd_im
         camera_intr = state.camera_intr
@@ -531,7 +574,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                frame=state.rgbd_im.frame)
 
         # return action
-        return GraspAction(grasp, q_value, image)
+        action = GraspAction(grasp, q_value, image)
+
+        if self._logging_dir is not None:
+            action_dir = os.path.join(policy_dir, 'action')
+            action.save(action_dir)
+
+        return action
         
 class QFunctionRobustGraspingPolicy(CrossEntropyRobustGraspingPolicy):
     """ Optimizes a set of antipodal grasp candidates in image space using the 

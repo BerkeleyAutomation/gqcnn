@@ -146,6 +146,16 @@ class GQCNN(object):
                 self._pose_mean = self._pose_mean[:6]
                 self._pose_std = self._pose_std[:6]
 
+        elif self._pose_mean.shape[0] == 4 and self._input_data_mode == InputDataMode.TF_IMAGE:
+            # depth
+            if isinstance(self.pose_mean, numbers.Number) \
+               or len(self.pose_mean.shape) == 0 \
+               or self.pose_mean.shape[0] == 1:
+                self._pose_mean = self.pose_mean
+            else:
+                self._pose_mean = self._pose_mean[2]
+                self._pose_std = self._pose_std[2]
+
     def init_weights_file(self, model_filename):
         """ Initialize network weights from the specified model 
 
@@ -534,7 +544,7 @@ class GQCNN(object):
         self._pose_mean = np.zeros(self._pose_dim)
         self._pose_std = np.ones(self._pose_dim)
 
-    def initialize_network(self, add_softmax=True):
+    def initialize_network(self, add_softmax=True, add_sigmoid=False):
         """ Set up input nodes and builds network.
 
         Parameters
@@ -554,6 +564,8 @@ class GQCNN(object):
             self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node)
             if add_softmax:
                 self.add_softmax_to_predict()
+            if add_sigmoid:
+                self.add_sigmoid_to_predict()
 
     def open_session(self):
         """ Open tensorflow session """
@@ -716,6 +728,10 @@ class GQCNN(object):
     def add_softmax_to_predict(self):
         """ Adds softmax to output tensor of prediction network """
         self._output_tensor = tf.nn.softmax(self._output_tensor)
+
+    def add_sigmoid_to_predict(self):
+        """ Adds sigmoid to output tensor of prediction network """
+        self._output_tensor = tf.nn.sigmoid(self._output_tensor)
 
     def update_batch_size(self, batch_size):
         """ Updates the prediction batch size 
