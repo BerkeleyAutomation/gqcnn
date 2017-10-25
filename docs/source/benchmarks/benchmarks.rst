@@ -1,15 +1,16 @@
 Dex-Net 2.0
 ~~~~~~~~~~~
-Here are the lowest error rates (%) we have achieved on the `Dex-Net-Large`_ dataset on randomized validation sets using various splitting rules:
+Below are the lowest error rates (%) we achieved on the `Dex-Net 2.0`_ dataset on a randomized 80-20 train-validation split using various splitting rules:
 
-.. image:: ../images/dexnet_benchmark.png
+.. image:: ../images/gqcnn_leaderboard.png
    :height: 800px
    :width: 800 px
    :scale: 100 %
    :align: center
 
-The lower error rates were achieved by training model GQ from the RSS paper for additional epochs.
-These models can be found in our `model zoo`_.
+The current leader is a ConvNet submitted by nomagic.ai.	   
+The lower error rates for GQ were achieved by training model GQ from the RSS paper for additional epochs.
+The GQ models can be found in our `model zoo`_.
 
 .. _model zoo: https://berkeley.box.com/s/szbchyt3tou9e4ct6dz8c5v99vhx0s84
 
