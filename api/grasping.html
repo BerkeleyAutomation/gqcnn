@@ -212,32 +212,32 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Parallel-jaw grasp in image space.</p>
 <dl class="attribute">
-<dt id="Grasp2D.center">
-<code class="descname">center</code><a class="headerlink" href="#Grasp2D.center" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.Grasp2D.center">
+<code class="descname">center</code><a class="headerlink" href="#gqcnn.Grasp2D.center" title="Permalink to this definition">¶</a></dt>
 <dd><p><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.Point</span></code> – point in image space</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Grasp2D.angle">
-<code class="descname">angle</code><a class="headerlink" href="#Grasp2D.angle" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.Grasp2D.angle">
+<code class="descname">angle</code><a class="headerlink" href="#gqcnn.Grasp2D.angle" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>float</em> – grasp axis angle with the camera x-axis</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Grasp2D.depth">
-<code class="descname">depth</code><a class="headerlink" href="#Grasp2D.depth" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.Grasp2D.depth">
+<code class="descname">depth</code><a class="headerlink" href="#gqcnn.Grasp2D.depth" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>float</em> – depth of the grasp center in 3D space</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Grasp2D.width">
-<code class="descname">width</code><a class="headerlink" href="#Grasp2D.width" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.Grasp2D.width">
+<code class="descname">width</code><a class="headerlink" href="#gqcnn.Grasp2D.width" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>float</em> – distance between the jaws in meters</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Grasp2D.camera_intr">
-<code class="descname">camera_intr</code><a class="headerlink" href="#Grasp2D.camera_intr" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.Grasp2D.camera_intr">
+<code class="descname">camera_intr</code><a class="headerlink" href="#gqcnn.Grasp2D.camera_intr" title="Permalink to this definition">¶</a></dt>
 <dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code> – frame of reference for camera that the grasp corresponds to</p>
 </dd></dl>
 
@@ -322,8 +322,8 @@ Euclidean distance with alpha weighting of angles</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>g1</strong> (<code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code>) – first grasp</li>
-<li><strong>g2</strong> (<code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code>) – second grasp</li>
+<li><strong>g1</strong> (<a class="reference internal" href="#gqcnn.Grasp2D" title="gqcnn.Grasp2D"><code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code></a>) – first grasp</li>
+<li><strong>g2</strong> (<a class="reference internal" href="#gqcnn.Grasp2D" title="gqcnn.Grasp2D"><code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code></a>) – second grasp</li>
 <li><strong>alpha</strong> (<em>float</em>) – weight of angle distance (rad to meters)</li>
 </ul>
 </td>
@@ -350,14 +350,14 @@ Euclidean distance with alpha weighting of angles</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Wraps image to crane grasp candidate generation for easy deployment of GQ-CNN.</p>
 <dl class="attribute">
-<dt id="ImageGraspSampler.config">
-<code class="descname">config</code><a class="headerlink" href="#ImageGraspSampler.config" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.ImageGraspSampler.config">
+<code class="descname">config</code><a class="headerlink" href="#gqcnn.ImageGraspSampler.config" title="Permalink to this definition">¶</a></dt>
 <dd><p><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.YamlConfig</span></code> – a dictionary-like object containing the parameters of the sampler</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="ImageGraspSampler.gripper_width">
-<code class="descname">gripper_width</code><a class="headerlink" href="#ImageGraspSampler.gripper_width" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.ImageGraspSampler.gripper_width">
+<code class="descname">gripper_width</code><a class="headerlink" href="#gqcnn.ImageGraspSampler.gripper_width" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>float</em> – width of the gripper in 3D space</p>
 </dd></dl>
 
@@ -382,7 +382,7 @@ Euclidean distance with alpha weighting of angles</p>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the list of grasps in image space</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal"><span class="pre">list</span></code> of <a class="reference internal" href="#gqcnn.Grasp2D" title="gqcnn.Grasp2D"><code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code></a></p>
 </td>
 </tr>
 </tbody>

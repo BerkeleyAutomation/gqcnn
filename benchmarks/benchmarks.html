@@ -197,10 +197,11 @@
             
   <div class="section" id="dex-net-2-0">
 <h1>Dex-Net 2.0<a class="headerlink" href="#dex-net-2-0" title="Permalink to this headline">¶</a></h1>
-<p>Here are the lowest error rates (%) we have achieved on the <a class="reference external" href="https://berkeley.box.com/s/pub2x8mtwhrzppr11nee0q6hcx0rm32w">Dex-Net-Large</a> dataset on randomized validation sets using various splitting rules:</p>
-<a class="reference internal image-reference" href="../_images/dexnet_benchmark.png"><img alt="../_images/dexnet_benchmark.png" class="align-center" src="../_images/dexnet_benchmark.png" style="width: 800.0px; height: 800.0px;" /></a>
-<p>The lower error rates were achieved by training model GQ from the RSS paper for additional epochs.
-These models can be found in our <a class="reference external" href="https://berkeley.box.com/s/szbchyt3tou9e4ct6dz8c5v99vhx0s84">model zoo</a>.</p>
+<p>Below are the lowest error rates (%) we achieved on the <a class="reference internal" href="#dex-net-2-0">Dex-Net 2.0</a> dataset on a randomized 80-20 train-validation split using various splitting rules:</p>
+<a class="reference internal image-reference" href="../_images/gqcnn_leaderboard.png"><img alt="../_images/gqcnn_leaderboard.png" class="align-center" src="../_images/gqcnn_leaderboard.png" style="width: 800.0px; height: 800.0px;" /></a>
+<p>The current leader is a ConvNet submitted by nomagic.ai.
+The lower error rates for GQ were achieved by training model GQ from the RSS paper for additional epochs.
+The GQ models can be found in our <a class="reference external" href="https://berkeley.box.com/s/szbchyt3tou9e4ct6dz8c5v99vhx0s84">model zoo</a>.</p>
 <p>We believe grasping performance on the physical robot can be improved if these validation error rates can be further reduced by modifications to the network architecture and optimization.
 If you achieve superior numbers on a randomized validation set, please email Jeff Mahler (<a class="reference external" href="mailto:jmahler&#37;&#52;&#48;berkeley&#46;edu">jmahler<span>&#64;</span>berkeley<span>&#46;</span>edu</a>) with the subject “Dex-Net 2.0 Benchmark Submission” and we will consider testing on our ABB YuMi.</p>
 </div>

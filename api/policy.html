@@ -233,8 +233,8 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gqcnn.policy.Policy</span></code></p>
 <p>Policy for robust grasping with Grasp Quality Convolutional Neural Networks (GQ-CNN).</p>
 <dl class="attribute">
-<dt id="GraspingPolicy.config">
-<code class="descname">config</code><a class="headerlink" href="#GraspingPolicy.config" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.GraspingPolicy.config">
+<code class="descname">config</code><a class="headerlink" href="#gqcnn.GraspingPolicy.config" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>dict</em> – dictionary of parameters for the policy</p>
 </dd></dl>
 
@@ -254,8 +254,8 @@
 </tbody>
 </table>
 <dl class="attribute">
-<dt id="gqcnn.GraspingPolicy.config">
-<code class="descname">config</code><a class="headerlink" href="#gqcnn.GraspingPolicy.config" title="Permalink to this definition">¶</a></dt>
+<dt>
+<code class="descname">config</code></dt>
 <dd><p>Returns the policy parameters.</p>
 </dd></dl>
 
@@ -288,15 +288,15 @@
 <code class="descname">grasps_to_tensors</code><span class="sig-paren">(</span><em>grasps</em>, <em>state</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GraspingPolicy.grasps_to_tensors" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts a list of grasps to an image and pose tensor.</p>
 <dl class="attribute">
-<dt id="GraspingPolicy.grasps">
-<code class="descname">grasps</code><a class="headerlink" href="#GraspingPolicy.grasps" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code> – list of image grassps to convert</p>
+<dt id="gqcnn.GraspingPolicy.grasps">
+<code class="descname">grasps</code><a class="headerlink" href="#gqcnn.GraspingPolicy.grasps" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal"><span class="pre">list</span></code> of <a class="reference internal" href="grasping.html#gqcnn.Grasp2D" title="gqcnn.Grasp2D"><code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code></a> – list of image grassps to convert</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="GraspingPolicy.state">
-<code class="descname">state</code><a class="headerlink" href="#GraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> – RGB-D image to plan grasps on</p>
+<dt id="gqcnn.GraspingPolicy.state">
+<code class="descname">state</code><a class="headerlink" href="#gqcnn.GraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="#gqcnn.RgbdImageState" title="gqcnn.RgbdImageState"><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code></a> – RGB-D image to plan grasps on</p>
 </dd></dl>
 
 <table class="docutils field-list" frame="void" rules="none">
@@ -357,9 +357,9 @@ Can override for alternate policies (e.g. epsilon greedy).</p>
 <dd><p>Plans the grasp with the highest probability of success on
 the given RGB-D image.</p>
 <dl class="attribute">
-<dt id="AntipodalGraspingPolicy.state">
-<code class="descname">state</code><a class="headerlink" href="#AntipodalGraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> – image to plan grasps on</p>
+<dt id="gqcnn.AntipodalGraspingPolicy.state">
+<code class="descname">state</code><a class="headerlink" href="#gqcnn.AntipodalGraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="#gqcnn.RgbdImageState" title="gqcnn.RgbdImageState"><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code></a> – image to plan grasps on</p>
 </dd></dl>
 
 <table class="docutils field-list" frame="void" rules="none">
@@ -368,7 +368,7 @@ the given RGB-D image.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">grasp to execute</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">ParallelJawGrasp</span></code></td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#gqcnn.ParallelJawGrasp" title="gqcnn.ParallelJawGrasp"><code class="xref py py-obj docutils literal"><span class="pre">ParallelJawGrasp</span></code></a></td>
 </tr>
 </tbody>
 </table>
@@ -428,9 +428,9 @@ Can override for alternate policies (e.g. epsilon greedy).</p>
 <dd><p>Plans the grasp with the highest probability of success on
 the given RGB-D image.</p>
 <dl class="attribute">
-<dt id="CrossEntropyAntipodalGraspingPolicy.state">
-<code class="descname">state</code><a class="headerlink" href="#CrossEntropyAntipodalGraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code> – image to plan grasps on</p>
+<dt id="gqcnn.CrossEntropyAntipodalGraspingPolicy.state">
+<code class="descname">state</code><a class="headerlink" href="#gqcnn.CrossEntropyAntipodalGraspingPolicy.state" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="#gqcnn.RgbdImageState" title="gqcnn.RgbdImageState"><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code></a> – image to plan grasps on</p>
 </dd></dl>
 
 <table class="docutils field-list" frame="void" rules="none">
@@ -439,7 +439,7 @@ the given RGB-D image.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">grasp to execute</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">ParallelJawGrasp</span></code></td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#gqcnn.ParallelJawGrasp" title="gqcnn.ParallelJawGrasp"><code class="xref py py-obj docutils literal"><span class="pre">ParallelJawGrasp</span></code></a></td>
 </tr>
 </tbody>
 </table>
@@ -457,26 +457,26 @@ the given RGB-D image.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>State to encapsulate RGB-D images.</p>
 <dl class="attribute">
-<dt id="RgbdImageState.rgbd_im">
-<code class="descname">rgbd_im</code><a class="headerlink" href="#RgbdImageState.rgbd_im" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.RgbdImageState.rgbd_im">
+<code class="descname">rgbd_im</code><a class="headerlink" href="#gqcnn.RgbdImageState.rgbd_im" title="Permalink to this definition">¶</a></dt>
 <dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.RgbdImage</span></code> – an RGB-D image to plan grasps on</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="RgbdImageState.camera_intr">
-<code class="descname">camera_intr</code><a class="headerlink" href="#RgbdImageState.camera_intr" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.RgbdImageState.camera_intr">
+<code class="descname">camera_intr</code><a class="headerlink" href="#gqcnn.RgbdImageState.camera_intr" title="Permalink to this definition">¶</a></dt>
 <dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code> – intrinsics of the RGB-D camera</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="RgbdImageState.segmask">
-<code class="descname">segmask</code><a class="headerlink" href="#RgbdImageState.segmask" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.RgbdImageState.segmask">
+<code class="descname">segmask</code><a class="headerlink" href="#gqcnn.RgbdImageState.segmask" title="Permalink to this definition">¶</a></dt>
 <dd><p><code class="xref py py-obj docutils literal"><span class="pre">perception.BinaryImage</span></code> – segmentation mask for the binary image</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="RgbdImageState.full_observed">
-<code class="descname">full_observed</code><a class="headerlink" href="#RgbdImageState.full_observed" title="Permalink to this definition">¶</a></dt>
+<dt id="gqcnn.RgbdImageState.full_observed">
+<code class="descname">full_observed</code><a class="headerlink" href="#gqcnn.RgbdImageState.full_observed" title="Permalink to this definition">¶</a></dt>
 <dd><p><code class="xref py py-obj docutils literal"><span class="pre">object</span></code> – representation of the fully observed state</p>
 </dd></dl>
 
