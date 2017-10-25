@@ -8,8 +8,8 @@ calib_dir: data/calib
 # policy params
 policy:
   # optimization params
-  num_seed_samples: 200
-  num_gmm_samples: 50
+  num_seed_samples: 128
+  num_gmm_samples: 64
   num_iters: 3
   gmm_refit_p: 0.25
   gmm_component_frac: 0.4
@@ -18,9 +18,6 @@ policy:
   # general params
   deterministic: 1
   gripper_width: 0.05
-
-  # logging params
-  logging_dir: /path/to/your/logs
 
   # sampling params
   sampling:
@@ -48,10 +45,11 @@ policy:
     min_depth_offset: 0.015
     max_depth_offset: 0.05
 
-  # metric
+  # metrics
   metric:
     type: gqcnn
-    gqcnn_model: /path/to/your/GQ-ImageWise
+    gqcnn_model: /mnt/data/dex-net/data/models/grasp_quality/gqcnn_vgg_dexnet_large_v1_01_24_17
+
     crop_height: 96
     crop_width: 96
 
@@ -59,7 +57,7 @@ policy:
   vis:
     grasp_sampling : 0
     tf_images: 0
-    grasp_candidates: 1
+    grasp_candidates: 0
     elite_grasps: 0
     grasp_ranking: 0
     grasp_plan: 0
