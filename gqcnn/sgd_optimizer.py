@@ -91,13 +91,11 @@ class SGDOptimizer(object):
 			return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
 
 		elif self.cfg['optimizer'] == 'adam':
-			return tf.train.AdamOptimizer(learning_rate).minimize(loss,
-																	   global_step=batch,
-																	   var_list=var_list)
+            		optimizer = tf.train.AdamOptimizer(learning_rate)
+			return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
 		elif self.cfg['optimizer'] == 'rmsprop':
-			return tf.train.RMSPropOptimizer(learning_rate).minimize(loss,
-																		  global_step=batch,
-																		  var_list=var_list)
+            		optimizer = tf.train.RMSPropOptimizer(learning_rate)
+			return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
 		else:
 			raise ValueError('Optimizer %s not supported' %(self.cfg['optimizer']))
 
@@ -261,8 +259,12 @@ class SGDOptimizer(object):
 				# run optimization
 				extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 				#check_numeric_op = tf.add_check_numerics_ops()
-				_, l, lr, predictions, batch_labels, output, train_images, pose_node, gripper_node, _ = self.sess.run(
+                		if self.gripper_dim > 0:
+				    _, l, lr, predictions, batch_labels, output, train_images, pose_node, gripper_node, _ = self.sess.run(
 						[optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.input_gripper_node, extra_update_ops], options=GeneralConstants.timeout_option)
+                		else:
+                    			_, l, lr, predictions, batch_labels, output, train_images, pose_node, _ = self.sess.run(
+                        			[optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, extra_update_ops], options=GeneralConstants.timeout_option)
 				ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
 				softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 				
@@ -634,10 +636,11 @@ class SGDOptimizer(object):
 		# update gqcnn pose mean & std
 		self.gqcnn.update_pose_mean(self._read_pose_data(self.pose_mean, self.input_pose_mode))
 		self.gqcnn.update_pose_std(self._read_pose_data(self.pose_std, self.input_pose_mode))
-
-		# update gqcnn gripper mean & std
-		self.gqcnn.update_gripper_mean(self._read_gripper_data(self.gripper_mean, self.input_gripper_mode))
-		self.gqcnn.update_gripper_std(self._read_gripper_data(self.gripper_std, self.input_gripper_mode))
+        
+	        if self.gripper_dim > 0:
+		    # update gqcnn gripper mean & std
+		    self.gqcnn.update_gripper_mean(self._read_gripper_data(self.gripper_mean, self.input_gripper_mode))
+		    self.gqcnn.update_gripper_std(self._read_gripper_data(self.gripper_std, self.input_gripper_mode))
 
 		# compute normalization parameters of the network
 		logging.info('Computing metric stats')
@@ -860,7 +863,7 @@ class SGDOptimizer(object):
 
 		self.train_im_data = np.load(os.path.join(self.data_dir, self.im_filenames[0]))['arr_0']
 		self.pose_data = np.load(os.path.join(self.data_dir, self.pose_filenames[0]))['arr_0']
-			self.gripper_data = np.load(os.path.join(self.data_dir, self.gripper_param_filenames[0]))['arr_0']
+		self.gripper_data = np.load(os.path.join(self.data_dir, self.gripper_param_filenames[0]))['arr_0']
 		self.metric_data = np.load(os.path.join(self.data_dir, self.label_filenames[0]))['arr_0']
 		self.images_per_file = self.train_im_data.shape[0]
 		self.im_height = self.train_im_data.shape[1]
@@ -869,7 +872,7 @@ class SGDOptimizer(object):
 		self.im_center = np.array([float(self.im_height-1)/2, float(self.im_width-1)/2])
 		self.num_tensor_channels = self.cfg['num_tensor_channels']
 		self.pose_shape = self.pose_data.shape[1]
-			self.gripper_shape = self.gripper_data.shape[1]
+		self.gripper_shape = self.gripper_data.shape[1]
 		self.input_pose_mode = self.cfg['input_pose_mode']
 		self.input_gripper_mode = self.cfg['input_gripper_mode']
 		

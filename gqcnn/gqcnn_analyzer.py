@@ -16,6 +16,8 @@ import scipy.misc as sm
 import sys
 import time
 
+import IPython 
+
 from gqcnn import GQCNN, ClassificationResult
 
 from optimizer_constants import InputPoseMode, ImageMode, InputGripperMode, FileTemplates
@@ -101,6 +103,8 @@ class GQCNNAnalyzer(object):
 			gripper_param_arr = np.asarray([gripper_param_arr])
 		if input_gripper_mode == InputGripperMode.WIDTH:
 			return gripper_param_arr[:, 2:3]
+        	elif input_gripper_mode == InputGripperMode.ALL:
+            		return gripper_param_arr
 		else:
 			raise ValueError('Input gripper mode {} not supportd'.format(input_gripper_mode))
 
@@ -189,11 +193,11 @@ class GQCNNAnalyzer(object):
 			# get filenames
 			filenames = [os.path.join(model_training_dataset_dir, f) for f in os.listdir(model_training_dataset_dir)]
 			if model_image_mode == ImageMode.BINARY_TF:
-				im_filenames = [f for f in filenames if f.find(binary_im_tf_tensor_template) > -1]
+				im_filenames = [f for f in filenames if f.find(FileTemplaltes.binary_im_tf_tensor_template) > -1]
 			elif model_image_mode == ImageMode.DEPTH_TF:
-				im_filenames = [f for f in filenames if f.find(depth_im_tf_tensor_template) > -1]
+				im_filenames = [f for f in filenames if f.find(FileTemplates.depth_im_tf_tensor_template) > -1]
 			elif model_image_mode == ImageMode.DEPTH_TF_TABLE:
-				im_filenames = [f for f in filenames if f.find(depth_im_tf_table_tensor_template) > -1]
+				im_filenames = [f for f in filenames if f.find(FileTemplates.depth_im_tf_table_tensor_template) > -1]
 			else:
 				raise ValueError('Model image mode %s not recognized' %(model_image_mode))
 			pose_filenames = [f for f in filenames if f.find(FileTemplates.hand_poses_template) > -1]
@@ -308,8 +312,8 @@ class GQCNNAnalyzer(object):
 			train_class_result = ClassificationResult(copy.copy(train_preds), copy.copy(train_labels))
 			val_class_result = ClassificationResult(copy.copy(val_preds), copy.copy(val_labels))
 
-			self.train_class_results[model_tag] = train_class_result
-			self.val_class_results[model_tag] = val_class_result
+			self.train_class_results[model_name] = train_class_result
+			self.val_class_results[model_name] = val_class_result
 
 			train_class_result.save(os.path.join(model_output_dir, 'train_class_result.cres'))
 			val_class_result.save(os.path.join(model_output_dir, 'val_class_result.cres'))
@@ -323,18 +327,18 @@ class GQCNNAnalyzer(object):
 		""" Plot analysis curves """
 		logging.info('Beginning Plotting')
 
-		colors = ['g', 'b', 'c', 'y', 'm', 'r']
-		styles = ['-', '--', '-.', ':', '-'] 
+		colors = ['g', 'b', 'c', 'y', 'm', 'r', 'k', '#F7DC6F', '#A04000', '#BFC9CA', '#82E0AA', '#85C1E9', '#F1948A']
+		styles = ['-', '--', '-.', ':', '-']
 
 		# get stats, plot curves
 		plt.clf()
 		i = 0
 		for model_name in self.models.keys():
 			model_tag = self.models[model_name]['tag']
-			train_class_result = self.train_class_results[model_tag]
+			train_class_result = self.train_class_results[model_name]
 			logging.info('Model %s training error rate: %.3f' %(model_name, train_class_result.error_rate))
 			train_class_result.precision_recall_curve(plot=True, color=colors[i],
-													  style=styles[i], label=model_tag)
+													  style=styles[i if i < len(styles) else 0], label=model_name)
 			i += 1
 		plt.title('Training Precision Recall Curve', fontsize=self.font_size)
 		handles, labels = plt.gca().get_legend_handles_labels()
@@ -345,9 +349,9 @@ class GQCNNAnalyzer(object):
 		i = 0
 		for model_name in self.models.keys():
 			model_tag = self.models[model_name]['tag']
-			train_class_result = self.train_class_results[model_tag]
+			train_class_result = self.train_class_results[model_name]
 			train_class_result.roc_curve(plot=True, color=colors[i],
-										 style=styles[i], label=model_tag)
+										 style=styles[i if i < len(styles) else 0], label=model_name)
 			i += 1
 		plt.title('Training ROC Curve', fontsize=self.font_size)
 		handles, labels = plt.gca().get_legend_handles_labels()
@@ -359,10 +363,10 @@ class GQCNNAnalyzer(object):
 		i = 0
 		for model_name in self.models.keys():
 			model_tag = self.models[model_name]['tag']
-			val_class_result = self.val_class_results[model_tag]
+			val_class_result = self.val_class_results[model_name]
 			logging.info('Model %s validation error rate: %.3f' %(model_name, val_class_result.error_rate))
 			val_class_result.precision_recall_curve(plot=True, color=colors[i],
-													  style=styles[i], label=model_tag)
+													  style=styles[i if i < len(styles) else 0], label=model_name)
 			i += 1
 		plt.title('Validation Precision Recall Curve', fontsize=self.font_size)
 		handles, labels = plt.gca().get_legend_handles_labels()
@@ -374,9 +378,9 @@ class GQCNNAnalyzer(object):
 		i = 0
 		for model_name in self.models.keys():
 			model_tag = self.models[model_name]['tag']
-			val_class_result = self.val_class_results[model_tag]
+			val_class_result = self.val_class_results[model_name]
 			val_class_result.roc_curve(plot=True, color=colors[i],
-										 style=styles[i], label=model_tag)
+										 style=styles[i if i < len(styles) else 0], label=model_name)
 			i += 1
 		plt.title('Validation ROC Curve', fontsize=self.font_size)
 		handles, labels = plt.gca().get_legend_handles_labels()
@@ -389,23 +393,24 @@ class GQCNNAnalyzer(object):
 		i = 0
 		for model_name in self.models.keys():
 			model_tag = self.models[model_name]['tag']
-			train_class_result = self.train_class_results[model_tag]
+			train_class_result = self.train_class_results[model_name]
 			if model_tag is None:
 				train_class_result.precision_recall_curve(plot=True, color=colors[i],
 													  style=styles[i], label='Training')
 			else:
 				train_class_result.precision_recall_curve(plot=True, color=colors[i],
-									  style=styles[i], label='Training' + model_tag)
+									  style=styles[i if i < len(styles) else 0], label='Training' + model_name)
 			i += 1
+        	i = 0
 		for model_name in self.models.keys():
 			model_tag = self.models[model_name]['tag']
-			val_class_result = self.val_class_results[model_tag]
+			val_class_result = self.val_class_results[model_name]
 			if model_tag is None:
 				val_class_result.precision_recall_curve(plot=True, color=colors[i],
-														  style=styles[i], label='Validation')
+														  style=styles[i if i < len(styles) else 0], label='Validation')
 			else:
 				val_class_result.precision_recall_curve(plot=True, color=colors[i],
-										  style=styles[i], label='Validation' + model_tag)
+										  style=styles[i if i < len(styles) else 0], label='Validation' + model_name)
 			i += 1
 		
 		plt.title('Precision Recall Curves', fontsize=self.font_size)
@@ -420,23 +425,24 @@ class GQCNNAnalyzer(object):
 		i = 0
 		for model_name in self.models.keys():
 			model_tag = self.models[model_name]['tag']
-			train_class_result = self.train_class_results[model_tag]
+			train_class_result = self.train_class_results[model_name]
 			if model_tag is None:
 				train_class_result.roc_curve(plot=True, color=colors[i],
-										 style=styles[i], label='Training')
+										 style=styles[i if i < len(styles) else 0], label='Training')
 			else:
 				train_class_result.roc_curve(plot=True, color=colors[i],
-										 style=styles[i], label='Training' + model_tag)
+										 style=styles[i if i < len(styles) else 0], label='Training' + model_name)
 			i += 1
+        	i = 0
 		for model_name in self.models.keys():
 			model_tag = self.models[model_name]['tag']
-			val_class_result = self.val_class_results[model_tag]
+			val_class_result = self.val_class_results[model_name]
 			if model_tag is None:
 				val_class_result.roc_curve(plot=True, color=colors[i],
-										 style=styles[i], label='Validation')
+										 style=styles[i if i < len(styles) else 0], label='Validation')
 			else:
 				val_class_result.roc_curve(plot=True, color=colors[i],
-							 style=styles[i], label='Validation' + model_tag)
+							 style=styles[i if i < len(styles) else 0], label='Validation' + model_name)
 			i += 1
 
 		plt.title('ROC Curves', fontsize=self.font_size)

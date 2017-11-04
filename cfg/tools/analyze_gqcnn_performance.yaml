@@ -1,18 +1,68 @@
-model_dir: /home/vsatish/Data/dexnet/data/models/generic_gripper/
-output_dir: /home/vsatish/Data/dexnet/data/analyses/generic_gripper_training/
+model_dir: /mnt/hdd/dex-net/data/models/grasp_quality/generic_gripper
+output_dir: /mnt/hdd/dex-net/data/analyses/generic_gripper_training/bar_clamp
 
 out_rate: 1
 font_size: 15
 dpi: 100
 
 models:
-  model_lllyedcbys:
+  model_bolpzhcqab:
     tag: GQCNN (N=100)
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
-    batch_size: 64
-    im_height: 32
-    im_width: 32
-    im_channels: 1
-    replace: 0
+    vis_conv: 0
+  model_bvvqvxafpz:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_dymrspthwt:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_kbdgrjiept:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_uhxkoxrkaw:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_gvxshlpudi:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_kcrplqbxej:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_qylysrybnt:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_jgkasujsbl:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_elcbqjeeqm:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_xfqaziuybl:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+    vis_conv: 0
+  model_yryavifwqx:
+    tag: GQCNN (N=100)
+    type: gqcnn
+    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
     vis_conv: 0
