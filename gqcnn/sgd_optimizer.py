@@ -36,6 +36,7 @@ from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 
+
 class SGDOptimizer(object):
 	""" Optimizer for gqcnn object """
 
@@ -61,10 +62,17 @@ class SGDOptimizer(object):
 			loss
 		"""
 		# TODO: Add Poisson Loss
+		## check out printing (train_domain_labels_node)
+		domain_weight = self.cfg['domain_weight'] 
 		if self.cfg['loss'] == 'l2':
 			return tf.nn.l2_loss(tf.sub(self.train_net_output, self.train_labels_node))
 		elif self.cfg['loss'] == 'sparse':
 			return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node, logits=self.train_net_output, name=None))
+		
+		## additive loss with both the discriminator loss and the normal loss
+		elif self.cfg['loss'] == "domain_confusion_loss":
+			classification_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node, logits=self.train_net_output, name=None))
+			return classification_loss + domain_weight*tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_domain_labels_node, logits=self.train_net_output, name=None))
 
 	def _create_optimizer(self, loss, batch, var_list, learning_rate):
 		""" Create optimizer based on config file
@@ -159,7 +167,6 @@ class SGDOptimizer(object):
 			train_predictions = self.train_net_output
 			with tf.name_scope('loss'):
 				loss = self._create_loss()
-
 		# part 2: regularization
 		layer_weights = self.weights.__dict__.values()
 		with tf.name_scope('regularization'):
@@ -425,14 +432,22 @@ class SGDOptimizer(object):
 		else:
 			raise ValueError('Training mode %s not supported' %(self.training_mode))
 		with tf.name_scope('train_labels_node'):
-			self.train_labels_batch = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+			self.train_labels_batch = tf.placeholder(train_label_dtype, (self.train_batch_size,)) ##? extra comma or variable parameter
+
+		## create a placeholder to hold the datapoints for the domain images
+		with tf.name_scope('train_domain_labels_node'):
+			self.train_domain_labels_batch = tf.placeholder(tf.int64, (self.train_batch_size,))
 
 		# create queue
+		## the problem is here right now
 		with tf.name_scope('data_queue'):
-			self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,)])
-			self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch])
+			self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, train_label_dtype, tf.int64], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,), (self.train_batch_size,)])
+			# IPython.embed()
+			self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch, self.train_domain_labels_batch])
 			self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
-			self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
+			self.train_domain_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+			# IPython.embed()
+			self.input_im_node, self.input_pose_node, self.train_labels_node, self.train_domain_labels_node = self.q.dequeue()
 
 		# setup weights using gqcnn
 		if self.cfg['fine_tune']:
@@ -593,27 +608,28 @@ class SGDOptimizer(object):
 		""" Compute train and validation indices based on an image-wise split"""
 		# make a map of the train and test indices for each file
 		logging.info('Computing indices image-wise')
-                if 'splits' in self.cfg.keys():
-                        train_index_map_filename = self.cfg['splits']['training']
-                        val_index_map_filename = self.cfg['splits']['validation']
-                else:
-                        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_image_wise.pkl')
-                        val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_image_wise.pkl')
+		if 'splits' in self.cfg.keys():
+			train_index_map_filename = self.cfg['splits']['training']
+			val_index_map_filename = self.cfg['splits']['validation']
+		else:
+			train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_image_wise.pkl')
+			val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_image_wise.pkl')
 
 		if os.path.exists(train_index_map_filename):
 			self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
 			self.val_index_map = pkl.load(open(val_index_map_filename, 'r'))
-		else:                        
-                        # get training and validation indices
-                        all_indices = np.arange(self.num_datapoints)
-                        np.random.shuffle(all_indices)
-                        train_indices = np.sort(all_indices[:self.num_train])
-                        val_indices = np.sort(all_indices[self.num_train:])
+		else:
+			# get training and validation indices
+			all_indices = np.arange(self.num_datapoints)
+			np.random.shuffle(all_indices)
+			train_indices = np.sort(all_indices[:self.num_train])
+			val_indices = np.sort(all_indices[self.num_train:])
 
-                        # compute indices
+			# compute indices
 			self.train_index_map = {}
 			self.val_index_map = {}
 			for i, im_filename in enumerate(self.im_filenames):
+				print(i, im_filename)
 				lower = i * self.images_per_file
 				upper = (i+1) * self.images_per_file
 				im_arr = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
@@ -839,29 +855,33 @@ class SGDOptimizer(object):
 
 		self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
 		self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
+		## declare domain label filenames
+		self.domain_label_filenames = [f for f in all_filenames if f.find("domain_label") > -1]
 		self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
 		self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
 
-		if self.debug:
-			# sort
-			self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
+		# if self.debug:
+		# 	# sort
+		# 	self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
+		# 	self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
+		# 	self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
+		# 	self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
+		# 	self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
-			# pack, shuffle and sample
-			zipped = zip(self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames)
-			random.shuffle(zipped)
-			zipped = zipped[:self.debug_num_files]
+		# 	# pack, shuffle and sample
+		# 	zipped = zip(self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames)
+		# 	random.shuffle(zipped)
+		# 	zipped = zipped[:self.debug_num_files]
 
-			# unpack
-			self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames = zip(*zipped)
-			IPython.embed()
+		# 	# unpack
+		# 	self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames = zip(*zipped)
+		# 	IPython.embed()
 
 		self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
 		self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 		self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
+		## more domain changes 
+		self.domain_label_filenames.sort(key = lambda x: int(x[-9:-4]))
 		self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
 		self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
@@ -881,8 +901,10 @@ class SGDOptimizer(object):
 		self.im_filenames = [self.im_filenames[k] for k in filename_indices]
 		self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
 		self.label_filenames = [self.label_filenames[k] for k in filename_indices]
-                if self.stable_pose_filenames is not None:
-                        self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
+		## probably have to subsample something here
+		self.domain_label_filenames = [self.domain_label_filenames[k] for k in filename_indices]
+		if self.stable_pose_filenames is not None:
+			self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 		if self.obj_id_filenames is not None:
 			self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
 
@@ -890,6 +912,8 @@ class SGDOptimizer(object):
 		self.im_filenames_copy = self.im_filenames[:]
 		self.pose_filenames_copy = self.pose_filenames[:]
 		self.label_filenames_copy = self.label_filenames[:]
+		## copy for domain
+		self.domain_label_filenames_copy = self.domain_label_filenames[:]
 		 
 	def _setup_output_dirs(self):
 		""" Setup output directories """
@@ -1012,6 +1036,8 @@ class SGDOptimizer(object):
 			[self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
 			train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
 			label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
+			## domain
+			domain_data = np.zeros(self.train_batch_size).astype(np.int64)
 
 			while start_i < self.train_batch_size:
 				# compute num remaining
@@ -1026,6 +1052,9 @@ class SGDOptimizer(object):
 				self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames_copy[file_num]))[
 										  'arr_0'].astype(np.float32)
 				self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
+										  'arr_0'].astype(np.float32)
+				## finish loading here, need to check if parsed correctly
+				self.train_domain_label_arr = np.load(os.path.join(self.data_dir, self.domain_label_filenames_copy[file_num]))[
 										  'arr_0'].astype(np.float32)
 
 				if self.pose_dim == 1 and self.train_poses_arr.shape[1] == 6:
@@ -1044,6 +1073,8 @@ class SGDOptimizer(object):
 				self.train_data_arr = self.train_data_arr[ind, ...]
 				self.train_poses_arr = self.train_poses_arr[ind, :]
 				self.train_label_arr = self.train_label_arr[ind]
+				## add for domain label
+				self.train_domain_label_arr = self.train_domain_label_arr[ind]
 				self.num_images = self.train_data_arr.shape[0]
 
 				# add noises to images
@@ -1065,10 +1096,14 @@ class SGDOptimizer(object):
 				train_data[start_i:end_i, ...] = np.copy(self.train_data_arr)
 				train_poses[start_i:end_i,:] = self._read_pose_data(np.copy(self.train_poses_arr), self.input_data_mode)
 				label_data[start_i:end_i] = np.copy(self.train_label_arr)
+				## enqueue the domain labels
+				domain_data[start_i: end_i] = np.copy(self.train_domain_label_arr)
 
 				del self.train_data_arr
 				del self.train_poses_arr
 				del self.train_label_arr
+				## domain?
+				del self.train_domain_label_arr
 		
 				# update start index
 				start_i = end_i
@@ -1079,12 +1114,15 @@ class SGDOptimizer(object):
 				try:
 					self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_data,
 															  self.train_poses_batch: train_poses,
-															  self.train_labels_batch: label_data})
+															  self.train_labels_batch: label_data,
+															  self.train_domain_labels_batch: domain_data})
 				except:
 					pass
 		del train_data
 		del train_poses
 		del label_data
+		## domain
+		del domain_data
 		self.dead_event.set()
 		logging.info('Queue Thread Exiting')
 		self.queue_thread_exited = True

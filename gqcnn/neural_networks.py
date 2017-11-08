@@ -376,6 +376,22 @@ class GQCNN(object):
         fc5W = tf.Variable(tf.truncated_normal([fc5_in_size, fc5_out_size], stddev=fc5_std), name='fc5W')
         fc5b = tf.Variable(tf.constant(0.0, shape=[fc5_out_size]), name='fc5b')
 
+
+        ## fc6
+        fc6_in_size = fc4_out_size
+        fc6_out_size = cfg['fc6']['out_size']
+        fc6_std = np.sqrt(2.0 / (fc6_in_size)) ## why are these standard deviations these values
+        fc6W = tf.Variable(tf.truncated_normal([fc6_in_size, fc6_out_size], stddev=fc6_std), name='fc6W')
+        fc6b = tf.Variable(tf.constant(0.0, shape=[fc6_out_size]), name='fc6b')
+
+        ## fc7
+        fc7_in_size = fc6_out_size
+        fc7_out_size = cfg['fc5']['out_size']
+        fc7_std = np.sqrt(2.0 / (fc7_in_size))
+        fc7W = tf.Variable(tf.truncated_normal([fc7_in_size, fc7_out_size], stddev=fc7_std), name='fc7W')
+        fc7b = tf.Variable(tf.constant(0.0, shape=[fc7_out_size]), name='fc7b')
+
+
         # create empty weight object and fill it up
         self._weights = GQCnnWeights()
 
@@ -407,6 +423,12 @@ class GQCNN(object):
         if pc2_out_size > 0:
             self._weights.pc2W = pc2W
             self._weights.pc2b = pc2b
+
+        ## discriminator weights and bias
+        self._weights.fc6W = fc6W
+        self._weights.fc6b = fc6b
+        self._weights.fc7W = fc7W
+        self._weights.fc7b = fc7b
 
     def _parse_config(self, config):
         """ Parses configuration file for this GQCNN 
@@ -463,6 +485,12 @@ class GQCNN(object):
         self.fc4_out_size = self._architecture['fc4']['out_size'] 
         self.fc5_in_size = self._architecture['fc4']['out_size']
         self.fc5_out_size = self._architecture['fc5']['out_size']
+        
+        ## add discrim sizes
+        self.fc6_in_size = self._architecture['fc4']['out_size']
+        self.fc6_out_size = self._architecture['fc6']['out_size']
+        self.fc7_in_size = self._architecture['fc6']['out_size']
+        self.fc7_out_size = self._architecture['fc7']['out_size']
 
         if self.pc2_out_size == 0:
             self.fc4_pose_in_size = self.pc1_out_size
@@ -481,15 +509,18 @@ class GQCNN(object):
         self._pose_mean = np.zeros(self._pose_dim)
         self._pose_std = np.ones(self._pose_dim)
 
-    def initialize_network(self, add_softmax=True):
+    def initialize_network(self, add_softmax=True, add_softmax_to_discrim=False):
         """ Set up input nodes and builds network.
 
         Parameters
         ----------
         add_softmax : float
             whether or not to add a softmax layer
+        ## add_softmax_to_discrim : float
+            softmax to discrim?
         """
 
+        #### add discriminator method calls
         with self._graph.as_default():
             # setup tf input placeholders and build network
             self._input_im_node = tf.placeholder(
@@ -499,8 +530,15 @@ class GQCNN(object):
 
             # build network
             self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node)
+            
+            ## build discriminator?
+            ## moved to below, in the __build_network function 
+
             if add_softmax:
                 self.add_softmax_to_predict()
+
+            ## add softmax to discriminator? mapping to zero or 1
+            self.discriminator_output = tf.sigmoid(self.discriminator_output)
 
     def open_session(self):
         """ Open tensorflow session """
@@ -583,7 +621,7 @@ class GQCNN(object):
     def update_im_mean(self, im_mean):
         """ Updates image mean to be used for normalization when predicting 
         
-        Parameters
+        ParametersThere is now a wrapper for the gqcnn
         ----------
         im_mean : float
             image mean to be used
@@ -922,4 +960,33 @@ class GQCNN(object):
         # fc5
         fc5 = tf.matmul(fc4, self._weights.fc5W) + self._weights.fc5b
 
+        self.discriminator_output = self._build_discriminator(fc4)
+
         return fc5
+
+    #### Create the build_discriminator method, which takes in fc4 as an input and adds two fc layers
+    def _build_discriminator(self, input_fc_layer, fc6_keep_rate=1):
+        """ Builds discriminator
+
+        Parameters
+        ----------
+        input_fc_layer : :obj:`tensorflow Placeholder`
+            network input image placeholder
+        fc6_drop_rate : float
+            drop rate for sixth fully-connected layer
+
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            output of network, result fc7
+        """
+
+        ## fc6
+        fc6 = tf.matmul(input_fc_layer, self._weights.fc6W) + self._weights.fc6b
+        ## possible dropout
+        fc6 = tf.nn.dropout(fc6, fc6_keep_rate)
+
+        ## fc7
+        fc7 = tf.matmul(fc6, self._weights.fc7W) + self._weights.fc7b
+
+        return fc7
