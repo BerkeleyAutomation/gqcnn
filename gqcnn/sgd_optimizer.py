@@ -156,7 +156,7 @@ class SGDOptimizer(object):
 		
 		# build training and validation networks
 		# self.gqcnn.initialize_network() # builds validation network inside gqcnn class
-		self._be = gen_backend(backend='gpu', batch_size=64)
+		self._be = self.gqcnn._be
 
 		self._train_model, _ = self.gqcnn._build_network(drop_fc3, drop_fc4, fc3_drop_rate, fc4_drop_rate) # builds training network with dropouts
 
@@ -171,9 +171,10 @@ class SGDOptimizer(object):
 
 		# create callbacks
 		eval_freq = self.eval_frequency * (float(self.train_batch_size) / (self._train_iter.ndata + self._val_iter.ndata))
-		self._callbacks = Callbacks(self._train_model, train_set=self._train_iter, eval_set=self._val_iter, eval_freq=1)
+		self._callbacks = Callbacks(self._train_model, train_set=self._train_iter, eval_set=self._val_iter, eval_freq=1, output_file="./data.h5")
 		self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=Misclassification()))
 		self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=PrecisionRecall(2)))
+		self._callbacks.add_hist_callback(plot_per_mini=True, filter_key = ['W','dW'])
 
 		# begin optimization
 		logging.info('Beginning Optimization')
@@ -254,3 +255,18 @@ class SGDOptimizer(object):
 		self._data_iters = self._dataset.gen_iterators()
 		self._train_iter = self._data_iters['train']
 		self._val_iter = self._data_iters['test']
+
+		# gen_backend(backend='gpu', batch_size=64)
+		# iterator = self._val_iter.__iter__()
+		# from perception import DepthImage
+		# from visualization import Visualizer2D as vis
+		# unpack_func = lambda gpu_batch: (gpu_batch[0][0].get().reshape((32, 32, 64)), gpu_batch[0][1].get(), gpu_batch[1].get()) 
+		# # IPython.embed()
+		# while self._val_iter.nbatches:
+		# 	images, poses, labels = unpack_func(iterator.next())
+		# 	depth_image = DepthImage(images[:, :, 0])
+		# 	pose = poses[:, 0]
+		# 	label = labels[:, 0]
+		# 	vis.imshow(depth_image)
+		# 	print(pose, label)
+		# 	vis.show()

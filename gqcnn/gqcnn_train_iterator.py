@@ -1,5 +1,6 @@
 """
-DataIterator for training GQ-CNN's. 
+NervanaDataIterator for feeding training data to GQ-CNN network for training.
+ 
 Author: Vishal Satish
 """
 import os
@@ -19,7 +20,8 @@ from gqcnn import TrainingMode, InputDataMode, PreprocMode
 class GQCNNTrainIterator(NervanaDataIterator):
 	def __init__(self, im_filenames, pose_filenames, label_filenames, indices, train_config, im_mean, im_std, pose_mean, pose_std, training_mode=TrainingMode.CLASSIFICATION, 
 		preproc_mode=PreprocMode.NORMALIZATION, distort=False, make_onehot=True, nclass=2, name=None):
-		# Treat singletons like list so that iteration follows same syntax
+		
+        # Treat singletons like list so that iteration follows same syntax
 		super(GQCNNTrainIterator, self).__init__(name=name)
 
 		#####################################READ PARAMETERS######################################## 
@@ -73,6 +75,7 @@ class GQCNNTrainIterator(NervanaDataIterator):
 
 		# set shape
 		self.shape = [(self.im_channels, self.im_height, self.im_width), (self.pose_dim, )]
+	    #     self.shape = (self.im_channels, self.im_height, self.im_width)
 
 		# calculate number of datapoints
 		self.ndata = 0
@@ -284,6 +287,7 @@ class GQCNNTrainIterator(NervanaDataIterator):
 				np.random.shuffle(indices)
 
 				# get the corresponding data from that file
+		                print(self.im_filenames[index])
 				file_im_data = np.load(os.path.join(self.dataset_dir, self.im_filenames[index]))['arr_0'][indices]
 				file_pose_data = self._read_pose_data(np.load(os.path.join(self.dataset_dir, self.pose_filenames[index]))['arr_0'][indices], self.input_data_mode)
 				file_label_data = np.load(os.path.join(self.dataset_dir, self.label_filenames[index]))['arr_0'][indices]
@@ -323,27 +327,29 @@ class GQCNNTrainIterator(NervanaDataIterator):
 		
 			# normalize images and poses
 			im_arr = (im_arr - self.im_mean) / self.im_std
-			pose_arr = (pose_arr - self.pose_mean[:pose_arr.shape[1]]) / self.pose_std[:pose_arr.shape[1]]
+			pose_arr = (pose_arr - self.pose_mean[2:3]) / self.pose_std[2:3]
+			# im_arr = im_arr - self.im_mean
+			# pose_arr = pose_arr - self.pose_mean[:pose_arr.shape[1]]
 
 			# now flatten the image array for neon backend
 			im_arr_flat = im_arr.reshape((self.be.bsz, self.im_width * self.im_height * self.im_channels))
 
 			# load the data into device memory and perform faster transpose using neon backend
-			im_arr_dev = self.be.array(im_arr_flat)
-			pose_arr_dev = self.be.array(pose_arr)
+			im_arr_dev = self.be.array(im_arr_flat, persist_values=False)
+			pose_arr_dev = self.be.array(pose_arr, persist_values=False)
 
 			if self.make_onehot:
-				label_arr_dev = self.be.array(label_arr.reshape((1, -1)), dtype=np.int32)
+				label_arr_dev = self.be.array(label_arr.reshape((1, -1)), dtype=np.int32, persist_values=False)
 			else:
-				label_arr_dev = self.be.array(label_arr)
+				label_arr_dev = self.be.array(label_arr, persist_values=False)
 
-			im_arr_buf = self.be.iobuf(im_arr_flat.shape[1])
-			pose_arr_buf = self.be.iobuf(pose_arr.shape[1])
+			im_arr_buf = self.be.iobuf(im_arr_flat.shape[1], dtype=np.float32, persist_values=False)
+			pose_arr_buf = self.be.iobuf(pose_arr.shape[1], dtype=np.float32, persist_values=False)
 
 			if self.make_onehot:
-				label_arr_buf = self.be.iobuf(self.nclass)
+				label_arr_buf = self.be.iobuf(self.nclass, persist_values=False)
 			else:
-				label_arr_buf = self.be.iobuf(label_arr.shape[1:])
+				label_arr_buf = self.be.iobuf(label_arr.shape[1:], persist_values=False)
 
 			self.transpose_func(im_arr_dev, im_arr_buf)
 			self.transpose_func(pose_arr_dev, pose_arr_buf)
@@ -354,6 +360,6 @@ class GQCNNTrainIterator(NervanaDataIterator):
 				self.transpose_func(label_arr_dev, label_arr_buf)
 
 			# yield
-			yield (im_arr_buf, pose_arr_buf), label_arr_buf
+			yield (im_arr_buf, pose_arr_buf) , label_arr_buf
 
 

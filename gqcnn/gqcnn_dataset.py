@@ -7,6 +7,7 @@ import os
 import logging
 import numpy as np
 import cPickle as pkl
+import random
 
 from neon.data.datasets import Dataset
 
@@ -346,15 +347,25 @@ class GQCNNDataset(Dataset):
 		self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
 
 		if self.debug:
-			random.shuffle(self.im_filenames)
-			random.shuffle(self.pose_filenames)
-			random.shuffle(self.label_filenames)
-			random.shuffle(self.obj_id_filenames)
-			self.im_filenames = self.im_filenames[:self.debug_num_files]
-			self.pose_filenames = self.pose_filenames[:self.debug_num_files]
-			self.label_filenames = self.label_filenames[:self.debug_num_files]
-			self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
-			self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
+			# sort
+		        self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
+            		self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
+            		self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
+            		self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
+            		self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
+
+            		# pack, shuffle and sample
+            		zipped = zip(self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames)
+            		random.shuffle(zipped)
+            		zipped = zipped[:self.debug_num_files]
+
+            		# unpack
+            		self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames = zip(*zipped)
+			self.im_filenames = list(self.im_filenames)
+			self.pose_filenames = list(self.pose_filenames)
+			self.label_filenames = list(self.label_filenames)
+			self.obj_id_filenames = list(self.obj_id_filenames)
+			self.stable_pose_filenames = list(self.stable_pose_filenames)
 
 		self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
 		self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))

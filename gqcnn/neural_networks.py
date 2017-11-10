@@ -11,14 +11,16 @@ import os
 import sys
 import IPython
 import scipy.stats as stats
+import cPickle as pkl
 
 from gqcnn import GQCNNPredictIterator, InputDataMode
 
 from neon.models import Model
-from neon.initializers import Kaiming, Constant
+from neon.initializers import Kaiming, Constant, Xavier, Uniform, Array
 from neon.initializers.initializer import Initializer
 from neon.layers import Conv, Pooling, LRN, Sequential, Affine, Dropout, Linear, Bias, Activation, MergeMultistream
 from neon.transforms import Rectlin, Softmax
+from neon.transforms.transform import Transform
 from neon.backends import gen_backend
 
 class GQCNN(object):
@@ -36,6 +38,7 @@ class GQCNN(object):
         """
         self._parse_config(config)
         self._model = model
+        self._be = gen_backend(backend='gpu', batch_size=64)
 
     @staticmethod
     def load(model_dir):
@@ -396,6 +399,12 @@ class GQCNN(object):
 
         # image path layers
         im_path_layers = []
+        
+        # load weights
+        with open('./gqcnn_weights.pkl', 'rb') as in_file:
+            weight_dict = pkl.load(in_file)
+
+        wrap_weight = lambda nparray : Array(val=self._be.array(nparray.transpose()))
 
         #################################################CONV1_1#########################################################
         # calculate the padding so that input and output dimensions are the same, equivalent to SAME in TensorFlow
@@ -409,8 +418,8 @@ class GQCNN(object):
         ck = CustomKaiming1()
         # build conv layer
         conv1_1 = Conv((self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['num_filt']), 
-        	init=ck, bias=ck,
-            padding=single_side_pad, activation=Rectlin(), name="conv1_1")
+        	init=ck, bias=ck, padding=single_side_pad,
+            activation=Rectlin(), name="conv1_1")
 
         # build norm layer
         norm1_1 = None
@@ -454,7 +463,7 @@ class GQCNN(object):
         norm1_2 = None
         if self._architecture['conv1_2']['norm']:
                 if self._architecture['conv1_2']['norm_type'] == "local_response":
-                	norm1_2 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm1_2")
+                	norm1_2 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, ascale=self.normalization_alpha, bpower=self.normalization_beta, name="norm1_2")
 
         # build pool layer
         pool1_2_size = self._architecture['conv1_2']['pool_size']
@@ -498,7 +507,7 @@ class GQCNN(object):
         if pool2_1_size == 1 and pool2_1_stride == 1:
             pool2_1 = Pooling((pool2_1_size, pool2_1_size), strides=pool2_1_stride, name='pool2_1')
         else:
-            pool2_1 = Pooling((pool2_1_size, pool2_1_size), strides=pool2_1_stride, padding=single_side_pad, name='pool2_1')
+            ipool2_1 = Pooling((pool2_1_size, pool2_1_size), strides=pool2_1_stride, padding=single_side_pad, name='pool2_1')
 
         # add everything to the layers list
         im_path_layers.append(conv2_1)
@@ -606,7 +615,7 @@ class GQCNN(object):
         # build fully-connected layer
         ck = CustomKaiming6()
         fc5 = Linear(nout=self.fc5_out_size, init=ck, name='fc5')
-        fc5_bias = Bias(init=Constant(val=0.0), name='fc5_bias')
+        fc5_bias=Bias(init=Constant(val=0.0), name='fc5_bias')
 
         # add everything to the layers list
         combined_layers.append(fc5)
@@ -614,7 +623,6 @@ class GQCNN(object):
 
         softmax_layer = Activation(transform=Softmax(), name='softmax')
         combined_layers.append(softmax_layer)
-
         return Model(layers=combined_layers), combined_layers
 
 class CustomKaiming(Initializer):
@@ -623,12 +631,13 @@ class CustomKaiming(Initializer):
         self.scale = None
 
     def fill(self, param):
+        print(param.shape)
         fan_in = param.shape[0]
         if self.scale is None:
             self.scale = np.sqrt(2. / fan_in)
             print(self.scale, param.shape)
 
-        upper_bound = 2 * self.scale
+        upper_bound = 2
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
@@ -639,7 +648,8 @@ class CustomKaiming1(Initializer):
         self.scale = 0.282842712475
 
     def fill(self, param):
-        upper_bound = 2 * self.scale
+        print(param.shape)
+        upper_bound = 2
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
@@ -650,7 +660,8 @@ class CustomKaiming2(Initializer):
         self.scale = 0.0833333333333
 
     def fill(self, param):
-        upper_bound = 2 * self.scale
+        print(param.shape)
+        upper_bound = 2
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
@@ -661,7 +672,8 @@ class CustomKaiming3(Initializer):
         self.scale = 0.011048543456
 
     def fill(self, param):
-        upper_bound = 2 * self.scale
+        print(param.shape)
+        upper_bound = 2
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
@@ -672,7 +684,8 @@ class CustomKaiming4(Initializer):
         self.scale = 1.41421356237
 
     def fill(self, param):
-        upper_bound = 2 * self.scale
+        print(param.shape)
+        upper_bound = 2
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
@@ -683,7 +696,8 @@ class CustomKaiming5(Initializer):
         self.scale = 0.0441081091391
 
     def fill(self, param):
-        upper_bound = 2 * self.scale
+        print(param.shape)
+        upper_bound = 2
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
@@ -694,8 +708,24 @@ class CustomKaiming6(Initializer):
         self.scale = 0.0625
 
     def fill(self, param):
-        upper_bound = 2 * self.scale
+        print(param.shape)
+        upper_bound = 2
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
+
+class LReLu(Transform):
+    " Leaky ReLu activation function. Implements f(x) = max(x,ax) "
+
+    def __init__(self, a=.1, name=None):
+        super(LReLu, self).__init__(name)
+        self.a = a
+
+    # f(x) = max(x,ax)
+    def __call__(self, x):
+        return self.be.maximum(x, self.a*x)
+
+    # If x > 0, gradient is 1; otherwise 0.
+    def bprop(self, x):
+        return 1 if x > 0 else self.a
 
