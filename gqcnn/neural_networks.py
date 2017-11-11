@@ -119,7 +119,7 @@ class GQCNN(object):
 
         # slice out the variables we want based on the input pose_dim, which
         # is dependent on the input data mode used to train the model
-        if self._pose_mean.shape[0] == 7:
+        if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] == 7:
             if self._input_data_mode == InputDataMode.TF_IMAGE:
                 # depth
                 if isinstance(self.pose_mean, numbers.Number) \
@@ -146,7 +146,7 @@ class GQCNN(object):
                 self._pose_mean = self._pose_mean[:6]
                 self._pose_std = self._pose_std[:6]
 
-        elif self._pose_mean.shape[0] == 4 and self._input_data_mode == InputDataMode.TF_IMAGE:
+        elif len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] == 4 and self._input_data_mode == InputDataMode.TF_IMAGE:
             # depth
             if isinstance(self.pose_mean, numbers.Number) \
                or len(self.pose_mean.shape) == 0 \
