@@ -752,7 +752,6 @@ class GQCnnQualityFunction(GraspQualityFunction):
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
         q_values = output_arr[:,-1]
-        logging.debug('Prediction took %.3f sec' %(time()-predict_start))
         return q_values.tolist()
 
 class NoMagicQualityFunction(GraspQualityFunction):
