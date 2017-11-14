@@ -1,5 +1,5 @@
 """
-Optimizer class for training a gqcnn(Grasp Quality Neural Network) object.
+Optimizer class for training a gqcnn(Grasp Quality Neural Network).
 Author: Vishal Satish
 """
 import argparse
@@ -89,7 +89,6 @@ class SGDOptimizer(object):
 		if self.cfg['optimizer'] == 'momentum':
 			optimizer = tf.train.MomentumOptimizer(learning_rate, self.momentum_rate)
 			return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
-
 		elif self.cfg['optimizer'] == 'adam':
             		optimizer = tf.train.AdamOptimizer(learning_rate)
 			return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
@@ -897,6 +896,9 @@ class SGDOptimizer(object):
 			self.gripper_dim = 0 # no gripper channel
 		elif self.input_gripper_mode == InputGripperMode.ALL:
 			self.gripper_dim = 4 # width, palm depth, fx, fy
+        elif self.input_gripper_mode == InputGripperMode.DEPTH_MASK or self.input_gripper_mode == SEG_MASK:
+            self.gripper_dim = 0 # no gripper channel
+            self.num_tensor_channels += 1 # mask will be added as channel to depth image
 		else:
 			raise ValueError('Input gripper mode %s not understood' %(self.input_gripper_mode))
 
@@ -948,6 +950,10 @@ class SGDOptimizer(object):
 		if self.stable_pose_filenames[0] == FileTemplates.FILENAME_PLACEHOLDER:
 			self._stable_pose_files_exist = False
 		self.gripper_param_filenames = [f if (f.find(FileTemplates.gripper_params_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+        self.gripper_depth_mask_fingertip_filenames = [f if (f.find(FileTemplates.fingertip_depth_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+        self.gripper_depth_mask_palm_filenames = [f if (f.find(FileTemplates.palm_depth_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+        self.gripper_seg_mask_fingertip_filenames = [f if (f.find(FileTemplates.fingertip_segmask_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+        self.gripper_seg_mask_palm_filenames = [f if (f.find(FileTemplates.palm_segmask_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
 
 		if self.debug:
 			# sort
@@ -957,15 +963,20 @@ class SGDOptimizer(object):
 			self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
 			self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 			self.gripper_param_filenames.sort(key = lambda x: int(x[-9:-4]))
+            self.gripper_depth_mask_fingertip_filenames.sort(key = lambda x: int(x[-9:-4]))
+            self.gripper_depth_mask_palm_filenames.sort(key = lambda x: int(x[-9:-4]))
+            self.gripper_seg_mask_fingertip_filenames.sort(key = lambda x: int(x[-9:-4]))
+            self.gripper_seg_mask_palm_filenames.sort(key = lambda x: int(x[-9:-4]))
 
 			# pack, shuffle and sample
 			zipped = zip(self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, 
-				self.stable_pose_filenames, self.gripper_param_filenames)
+				self.stable_pose_filenames, self.gripper_param_filenames, self.gripper_depth_mask_fingertip_filenames, self.gripper_depth_mask_palm_filenames, self.gripper_seg_mask_fingertip_filenames, self.gripper_seg_mask_palm_filenames)
+
 			random.shuffle(zipped)
 			zipped = zipped[:self.debug_num_files]
 
 			# unpack
-			self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames, self.gripper_param_filenames = zip(*zipped)
+			self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames, self.gripper_param_filenames, self.gripper_depth_mask_fingertip_filenames, self.gripper_depth_mask_palm_filenames, self.gripper_seg_mask_fingertip_filenames, self.gripper_seg_mask_palm_filenames = zip(*zipped)
 
 		self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
 		self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
@@ -973,6 +984,10 @@ class SGDOptimizer(object):
 		self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
 		self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 		self.gripper_param_filenames.sort(key = lambda x: int(x[-9:-4]))
+        self.gripper_depth_mask_fingertip_filenames.sort(key = lambda x: int(x[-9:-4]))
+        self.gripper_depth_mask_palm_filenames.sort(key = lambda x: int(x[-9:-4]))
+        self.gripper_seg_mask_fingertip_filenames.sort(key = lambda x: int(x[-9:-4]))
+        self.gripper_seg_mask_palm_filenames.sort(key = lambda x: int(x[-9:-4]))
 
 		# check valid filenames
 		if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
@@ -989,12 +1004,20 @@ class SGDOptimizer(object):
 		self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]   
 		self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 		self.gripper_param_filenames = [self.gripper_param_filenames[k] for k in filename_indices]
-		
+		self.gripper_depth_mask_fingertip_filenames = [self.gripper_depth_mask_fingertip_filenames[k] for k in filename_indices]
+        self.gripper_depth_mask_palm_filenames = [self.gripper_depth_mask_palm_filenames[k] for k in filename_indices]
+        self.gripper_seg_mask_fingertip_filenames = [self.gripper_seg_mask_fingertip_filenames[k] for k in filename_indices]
+        self.gripper_seg_mask_palm_filenames = [self.gripper_seg_mask_palm_filenames[k] for k in filename_indices]
+
 		# create copy of image, pose, gripper_param, and label filenames because original cannot be accessed by load and enqueue op in the case that 		     the error_rate_in_batches method is sorting the original
 		self.im_filenames_copy = self.im_filenames[:]
 		self.pose_filenames_copy = self.pose_filenames[:]
 		self.label_filenames_copy = self.label_filenames[:]
-		self.gripper_param_filenames_copy = self.gripper_param_filenames[:]
+		self.gripper_depth_mask_fingertip_filenames_copy = self.gripper_depth_mask_fingertip_filenames[:]
+        self.gripper_depth_mask_palm_filenames_copy = self.gripper_depth_mask_palm_filenames[:]
+        self.gripper_seg_mask_fingertip_filenames_copy = self.gripper_seg_mask_fingertip_filenames[:]
+        self.gripper_seg_mask_palm_filenames_copy = self.gripper_seg_mask_palm_filenames[:]
+        self.gripper_param_filenames_copy = self.gripper_param_filenames[:]
 
 	def _setup_output_dirs(self):
 		""" Setup output directories """
@@ -1145,8 +1168,13 @@ class SGDOptimizer(object):
 				if self.gripper_dim > 0:
 					self.train_gripper_arr = np.load(os.path.join(self.data_dir, self.gripper_param_filenames_copy[file_num]))[
 										  'arr_0'].astype(np.float32)
+                if self.input_gripper_mode == InputGripperMode.DEPTH_MASK or self.input_gripper_mode == InputGripperMode.SEG_MASK:
+                    self.train_gripper_depth_mask_fingertip_arr = np.load(os.path.join(self.data_dir, self.gripper_depth_mask_fingertip_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
+                    self.train_gripper_depth_mask_palm_arr = np.load(os.path.join(self.data_dir, self.gripper_depth_mask_palm_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
+                    self.train_gripper_seg_mask_fingertip_arr = np.load(os.path.join(self.data_dir, self.gripper_seg_mask_fingertip_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
+                    self.train_gripper_seg_mask_palm_arr = np.load(os.path.join(self.data_dir, self.gripper_seg_mask_palm_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
 
-				# TODOD: Remove this?
+				# TODO: Remove this?
 				if self.pose_dim == 1 and self.train_poses_arr.shape[1] == 6:
 					self.train_poses_arr = self.train_poses_arr[:, :4]
 
@@ -1168,6 +1196,11 @@ class SGDOptimizer(object):
 				self.train_label_arr = self.train_label_arr[ind]
 				if self.gripper_dim > 0:
 					self.train_gripper_arr = self.train_gripper_arr[ind]
+                if self.input_gripper_mode == InputGripperMode.DEPTH_MASK or self.input_gripper_mode == InputGripperMode.SEG_MASK:
+                    self.train_gripper_depth_mask_fingertip_arr = self.train_gripper_depth_mask_fingertip_arr[ind]
+                    self.train_gripper_depth_mask_palm_arr = self.train_gripper_depth_mask_palm_arr[ind]
+                    self.train_gripper_seg_mask_fingertip_arr = self.train_gripper_seg_mask_fingertip_arr[ind]
+                    self.train_gripper_seg_mask_palm_arr = self.train_gripper_seg_mask_palm_arr[ind]
 				self.num_images = self.train_data_arr.shape[0]
 				
 				# save undistorted train images for debugging
@@ -1198,15 +1231,10 @@ class SGDOptimizer(object):
 						np.savez_compressed(os.path.join(output_dir, 'distorted_image_{}'.format(self._num_distorted_train_images_saved)), self.train_data_arr[0, :, :, 0])
 						self._num_distorted_train_images_saved += 1
 
-				# normalize data
-				if self.cfg['mask_and_inpaint']:
-					# if using mask channel then don't normalize it
-					self.train_data_arr[:, :, :, 0] = (self.train_data_arr[:, :, :, 0] - self.data_mean) / self.data_std
-				else:
-					self.train_data_arr = (self.train_data_arr - self.data_mean) / self.data_std
-					self.train_poses_arr = (self.train_poses_arr - self.pose_mean) / self.pose_std
-					if self.gripper_dim > 0:
-						self.train_gripper_arr = (self.train_gripper_arr - self.gripper_mean) / self.gripper_std
+			    self.train_data_arr[:, :, :, 0] = (self.train_data_arr[:, :, :, 0] - self.data_mean) / self.data_std
+				self.train_poses_arr = (self.train_poses_arr - self.pose_mean) / self.pose_std
+				if self.gripper_dim > 0:
+					self.train_gripper_arr = (self.train_gripper_arr - self.gripper_mean) / self.gripper_std
 		
 				# normalize labels
 				if self.training_mode == TrainingMode.REGRESSION:
@@ -1218,6 +1246,12 @@ class SGDOptimizer(object):
 
 				# enqueue training data batch
 				train_data[start_i:end_i, ...] = self.train_data_arr
+                if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
+                    train_data[:, :, :, 1] = self.train_gripper_depth_mask_palm_arr
+                    train_data[:, :, :, 2] = self.train_gripper_depth_mask_fingertip_arr
+                if self.input_gripper_mode == InputGripperMode.SEG_MASK:
+                    train_data[:, :, :, 1] = self.train_gripper_seg_mask_palm_arr
+                    train_data[:, :, :, 2] = self.train_gripper_seg_mask_fingertip_arr
 				train_poses[start_i:end_i,:] = self._read_pose_data(self.train_poses_arr, self.input_pose_mode)
 				label_data[start_i:end_i] = self.train_label_arr
 				if self.gripper_dim > 0:
