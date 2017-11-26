@@ -7,7 +7,7 @@ model_dir: /path/to/your/pretrained/gqcnn/model
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
-num_epochs: 3     # number of epochs to train for
+num_epochs: 25     # number of epochs to train for
 eval_frequency: 1000  # how often to get validation error 
 save_frequency: 1000  # how often to save output
 vis_frequency: 1000
