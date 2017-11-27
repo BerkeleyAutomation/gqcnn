@@ -37,6 +37,7 @@ from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputPoseMode, InputGripperMode, GeneralConstants, FileTemplates
 from train_stats_logger import TrainStatsLogger
 
+
 class SGDOptimizer(object):
 	""" Optimizer for gqcnn object """
 
@@ -85,7 +86,7 @@ class SGDOptimizer(object):
 		-------
 		:obj:`tf.train.Optimizer`
 			optimizer
-		"""    
+		"""
 		if self.cfg['optimizer'] == 'momentum':
 			optimizer = tf.train.MomentumOptimizer(learning_rate, self.momentum_rate)
 			return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
@@ -96,14 +97,14 @@ class SGDOptimizer(object):
             		optimizer = tf.train.RMSPropOptimizer(learning_rate)
 			return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
 		else:
-			raise ValueError('Optimizer %s not supported' %(self.cfg['optimizer']))
+			raise ValueError('Optimizer %s not supported' % (self.cfg['optimizer']))
 
 	def _check_dead_queue(self):
 		""" Checks to see if the queue is dead and if so closes the tensorflow session and cleans up the variables """
 		if self.dead_event.is_set():
 			# close self.session
 			self.sess.close()
-			
+
 			# cleanup
 			for layer_weights in self.weights.values():
 				del layer_weights
@@ -112,7 +113,8 @@ class SGDOptimizer(object):
 
 	def _launch_tensorboard(self):
 		""" Launches Tensorboard to visualize training """
-		logging.info("Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
+		logging.info(
+		    "Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
 		os.system('tensorboard --logdir=' + self.summary_dir + " &>/dev/null &")
 
 	def _close_tensorboard(self):
@@ -125,19 +127,21 @@ class SGDOptimizer(object):
 		""" Perform optimization """
 		start_time = time.time()
 
-		# run setup 
+		# run setup
 		self._setup()
-		
+
 		# build training and validation networks
 		with tf.name_scope('validation_network'):
 			logging.info('Building Validation Network')
-			self.gqcnn.initialize_network() # builds validation network inside gqcnn class
+			self.gqcnn.initialize_network()  # builds validation network inside gqcnn class
 		with tf.name_scope('training_network'):
 			logging.info('Building Training Network')
 			if self.gripper_dim > 0:
-				self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node, input_gripper_node=self.input_gripper_node)
+				self.train_net_output = self.gqcnn._build_network(
+				    self.input_im_node, self.input_pose_node, input_gripper_node=self.input_gripper_node)
 			else:
-				self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node)
+				self.train_net_output = self.gqcnn._build_network(
+				    self.input_im_node, self.input_pose_node)
 
 		# once weights have been initialized create tf Saver for weights
 		self.saver = tf.train.Saver()
@@ -180,7 +184,8 @@ class SGDOptimizer(object):
 
 		# create optimizer
 		with tf.name_scope('optimizer'):
-			optimizer, true_optimizer = self._create_optimizer(loss, batch, var_list, learning_rate)
+			optimizer, true_optimizer = self._create_optimizer(
+			    loss, batch, var_list, learning_rate)
 			# if flag to save histograms is on, then generate gradient histograms and finally setup the summaries
 			if self.save_histograms:
 				gradients = true_optimizer.compute_gradients(loss, var_list)
@@ -191,11 +196,12 @@ class SGDOptimizer(object):
 							grad_values = gradient
 						if grad_values is not None:
 							var_name = variable.name.replace(":", "_")
-							tf.summary.histogram("gradients/%s" % var_name, grad_values, collections=['histogram'])
-		
-				self.merged_histogram_summaries = tf.summary.merge_all('histogram')		
+							tf.summary.histogram("gradients/%s" %
+							                     var_name, grad_values, collections=['histogram'])
+
+				self.merged_histogram_summaries = tf.summary.merge_all('histogram')
 				self._setup_summaries()
-			
+
 		def handler(signum, frame):
 			logging.info('caught CTRL+C, exiting...')
 			self.term_event.set()
@@ -217,7 +223,7 @@ class SGDOptimizer(object):
 				pass
 
 			logging.info('Cleaning and Preparing to Exit Optimization')
-				
+
 			# cleanup
 			for layer_weights in self.weights.values():
 				del layer_weights
@@ -232,7 +238,7 @@ class SGDOptimizer(object):
 
 		signal.signal(signal.SIGINT, handler)
 
-		# now that everything in our graph is set up we write the graph to the summary event so 
+		# now that everything in our graph is set up we write the graph to the summary event so
 		# it can be visualized in tensorboard
 		self.summary_writer.add_graph(self.gqcnn.get_tf_graph())
 
@@ -250,26 +256,29 @@ class SGDOptimizer(object):
 			self.train_stats_logger = TrainStatsLogger(self.experiment_dir)
 
 			# loop through training steps
-			training_range = xrange(int(self.num_epochs * self.num_train) // self.train_batch_size)
+			training_range = xrange(
+			    int(self.num_epochs * self.num_train) // self.train_batch_size)
 			for step in training_range:
 				# check for dead queue
 				self._check_dead_queue()
 
 				# run optimization
 				extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-				#check_numeric_op = tf.add_check_numerics_ops()
+				# check_numeric_op = tf.add_check_numerics_ops()
                 		if self.gripper_dim > 0:
 				    _, l, lr, predictions, batch_labels, output, train_images, pose_node, gripper_node, _ = self.sess.run(
 						[optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.input_gripper_node, extra_update_ops], options=GeneralConstants.timeout_option)
                 		else:
                     			_, l, lr, predictions, batch_labels, output, train_images, pose_node, _ = self.sess.run(
                         			[optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, extra_update_ops], options=GeneralConstants.timeout_option)
-				ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
-				softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
-				
-				logging.debug('Max ' +  str(np.max(softmax[:,1])))
-				logging.debug('Min ' + str(np.min(softmax[:,1])))
-				logging.debug('Pred nonzero ' + str(np.sum(np.argmax(predictions, axis=1))))
+				ex = np.exp(output - np.tile(np.max(output, axis=1)
+				            [:, np.newaxis], [1, 2]))
+				softmax = ex / np.tile(np.sum(ex, axis=1)[:, np.newaxis], [1, 2])
+
+				logging.debug('Max ' + str(np.max(softmax[:, 1])))
+				logging.debug('Min ' + str(np.min(softmax[:, 1])))
+				logging.debug('Pred nonzero ' +
+				              str(np.sum(np.argmax(predictions, axis=1))))
 				logging.debug('True nonzero ' + str(np.sum(batch_labels)))
 
 				# log output
@@ -282,58 +291,67 @@ class SGDOptimizer(object):
 					logging.info('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
 					train_error = l
 					if self.training_mode == TrainingMode.CLASSIFICATION:
-						train_error = ClassificationResult([predictions], [batch_labels]).error_rate
-						logging.info('Minibatch error: %.3f%%' %train_error)
-					self.summary_writer.add_summary(self.sess.run(self.merged_log_summaries, feed_dict={self.minibatch_error_placeholder: train_error, self.minibatch_loss_placeholder: l, self.learning_rate_placeholder: lr}), step)
+						train_error = ClassificationResult(
+						    [predictions], [batch_labels]).error_rate
+						logging.info('Minibatch error: %.3f%%' % train_error)
+					self.summary_writer.add_summary(self.sess.run(self.merged_log_summaries, feed_dict={
+					                                self.minibatch_error_placeholder: train_error, self.minibatch_loss_placeholder: l, self.learning_rate_placeholder: lr}), step)
 					sys.stdout.flush()
 
 					# update the TrainStatsLogger
-					self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
+					self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error,
+					                               total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
 				# evaluate validation error
 				if step % self.eval_frequency == 0:
 					if self.cfg['eval_total_train_error']:
 						train_error = self._error_rate_in_batches()
-						logging.info('Training error: %.3f' %train_error)
+						logging.info('Training error: %.3f' % train_error)
 
 						# update the TrainStatsLogger and save
-						self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_error, val_eval_iter=None, val_error=None, learning_rate=None)
+						self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None,
+						                               total_train_error=train_error, val_eval_iter=None, val_error=None, learning_rate=None)
 						self.train_stats_logger.log()
 
 					val_error = self._error_rate_in_batches()
-					self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_error}), step)
-					logging.info('Validation error: %.3f' %val_error)
+					self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={
+					                                self.val_error_placeholder: val_error}), step)
+					logging.info('Validation error: %.3f' % val_error)
 					sys.stdout.flush()
 
 					# update the TrainStatsLogger
-					self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+					self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None,
+					                               total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
 
 					# save everything!
 					self.train_stats_logger.log()
-				
+
 				# save the model
 				if step % self.save_frequency == 0 and step > 0:
-					self.saver.save(self.sess, os.path.join(self.experiment_dir, 'model_%05d.ckpt' %(step)))
-					self.saver.save(self.sess, os.path.join(self.experiment_dir, 'model.ckpt'))
-
+					self.saver.save(self.sess, os.path.join(
+					    self.experiment_dir, 'model_%05d.ckpt' % (step)))
+					self.saver.save(self.sess, os.path.join(
+					    self.experiment_dir, 'model.ckpt'))
 
 				# launch tensorboard only after the first iteration
 				if not self.tensorboard_has_launched:
 					self.tensorboard_has_launched = True
 					self._launch_tensorboard()
-				
+
 				# write histogram summaries if specified
 				if self.save_histograms:
-					self.summary_writer.add_summary(self.sess.run([self.merged_histogram_summaries], feed_dict={self.gqcnn.input_im_node:train_images, self.gqcnn.input_pose_node:pose_node}))
+					self.summary_writer.add_summary(self.sess.run([self.merged_histogram_summaries], feed_dict={
+					                                self.gqcnn.input_im_node: train_images, self.gqcnn.input_pose_node: pose_node}))
 					self.summary_writer.add_summary(merged_histogram_summaries)
 
 			# get final logs
 			val_error = self._error_rate_in_batches()
-			logging.info('Final validation error: %.1f%%' %val_error)
+			logging.info('Final validation error: %.1f%%' % val_error)
 			sys.stdout.flush()
 
 			# update the TrainStatsLogger
-			self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+			self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None,
+			                               total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
 
 			# log & save everything!
 			self.train_stats_logger.log()
@@ -342,7 +360,7 @@ class SGDOptimizer(object):
 		except Exception as e:
 			self.term_event.set()
 			if not self.forceful_exit:
-				self.sess.close() 
+				self.sess.close()
 				for layer_weights in self.weights.values():
 					del layer_weights
 				del self.saver
@@ -368,7 +386,7 @@ class SGDOptimizer(object):
 
 		logging.info('Cleaning and Preparing to Exit Optimization')
 		self.sess.close()
-			
+
 		# cleanup
 		for layer_weights in self.weights.values():
 			del layer_weights
@@ -387,7 +405,7 @@ class SGDOptimizer(object):
 			full pose data array read in from file
 		input_pose_mode: :enum:`InputPoseMode`
 			enum for input pose mode, see optimizer_constants.py for all
-			possible input pose modes 
+			possible input pose modes
 
 		Returns
 		-------
@@ -398,19 +416,19 @@ class SGDOptimizer(object):
 			pose_arr = np.asarray([pose_arr])
 		if input_pose_mode == InputPoseMode.TF_IMAGE:
 			# depth
-			return pose_arr[:,2:3]
+			return pose_arr[:, 2:3]
 		elif input_pose_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
 			# depth, cx, cy
-			return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
+			return np.c_[pose_arr[:, 2:3], pose_arr[:, 4:6]]
 		elif input_pose_mode == InputPoseMode.RAW_IMAGE:
 			# u, v, depth, theta
-			return pose_arr[:,:4]
+			return pose_arr[:, :4]
 		elif input_pose_mode == InputPoseMode.RAW_IMAGE_PERSPECTIVE:
 			# u, v, depth, theta, cx, cy
-			return pose_arr[:,:6]
+			return pose_arr[:, :6]
 		elif input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
 			# depth, theta
-			return pose_arr[:,2:4]
+			return pose_arr[:, 2:4]
 		else:
 			raise ValueError('Input pose mode {} not supported'.format(input_pose_mode))
 
@@ -422,12 +440,13 @@ class SGDOptimizer(object):
 		elif input_gripper_mode == InputGripperMode.ALL:
 			return gripper_param_arr
 		else:
-			raise ValueError('Input gripper mode {} not supportd'.format(input_gripper_mode))
+			raise ValueError(
+			    'Input gripper mode {} not supportd'.format(input_gripper_mode))
 
 	def _setup_summaries(self):
 		""" Sets up placeholders for summary values and creates summary writer """
 		# we create placeholders for our python values because summary_scalar expects
-		# a placeholder, not simply a python value 
+		# a placeholder, not simply a python value
 		self.val_error_placeholder = tf.placeholder(tf.float32, [])
 		self.minibatch_error_placeholder = tf.placeholder(tf.float32, [])
 		self.minibatch_loss_placeholder = tf.placeholder(tf.float32, [])
@@ -435,10 +454,14 @@ class SGDOptimizer(object):
 
 		# we create summary scalars with tags that allow us to group them together so we can write different batches
 		# of summaries at different intervals
-		tf.summary.scalar('val_error', self.val_error_placeholder, collections=["eval_frequency"])
-		tf.summary.scalar('minibatch_error', self.minibatch_error_placeholder, collections=["log_frequency"])
-		tf.summary.scalar('minibatch_loss', self.minibatch_loss_placeholder, collections=["log_frequency"])
-		tf.summary.scalar('learning_rate', self.learning_rate_placeholder, collections=["log_frequency"])
+		tf.summary.scalar('val_error', self.val_error_placeholder,
+		                  collections=["eval_frequency"])
+		tf.summary.scalar(
+		    'minibatch_error', self.minibatch_error_placeholder, collections=["log_frequency"])
+		tf.summary.scalar(
+		    'minibatch_loss', self.minibatch_loss_placeholder, collections=["log_frequency"])
+		tf.summary.scalar(
+		    'learning_rate', self.learning_rate_placeholder, collections=["log_frequency"])
 		self.merged_eval_summaries = tf.summary.merge_all("eval_frequency")
 		self.merged_log_summaries = tf.summary.merge_all("log_frequency")
 
@@ -454,9 +477,11 @@ class SGDOptimizer(object):
 
 		# setup nodes
 		with tf.name_scope('train_data_node'):
-			self.train_data_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels))
+			self.train_data_batch = tf.placeholder(
+			    tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels))
 		with tf.name_scope('train_pose_node'):
-			self.train_poses_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.pose_dim))
+			self.train_poses_batch = tf.placeholder(
+			    tf.float32, (self.train_batch_size, self.pose_dim))
 		if self.training_mode == TrainingMode.REGRESSION:
 			train_label_dtype = tf.float32
 			self.numpy_dtype = np.float32
@@ -464,34 +489,41 @@ class SGDOptimizer(object):
 			train_label_dtype = tf.int64
 			self.numpy_dtype = np.int64
 		else:
-			raise ValueError('Training mode %s not supported' %(self.training_mode))
+			raise ValueError('Training mode %s not supported' % (self.training_mode))
 		with tf.name_scope('train_labels_node'):
-			self.train_labels_batch = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+			self.train_labels_batch = tf.placeholder(
+			    train_label_dtype, (self.train_batch_size,))
 		if self.gripper_dim > 0:
 			# feed gripper channel in network
 			with tf.name_scope('train_gripper_node'):
-				self.train_gripper_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.gripper_dim))
+				self.train_gripper_batch = tf.placeholder(
+				    tf.float32, (self.train_batch_size, self.gripper_dim))
 
 		# create queue
 		with tf.name_scope('data_queue'):
 			if self.gripper_dim > 0:
 				self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels),
 				 (self.train_batch_size, self.pose_dim), (self.train_batch_size, self.gripper_dim), (self.train_batch_size,)])
-				self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_gripper_batch, self.train_labels_batch])
-				self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+				self.enqueue_op = self.q.enqueue(
+				    [self.train_data_batch, self.train_poses_batch, self.train_gripper_batch, self.train_labels_batch])
+				self.train_labels_node = tf.placeholder(
+				    train_label_dtype, (self.train_batch_size,))
 				self.input_im_node, self.input_pose_node, self.input_gripper_node, self.train_labels_node = self.q.dequeue()
 			else:
 				self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels),
 				 (self.train_batch_size, self.pose_dim), (self.train_batch_size,)])
-				self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch])
-				self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+				self.enqueue_op = self.q.enqueue(
+				    [self.train_data_batch, self.train_poses_batch, self.train_labels_batch])
+				self.train_labels_node = tf.placeholder(
+				    train_label_dtype, (self.train_batch_size,))
 				self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
 
 		# setup weights using gqcnn
 		if self.cfg['fine_tune']:
 			# this assumes that a gqcnn was passed in that was initialized with weights from a model using GQCNN.load(), so all that has to
 			# be done is to possibly reinitialize fc3/fc4/fc5
-			self.gqcnn.reinitialize_layers(self.cfg['reinit_fc3'], self.cfg['reinit_fc4'], self.cfg['reinit_fc5'])
+			self.gqcnn.reinitialize_layers(
+			    self.cfg['reinit_fc3'], self.cfg['reinit_fc4'], self.cfg['reinit_fc5'])
 
 		# get weights
 		self.weights = self.gqcnn.get_weights()
@@ -518,23 +550,28 @@ class SGDOptimizer(object):
 		else:
 			self.data_mean = 0
 			self.data_std = 0
-			random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
+			random_file_indices = np.random.choice(
+			    self.num_files, size=self.num_random_files, replace=False)
 			num_summed = 0
 			for k in random_file_indices.tolist():
 				im_filename = self.im_filenames[k]
 				im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
 				if self.cfg['border_distortion']:
 					self._distort(im_data, only_dropout=True)
-				self.data_mean += np.sum(im_data[self.train_index_map[im_filename], :, :, :])
+				self.data_mean += np.sum(
+				    im_data[self.train_index_map[im_filename], :, :, :])
 				num_summed += im_data[self.train_index_map[im_filename], :, :, :].shape[0]
-			self.data_mean = self.data_mean / (num_summed * self.im_height * self.im_width)
+			self.data_mean = self.data_mean / \
+			    (num_summed * self.im_height * self.im_width)
 
 			for k in random_file_indices.tolist():
 				im_filename = self.im_filenames[k]
 				im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
-				self.data_std += np.sum((im_data[self.train_index_map[im_filename], :, :, :] - self.data_mean)**2)
-			self.data_std = np.sqrt(self.data_std / (num_summed * self.im_height * self.im_width))
-			
+				self.data_std += np.sum(
+				    (im_data[self.train_index_map[im_filename], :, :, :] - self.data_mean)**2)
+			self.data_std = np.sqrt(
+			    self.data_std / (num_summed * self.im_height * self.im_width))
+
 			np.save(mean_filename, self.data_mean)
 			np.save(std_filename, self.data_std)
 
@@ -549,16 +586,19 @@ class SGDOptimizer(object):
 			self.pose_mean = np.zeros(self.pose_shape)
 			self.pose_std = np.zeros(self.pose_shape)
 			num_summed = 0
-			random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
+			random_file_indices = np.random.choice(
+			    self.num_files, size=self.num_random_files, replace=False)
 			for k in random_file_indices.tolist():
 				im_filename = self.im_filenames[k]
 				pose_filename = self.pose_filenames[k]
-				self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+				self.pose_data = np.load(os.path.join(
+				    self.data_dir, pose_filename))['arr_0']
 				if self.input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
-					rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+					rand_indices = np.random.choice(
+					    self.pose_data.shape[0], size=self.pose_data.shape[0] / 2, replace=False)
 					self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
-				pose_data = self.pose_data[self.train_index_map[im_filename],:]
-				pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
+				pose_data = self.pose_data[self.train_index_map[im_filename], :]
+				pose_data = pose_data[np.isfinite(pose_data[:, 3]), :]
 				self.pose_mean += np.sum(pose_data, axis=0)
 				num_summed += pose_data.shape[0]
 			self.pose_mean = self.pose_mean / num_summed
@@ -566,15 +606,16 @@ class SGDOptimizer(object):
 			for k in random_file_indices.tolist():
 				im_filename = self.im_filenames[k]
 				pose_filename = self.pose_filenames[k]
-				self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+				self.pose_data = np.load(os.path.join(
+				    self.data_dir, pose_filename))['arr_0']
 				if self.input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
 					self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
-				pose_data = self.pose_data[self.train_index_map[im_filename],:]
-				pose_data = pose_data[np.isfinite(pose_data[:,3]), :]
+				pose_data = self.pose_data[self.train_index_map[im_filename], :]
+				pose_data = pose_data[np.isfinite(pose_data[:, 3]), :]
 				self.pose_std += np.sum((pose_data - self.pose_mean)**2, axis=0)
 			self.pose_std = np.sqrt(self.pose_std / num_summed)
 
-			self.pose_std[self.pose_std==0] = 1.0
+			self.pose_std[self.pose_std == 0] = 1.0
 
 			np.save(self.pose_mean_filename, self.pose_mean)
 			np.save(self.pose_std_filename, self.pose_std)
@@ -582,8 +623,10 @@ class SGDOptimizer(object):
 		# compute gripper param mean
 		if self.gripper_dim > 0:
 			logging.info('Computing gripper mean')
-			self.gripper_mean_filename = os.path.join(self.experiment_dir, 'gripper_mean.npy')
-			self.gripper_std_filename = os.path.join(self.experiment_dir, 'gripper_std.npy')
+			self.gripper_mean_filename = os.path.join(
+			    self.experiment_dir, 'gripper_mean.npy')
+			self.gripper_std_filename = os.path.join(
+			    self.experiment_dir, 'gripper_std.npy')
 			if self.cfg['fine_tune']:
 				self.gripper_mean = self.gqcnn.get_gripper_mean()
 				self.gripper_std = self.gqcnn.get_gripper_std()
@@ -591,12 +634,14 @@ class SGDOptimizer(object):
 				self.gripper_mean = np.zeros(self.gripper_shape)
 				self.gripper_std = np.zeros(self.gripper_shape)
 				num_summed = 0
-				random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
+				random_file_indices = np.random.choice(
+				    self.num_files, size=self.num_random_files, replace=False)
 				for k in random_file_indices.tolist():
 					im_filename = self.im_filenames[k]
 					gripper_filename = self.gripper_param_filenames[k]
-					self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
-					gripper_data = self.gripper_data[self.train_index_map[im_filename],:]
+					self.gripper_data = np.load(os.path.join(
+					    self.data_dir, gripper_filename))['arr_0']
+					gripper_data = self.gripper_data[self.train_index_map[im_filename], :]
 					self.gripper_mean += np.sum(gripper_data, axis=0)
 					num_summed += gripper_data.shape[0]
 				self.gripper_mean = self.gripper_mean / num_summed
@@ -604,12 +649,13 @@ class SGDOptimizer(object):
 				for k in random_file_indices.tolist():
 					im_filename = self.im_filenames[k]
 					gripper_filename = self.gripper_param_filenames[k]
-					self.gripper_data = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
-					gripper_data = self.gripper_data[self.train_index_map[im_filename],:]
+					self.gripper_data = np.load(os.path.join(
+					    self.data_dir, gripper_filename))['arr_0']
+					gripper_data = self.gripper_data[self.train_index_map[im_filename], :]
 					self.gripper_std += np.sum((gripper_data - self.gripper_mean)**2, axis=0)
 				self.gripper_std = np.sqrt(self.gripper_std / num_summed)
 
-				self.gripper_std[self.gripper_std==0] = 1.0
+				self.gripper_std[self.gripper_std == 0] = 1.0
 
 				np.save(self.gripper_mean_filename, self.gripper_mean)
 				np.save(self.gripper_std_filename, self.gripper_std)
@@ -619,8 +665,10 @@ class SGDOptimizer(object):
 			out_std_filename = os.path.join(self.experiment_dir, 'image_std.npy')
 			out_pose_mean_filename = os.path.join(self.experiment_dir, 'pose_mean.npy')
 			out_pose_std_filename = os.path.join(self.experiment_dir, 'pose_std.npy')
-			out_gripper_mean_filename = os.path.join(self.experiment_dir, 'gripper_mean.npy')
-			out_gripper_std_filename = os.path.join(self.experiment_dir, 'gripper_std.npy')
+			out_gripper_mean_filename = os.path.join(
+			    self.experiment_dir, 'gripper_mean.npy')
+			out_gripper_std_filename = os.path.join(
+			    self.experiment_dir, 'gripper_std.npy')
 			np.save(out_mean_filename, self.data_mean)
 			np.save(out_std_filename, self.data_std)
 			np.save(out_pose_mean_filename, self.pose_mean)
@@ -633,20 +681,25 @@ class SGDOptimizer(object):
 		self.gqcnn.update_im_std(self.data_std)
 
 		# update gqcnn pose mean & std
-		self.gqcnn.update_pose_mean(self._read_pose_data(self.pose_mean, self.input_pose_mode))
-		self.gqcnn.update_pose_std(self._read_pose_data(self.pose_std, self.input_pose_mode))
-        
+		self.gqcnn.update_pose_mean(self._read_pose_data(
+		    self.pose_mean, self.input_pose_mode))
+		self.gqcnn.update_pose_std(self._read_pose_data(
+		    self.pose_std, self.input_pose_mode))
+
 	        if self.gripper_dim > 0:
 		    # update gqcnn gripper mean & std
-		    self.gqcnn.update_gripper_mean(self._read_gripper_data(self.gripper_mean, self.input_gripper_mode))
-		    self.gqcnn.update_gripper_std(self._read_gripper_data(self.gripper_std, self.input_gripper_mode))
+		    self.gqcnn.update_gripper_mean(self._read_gripper_data(
+		        self.gripper_mean, self.input_gripper_mode))
+		    self.gqcnn.update_gripper_std(self._read_gripper_data(
+		        self.gripper_std, self.input_gripper_mode))
 
 		# compute normalization parameters of the network
 		logging.info('Computing metric stats')
 		all_metrics = None
 		all_val_metrics = None
 		for im_filename, metric_filename in zip(self.im_filenames, self.label_filenames):
-			self.metric_data = np.load(os.path.join(self.data_dir, metric_filename))['arr_0']
+			self.metric_data = np.load(os.path.join(
+			    self.data_dir, metric_filename))['arr_0']
 			indices = self.val_index_map[im_filename]
 			val_metric_data = self.metric_data[indices]
 			if all_metrics is None:
@@ -662,7 +715,8 @@ class SGDOptimizer(object):
 		self.mean_metric = np.mean(all_metrics)
 		self.median_metric = np.median(all_metrics)
 
-		pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
+		pct_pos_val = float(
+		    np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
 		logging.info('Percent positive in val set: ' + str(pct_pos_val))
 
 	def _compute_indices_image_wise(self):
@@ -681,8 +735,10 @@ class SGDOptimizer(object):
 
 		# make a map of the train and test indices for each file
 		logging.info('Computing indices image-wise')
-		train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_image_wise.pkl')
-		self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_image_wise.pkl')
+		train_index_map_filename = os.path.join(
+		    self.experiment_dir, 'train_indices_image_wise.pkl')
+		self.val_index_map_filename = os.path.join(
+		    self.experiment_dir, 'val_indices_image_wise.pkl')
 		if os.path.exists(train_index_map_filename):
 			self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
 			self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
@@ -691,10 +747,12 @@ class SGDOptimizer(object):
 			self.val_index_map = {}
 			for i, im_filename in enumerate(self.im_filenames):
 				lower = i * self.images_per_file
-				upper = (i+1) * self.images_per_file
+				upper = (i + 1) * self.images_per_file
 				im_arr = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
-				self.train_index_map[im_filename] = train_indices[(train_indices >= lower) & (train_indices < upper) &  (train_indices - lower < im_arr.shape[0])] - lower
-				self.val_index_map[im_filename] = val_indices[(val_indices >= lower) & (val_indices < upper) & (val_indices - lower < im_arr.shape[0])] - lower
+				self.train_index_map[im_filename] = train_indices[(train_indices >= lower) & (
+				    train_indices < upper) & (train_indices - lower < im_arr.shape[0])] - lower
+				self.val_index_map[im_filename] = val_indices[(val_indices >= lower) & (
+				    val_indices < upper) & (val_indices - lower < im_arr.shape[0])] - lower
 			pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
 			pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
 
@@ -711,11 +769,13 @@ class SGDOptimizer(object):
 		self.decay_step = self.decay_step_multiplier * self.num_train
 
 		# get number of unique objects by taking last object id of last object id file
-		self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
-		last_file_object_ids = np.load(os.path.join(self.data_dir, self.obj_id_filenames[len(self.obj_id_filenames) - 1]))['arr_0']
+		self.obj_id_filenames.sort(key=lambda x: int(x[-9:-4]))
+		last_file_object_ids = np.load(os.path.join(
+		    self.data_dir, self.obj_id_filenames[len(self.obj_id_filenames) - 1]))['arr_0']
 		num_unique_objs = last_file_object_ids[len(last_file_object_ids) - 1]
 		self.num_train_obj = int(self.train_pct * num_unique_objs)
-		logging.debug('There are: ' + str(num_unique_objs) + 'unique objects in this dataset.')
+		logging.debug('There are: ' + str(num_unique_objs) +
+		              'unique objects in this dataset.')
 
 		# get training and validation indices
 		all_object_ids = np.arange(num_unique_objs + 1)
@@ -725,8 +785,10 @@ class SGDOptimizer(object):
 
 		# make a map of the train and test indices for each file
 		logging.info('Computing indices object-wise')
-		train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_object_wise.pkl')
-		self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_object_wise.pkl')
+		train_index_map_filename = os.path.join(
+		    self.experiment_dir, 'train_indices_object_wise.pkl')
+		self.val_index_map_filename = os.path.join(
+		    self.experiment_dir, 'val_indices_object_wise.pkl')
 		if os.path.exists(train_index_map_filename):
 			self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
 			self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
@@ -735,7 +797,8 @@ class SGDOptimizer(object):
 			self.val_index_map = {}
 			for im_filename in self.im_filenames:
 				# open up the corresponding obj_id file
-				obj_ids = np.load(os.path.join(self.data_dir, 'object_labels_' + im_filename[-9:-4] + '.npz'))['arr_0']
+				obj_ids = np.load(os.path.join(
+				    self.data_dir, 'object_labels_' + im_filename[-9:-4] + '.npz'))['arr_0']
 
 				train_indices = []
 				val_indices = []
@@ -746,14 +809,14 @@ class SGDOptimizer(object):
 					else:
 						val_indices.append(i)
 
-				self.train_index_map[im_filename] = np.asarray(train_indices, dtype=np.intc)
+				self.train_index_map[im_filename] = np.asarray(
+				    train_indices, dtype=np.intc)
 				self.val_index_map[im_filename] = np.asarray(val_indices, dtype=np.intc)
 				train_indices = []
 				val_indices = []
 
 			pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
 			pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
-
 
 	def _compute_indices_pose_wise(self):
 		""" Compute train and validation indices based on an image-stable-pose-wise split"""
@@ -766,13 +829,15 @@ class SGDOptimizer(object):
 		num_datapoints = self.images_per_file * self.num_files
 		self.num_train = int(self.train_pct * num_datapoints)
 		self.decay_step = self.decay_step_multiplier * self.num_train
-		
+
 		# get number of unique stable poses by taking last stable pose id of last stable pose id file
-		self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-		last_file_pose_ids = np.load(os.path.join(self.data_dir, self.stable_pose_filenames[len(self.stable_pose_filenames) - 1]))['arr_0']
+		self.stable_pose_filenames.sort(key=lambda x: int(x[-9:-4]))
+		last_file_pose_ids = np.load(os.path.join(
+		    self.data_dir, self.stable_pose_filenames[len(self.stable_pose_filenames) - 1]))['arr_0']
 		num_unique_stable_poses = last_file_pose_ids[len(last_file_pose_ids) - 1]
 		self.num_train_poses = int(self.train_pct * num_unique_stable_poses)
-		logging.debug('There are: ' + str(num_unique_stable_poses) + 'unique stable poses in this dataset.')
+		logging.debug('There are: ' + str(num_unique_stable_poses) +
+		              'unique stable poses in this dataset.')
 
 		# get training and validation indices
 		all_pose_ids = np.arange(num_unique_stable_poses + 1)
@@ -782,8 +847,10 @@ class SGDOptimizer(object):
 
 		# make a map of the train and test indices for each file
 		logging.info('Computing indices stable-pose-wise')
-		train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_stable_pose_wise.pkl')
-		self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_stable_pose_wise.pkl')
+		train_index_map_filename = os.path.join(
+		    self.experiment_dir, 'train_indices_stable_pose_wise.pkl')
+		self.val_index_map_filename = os.path.join(
+		    self.experiment_dir, 'val_indices_stable_pose_wise.pkl')
 		if os.path.exists(train_index_map_filename):
 			self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
 			self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
@@ -792,7 +859,8 @@ class SGDOptimizer(object):
 			self.val_index_map = {}
 			for im_filename in self.im_filenames:
 				# open up the corresponding obj_id file
-				pose_ids = np.load(os.path.join(self.data_dir, 'pose_labels_' + im_filename[-9:-4] + '.npz'))['arr_0']
+				pose_ids = np.load(os.path.join(
+				    self.data_dir, 'pose_labels_' + im_filename[-9:-4] + '.npz'))['arr_0']
 
 				train_indices = []
 				val_indices = []
@@ -803,7 +871,8 @@ class SGDOptimizer(object):
 					else:
 						val_indices.append(i)
 
-				self.train_index_map[im_filename] = np.asarray(train_indices, dtype=np.intc)
+				self.train_index_map[im_filename] = np.asarray(
+				    train_indices, dtype=np.intc)
 				self.val_index_map[im_filename] = np.asarray(val_indices, dtype=np.intc)
 				train_indices = []
 				val_indices = []
@@ -856,51 +925,58 @@ class SGDOptimizer(object):
 			raise ValueError('Train percentage must be in range [0,1]')
 
 		self.gqcnn.set_mask_and_inpaint(self.cfg['mask_and_inpaint'])
-		
+
 	def _read_data_params(self):
 		""" Read data parameters from configuration file """
 
-		self.train_im_data = np.load(os.path.join(self.data_dir, self.im_filenames[0]))['arr_0']
-		self.pose_data = np.load(os.path.join(self.data_dir, self.pose_filenames[0]))['arr_0']
-		self.gripper_data = np.load(os.path.join(self.data_dir, self.gripper_param_filenames[0]))['arr_0']
-		self.metric_data = np.load(os.path.join(self.data_dir, self.label_filenames[0]))['arr_0']
+		self.train_im_data = np.load(os.path.join(
+		    self.data_dir, self.im_filenames[0]))['arr_0']
+		self.pose_data = np.load(os.path.join(
+		    self.data_dir, self.pose_filenames[0]))['arr_0']
+		self.gripper_data = np.load(os.path.join(
+		    self.data_dir, self.gripper_param_filenames[0]))['arr_0']
+		self.metric_data = np.load(os.path.join(
+		    self.data_dir, self.label_filenames[0]))['arr_0']
 		self.images_per_file = self.train_im_data.shape[0]
 		self.im_height = self.train_im_data.shape[1]
 		self.im_width = self.train_im_data.shape[2]
 		self.im_channels = self.train_im_data.shape[3]
-		self.im_center = np.array([float(self.im_height-1)/2, float(self.im_width-1)/2])
+		self.im_center = np.array(
+		    [float(self.im_height - 1) / 2, float(self.im_width - 1) / 2])
 		self.num_tensor_channels = self.cfg['num_tensor_channels']
 		self.pose_shape = self.pose_data.shape[1]
 		self.gripper_shape = self.gripper_data.shape[1]
 		self.input_pose_mode = self.cfg['input_pose_mode']
 		self.input_gripper_mode = self.cfg['input_gripper_mode']
-		
+
 		# update pose dimension according to input_pose_mode for creation of tensorflow placeholders
 		if self.input_pose_mode == InputPoseMode.TF_IMAGE:
-			self.pose_dim = 1 # depth
+			self.pose_dim = 1  # depth
 		elif self.input_pose_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
-			self.pose_dim = 3 # depth, cx, cy
+			self.pose_dim = 3  # depth, cx, cy
 		elif self.input_pose_mode == InputPoseMode.RAW_IMAGE:
-			self.pose_dim = 4 # u, v, theta, depth
+			self.pose_dim = 4  # u, v, theta, depth
 		elif self.input_pose_mode == InputPoseMode.RAW_IMAGE_PERSPECTIVE:
-			self.pose_dim = 6 # u, v, theta, depth cx, cy
+			self.pose_dim = 6  # u, v, theta, depth cx, cy
 		elif self.input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
-			self.pose_dim = 2 # depth, theta
+			self.pose_dim = 2  # depth, theta
 		else:
-			raise ValueError('Input pose mode %s not understood' %(self.input_pose_mode))
+			raise ValueError('Input pose mode %s not understood' %
+			                 (self.input_pose_mode))
 
 		# update gripper dimension according to input_gripper_mode for creation of tensorflow placeholders
 		if self.input_gripper_mode == InputGripperMode.WIDTH:
-			self.gripper_dim = 1 # width
+			self.gripper_dim = 1  # width
 		elif self.input_gripper_mode == InputGripperMode.NONE:
-			self.gripper_dim = 0 # no gripper channel
+			self.gripper_dim = 0  # no gripper channel
 		elif self.input_gripper_mode == InputGripperMode.ALL:
-			self.gripper_dim = 4 # width, palm depth, fx, fy
-        elif self.input_gripper_mode == InputGripperMode.DEPTH_MASK or self.input_gripper_mode == SEG_MASK:
-            self.gripper_dim = 0 # no gripper channel
-            self.num_tensor_channels += 1 # mask will be added as channel to depth image
+			self.gripper_dim = 4  # width, palm depth, fx, fy
+	        elif self.input_gripper_mode == InputGripperMode.DEPTH_MASK or self.input_gripper_mode == SEG_MASK:
+        	    	self.gripper_dim = 0  # no gripper channel
+            	   	self.num_tensor_channels += 1  # mask will be added as channel to depth image
 		else:
-			raise ValueError('Input gripper mode %s not understood' %(self.input_gripper_mode))
+			raise ValueError('Input gripper mode %s not understood' %
+			                 (self.input_gripper_mode))
 
 		self.num_files = len(self.im_filenames)
 		self.num_random_files = min(self.num_files, self.cfg['num_random_files'])
@@ -919,50 +995,66 @@ class SGDOptimizer(object):
 		# read in filenames of training data(poses, images, labels, obj_id's, stable_poses, gripper_params)
 		logging.info('Reading filenames')
 		all_filenames = os.listdir(self.data_dir)
-		if self.image_mode== ImageMode.BINARY:
-			self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.binary_im_tensor_template) > -1]
-		elif self.image_mode== ImageMode.DEPTH:
-			self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.depth_im_tensor_template) > -1]
-		elif self.image_mode== ImageMode.BINARY_TF:
-			self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.binary_im_tf_tensor_template) > -1]
-		elif self.image_mode== ImageMode.COLOR_TF:
-			self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.color_im_tf_tensor_template) > -1]
-		elif self.image_mode== ImageMode.GRAY_TF:
-			self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.gray_im_tf_tensor_template) > -1]
-		elif self.image_mode== ImageMode.DEPTH_TF:
-			self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.depth_im_tf_tensor_template) > -1]
-		elif self.image_mode== ImageMode.DEPTH_TF_TABLE:
-			self.im_filenames = [f for f in all_filenames if f.find(FileTemplates.depth_im_tf_table_tensor_template) > -1]
+		if self.image_mode == ImageMode.BINARY:
+			self.im_filenames = [f for f in all_filenames if f.find(
+			    FileTemplates.binary_im_tensor_template) > -1]
+		elif self.image_mode == ImageMode.DEPTH:
+			self.im_filenames = [f for f in all_filenames if f.find(
+			    FileTemplates.depth_im_tensor_template) > -1]
+		elif self.image_mode == ImageMode.BINARY_TF:
+			self.im_filenames = [f for f in all_filenames if f.find(
+			    FileTemplates.binary_im_tf_tensor_template) > -1]
+		elif self.image_mode == ImageMode.COLOR_TF:
+			self.im_filenames = [f for f in all_filenames if f.find(
+			    FileTemplates.color_im_tf_tensor_template) > -1]
+		elif self.image_mode == ImageMode.GRAY_TF:
+			self.im_filenames = [f for f in all_filenames if f.find(
+			    FileTemplates.gray_im_tf_tensor_template) > -1]
+		elif self.image_mode == ImageMode.DEPTH_TF:
+			self.im_filenames = [f for f in all_filenames if f.find(
+			    FileTemplates.depth_im_tf_tensor_template) > -1]
+		elif self.image_mode == ImageMode.DEPTH_TF_TABLE:
+			self.im_filenames = [f for f in all_filenames if f.find(
+			    FileTemplates.depth_im_tf_table_tensor_template) > -1]
 		else:
-			raise ValueError('Image mode %s not supported.' %(self.image_mode))
+			raise ValueError('Image mode %s not supported.' % (self.image_mode))
 
-		self.pose_filenames = [f for f in all_filenames if f.find(FileTemplates.hand_poses_template) > -1]
-		self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
-		# since these are not required in the dataset, we fill them with FileTemplates.FILENAME_PLACEHOLDER just to prevent sorting exceptions down the line 
-		# however, if they do not exist then exceptions will be thrown if the user tries to use object_wise/pose_wise splits 
+		self.pose_filenames = [f for f in all_filenames if f.find(
+		    FileTemplates.hand_poses_template) > -1]
+		self.label_filenames = [
+		    f for f in all_filenames if f.find(self.target_metric_name) > -1]
+		# since these are not required in the dataset, we fill them with FileTemplates.FILENAME_PLACEHOLDER just to prevent sorting exceptions down the line
+		# however, if they do not exist then exceptions will be thrown if the user tries to use object_wise/pose_wise splits
 		# or tries to input the gripper paramters to the network during training
-		self.obj_id_filenames = [f if (f.find(FileTemplates.object_labels_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+		self.obj_id_filenames = [f if (f.find(FileTemplates.object_labels_template) > -1)
+		                               else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
 		self._obj_files_exist = True
 		if self.obj_id_filenames[0] == FileTemplates.FILENAME_PLACEHOLDER:
 			self._obj_files_exist = False
-		self.stable_pose_filenames = [f if (f.find(FileTemplates.pose_labels_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+		self.stable_pose_filenames = [f if (f.find(FileTemplates.pose_labels_template) > -1)
+		                                    else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
 		self._stable_pose_files_exist = True
 		if self.stable_pose_filenames[0] == FileTemplates.FILENAME_PLACEHOLDER:
 			self._stable_pose_files_exist = False
-		self.gripper_param_filenames = [f if (f.find(FileTemplates.gripper_params_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
-        self.gripper_depth_mask_fingertip_filenames = [f if (f.find(FileTemplates.fingertip_depth_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
-        self.gripper_depth_mask_palm_filenames = [f if (f.find(FileTemplates.palm_depth_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
-        self.gripper_seg_mask_fingertip_filenames = [f if (f.find(FileTemplates.fingertip_segmask_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
-        self.gripper_seg_mask_palm_filenames = [f if (f.find(FileTemplates.palm_segmask_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+		self.gripper_param_filenames = [f if (f.find(
+		    FileTemplates.gripper_params_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+        self.gripper_depth_mask_fingertip_filenames = [f if (f.find(
+            FileTemplates.fingertip_depth_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+        self.gripper_depth_mask_palm_filenames = [f if (f.find(
+            FileTemplates.palm_depth_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+        self.gripper_seg_mask_fingertip_filenames = [f if (f.find(
+            FileTemplates.fingertip_segmask_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+        self.gripper_seg_mask_palm_filenames = [f if (f.find(
+            FileTemplates.palm_segmask_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
 
 		if self.debug:
 			# sort
-			self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-			self.gripper_param_filenames.sort(key = lambda x: int(x[-9:-4]))
+			self.im_filenames.sort(key=lambda x: int(x[-9:-4]))
+			self.pose_filenames.sort(key=lambda x: int(x[-9:-4]))
+			self.label_filenames.sort(key=lambda x: int(x[-9:-4]))
+			self.obj_id_filenames.sort(key=lambda x: int(x[-9:-4]))
+			self.stable_pose_filenames.sort(key=lambda x: int(x[-9:-4]))
+			self.gripper_param_filenames.sort(key=lambda x: int(x[-9:-4]))
             self.gripper_depth_mask_fingertip_filenames.sort(key = lambda x: int(x[-9:-4]))
             self.gripper_depth_mask_palm_filenames.sort(key = lambda x: int(x[-9:-4]))
             self.gripper_seg_mask_fingertip_filenames.sort(key = lambda x: int(x[-9:-4]))
