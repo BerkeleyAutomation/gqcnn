@@ -23,10 +23,8 @@ class FileTemplates:
     object_labels_template = 'object_labels'
     pose_labels_template = 'pose_labels'
     gripper_params_template = 'gripper_params'
-    fingertip_segmask_template = 'fingertip_segmask'
-    palm_segmask_template = 'palm_segmask'
-    fingertip_depth_template = 'fingertip_depth'
-    palm_depth_template = 'palm_depth'
+    gripper_segmask_template = 'gripper_segmask'
+    gripper_depth_template = 'gripper_depth'
     filename_placeholder = '-11111111111111'
 
 # enum for image modalities
@@ -62,5 +60,4 @@ class InputGripperMode:
     WIDTH = 'width'
     ALL = 'all'
     DEPTH_MASK = 'depth_mask'
-    SEG_MASK = 'seg_mask'
     NONE = 'none'
