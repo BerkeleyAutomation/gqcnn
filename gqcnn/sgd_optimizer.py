@@ -91,10 +91,10 @@ class SGDOptimizer(object):
             optimizer = tf.train.MomentumOptimizer(learning_rate, self.momentum_rate)
             return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
         elif self.cfg['optimizer'] == 'adam':
-                    optimizer = tf.train.AdamOptimizer(learning_rate)
+            optimizer = tf.train.AdamOptimizer(learning_rate)
             return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
         elif self.cfg['optimizer'] == 'rmsprop':
-                    optimizer = tf.train.RMSPropOptimizer(learning_rate)
+            optimizer = tf.train.RMSPropOptimizer(learning_rate)
             return optimizer.minimize(loss, global_step=batch, var_list=var_list), optimizer
         else:
             raise ValueError('Optimizer %s not supported' % (self.cfg['optimizer']))
@@ -265,11 +265,11 @@ class SGDOptimizer(object):
                 # run optimization
                 extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
                 # check_numeric_op = tf.add_check_numerics_ops()
-                        if self.gripper_dim > 0:
+                if self.gripper_dim > 0:
                     _, l, lr, predictions, batch_labels, output, train_images, pose_node, gripper_node, _ = self.sess.run(
                         [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.input_gripper_node, extra_update_ops], options=GeneralConstants.timeout_option)
-                        else:
-                                _, l, lr, predictions, batch_labels, output, train_images, pose_node, _ = self.sess.run(
+                else:
+                    _, l, lr, predictions, batch_labels, output, train_images, pose_node, _ = self.sess.run(
                                     [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, extra_update_ops], options=GeneralConstants.timeout_option)
                 ex = np.exp(output - np.tile(np.max(output, axis=1)
                             [:, np.newaxis], [1, 2]))
@@ -661,7 +661,7 @@ class SGDOptimizer(object):
                 np.save(self.gripper_std_filename, self.gripper_std)
 
         # compute gripper depth mask mean
-        if self.input_gripper_mode == InputGripperMode.DEPTH:
+        if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
             logging.info('Computing gripper depth mask mean')
             gripper_depth_mask_mean_filename = os.path.join(self.experiment_dir, 'gripper_depth_mask_mean.npy')
             gripper_depth_mask_std_filename = os.path.join(self.experiment_dir, 'gripper_depth_mask_std.npy')
@@ -692,9 +692,9 @@ class SGDOptimizer(object):
                     mask_filename = self.gripper_depth_mask_filenames[k]
                     mask_data = np.load(os.path.join(self.data_dir, mask_filename))['arr_0']
                     self.gripper_depth_mask_std[0] += np.sum(
-                        (mask_data[self.train_index_map[im_filename], :, :, 0] - self.data_mean[0])**2)
+                        (mask_data[self.train_index_map[im_filename], :, :, 0] - self.gripper_depth_mask_mean[0])**2)
                     self.gripper_depth_mask_std[1] += np.sum(
-                        (mask_data[self.train_index_map[im_filename], :, :, 1] - self.data_mean[1])**2)
+                        (mask_data[self.train_index_map[im_filename], :, :, 1] - self.gripper_depth_mask_mean[1])**2)
                 self.gripper_depth_mask_std = np.sqrt(
                     self.gripper_depth_mask_std / (num_summed * self.im_height * self.im_width))
 
@@ -734,7 +734,7 @@ class SGDOptimizer(object):
             self.gqcnn.update_gripper_std(self._read_gripper_data(
                 self.gripper_std, self.input_gripper_mode))
 
-        if self.input_gripper_mode == InputGripperMode.DEPTH:
+        if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
             # update gqcnn gripper depth mask mean & std
             self.gqcnn.update_gripper_depth_mask_mean(
                 self.gripper_depth_mask_mean)
@@ -1075,21 +1075,21 @@ class SGDOptimizer(object):
         # however, if they do not exist then exceptions will be thrown if the user tries to use object_wise/pose_wise splits
         # or tries to input the gripper parameters to the network during training
         self.obj_id_filenames = [f if (f.find(FileTemplates.object_labels_template) > -1)
-                                       else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+                                       else FileTemplates.filename_placeholder for f in all_filenames]
         self._obj_files_exist = True
-        if self.obj_id_filenames[0] == FileTemplates.FILENAME_PLACEHOLDER:
+        if self.obj_id_filenames[0] == FileTemplates.filename_placeholder:
             self._obj_files_exist = False
         self.stable_pose_filenames = [f if (f.find(FileTemplates.pose_labels_template) > -1)
-                                            else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+                                            else FileTemplates.filename_placeholder for f in all_filenames]
         self._stable_pose_files_exist = True
-        if self.stable_pose_filenames[0] == FileTemplates.FILENAME_PLACEHOLDER:
+        if self.stable_pose_filenames[0] == FileTemplates.filename_placeholder:
             self._stable_pose_files_exist = False
         self.gripper_param_filenames = [f if (f.find(
-            FileTemplates.gripper_params_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+            FileTemplates.gripper_params_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
         self.gripper_depth_mask_filenames = [f if (f.find(
-            FileTemplates.gripper_depth_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+            FileTemplates.gripper_depth_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
         self.gripper_seg_mask_filenames = [f if (f.find(
-            FileTemplates.gripper_segmask_template) > -1) else FileTemplates.FILENAME_PLACEHOLDER for f in all_filenames]
+            FileTemplates.gripper_segmask_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
 
         if self.debug:
             # sort
@@ -1136,16 +1136,16 @@ class SGDOptimizer(object):
         self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]   
         self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
         self.gripper_param_filenames = [self.gripper_param_filenames[k] for k in filename_indices]
-        self.gripper_depth_mask_filenames = [self.gripper_depth_mask_fingertip_filenames[k] for k in filename_indices]
-        self.gripper_seg_mask_filenames = [self.gripper_seg_mask_fingertip_filenames[k] for k in filename_indices]
+        self.gripper_depth_mask_filenames = [self.gripper_depth_mask_filenames[k] for k in filename_indices]
+        self.gripper_seg_mask_filenames = [self.gripper_seg_mask_filenames[k] for k in filename_indices]
 
         # create copy of image, pose, gripper_param, and label filenames because original cannot be accessed by load and enqueue op in the case that             the error_rate_in_batches method is sorting the original
         self.im_filenames_copy = self.im_filenames[:]
         self.pose_filenames_copy = self.pose_filenames[:]
         self.label_filenames_copy = self.label_filenames[:]
         self.gripper_param_filenames_copy = self.gripper_param_filenames[:]
-        self.gripper_depth_mask_filenames_copy = self.gripper_depth_mask_fingertip_filenames[:]
-        self.gripper_seg_mask_filenames_copy = self.gripper_seg_mask_fingertip_filenames[:]
+        self.gripper_depth_mask_filenames_copy = self.gripper_depth_mask_filenames[:]
+        self.gripper_seg_mask_filenames_copy = self.gripper_seg_mask_filenames[:]
 
     def _setup_output_dirs(self):
         """ Setup output directories """
@@ -1296,7 +1296,7 @@ class SGDOptimizer(object):
                 if self.gripper_dim > 0:
                     train_gripper_arr = np.load(os.path.join(self.data_dir, self.gripper_param_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
-                if input_gripper_mode == InputGripperMode.DEPTH_MASK:
+                if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
                     train_gripper_depth_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_depth_mask_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
                     train_gripper_seg_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_seg_mask_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
 
@@ -1369,8 +1369,8 @@ class SGDOptimizer(object):
                 # enqueue training data batch
                 train_data[start_i:end_i, ...] = train_data_arr
                 if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
-                    train_data[:, :, :, 1] = train_gripper_depth_mask_arr[:, 0]
-                    train_data[:, :, :, 2] = train_gripper_depth_mask_arr[:, 1]
+                    train_data[:, :, :, 1] = train_gripper_depth_mask_arr[:, :, :,  0]
+                    train_data[:, :, :, 2] = train_gripper_depth_mask_arr[:, :, :,  1]
                 train_poses[start_i:end_i,:] = self._read_pose_data(train_poses_arr, self.input_pose_mode)
                 label_data[start_i:end_i] = train_label_arr
                 if self.gripper_dim > 0:
@@ -1617,8 +1617,8 @@ class SGDOptimizer(object):
             if self.gripper_dim > 0:
                 gripper_params = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
             if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
-                gripper_depth_mask = np.load(os.path.join(self.data_dir, self.gripper_depth_mask_filenames[file_num]))[ 'arr_0'].astype(np.float32)
-                gripper_seg_mask = np.load(os.path.join(self.data_dir, self.gripper_seg_mask_filenames[file_num]))[ 'arr_0'].astype(np.float32)
+                gripper_depth_mask = np.load(os.path.join(self.data_dir, gripper_depth_mask_filename))[ 'arr_0'].astype(np.float32)
+                gripper_seg_mask = np.load(os.path.join(self.data_dir, gripper_seg_mask_filename))[ 'arr_0'].astype(np.float32)
 
             val_indices = self.val_index_map[data_filename]
         
@@ -1668,14 +1668,15 @@ class SGDOptimizer(object):
             # add gripper mask channels if needed
             if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
                 # allocate tensor for image data
-                data_new = np.zeros(list(np.shape[:-1]) + [self.num_tensor_channels])
-                data_new[:, :, :, 0] = data
+                data_new = np.zeros(list(data.shape[:-1]) + [self.num_tensor_channels])
+                data_new[:, :, :, 0] = data[:, :, :, 0]
                 data_new[:, :, :, 1] = gripper_depth_mask[:, :, :, 0]
                 data_new[:, :, :, 2] = gripper_depth_mask[:, :, :, 1]
+                data = data_new
 
             # get predictions
             if self.gripper_dim > 0:
-                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK, gripper_arr=gripper_params))
+                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK), gripper_arr=gripper_params)
             else:
                 predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK))
             

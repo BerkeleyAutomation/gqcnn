@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/hdd/dex-net/data/grasp_quality/bar_clamp_generic_10_08_17/tensors
+dataset_dir: /mnt/hdd/dex-net/data/grasp_quality/bar_clamp_generic_11_25_17/tensors
 output_dir: /mnt/hdd/dex-net/data/models/grasp_quality/generic_gripper
 
 # general optimization parameters
@@ -37,7 +37,7 @@ eval_total_train_error: 0
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.05
+base_lr: 0.01
 decay_step_multiplier: .8   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
@@ -54,8 +54,8 @@ image_mode: depth_tf_table
 training_mode: classification
 preproc_mode: none
 input_pose_mode: tf_image
-input_gripper_mode: all
-num_tensor_channels: 1
+input_gripper_mode: depth_mask
+num_tensor_channels: 3
 pos_weight: 0.1
 
 num_random_files: 100
@@ -114,12 +114,12 @@ save_histograms: 0
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 32
-  im_width: 32
-  im_channels: 1
+  im_height: 64
+  im_width: 64
+  im_channels: 3
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_pose_mode: tf_image
-  input_gripper_mode: all
+  input_gripper_mode: depth_mask
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the DeepOptimizer's config file
   batch_size: 16
@@ -131,85 +131,88 @@ gqcnn_config:
 #         type: spatial_transformer
 #         out_size: 32
 #         num_transform_params: 6
-#      conv1_1:
-#        type: conv
-#        filt_dim: 5
-#        num_filt: 32
-#        pool_size: 1
-#        pool_stride: 1  
-#        norm: 0
-#      conv1_2:
-#        type: conv
-#        filt_dim: 3
-#        num_filt: 32
-#        pool_size: 2
-#        pool_stride: 2
-#        norm: 1
-#      conv2_1:
-#        type: conv
-#        filt_dim: 3
-#        num_filt: 32
-#        pool_size: 1
-#        pool_stride: 1  
-#        norm: 0
-#      conv2_2:
-#        type: conv
-#        filt_dim: 3
-#        num_filt: 32
-#        pool_size: 1
-#        pool_stride: 1
-#        norm: 1
-      res1_1:
-        type: residual
-        num_filt: 32
-        filt_dim: 5
-      res1_2:
-        type: residual
-        num_filt: 32
-        filt_dim: 3
       conv1_1:
+        type: conv
+        filt_dim: 5
+        num_filt: 32
+        pool_size: 1
+        pool_stride: 1  
+        norm: 0
+      conv1_2:
         type: conv
         filt_dim: 3
         num_filt: 32
         pool_size: 2
         pool_stride: 2
         norm: 1
-      res2_1:
-        type: residual
-        num_filt: 32
+      conv2_1:
+        type: conv
         filt_dim: 3
-      res2_2:
-        type: residual
         num_filt: 32
+        pool_size: 1
+        pool_stride: 1  
+        norm: 0
+      conv2_2:
+        type: conv
         filt_dim: 3
-#      fc3:
-#        type: fc
-#        out_size: 1048
-#        drop_rate: 0.5
-      fc4: 
+        num_filt: 32
+        pool_size: 1
+        pool_stride: 1
+        norm: 1
+#      res1_1:
+#        type: residual
+#        num_filt: 32
+#        filt_dim: 5
+#      res1_2:
+#        type: residual
+#        num_filt: 32
+#        filt_dim: 3
+#      conv1_1:
+#        type: conv
+#        filt_dim: 3
+#        num_filt: 32
+#        pool_size: 2
+#        pool_stride: 2
+#        norm: 1
+#      res2_1:
+#        type: residual
+#        num_filt: 32
+#        filt_dim: 3
+#      res2_2:
+#        type: residual
+#        num_filt: 32
+#        filt_dim: 3
+      fc3:
         type: fc
         out_size: 1048
-        drop_rate: 0.3
+#        drop_rate: 0.5
+#      fc4: 
+#        type: fc
+#        out_size: 1048
+#        drop_rate: 0.3
     pose_stream:
       pc1:
         type: pc
-        out_size: 128
-    gripper_stream:
-      gc1:
-        type: gc
-        out_size: 128
-    gripper_pose_merge_stream:
-      gp_fc1:
-        type: fc_merge
-        out_size: 512
-      gp_fc2:
-        type: fc
-        out_size: 512
+        out_size: 4
+#    gripper_stream:
+#      gc1:
+#        type: gc
+#        out_size: 128
+#    gripper_pose_merge_stream:
+#      gp_fc1:
+#        type: fc_merge
+#        out_size: 512
+#      gp_fc2:
+#        type: fc
+#        out_size: 512
 #        drop_rate: 0.5
     merge_stream:
-      fc5:
+      fc4:
         type: fc_merge
         out_size: 512
+      fc5:
+        type: fc
+        out_size: 2
 #        drop_rate: 0.5
 #      fc5:
 #        type: fc
@@ -218,10 +221,10 @@ gqcnn_config:
       # fc7: 
       #   type: fc
       #   out_size: 128   
-      fc6:
-        type: fc
-        final_layer: True
-        out_size: 2
+#      fc6:
+#        type: fc
+#        final_layer: True
+#        out_size: 2
 
   # architecture normalization constants
   radius: 2

@@ -262,6 +262,9 @@ class GQCNN(object):
             self._gripper_dim = 0 # no gripper channel
         elif self._input_gripper_mode == InputGripperMode.ALL:
             self._gripper_dim = 4 # width, palm depth, fx, fy
+        elif self._input_gripper_mode == InputGripperMode.DEPTH_MASK:
+            self._gripper_dim = 0 # no gripper channel
+            self._num_channels += 2 # add channels for gripper depth masks
         else:
             raise ValueError('Input gripper mode %s not understood' %(self._input_gripper_mode))
 
@@ -549,7 +552,7 @@ class GQCNN(object):
         gripper_depth_mask_std :obj:`numpy ndarray`
             gripper depth mask standard deviation to be used
         """
-        self._gripper_depth_mask_std = gripper_dpeth_mask_std
+        self._gripper_depth_mask_std = gripper_depth_mask_std
 
     def get_gripper_std(self):
         """ Get the current gripper depth mask standard deviation to be used for normalization when predicting
