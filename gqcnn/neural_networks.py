@@ -6,16 +6,16 @@ Author: Jeff Mahler
 import copy
 import json
 import logging
-import numpy as np
 import os
 import sys
+
+import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from autolab_core import YamlConfig
+from gqcnn import InputDataMode, TrainingMode
 
-import optimizer_constants
-from optimizer_constants import InputDataMode
 def reduce_shape(shape):
     """ Get shape of a layer for flattening """
     shape = [x.value for x in shape[1:]]
@@ -76,7 +76,13 @@ class GQCNN(object):
         # create GQCNN object and initialize weights and network
         gqcnn = GQCNN(gqcnn_config)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
-        gqcnn.initialize_network()
+        training_mode = train_config['training_mode']
+        if training_mode == TrainingMode.CLASSIFICATION:
+            gqcnn.initialize_network(add_softmax=True)
+        elif training_mode == TrainingMode.REGRESSION:
+            gqcnn.initialize_network()
+        else:
+            raise ValueError('Invalid training mode: {}'.format(training_mode))
         gqcnn.init_mean_and_std(model_dir)
 
         return gqcnn
@@ -481,7 +487,7 @@ class GQCNN(object):
         self._pose_mean = np.zeros(self._pose_dim)
         self._pose_std = np.ones(self._pose_dim)
 
-    def initialize_network(self, add_softmax=True):
+    def initialize_network(self, add_softmax=False):
         """ Set up input nodes and builds network.
 
         Parameters
