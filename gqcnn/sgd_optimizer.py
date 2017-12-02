@@ -566,7 +566,10 @@ class SGDOptimizer(object):
 		logging.info('Computing metric stats')
 		all_metrics = None
 		all_val_metrics = None
-		for im_filename, metric_filename in zip(self.im_filenames, self.label_filenames):
+                random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
+                for k in random_file_indices.tolist():
+                        im_filename = self.im_filenames[k]
+                        metric_filename = self.label_filenames[k]
 			self.metric_data = np.load(os.path.join(self.data_dir, metric_filename))['arr_0']
 			indices = self.val_index_map[im_filename]
 			val_metric_data = self.metric_data[indices]
@@ -588,26 +591,26 @@ class SGDOptimizer(object):
 
 	def _compute_indices_image_wise(self):
 		""" Compute train and validation indices based on an image-wise split"""
-
-		# get total number of training datapoints and set the decay_step
-		num_datapoints = self.images_per_file * self.num_files
-		self.num_train = int(self.train_pct * num_datapoints)
-		self.decay_step = self.decay_step_multiplier * self.num_train
-
-		# get training and validation indices
-		all_indices = np.arange(num_datapoints)
-		np.random.shuffle(all_indices)
-		train_indices = np.sort(all_indices[:self.num_train])
-		val_indices = np.sort(all_indices[self.num_train:])
-
 		# make a map of the train and test indices for each file
 		logging.info('Computing indices image-wise')
-		train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_image_wise.pkl')
-		self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_image_wise.pkl')
+                if 'splits' in self.cfg.keys():
+                        train_index_map_filename = self.cfg['splits']['training']
+                        val_index_map_filename = self.cfg['splits']['validation']
+                else:
+                        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_image_wise.pkl')
+                        val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_image_wise.pkl')
+
 		if os.path.exists(train_index_map_filename):
 			self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
-			self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
-		else:
+			self.val_index_map = pkl.load(open(val_index_map_filename, 'r'))
+		else:                        
+                        # get training and validation indices
+                        all_indices = np.arange(self.num_datapoints)
+                        np.random.shuffle(all_indices)
+                        train_indices = np.sort(all_indices[:self.num_train])
+                        val_indices = np.sort(all_indices[self.num_train:])
+
+                        # compute indices
 			self.train_index_map = {}
 			self.val_index_map = {}
 			for i, im_filename in enumerate(self.im_filenames):
@@ -617,40 +620,41 @@ class SGDOptimizer(object):
 				self.train_index_map[im_filename] = train_indices[(train_indices >= lower) & (train_indices < upper) &  (train_indices - lower < im_arr.shape[0])] - lower
 				self.val_index_map[im_filename] = val_indices[(val_indices >= lower) & (val_indices < upper) & (val_indices - lower < im_arr.shape[0])] - lower
 			pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
-			pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
+			pkl.dump(self.val_index_map, open(val_index_map_filename, 'w'))
 
 	def _compute_indices_object_wise(self):
 		""" Compute train and validation indices based on an object-wise split"""
-
-		if self.obj_id_filenames is None:
-			raise ValueError('Cannot use object-wise split. No object labels! Check the dataset_dir')
-
-		# get total number of training datapoints and set the decay_step
-		num_datapoints = self.images_per_file * self.num_files
-		self.num_train = int(self.train_pct * num_datapoints)
-		self.decay_step = self.decay_step_multiplier * self.num_train
-
-		# get number of unique objects by taking last object id of last object id file
-		self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
-		last_file_object_ids = np.load(os.path.join(self.data_dir, self.obj_id_filenames[len(self.obj_id_filenames) - 1]))['arr_0']
-		num_unique_objs = last_file_object_ids[len(last_file_object_ids) - 1]
-		self.num_train_obj = int(self.train_pct * num_unique_objs)
-		logging.debug('There are: ' + str(num_unique_objs) + 'unique objects in this dataset.')
-
-		# get training and validation indices
-		all_object_ids = np.arange(num_unique_objs + 1)
-		np.random.shuffle(all_object_ids)
-		train_object_ids = np.sort(all_object_ids[:self.num_train_obj])
-		val_object_ids = np.sort(all_object_ids[self.num_train_obj:])
-
 		# make a map of the train and test indices for each file
 		logging.info('Computing indices object-wise')
-		train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_object_wise.pkl')
-		self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_object_wise.pkl')
+                if 'splits' in self.cfg.keys():
+                        train_index_map_filename = self.cfg['splits']['training']
+                        val_index_map_filename = self.cfg['splits']['validation']
+                else:
+                        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_object_wise.pkl')
+                        val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_object_wise.pkl')
+
 		if os.path.exists(train_index_map_filename):
 			self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
-			self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
+			self.val_index_map = pkl.load(open(val_index_map_filename, 'r'))
 		else:
+                        # check that the obj id filenames exist
+                        if self.obj_id_filenames is None:
+                                raise ValueError('Cannot use object-wise split. No object labels! Check the dataset_dir')
+                                
+                        # get number of unique objects by taking last object id of last object id file
+                        self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
+                        last_file_object_ids = np.load(os.path.join(self.data_dir, self.obj_id_filenames[len(self.obj_id_filenames) - 1]))['arr_0']
+                        num_unique_objs = last_file_object_ids[len(last_file_object_ids) - 1]
+                        self.num_train_obj = int(self.train_pct * num_unique_objs)
+                        logging.debug('There are: ' + str(num_unique_objs) + 'unique objects in this dataset.')
+
+                        # get training and validation indices
+                        all_object_ids = np.arange(num_unique_objs + 1)
+                        np.random.shuffle(all_object_ids)
+                        train_object_ids = np.sort(all_object_ids[:self.num_train_obj])
+                        val_object_ids = np.sort(all_object_ids[self.num_train_obj:])
+
+                        # compute index maps
 			self.train_index_map = {}
 			self.val_index_map = {}
 			for im_filename in self.im_filenames:
@@ -672,38 +676,41 @@ class SGDOptimizer(object):
 				val_indices = []
 
 			pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
-			pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
-
+			pkl.dump(self.val_index_map, open(val_index_map_filename, 'w'))
 
 	def _compute_indices_pose_wise(self):
 		""" Compute train and validation indices based on an image-stable-pose-wise split"""
-
-		# get total number of training datapoints and set the decay_step
-		num_datapoints = self.images_per_file * self.num_files
-		self.num_train = int(self.train_pct * num_datapoints)
-		self.decay_step = self.decay_step_multiplier * self.num_train
-		
-		# get number of unique stable poses by taking last stable pose id of last stable pose id file
-		self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-		last_file_pose_ids = np.load(os.path.join(self.data_dir, self.stable_pose_filenames[len(self.stable_pose_filenames) - 1]))['arr_0']
-		num_unique_stable_poses = last_file_pose_ids[len(last_file_pose_ids) - 1]
-		self.num_train_poses = int(self.train_pct * num_unique_stable_poses)
-		logging.debug('There are: ' + str(num_unique_stable_poses) + 'unique stable poses in this dataset.')
-
-		# get training and validation indices
-		all_pose_ids = np.arange(num_unique_stable_poses + 1)
-		np.random.shuffle(all_pose_ids)
-		train_pose_ids = np.sort(all_pose_ids[:self.num_train_poses])
-		val_pose_ids = np.sort(all_pose_ids[self.num_train_poses:])
-
 		# make a map of the train and test indices for each file
 		logging.info('Computing indices stable-pose-wise')
-		train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_stable_pose_wise.pkl')
-		self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_stable_pose_wise.pkl')
+                if 'splits' in self.cfg.keys():
+                        train_index_map_filename = self.cfg['splits']['training']
+                        val_index_map_filename = self.cfg['splits']['validation']
+                else:
+                        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_stable_pose_wise.pkl')
+                        val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_stable_pose_wise.pkl')
+
 		if os.path.exists(train_index_map_filename):
 			self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
-			self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
+			self.val_index_map = pkl.load(open(val_index_map_filename, 'r'))
 		else:
+                        # check that the obj id filenames exist
+                        if self.stable_pose_filenames is None:
+                                raise ValueError('Cannot use stable-pose-wise split. No stable pose labels! Check the dataset_dir')
+
+                        # get number of unique stable poses by taking last stable pose id of last stable pose id file
+                        self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
+                        last_file_pose_ids = np.load(os.path.join(self.data_dir, self.stable_pose_filenames[len(self.stable_pose_filenames) - 1]))['arr_0']
+                        num_unique_stable_poses = last_file_pose_ids[len(last_file_pose_ids) - 1]
+                        self.num_train_poses = int(self.train_pct * num_unique_stable_poses)
+                        logging.debug('There are: ' + str(num_unique_stable_poses) + 'unique stable poses in this dataset.')
+
+                        # get training and validation indices
+                        all_pose_ids = np.arange(num_unique_stable_poses + 1)
+                        np.random.shuffle(all_pose_ids)
+                        train_pose_ids = np.sort(all_pose_ids[:self.num_train_poses])
+                        val_pose_ids = np.sort(all_pose_ids[self.num_train_poses:])
+
+                        # compute indices
 			self.train_index_map = {}
 			self.val_index_map = {}
 			for im_filename in self.im_filenames:
@@ -725,7 +732,7 @@ class SGDOptimizer(object):
 				val_indices = []
 
 			pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
-			pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
+			pkl.dump(self.val_index_map, open(val_index_map_filename, 'w'))
 
 	def _read_training_params(self):
 		""" Read training parameters from configuration file """
@@ -757,7 +764,6 @@ class SGDOptimizer(object):
 		self.decay_rate = self.cfg['decay_rate']
 		self.momentum_rate = self.cfg['momentum_rate']
 		self.max_training_examples_per_load = self.cfg['max_training_examples_per_load']
-
 		self.target_metric_name = self.cfg['target_metric_name']
 		self.metric_thresh = self.cfg['metric_thresh']
 		self.training_mode = self.cfg['training_mode']
@@ -769,7 +775,6 @@ class SGDOptimizer(object):
 		if self.total_pct < 0 or self.total_pct > 1:
 			raise ValueError('Train percentage must be in range [0,1]')
 
-		
 	def _read_data_params(self):
 		""" Read data parameters from configuration file """
 
@@ -797,6 +802,10 @@ class SGDOptimizer(object):
 		self.num_files = len(self.im_filenames)
 		self.num_random_files = min(self.num_files, self.cfg['num_random_files'])
 		self.num_categories = 2
+
+                self.num_datapoints = self.images_per_file * self.num_files
+                self.num_train = int(self.train_pct * self.num_datapoints)
+                self.decay_step = self.decay_step_multiplier * self.num_train
 
 	def _setup_denoising_and_synthetic(self):
 		""" Setup denoising and synthetic data parameters """
@@ -857,8 +866,10 @@ class SGDOptimizer(object):
 		self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
 
 		# check valid filenames
-		if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0 or len(self.stable_pose_filenames) == 0:
+		if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
 			raise ValueError('One or more required training files in the dataset could not be found.')
+                if len(self.stable_pose_filenames) == 0:
+                        self.stable_pose_filenames = None
 		if len(self.obj_id_filenames) == 0:
 			self.obj_id_filenames = None
 
@@ -870,9 +881,10 @@ class SGDOptimizer(object):
 		self.im_filenames = [self.im_filenames[k] for k in filename_indices]
 		self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
 		self.label_filenames = [self.label_filenames[k] for k in filename_indices]
+                if self.stable_pose_filenames is not None:
+                        self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 		if self.obj_id_filenames is not None:
 			self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
-		self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
 
 		# create copy of image, pose, and label filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
 		self.im_filenames_copy = self.im_filenames[:]

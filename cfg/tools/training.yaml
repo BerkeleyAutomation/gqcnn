@@ -135,7 +135,7 @@ gqcnn_config:
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 64
+      num_filt: 32
       pool_size: 1
       pool_stride: 1
       norm: 1

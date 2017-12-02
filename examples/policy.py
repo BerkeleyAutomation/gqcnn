@@ -116,12 +116,33 @@ if __name__ == '__main__':
     args = parser.parse_args()
     config_filename = args.config_filename
 
+    # make relative paths absolute
+    if not os.path.isabs(config_filename):
+        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                       '..',
+                                       config_filename)
+
     # read config
     config = YamlConfig(config_filename)
     sensor_type = config['sensor']['type']
     sensor_frame = config['sensor']['frame']
     inpaint_rescale_factor = config['inpaint_rescale_factor']
     policy_config = config['policy']
+
+    # make relative paths absolute
+    if not os.path.isabs(config['calib_dir']):
+        config['calib_dir'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                           '..',
+                                           config['calib_dir'])
+    if not os.path.isabs(config['sensor']['image_dir']):
+        config['sensor']['image_dir'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                     '..',
+                                                     config['sensor']['image_dir'])
+
+    if not os.path.isabs(config['policy']['gqcnn_model']):
+        config['policy']['gqcnn_model'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                       '..',
+                                                       config['policy']['gqcnn_model'])
 
     # read camera calib
     tf_filename = '%s_to_world.tf' %(sensor_frame)
@@ -157,4 +178,3 @@ if __name__ == '__main__':
         vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
         vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
         vis.show()
-
