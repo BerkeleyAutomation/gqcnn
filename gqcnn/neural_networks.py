@@ -14,7 +14,7 @@ import tensorflow.contrib.framework as tcf
 import matplotlib.pyplot as plt
 
 from autolab_core import YamlConfig
-from gqcnn import InputPoseMode, InputGripperMode
+from gqcnn import InputPoseMode, InputGripperMode, TrainingMode
 
 from spatial_transformer import transformer
 
@@ -73,7 +73,13 @@ class GQCNN(object):
         # create GQCNN object and initialize weights and network
         gqcnn = GQCNN(gqcnn_config)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
-        gqcnn.initialize_network()
+        training_mode = train_config['training_mode']
+        if training_mode == TrainingMode.CLASSIFICATION:
+            gqcnn.initialize_network(add_softmax=True)
+        elif training_mode == TrainingMode.REGRESSION:
+            gqcnn.initialize_network()
+        else:
+            raise ValueError('Invalid training mode: {}'.format(training_mode))
         gqcnn.init_mean_and_std(model_dir)
 
         return gqcnn
@@ -301,7 +307,7 @@ class GQCNN(object):
         self._mask_and_inpaint = False
         self._save_histograms = False
 
-    def initialize_network(self, add_softmax=True):
+    def initialize_network(self, add_softmax=False):
         """ Set up input nodes and builds network.
 
         Parameters
