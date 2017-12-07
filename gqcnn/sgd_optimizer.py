@@ -1057,8 +1057,8 @@ class SGDOptimizer(object):
 				self.train_domain_label_arr = np.load(os.path.join(self.data_dir, self.domain_label_filenames_copy[file_num]))[
 										  'arr_0'].astype(np.float32)
 
-				if self.pose_dim == 1 and self.train_poses_arr.shape[1] == 6:
-					self.train_poses_arr = self.train_poses_arr[:, :4]
+				# if self.pose_dim == 1 and self.train_poses_arr.shape[1] == 6:
+				# 	self.train_poses_arr = self.train_poses_arr[:, :4]
 
 				# get batch indices uniformly at random
 				train_ind = self.train_index_map[train_data_filename]
@@ -1082,6 +1082,7 @@ class SGDOptimizer(object):
 
 				# subtract mean
 				self.train_data_arr = (self.train_data_arr - self.data_mean) / self.data_std
+				## IPython.embed()
 				self.train_poses_arr = (self.train_poses_arr - self.pose_mean) / self.pose_std
 		
 				# normalize labels
