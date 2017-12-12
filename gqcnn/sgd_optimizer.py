@@ -37,6 +37,8 @@ from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputPoseMode, InputGripperMode, GeneralConstants, FileTemplates
 from train_stats_logger import TrainStatsLogger
 
+from visualization import Visualizer2D as vis
+from perception import DepthImage
 
 class SGDOptimizer(object):
     """ Optimizer for gqcnn object """
@@ -1299,7 +1301,7 @@ class SGDOptimizer(object):
                 if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
                     train_gripper_depth_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_depth_mask_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
                     train_gripper_seg_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_seg_mask_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
-
+                   
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
                 np.random.shuffle(train_ind)
@@ -1356,7 +1358,8 @@ class SGDOptimizer(object):
                 if self.gripper_dim > 0:
                     train_gripper_arr = (train_gripper_arr - self.gripper_mean) / self.gripper_std
                 if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
-                    train_gripper_depth_mask_arr = (train_gripper_depth_mask_arr - self.gripper_depth_mask_mean) / self.gripper_depth_mask_std
+                    train_gripper_depth_mask_arr[:, :, :, 0] = (train_gripper_depth_mask_arr[:, :, :, 0] - self.gripper_depth_mask_mean[0]) / self.gripper_depth_mask_std[0]
+                    train_gripper_depth_mask_arr[:, :, :, 1] = (train_gripper_depth_mask_arr[:, :, :, 1] - self.gripper_depth_mask_mean[1]) / self.gripper_depth_mask_std[1]
 
                 # normalize labels
                 if self.training_mode == TrainingMode.REGRESSION:
@@ -1365,12 +1368,26 @@ class SGDOptimizer(object):
                 elif self.training_mode == TrainingMode.CLASSIFICATION:
                     train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                     train_label_arr = train_label_arr.astype(self.numpy_dtype)
+                
+#                for i in range(train_data_arr.shape[0]):
+#                    d_image = DepthImage(train_data_arr[i])
+#                    f_mask = DepthImage(train_gripper_depth_mask_arr[i, :, :, 1])
+#                    p_mask = DepthImage(train_gripper_depth_mask_arr[i, :, :, 0])
+#                    print(train_label_arr[i])
+#                    vis.figure() 
+#                    vis.subplot(131)
+#                    vis.imshow(d_image)
+#                    vis.subplot(132)
+#                    vis.imshow(f_mask)
+#                    vis.subplot(133)
+#                    vis.imshow(p_mask)
+#                    vis.show()
 
                 # enqueue training data batch
-                train_data[start_i:end_i, ...] = train_data_arr
+                train_data[start_i:end_i, :, :, 0] = train_data_arr[:, :, :, 0]
                 if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
-                    train_data[:, :, :, 1] = train_gripper_depth_mask_arr[:, :, :,  0]
-                    train_data[:, :, :, 2] = train_gripper_depth_mask_arr[:, :, :,  1]
+                    train_data[start_i:end_i, :, :, 1] = train_gripper_depth_mask_arr[:, :, :,  0]
+                    train_data[start_i:end_i, :, :, 2] = train_gripper_depth_mask_arr[:, :, :,  1]
                 train_poses[start_i:end_i,:] = self._read_pose_data(train_poses_arr, self.input_pose_mode)
                 label_data[start_i:end_i] = train_label_arr
                 if self.gripper_dim > 0:
