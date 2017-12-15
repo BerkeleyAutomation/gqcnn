@@ -145,6 +145,7 @@ class Grasp2D(object):
             grasp_x_camera = np.array([0,0,1]) # aligned with camera Z axis
         grasp_y_camera = grasp_axis_camera
         grasp_z_camera = np.cross(grasp_x_camera, grasp_y_camera)
+        grasp_z_camera = grasp_z_camera / np.linalg.norm(grasp_z_camera)
         grasp_x_camera = np.cross(grasp_z_camera, grasp_y_camera)
         grasp_rot_camera = np.array([grasp_x_camera, grasp_y_camera, grasp_z_camera]).T
         if np.linalg.det(grasp_rot_camera) < 0: # fix possible reflections due to SVD
@@ -152,7 +153,7 @@ class Grasp2D(object):
         T_grasp_camera = RigidTransform(rotation=grasp_rot_camera,
                                         translation=grasp_center_camera,
                                         from_frame='grasp',
-                                       to_frame=self.camera_intr.frame)
+                                        to_frame=self.camera_intr.frame)
         return T_grasp_camera
 
     @staticmethod
