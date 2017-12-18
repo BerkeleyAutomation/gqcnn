@@ -16,9 +16,8 @@ import scipy.misc as sm
 import sys
 import time
 
-from gqcnn import GQCNN, ClassificationResult
-
-from optimizer_constants import InputDataMode, ImageMode
+from . import GQCNN, ClassificationResult
+from .optimizer_constants import InputDataMode, ImageMode
 
 binary_im_tf_tensor_template = 'binary_ims_tf'
 depth_im_tf_tensor_template = 'depth_ims_tf'

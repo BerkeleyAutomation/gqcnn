@@ -13,8 +13,8 @@ import autolab_core.utils as utils
 from autolab_core import YamlConfig, Point
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
-from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
-from gqcnn import Visualizer as vis2d
+from . import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
+from . import Visualizer as vis2d
 
 import IPython
 

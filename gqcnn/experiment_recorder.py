@@ -17,7 +17,6 @@ from time import time
 
 from autolab_core import CSVModel, ExperimentLogger, YamlConfig
 from autolab_core.utils import gen_experiment_id
-
 from perception import BinaryImage, DepthImage, Image
 
 class LoggerField(object):

@@ -2,10 +2,9 @@
 Common 2D visualizations using pyplot
 Author: Jeff Mahler
 """
-import numpy as np
-
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
+import numpy as np
 
 from autolab_core import Box, Contour
 from perception import BinaryImage, ColorImage, DepthImage, GrayscaleImage, RgbdImage, GdImage, SegmentationImage

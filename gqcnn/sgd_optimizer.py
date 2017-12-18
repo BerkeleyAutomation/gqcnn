@@ -3,10 +3,13 @@ Optimizer class for training a gqcnn(Grasp Quality Neural Network) object.
 Author: Vishal Satish
 """
 import argparse
+import collections
 import copy
 import cv2
 import json
+import IPython
 import logging
+import matplotlib.pyplot as plt
 import numbers
 import numpy as np
 import cPickle as pkl
@@ -20,21 +23,19 @@ import skimage.draw as sd
 import signal
 import sys
 import shutil
+import tensorflow as tf
 import threading
 import time
 import urllib
-import matplotlib.pyplot as plt
-import tensorflow as tf
 import yaml
+
+
 from autolab_core import YamlConfig
 import autolab_core.utils as utils
-import collections
 
-import IPython
-
-from learning_analysis import ClassificationResult, RegressionResult
-from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
-from train_stats_logger import TrainStatsLogger
+from .learning_analysis import ClassificationResult, RegressionResult
+from .optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
+from .train_stats_logger import TrainStatsLogger
 
 class SGDOptimizer(object):
 	""" Optimizer for gqcnn object """

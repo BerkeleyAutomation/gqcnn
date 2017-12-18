@@ -9,12 +9,12 @@ import logging
 import os
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
 from autolab_core import YamlConfig
-from gqcnn import InputDataMode, TrainingMode
+from . import InputDataMode, TrainingMode
 
 def reduce_shape(shape):
     """ Get shape of a layer for flattening """

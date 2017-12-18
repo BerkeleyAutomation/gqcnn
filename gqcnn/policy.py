@@ -18,9 +18,9 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage
 
-from gqcnn import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
-from gqcnn import Visualizer as vis
-from gqcnn import NoValidGraspsException
+from . import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
+from . import Visualizer as vis
+from . import NoValidGraspsException
 
 FIGSIZE = 16
 SEED = 5234709
