@@ -12,6 +12,7 @@ import scipy.ndimage.morphology as snm
 import scipy.stats as ss
 import skimage.draw as sd
 import IPython
+import sys
 
 from neon.data import NervanaDataIterator
 
@@ -283,13 +284,18 @@ class GQCNNTrainIterator(NervanaDataIterator):
 			while start_ind < self.be.bsz:
 				# choose a random file and get the indices corresponding to it
 				index = np.random.choice(len(self.im_filenames))
+#				index = 0
 				indices = self.indices[self.im_filenames[index]]
 				np.random.shuffle(indices)
+				# indices = np.arange(len(self.train_data_arr))
 
 				# get the corresponding data from that file
 				file_im_data = np.load(os.path.join(self.dataset_dir, self.im_filenames[index]))['arr_0'][indices]
 				file_pose_data = self._read_pose_data(np.load(os.path.join(self.dataset_dir, self.pose_filenames[index]))['arr_0'][indices], self.input_data_mode)
 				file_label_data = np.load(os.path.join(self.dataset_dir, self.label_filenames[index]))['arr_0'][indices]
+#				file_im_data = np.load(os.path.join(self.dataset_dir, self.im_filenames[index]))['arr_0'].astype(np.float32)
+#				file_pose_data = self._read_pose_data(np.load(os.path.join(self.dataset_dir, self.pose_filenames[index]))['arr_0'], self.input_data_mode).astype(np.float32)
+#				file_label_data = np.load(os.path.join(self.dataset_dir, self.label_filenames[index]))['arr_0'].astype(np.float32)
 
 				# allocate arrays
 				if im_arr is None:
@@ -306,6 +312,7 @@ class GQCNNTrainIterator(NervanaDataIterator):
 				elif self.training_mode == TrainingMode.CLASSIFICATION:
 					file_label_data = 1 * (file_label_data > self.metric_thresh)
 					file_label_data = file_label_data.astype(self.numpy_dtype)
+#                    			file_label_data = 1.0 - file_label_data
 
 				# distort(add noise) to images
 				if self.distort:
@@ -325,11 +332,16 @@ class GQCNNTrainIterator(NervanaDataIterator):
 				start_ind = end_ind
 		
 			# normalize images and poses
+#			self.im_mean = 0.66417919349795784
+#			self.im_std = 0.030262969604126728
+#			self.pose_mean = np.asarray([  6.20244773e-04,  -4.55267475e-03,   6.47679225e-01, 3.13411146e+00])
+#			self.pose_std = np.asarray([ 0.06067145,  0.06025154,  0.02584243,  1.81691023])
+#			original_im_arr = im_arr.copy()
 			im_arr = (im_arr - self.im_mean) / self.im_std
 			pose_arr = (pose_arr - self.pose_mean[2:3]) / self.pose_std[2:3]
 			# im_arr = im_arr - self.im_mean
 			# pose_arr = pose_arr - self.pose_mean[:pose_arr.shape[1]]
-
+			# IPython.embed()
 			# now flatten the image array for neon backend
 			im_arr_flat = im_arr.reshape((self.be.bsz, self.im_width * self.im_height * self.im_channels))
 

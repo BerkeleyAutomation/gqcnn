@@ -244,57 +244,57 @@ import logging
 import time
 
 if __name__ == '__main__':
-	#setup logger
-	logging.getLogger().setLevel(logging.INFO)
+    # setup logger
+    logging.getLogger().setLevel(logging.INFO)
+    train_config = YamlConfig('cfg/tools/training.yaml')
+    gqcnn_config = train_config['gqcnn_config']
 
-	train_config = YamlConfig('cfg/tools/training.yaml')
-	gqcnn_config = train_config['gqcnn_config']
+    def get_elapsed_time(time_in_seconds):
+        """ Helper function to get elapsed time """
+        if time_in_seconds < 60:
+            return '%.1f seconds' % (time_in_seconds)
+        elif time_in_seconds < 3600:
+            return '%.1f minutes' % (time_in_seconds / 60)
+        else:
+            return '%.1f hours' % (time_in_seconds / 3600)
 
-	def get_elapsed_time(time_in_seconds):
-		""" Helper function to get elapsed time """
-		if time_in_seconds < 60:
-			return '%.1f seconds' % (time_in_seconds)
-		elif time_in_seconds < 3600:
-			return '%.1f minutes' % (time_in_seconds / 60)
-		else:
-			return '%.1f hours' % (time_in_seconds / 3600)
 
-	###Possible Use-Cases###
+    ###Possible Use-Cases###
 
-	# Training from Scratch
-	start_time = time.time()
-	gqcnn = GQCNN(gqcnn_config)
-	sgdOptimizer = SGDOptimizer(gqcnn, train_config)
-	sgdOptimizer.optimize()
-	logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
+    # Training from Scratch
+    start_time = time.time()
+    gqcnn = GQCNN(gqcnn_config)
+    sgdOptimizer = SGDOptimizer(gqcnn, train_config)
+    sgdOptimizer.optimize()
+    logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time)))
 
-	# Prediction
-	"""
-	start_time = time.time()
-	model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
-	gqcnn = GQCNN.load(model_dir)
-	output = gqcnn.predict(images, poses)
-	pred_p_success = output[:,1]
-	gqcnn.close_session()
-	logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
-	"""
+    # Prediction
+    """
+    start_time = time.time()
+    model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
+    gqcnn = GQCNN.load(model_dir)
+    output = gqcnn.predict(images, poses)
+    pred_p_success = output[:,1]
+    gqcnn.close_session()
+    logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
+    """
 
-	# Analysis
-	"""
-	start_time = time.time()
-	analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
-	analyzer = GQCNNAnalyzer(analysis_config)
-	analyzer.analyze()
-	logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
-	"""
+    # Analysis
+    """
+    start_time = time.time()
+    analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
+    analyzer = GQCNNAnalyzer(analysis_config)
+    analyzer.analyze()
+    logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
+    """
 
-	# Fine-Tuning
-	"""
-	start_time = time.time()
-	model_dir = train_config['model_dir']
-	gqcnn = GQCNN.load(model_dir)
-	sgdOptimizer = SGDOptimizer(gqcnn, train_config)
-	with gqcnn._graph.as_default():
-			sgdOptimizer.optimize()
-	logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
-	"""
+    # Fine-Tuning
+    """
+    start_time = time.time()
+    model_dir = train_config['model_dir']
+    gqcnn = GQCNN.load(model_dir)
+    sgdOptimizer = SGDOptimizer(gqcnn, train_config)
+    with gqcnn._graph.as_default():
+            sgdOptimizer.optimize()
+    logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
+    """
