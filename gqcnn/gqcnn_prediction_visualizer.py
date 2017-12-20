@@ -76,7 +76,6 @@ class GQCNNPredictionVisualizer(object):
             # visualize
             for ind in vis_ind:
                 # limit the number of sampled datapoints displayed per object
-                num_visualized += 1
                 if num_visualized >= self.samples_per_object:
                     break
 
@@ -93,6 +92,7 @@ class GQCNNPredictionVisualizer(object):
                 elif self.datapoint_type == 'false_negative':
                     if classification_result.labels[ind] == 0:
                         continue
+                num_visualized += 1
 
                 logging.info('Datapoint %d of files for %s' %(ind, im_filename))
                 logging.info('Depth: %.3f' %(hand_poses_tensor[ind, 2]))

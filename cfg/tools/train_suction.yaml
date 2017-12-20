@@ -1,18 +1,17 @@
-### TRAINING CONFIGURATIONS ###
+### TRAINING CONFIGURATIONS ##
 mode: training
 
 # dataset 
-dataset_dir: /home/autolab/Public/data/dex-net/data/suction/kit_high_res_08_17_17/tensors
-output_dir: /home/autolab/Public/data/dex-net/data/models/suction
+dataset_dir: /mnt/data/jmahler/suction/datasets/kit_09_12_17/tensors
+output_dir: /mnt/data/jmahler/suction/models
 model_dir: /path/to/your/pretrained/gqcnn/model
-mode: training
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
 num_epochs: 25     # number of epochs to train for
-eval_frequency: 20000  # how often to get validation error 
-save_frequency: 20000  # how often to save output
+eval_frequency: 5000  # how often to get validation error 
+save_frequency: 5000  # how often to save output
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
@@ -25,18 +24,16 @@ train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
 
-loss: sparse
+loss: weighted_cross_entropy
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-<<<<<<< HEAD
-decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate
-=======
-decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
->>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
+decay_step_multiplier: 1.0  # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
+pos_weight: 3.0
+neg_reject_rate: 0.0
 
 fine_tune: 0
 update_fc_only: 0
@@ -54,20 +51,11 @@ num_tensor_channels: 1
 
 num_random_files: 100
 
-<<<<<<< HEAD
 target_metric_name: robust_suction_wrench_resistance
-metric_thresh: 0.36
-=======
-target_metric_name: robust_wrench_resistance
-<<<<<<< Updated upstream
-metric_thresh: 0.0075
-=======
-metric_thresh: 0.01
->>>>>>> Stashed changes
->>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
+metric_thresh: 0.4
 
 # denoising / synthetic data params
-multiplicative_denoising: 0
+multiplicative_denoising: 1
 gamma_shape: 1000.00
 
 symmetrize: 1
@@ -88,10 +76,10 @@ gradient_dropout_sigma: 0.5
 gradient_dropout_shape: 15
 gradient_dropout_scale: 0.001
 
-gaussian_process_denoising: 0
+gaussian_process_denoising: 1
 gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
-gaussian_process_sigma: 0.0
+gaussian_process_sigma: 0.005
 
 border_distortion: 0
 border_grad_sigma: 1.0
@@ -111,14 +99,14 @@ drop_fc4: 0
 fc4_drop_rate: 0.5
 
 # debugging params
-debug: 0
-debug_num_files: 300
+debug: 1
+debug_num_files: 100000
 
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 96
-  im_width: 96
+  im_height: 32
+  im_width: 32
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_data_mode: tf_image_suction
@@ -129,67 +117,43 @@ gqcnn_config:
   # architecture
   architecture:
     conv1_1:
-<<<<<<< HEAD
-      filt_dim: 7
-=======
       filt_dim: 5
->>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
-      num_filt: 16
+      num_filt: 32
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv1_2:
-<<<<<<< HEAD
-      filt_dim: 5
-=======
       filt_dim: 3
->>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
-      num_filt: 16
+      num_filt: 32
       pool_size: 2
       pool_stride: 2
       norm: 1
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 32
       pool_size: 1
       pool_stride: 1  
       norm: 0
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 16
-<<<<<<< HEAD
-=======
-<<<<<<< Updated upstream
->>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
+      num_filt: 32
       pool_size: 1
       pool_stride: 1
-=======
-      pool_size: 2
-      pool_stride: 2
->>>>>>> Stashed changes
       norm: 1
       norm_type: local_response
     pc1:
-      out_size: 32
+      out_size: 64
     pc2:
       out_size: 0
     fc3:
-<<<<<<< HEAD
-      out_size: 256
-=======
-<<<<<<< Updated upstream
-      out_size: 512
-=======
-      out_size: 256
->>>>>>> Stashed changes
->>>>>>> b1b00bf2596a83b6cb020188d0afdf96de151b66
+      out_size: 1024
     fc4:
-      out_size: 256
+      out_size: 512
     fc5:
-      out_size: 2
+      out_size: 1
 
   # architecture normalization constants
   radius: 2
