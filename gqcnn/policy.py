@@ -113,7 +113,9 @@ class GraspingPolicy(Policy):
     def __init__(self, config):
         # store parameters
         self._config = config
-        self._gripper_width = config['gripper_width']
+        self._gripper_width = np.inf
+        if 'gripper_width' in config.keys():
+            self._gripper_width = config['gripper_width']
 
         # init grasp sampler
         self._sampling_config = config['sampling']
@@ -127,7 +129,7 @@ class GraspingPolicy(Policy):
         metric_type = self._metric_config['type']
         self._grasp_quality_fn = GraspQualityFunctionFactory.quality_function(metric_type,
                                                                               self._metric_config)
- 
+
     @property
     def config(self):
         """ Returns the policy parameters. """
@@ -192,7 +194,7 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
         num_grasps = len(grasps)
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
-            return None
+            raise NoValidGraspsException()
 
         # set grasp
         grasp = grasps[0]
@@ -305,8 +307,13 @@ class RobustGraspingPolicy(GraspingPolicy):
             vis.figure(size=(FIGSIZE,FIGSIZE))
             vis.imshow(rgbd_im.depth)
             for grasp, q in zip(grasps, norm_q_values):
-                vis.grasp(grasp, scale=1.0, show_center=False, show_axis=True,
-                          color=plt.cm.RdYlBu(q))
+                vis.grasp(grasp, scale=1.0,
+                          grasp_center_size=10,
+                          grasp_center_thickness=2.5,
+                          jaw_width=2.5,
+                          show_center=False,
+                          show_axis=True,
+                          color=plt.cm.RdYlGn(q))
             vis.title('Sampled grasps')
             vis.show()
 
@@ -467,8 +474,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 vis.figure(size=(FIGSIZE,FIGSIZE))
                 vis.imshow(rgbd_im.depth)
                 for grasp, q in zip(grasps, norm_q_values):
-                    vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
-                              color=plt.cm.RdYlBu(q))
+                    vis.grasp(grasp, scale=2.0,
+                              jaw_width=2.0,
+                              show_center=False,
+                              show_axis=True,
+                              color=plt.cm.RdYlGn(q))
                 vis.title('Sampled grasps iter %d' %(j))
                 vis.show()
 
@@ -487,7 +497,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 vis.imshow(rgbd_im.depth)
                 for grasp, q in zip(elite_grasps, norm_q_values):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
-                              color=plt.cm.RdYlBu(q))
+                              color=plt.cm.RdYlGn(q))
                 vis.title('Elite grasps iter %d' %(j))
                 vis.show()
 
@@ -549,8 +559,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             vis.figure(size=(FIGSIZE,FIGSIZE))
             vis.imshow(rgbd_im.depth)
             for grasp, q in zip(grasps, norm_q_values):
-                vis.grasp(grasp, scale=1.0, show_center=False, show_axis=True,
-                          color=plt.cm.RdYlBu(q))
+                vis.grasp(grasp, scale=2.0,
+                          jaw_width=2.0,
+                          show_center=False,
+                          show_axis=True,
+                          color=plt.cm.RdYlGn(q))
             vis.title('Final sampled grasps')
             vis.show()
 
@@ -561,7 +574,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if self.config['vis']['grasp_plan']:
             vis.figure()
             vis.imshow(rgbd_im.depth)
-            vis.grasp(grasp, scale=1.0, show_center=True, show_axis=True)
+            vis.grasp(grasp, scale=5.0, show_center=False, show_axis=True, jaw_width=1.0, grasp_axis_width=0.2)
             vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth,
                                                      q_value))
             vis.show()

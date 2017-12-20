@@ -3,6 +3,7 @@ Grasp quality functions: suction quality function and parallel jaw grasping qual
 Author: Jason Liu and Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -14,7 +15,7 @@ import scipy.ndimage.filters as snf
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from gqcnn import Grasp2D, SuctionPoint2D, GQCNN, InputDataMode
-from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage
+from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
 
 from gqcnn import Visualizer as vis
 
@@ -272,6 +273,11 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
 
     def _points_in_window(self, point_cloud_image, action, segmask=None):
         """Retrieve all points on the object in a disc of size self._window_size. """
+        # compute plane
+        n = -action.axis
+        U, _, _ = np.linalg.svd(n.reshape((3,1)))
+        tangents = U[:,1:]        
+
         # read indices
         im_shape = point_cloud_image.shape
         i_start = int(max(action.center.y-self._window_size/2, 0))
@@ -284,10 +290,17 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
         points = point_cloud_image[i_start:i_end:step, j_start:j_end:step]
         stacked_points = points.reshape(points.shape[0]*points.shape[1], -1)
         
-        # check the distance from the center point
+        # compute the center point
         contact_point = point_cloud_image[int(action.center.y),
                                           int(action.center.x)]
-        dists = np.linalg.norm(stacked_points - contact_point, axis=1)
+
+        # project onto approach plane
+        residuals = stacked_points - contact_point
+        coords = residuals.dot(tangents)
+        proj_residuals = coords.dot(tangents.T)
+
+        # check distance from the center point along the approach plane
+        dists = np.linalg.norm(proj_residuals, axis=1)
         stacked_points = stacked_points[dists <= self._radius]
 
         # form the matrices for plane-fitting
@@ -323,6 +336,7 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
             points = self._points_in_window(point_cloud_image, action, segmask=state.segmask) # x,y in matrix A and z is vector z.
             A, b = self._points_to_matrices(points)
             w = self._action_to_plane(point_cloud_image, action) # vector w w/ a bias term represents a best-fit plane.
+            sse = self._sum_of_squared_residuals(w, A, b)
 
             if params is not None and params['vis']['plane']:
                 from visualization import Visualizer3D as vis
@@ -358,7 +372,7 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
                 vis2d.show()
 
-            quality = np.exp(-self._sum_of_squared_residuals(w, A, b)) # evaluate how well best-fit plane describles all points in window.            
+            quality = np.exp(-sse) # evaluate how well best-fit plane describles all points in window.            
             qualities.append(quality)
 
         return np.array(qualities)
@@ -740,6 +754,148 @@ class GQCnnQualityFunction(GraspQualityFunction):
         q_values = output_arr[:,-1]
         return q_values.tolist()
 
+class NoMagicQualityFunction(GraspQualityFunction):
+    def __init__(self, config):
+        """Create a quality that uses nomagic_net as a quality function. """
+        from nomagic_submission import ConvNetModel
+        from tensorpack.predict.config import PredictConfig
+        from tensorpack import SaverRestore
+        from tensorpack.predict import OfflinePredictor
+
+        # store parameters
+        self._model_path = config['gqcnn_model']
+        self._batch_size = config['batch_size']
+        self._crop_height = config['crop_height']
+        self._crop_width = config['crop_width']
+        self._im_height = config['im_height']
+        self._im_width = config['im_width']
+        self._num_channels = config['num_channels']
+        self._pose_dim = config['pose_dim']
+        self._input_data_mode = config['input_data_mode']
+
+        # init config
+        model = ConvNetModel()
+        self._config = PredictConfig(
+            model=model,
+            session_init=SaverRestore(self._model_path),
+            output_names=['prob'])
+        self._predictor = OfflinePredictor(self._config)
+
+    @property
+    def gqcnn(self):
+        """ Returns the GQ-CNN. """
+        return self._predictor
+
+    @property
+    def config(self):
+        """ Returns the GQCNN suction quality function parameters. """
+        return self._config
+
+    def grasps_to_tensors(self, grasps, state):
+        """Converts a list of grasps to an image and pose tensor
+        for fast grasp quality evaluation.
+
+        Attributes
+        ----------
+        grasps : :obj:`list` of :obj:`object`
+            list of image grasps to convert
+        state : :obj:`RgbdImageState`
+            RGB-D image to plan grasps on
+
+        Returns
+        -------
+        image_arr : :obj:`numpy.ndarray`
+            4D numpy tensor of image to be predicted
+        pose_arr : :obj:`numpy.ndarray`
+            2D numpy tensor of depth values
+        """
+        # parse params
+        gqcnn_im_height = self._im_height
+        gqcnn_im_width = self._im_width
+        gqcnn_num_channels = self._num_channels
+        gqcnn_pose_dim = self._pose_dim
+        input_data_mode = self._input_data_mode
+        num_grasps = len(grasps)
+        depth_im = state.rgbd_im.depth
+
+        # allocate tensors
+        tensor_start = time()
+        image_tensor = np.zeros([num_grasps, gqcnn_im_height,
+                                 gqcnn_im_width, gqcnn_num_channels])
+        pose_tensor = np.zeros([num_grasps, gqcnn_pose_dim])
+        scale = float(gqcnn_im_height) / self._crop_height
+        depth_im_scaled = depth_im.resize(scale)
+        for i, grasp in enumerate(grasps):
+            translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
+                                            depth_im.center[1] - grasp.center.data[0]])
+            im_tf = depth_im_scaled
+            im_tf = depth_im_scaled.transform(translation, grasp.angle)
+            im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
+
+            im_encoded = cv2.imencode('.png', np.uint8(im_tf.raw_data*255))[1].tostring()
+            im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8), 0)
+            image_tensor[i,:,:,0] = im_decoded
+            
+            if input_data_mode == InputDataMode.TF_IMAGE:
+                pose_tensor[i] = grasp.depth
+            elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+                pose_tensor[i,...] = np.array([grasp.depth, grasp.center.x, grasp.center.y])
+            elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
+            else:
+                raise ValueError('Input data mode %s not supported' %(input_data_mode))
+        logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
+        return image_tensor.astype(np.uint8), pose_tensor
+
+    def quality(self, state, actions, params): 
+        """ Evaluate the quality of a set of actions according to a GQ-CNN.
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            state of the world described by an RGB-D image
+        actions: :obj:`object`
+            set of grasping actions to evaluate
+        params: dict
+            optional parameters for quality evaluation
+
+        Returns
+        -------
+        :obj:`list` of float
+            real-valued grasp quality predictions for each action, between 0 and 1
+        """
+        # form tensors
+        image_tensor, pose_tensor = self.grasps_to_tensors(actions, state)
+        if params is not None and params['vis']['tf_images']:
+            # read vis params
+            k = params['vis']['k']
+            d = utils.sqrt_ceil(k)
+
+            # display grasp transformed images
+            vis.figure(size=(FIGSIZE,FIGSIZE))
+            for i, image_tf in enumerate(image_tensor[:k,...]):
+                depth = pose_tensor[i][0]
+                vis.subplot(d,d,i+1)
+                vis.imshow(GrayscaleImage(image_tf))
+                vis.title('Image %d: d=%.3f' %(i, depth))
+            vis.show()
+
+        # predict grasps
+        num_actions = len(actions)
+        null_arr = -1 * np.ones(self._batch_size)
+        predict_start = time()
+        output_arr = np.zeros([num_actions, 2])
+        cur_i = 0
+        end_i = cur_i + min(self._batch_size, num_actions - cur_i)
+        while cur_i < num_actions:
+            output_arr[cur_i:end_i,:] = self.gqcnn(image_tensor[cur_i:end_i,:,:,0], pose_tensor[cur_i:end_i,0], null_arr)[0]
+            cur_i = end_i
+            end_i = cur_i + min(self._batch_size, num_actions - cur_i)
+        q_values = output_arr[:,-1]
+        logging.debug('Prediction took %.3f sec' %(time()-predict_start))
+        return q_values.tolist()
+
+
 class GraspQualityFunctionFactory(object):
     """Factory for grasp quality functions. """
     @staticmethod
@@ -762,5 +918,7 @@ class GraspQualityFunctionFactory(object):
             return ComDiscCurvatureSuctionQualityFunction(config)
         elif metric_type == 'gqcnn':
             return GQCnnQualityFunction(config)
+        elif metric_type == 'nomagic':
+            return NoMagicQualityFunction(config)
         else:
             raise ValueError('Grasp function type %s not supported!' %(metric_type))

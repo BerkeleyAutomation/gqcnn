@@ -52,6 +52,7 @@ class GQCNN(object):
         """
         self._sess = None
         self._graph = tf.Graph()
+        self._feature_tensors = {}
         self._parse_config(config)
 
     @staticmethod
@@ -83,6 +84,11 @@ class GQCNN(object):
 
         return gqcnn
 
+    @property
+    def feature_tensors(self):
+        """ Dictionary containing the tensors for intermediate GQ-CNN layers. """
+        return self._feature_tensors
+    
     def get_tf_graph(self):
         """ Returns the graph for this tf session 
 
@@ -120,7 +126,7 @@ class GQCNN(object):
 
         # slice out the variables we want based on the input pose_dim, which
         # is dependent on the input data mode used to train the model
-        if self._pose_mean.shape[0] == 7:
+        if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] == 7:
             if self._input_data_mode == InputDataMode.TF_IMAGE:
                 # depth
                 if isinstance(self.pose_mean, numbers.Number) \
@@ -147,7 +153,7 @@ class GQCNN(object):
                 self._pose_mean = self._pose_mean[:6]
                 self._pose_std = self._pose_std[:6]
 
-        elif self._pose_mean.shape[0] == 4 and self._input_data_mode == InputDataMode.TF_IMAGE:
+        elif len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] == 4 and self._input_data_mode == InputDataMode.TF_IMAGE:
             # depth
             if isinstance(self.pose_mean, numbers.Number) \
                or len(self.pose_mean.shape) == 0 \
@@ -800,7 +806,58 @@ class GQCNN(object):
             if close_sess:
                 self.close_session()
         return output_arr
-		
+
+    def featurize(self, image_arr, pose_arr, feature_layer='conv2_2'):
+        """ Predict a set of images in batches 
+
+        Parameters
+        ----------
+        image_arr : :obj:`tensorflow Tensor`
+            4D Tensor of images to be predicted
+        pose_arr : :obj:`tensorflow Tensor`
+            4D Tensor of poses to be predicted
+        feature_layer : str
+            name of layer to use in featurization
+        """
+        # setup prediction
+        num_images = image_arr.shape[0]
+        num_poses = pose_arr.shape[0]
+        output_arr = None
+        if num_images != num_poses:
+            raise ValueError('Must provide same number of images and poses')
+
+        # predict by filling in image array in batches
+        close_sess = False
+        with self._graph.as_default():
+            if self._sess is None:
+                close_sess = True
+                self.open_session()
+            i = 0
+            while i < num_images:
+                logging.debug('Predicting file %d' % (i))
+                dim = min(self._batch_size, num_images - i)
+                cur_ind = i
+                end_ind = cur_ind + dim
+                self._input_im_arr[:dim, :, :, :] = (
+                    image_arr[cur_ind:end_ind, :, :, :] - self._im_mean) / self._im_std
+                self._input_pose_arr[:dim, :] = (
+                    pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
+
+                gqcnn_output = self._sess.run(self.feature_tensors[feature_layer],
+                                              feed_dict={self._input_im_node: self._input_im_arr,
+                                                         self._input_pose_node: self._input_pose_arr})
+                if output_arr is None:
+                    output_arr = np.zeros([num_images,
+                                           gqcnn_output.shape[1],
+                                           gqcnn_output.shape[2],
+                                           gqcnn_output.shape[3]])
+                output_arr[cur_ind:end_ind, ...] = gqcnn_output[:dim, ...]
+
+                i = end_ind
+            if close_sess:
+                self.close_session()
+        return output_arr
+
     @property
     def filters(self):
         """ Returns the set of conv1_1 filters 
@@ -923,79 +980,93 @@ class GQCNN(object):
         conv2_2_flat = tf.reshape(pool2_2, [-1, conv2_2_num_nodes])
 
         if self._use_conv3:
-                # conv3_1
-                conv3_1h = tf.nn.relu(tf.nn.conv2d(pool2_2, self._weights.conv3_1W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv3_1b)
-                if self._architecture['conv3_1']['norm']:
-                    conv3_1h = tf.nn.local_response_normalization(conv3_1h,
-                                                                  depth_radius=self.normalization_radius,
-                                                                  alpha=self.normalization_alpha,
-                                                                  beta=self.normalization_beta,
-                                                                  bias=self.normalization_bias)
-                pool3_1_size = self._architecture['conv3_1']['pool_size']
-                pool3_1_stride = self._architecture['conv3_1']['pool_stride']
-                pool3_1 = tf.nn.max_pool(conv3_1h,
-                                        ksize=[1, pool3_1_size, pool3_1_size, 1],
-                                        strides=[1, pool3_1_stride,
-                                                pool3_1_stride, 1],
-                                        padding='SAME')
-                conv3_1_num_nodes = reduce_shape(pool3_1.get_shape())
-                conv3_1_flat = tf.reshape(pool3_1, [-1, conv3_1_num_nodes])
+            # conv3_1
+            conv3_1h = tf.nn.relu(tf.nn.conv2d(pool2_2, self._weights.conv3_1W, strides=[
+                1, 1, 1, 1], padding='SAME') + self._weights.conv3_1b)
+            if self._architecture['conv3_1']['norm']:
+                conv3_1h = tf.nn.local_response_normalization(conv3_1h,
+                                                              depth_radius=self.normalization_radius,
+                                                              alpha=self.normalization_alpha,
+                                                              beta=self.normalization_beta,
+                                                            bias=self.normalization_bias)
+            pool3_1_size = self._architecture['conv3_1']['pool_size']
+            pool3_1_stride = self._architecture['conv3_1']['pool_stride']
+            pool3_1 = tf.nn.max_pool(conv3_1h,
+                                     ksize=[1, pool3_1_size, pool3_1_size, 1],
+                                     strides=[1, pool3_1_stride,
+                                              pool3_1_stride, 1],
+                                     padding='SAME')
+            conv3_1_num_nodes = reduce_shape(pool3_1.get_shape())
+            conv3_1_flat = tf.reshape(pool3_1, [-1, conv3_1_num_nodes])
 
-                # conv3_2
-                conv3_2h = tf.nn.relu(tf.nn.conv2d(pool3_1, self._weights.conv3_2W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv3_2b)
-                if self._architecture['conv3_2']['norm']:
-                    conv3_2h = tf.nn.local_response_normalization(conv3_2h,
-                                                                  depth_radius=self.normalization_radius,
-                                                                  alpha=self.normalization_alpha,
-                                                                  beta=self.normalization_beta,
-                                                                  bias=self.normalization_bias)
-                pool3_2_size = self._architecture['conv3_2']['pool_size']
-                pool3_2_stride = self._architecture['conv3_2']['pool_stride']
-                pool3_2 = tf.nn.max_pool(conv3_2h,
-                                        ksize=[1, pool3_2_size, pool3_2_size, 1],
-                                        strides=[1, pool3_2_stride,
-                                                pool3_2_stride, 1],
-                                        padding='SAME')
-                conv3_2_num_nodes = reduce_shape(pool3_2.get_shape())
-                conv3_2_flat = tf.reshape(pool3_2, [-1, conv3_2_num_nodes])
+            # conv3_2
+            conv3_2h = tf.nn.relu(tf.nn.conv2d(pool3_1, self._weights.conv3_2W, strides=[
+                1, 1, 1, 1], padding='SAME') + self._weights.conv3_2b)
+            if self._architecture['conv3_2']['norm']:
+                conv3_2h = tf.nn.local_response_normalization(conv3_2h,
+                                                              depth_radius=self.normalization_radius,
+                                                              alpha=self.normalization_alpha,
+                                                              beta=self.normalization_beta,
+                                                              bias=self.normalization_bias)
+            pool3_2_size = self._architecture['conv3_2']['pool_size']
+            pool3_2_stride = self._architecture['conv3_2']['pool_stride']
+            pool3_2 = tf.nn.max_pool(conv3_2h,
+                                     ksize=[1, pool3_2_size, pool3_2_size, 1],
+                                     strides=[1, pool3_2_stride,
+                                              pool3_2_stride, 1],
+                                     padding='SAME')
+            conv3_2_num_nodes = reduce_shape(pool3_2.get_shape())
+            conv3_2_flat = tf.reshape(pool3_2, [-1, conv3_2_num_nodes])
 
         # fc3
         if self._use_conv3:
-                fc3 = tf.nn.relu(tf.matmul(conv3_2_flat, self._weights.fc3W) +
-                                self._weights.fc3b)
+            fc3 = tf.nn.relu(tf.matmul(conv3_2_flat, self._weights.fc3W) +
+                             self._weights.fc3b)
         else:
-                fc3 = tf.nn.relu(tf.matmul(conv2_2_flat, self._weights.fc3W) +
-                                self._weights.fc3b)
+            fc3 = tf.nn.relu(tf.matmul(conv2_2_flat, self._weights.fc3W) +
+                             self._weights.fc3b)
 
         # drop fc3 if necessary
         if drop_fc3:
-                fc3 = tf.nn.dropout(fc3, fc3_drop_rate)
+            fc3 = tf.nn.dropout(fc3, fc3_drop_rate)
 
         # pc1
         pc1 = tf.nn.relu(tf.matmul(input_pose_node, self._weights.pc1W) +
-                        self._weights.pc1b)
+                         self._weights.pc1b)
 
         if self._use_pc2:
-                # pc2
-                pc2 = tf.nn.relu(tf.matmul(pc1, self._weights.pc2W) +
-                                self._weights.pc2b)
-                # fc4
-                fc4 = tf.nn.relu(tf.matmul(fc3, self._weights.fc4W_im) +
-                                tf.matmul(pc2, self._weights.fc4W_pose) +
-                                self._weights.fc4b)
+            # pc2
+            pc2 = tf.nn.relu(tf.matmul(pc1, self._weights.pc2W) +
+                             self._weights.pc2b)
+            # fc4
+            fc4 = tf.nn.relu(tf.matmul(fc3, self._weights.fc4W_im) +
+                             tf.matmul(pc2, self._weights.fc4W_pose) +
+                             self._weights.fc4b)
         else:
-                # fc4
-                fc4 = tf.nn.relu(tf.matmul(fc3, self._weights.fc4W_im) +
-                                tf.matmul(pc1, self._weights.fc4W_pose) +
-                                self._weights.fc4b)
+            # fc4
+            fc4 = tf.nn.relu(tf.matmul(fc3, self._weights.fc4W_im) +
+                             tf.matmul(pc1, self._weights.fc4W_pose) +
+                             self._weights.fc4b)
 
         # drop fc4 if necessary
         if drop_fc4:
-                fc4 = tf.nn.dropout(fc4, fc4_drop_rate)
+            fc4 = tf.nn.dropout(fc4, fc4_drop_rate)
 
         # fc5
         fc5 = tf.matmul(fc4, self._weights.fc5W) + self._weights.fc5b
 
+        # setup feature tensors
+        self._feature_tensors['conv1_1'] = pool1_1
+        self._feature_tensors['conv1_2'] = pool1_2
+        self._feature_tensors['conv2_1'] = pool2_1
+        self._feature_tensors['conv2_2'] = pool2_2
+        if self._use_conv3:
+            self._feature_tensors['conv3_1'] = pool3_1
+            self._feature_tensors['conv3_2'] = pool3_2
+        self._feature_tensors['fc3'] = fc3
+        self._feature_tensors['fc4'] = fc4
+        self._feature_tensors['pc1'] = pc1
+        if self._use_pc2:
+            self._feature_tensors['pc2'] = pc2
+            
         return fc5
