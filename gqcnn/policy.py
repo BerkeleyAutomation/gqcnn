@@ -16,7 +16,8 @@ from sklearn.mixture import GaussianMixture
 
 import autolab_core.utils as utils
 from autolab_core import Point
-from perception import DepthImage
+from perception import CameraIntrinsics
+from perception import BinaryImage, ColorImage, DepthImage, RgbdImage
 
 from . import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputDataMode
 from . import Visualizer as vis
@@ -60,8 +61,31 @@ class RgbdImageState(object):
         if self.segmask is not None:
             self.segmask.save(segmask_filename)
         if self.fully_observed is not None:
-            pkl.dump(self.fully_observed, state_filename)
-        
+            pkl.dump(self.fully_observed, open(state_filename, 'wb'))
+
+    @staticmethod
+    def load(save_dir):
+        if not os.path.exists(save_dir):
+            raise ValueError('Directory %s does not exist!' %(save_dir))
+        color_image_filename = os.path.join(save_dir, 'color.png')
+        depth_image_filename = os.path.join(save_dir, 'depth.npy')
+        camera_intr_filename = os.path.join(save_dir, 'camera.intr')
+        segmask_filename = os.path.join(save_dir, 'segmask.npy')
+        state_filename = os.path.join(save_dir, 'state.pkl')
+        color = ColorImage.open(color_image_filename)
+        depth = DepthImage.open(depth_image_filename)
+        camera_intr = CameraIntrinsics.load(camera_intr_filename)
+        segmask = None
+        if os.path.exists(segmask_filename):
+            segmask = BinaryImage.open(segmask_filename)
+        fully_observed = None    
+        if os.path.exists(state_filename):
+            fully_observed = pkl.load(open(state_filename, 'rb'))
+        return RgbdImageState(RgbdImage.from_color_and_depth(color, depth),
+                              camera_intr,
+                              segmask=segmask,
+                              fully_observed=fully_observed)
+            
 class ParallelJawGrasp(object):
     """ Action to encapsulate parallel jaw grasps.
     """
@@ -79,6 +103,18 @@ class ParallelJawGrasp(object):
         pkl.dump(self.grasp, open(grasp_filename, 'wb'))
         pkl.dump(self.q_value, open(q_value_filename, 'wb'))
         self.image.save(image_filename)
+
+    @staticmethod
+    def load(save_dir):
+        if not os.path.exists(save_dir):
+            raise ValueError('Directory %s does not exist!' %(save_dir))
+        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
+        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
+        image_filename = os.path.join(save_dir, 'tf_image.npy')
+        grasp = pkl.load(open(grasp_filename, 'rb'))
+        q_value = pkl.load(open(q_value_filename, 'rb'))
+        image = DepthImage.open(image_filename)
+        return ParallelJawGrasp(grasp, q_value, image)
         
 class Policy(object):
     """ Abstract policy class. """

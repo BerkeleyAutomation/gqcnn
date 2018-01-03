@@ -111,7 +111,7 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
 
     # parse args
-    parser = argparse.ArgumentParser(description='Capture a set of test images from the Kinect2')
+    parser = argparse.ArgumentParser(description='Run a GQ-CNN-based grasping policy')
     parser.add_argument('--config_filename', type=str, default='cfg/examples/policy.yaml', help='path to configuration file to use')
     args = parser.parse_args()
     config_filename = args.config_filename
