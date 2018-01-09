@@ -983,8 +983,6 @@ class SGDOptimizer(object):
             self.data_dir, self.im_filenames[0]))['arr_0']
         self.pose_data = np.load(os.path.join(
             self.data_dir, self.pose_filenames[0]))['arr_0']
-        self.gripper_data = np.load(os.path.join(
-            self.data_dir, self.gripper_param_filenames[0]))['arr_0']
         self.metric_data = np.load(os.path.join(
             self.data_dir, self.label_filenames[0]))['arr_0']
         self.images_per_file = self.train_im_data.shape[0]
@@ -995,7 +993,6 @@ class SGDOptimizer(object):
             [float(self.im_height - 1) / 2, float(self.im_width - 1) / 2])
         self.num_tensor_channels = self.cfg['num_tensor_channels']
         self.pose_shape = self.pose_data.shape[1]
-        self.gripper_shape = self.gripper_data.shape[1]
         self.input_pose_mode = self.cfg['input_pose_mode']
         self.input_gripper_mode = self.cfg['input_gripper_mode']
 
@@ -1027,6 +1024,10 @@ class SGDOptimizer(object):
         else:
             raise ValueError('Input gripper mode %s not understood' %
                              (self.input_gripper_mode))
+        
+        if self.gripper_dim > 0:
+            self.gripper_data = np.load(os.path.join(self.data_dir, self.gripper_param_filenames[0]))['arr_0']
+            self.gripper_shape = self.gripper_data.shape[1]        
 
         self.num_files = len(self.im_filenames)
         self.num_random_files = min(self.num_files, self.cfg['num_random_files'])
