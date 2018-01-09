@@ -2,12 +2,13 @@
 GQCNN training script using DeepOptimizer
 Author: Vishal Satish
 """
-from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
-from autolab_core import YamlConfig
 import time
 import logging
+
+from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
+from autolab_core import YamlConfig
 	
-#setup logger
+# setup logger
 logging.getLogger().setLevel(logging.INFO)
 
 train_config = YamlConfig('cfg/tools/training.yaml')

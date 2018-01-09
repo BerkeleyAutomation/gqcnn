@@ -1,7 +1,7 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/hdd/dex-net/data/grasp_quality/mini_dexnet_generic_12_08_17/tensors
-output_dir: /mnt/hdd/dex-net/data/models/grasp_quality/generic_gripper
+dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/mini_dexnet_all_trans_01_20_17/ 
+output_dir: /home/vsatish/Data/dexnet/data/models/grasp_quality/dev_vishal_models/
 
 # general optimization parameters
 train_batch_size: 64
@@ -40,7 +40,7 @@ train_l2_regularizer: 0.0005
 base_lr: 0.01
 decay_step_multiplier: .66   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
-momentum_rate: 0.75
+momentum_rate: 0.9
 max_training_examples_per_load: 128
 
 fine_tune: 0
@@ -54,7 +54,7 @@ image_mode: depth_tf_table
 training_mode: classification
 preproc_mode: none
 input_pose_mode: tf_image
-input_gripper_mode: depth_mask
+input_gripper_mode: none
 num_tensor_channels: 1
 pos_weight: 0.1
 
@@ -114,14 +114,14 @@ save_histograms: 0
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 64
-  im_width: 64
+  im_height: 32
+  im_width: 32
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_pose_mode: tf_image
-  input_gripper_mode: depth_mask
+  input_gripper_mode: none
 
-  # prediction batch size, in training this will be overriden by the val_batch_size in the DeepOptimizer's config file
+  # prediction batch size, in training this will be overriden by the val_batch_size in the SGDOptimizer's config file
   batch_size: 16
 
   # architecture
@@ -133,29 +133,29 @@ gqcnn_config:
 #         num_transform_params: 6
       conv1_1:
         type: conv
-        filt_dim: 7
-        num_filt: 16
+        filt_dim: 5
+        num_filt: 32
         pool_size: 1
         pool_stride: 1  
         norm: 0
       conv1_2:
         type: conv
-        filt_dim: 5
-        num_filt: 16
+        filt_dim: 3
+        num_filt: 32
         pool_size: 2
         pool_stride: 2
         norm: 1
       conv2_1:
         type: conv
-        filt_dim: 5
-        num_filt: 16
+        filt_dim: 3
+        num_filt: 32
         pool_size: 1
         pool_stride: 1  
         norm: 0
       conv2_2:
         type: conv
         filt_dim: 3
-        num_filt: 16
+        num_filt: 32
         pool_size: 1
         pool_stride: 1
         norm: 1
@@ -184,7 +184,7 @@ gqcnn_config:
 #        filt_dim: 3
       fc3:
         type: fc
-        out_size: 1048
+        out_size: 1024
 #        drop_rate: 0.5
 #      fc4: 
 #        type: fc
@@ -212,10 +212,11 @@ gqcnn_config:
         out_size: 512
       fc5: 
         type: fc
-        out_size: 512
-      fc6:
-        type: fc
+        final_layer: True
         out_size: 2
+#      fc6:
+#        type: fc
+#        out_size: 2
 #        drop_rate: 0.5
 #      fc5:
 #        type: fc
