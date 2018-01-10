@@ -405,7 +405,11 @@ class SGDOptimizer(object):
         :obj:`ndArray`
             sliced pose_data corresponding to input data mode
         """
-        if input_data_mode == InputDataMode.TF_IMAGE:
+        if input_data_mode == InputDataMode.PARALLEL_JAW:
+            return pose_arr[:,2:3]
+        elif input_data_mode == InputDataMode.SUCTION:
+            return np.c_[pose_arr[:,2], pose_arr[:,4]]
+        elif input_data_mode == InputDataMode.TF_IMAGE:
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
@@ -550,7 +554,10 @@ class SGDOptimizer(object):
                 im_filename = self.im_filenames[k]
                 pose_filename = self.pose_filenames[k]
                 self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
-                if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                if self.input_data_mode == InputDataMode.SUCTION:
+                    rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+                    self.pose_data[rand_indices, 4] = -self.pose_data[rand_indices, 4]
+                elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                     rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
                     self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
                 pose_data = self.pose_data[self.train_index_map[im_filename],:]
@@ -563,7 +570,10 @@ class SGDOptimizer(object):
                 im_filename = self.im_filenames[k]
                 pose_filename = self.pose_filenames[k]
                 self.pose_data = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
-                if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                if self.input_data_mode == InputDataMode.SUCTION:
+                    rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
+                    self.pose_data[rand_indices, 4] = -self.pose_data[rand_indices, 4]
+                elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                     rand_indices = np.random.choice(self.pose_data.shape[0], size=self.pose_data.shape[0]/2, replace=False)
                     self.pose_data[rand_indices, 3] = -self.pose_data[rand_indices, 3]
                 pose_data = self.pose_data[self.train_index_map[im_filename],:]
@@ -617,9 +627,49 @@ class SGDOptimizer(object):
         # update gqcnn im mean & std
         self.gqcnn.update_im_mean(self.data_mean)
         self.gqcnn.update_im_std(self.data_std)
-        self.gqcnn.update_pose_mean(self.pose_mean)
-        self.gqcnn.update_pose_std(self.pose_std)
 
+        # update gqcnn pose_mean and pose_std according to data_mode
+        if self.input_data_mode == InputDataMode.PARALLEL_JAW:
+            # depth
+            if isinstance(self.pose_mean, numbers.Number) or len(self.pose_mean.shape) == 0 or self.pose_mean.shape[0] == 1:
+                self.gqcnn.update_pose_mean(self.pose_mean)
+                self.gqcnn.update_pose_std(self.pose_std)
+            else:
+                self.gqcnn.update_pose_mean(self.pose_mean[2])
+                self.gqcnn.update_pose_std(self.pose_std[2])
+        elif self.input_data_mode == InputDataMode.SUCTION:
+            if self.pose_mean.shape[0] == 2:
+                self.gqcnn.update_pose_mean(self.pose_mean)
+                self.gqcnn.update_pose_std(self.pose_std)
+            else:
+                self.gqcnn.update_pose_mean(np.r_[self.pose_mean[2], self.pose_mean[4]])
+                self.gqcnn.update_pose_std(np.r_[self.pose_std[2], self.pose_std[4]])
+        elif self.input_data_mode == InputDataMode.TF_IMAGE:
+            # depth
+            if isinstance(self.pose_mean, numbers.Number) or len(self.pose_mean.shape) == 0 or self.pose_mean.shape[0] == 1:
+                self.gqcnn.update_pose_mean(self.pose_mean)
+                self.gqcnn.update_pose_std(self.pose_std)
+            else:
+                self.gqcnn.update_pose_mean(self.pose_mean[2])
+                self.gqcnn.update_pose_std(self.pose_std[2])
+        elif self.input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+            # depth, cx, cy
+            self.gqcnn.update_pose_mean(np.concatenate([self.pose_mean[2:3], self.pose_mean[4:6]]))
+            self.gqcnn.update_pose_std(np.concatenate([self.pose_std[2:3], self.pose_std[4:6]]))
+        elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            self.gqcnn.update_pose_mean(self.pose_mean[2:4])
+            self.gqcnn.update_pose_std(self.pose_std[2:4])
+        elif self.input_data_mode == InputDataMode.RAW_IMAGE:
+            # u, v, depth, theta
+            self.gqcnn.update_pose_mean(self.pose_mean[:4])
+            self.gqcnn.update_pose_std(self.pose_std[:4])
+        elif self.input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
+            # u, v, depth, theta, cx, cy
+            self.gqcnn.update_pose_mean(self.pose_mean[:6])
+            self.gqcnn.update_pose_std(self.pose_std[:6])
+        self.pose_mean = self.gqcnn.get_pose_mean()
+        self.pose_std = self.gqcnn.get_pose_std()
+            
         # compute normalization parameters of the network
         logging.info('Computing metric stats')
         all_metrics = None
@@ -858,7 +908,11 @@ class SGDOptimizer(object):
         self.num_tensor_channels = self.cfg['num_tensor_channels']
         self.pose_shape = self.pose_data.shape[1]
         self.input_data_mode = self.cfg['input_data_mode']
-        if self.input_data_mode == InputDataMode.TF_IMAGE:
+        if self.input_data_mode == InputDataMode.PARALLEL_JAW:
+            self.pose_dim = 1
+        elif self.input_data_mode == InputDataMode.SUCTION:
+            self.pose_dim = 2
+        elif self.input_data_mode == InputDataMode.TF_IMAGE:
             self.pose_dim = 1 # depth
         elif self.input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             self.pose_dim = 3 # depth, cx, cy
@@ -901,10 +955,14 @@ class SGDOptimizer(object):
             self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH_TF_TABLE:
             self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tf_table_tensor_template) > -1]
+        elif self.image_mode== ImageMode.TF_DEPTH_IMS:
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.tf_depth_ims_tensor_template) > -1]
         else:
             raise ValueError('Image mode %s not supported.' %(self.image_mode))
 
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
+        if len(self.pose_filenames) == 0 :
+            self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.grasps_template) > -1]            
         self.label_filenames = [f for f in all_filenames if f.startswith(self.target_metric_name) and f[len(self.target_metric_name)+6] == '.']
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
         self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
@@ -914,7 +972,7 @@ class SGDOptimizer(object):
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-
+        
         # check valid filenames
         if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
@@ -1111,7 +1169,7 @@ class SGDOptimizer(object):
                 self._distort(num_loaded)
 
                 # slice poses
-                self.train_poses_arr = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)                
+                self.train_poses_arr = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
 
                 # subtract mean
                 self.train_data_arr = (self.train_data_arr - self.data_mean) / self.data_std
@@ -1128,7 +1186,7 @@ class SGDOptimizer(object):
 
                 # enqueue training data batch
                 train_data[start_i:end_i, ...] = self.train_data_arr.copy()
-                train_poses[start_i:end_i,:] = self.train_poses_arr.copy() #self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
+                train_poses[start_i:end_i,:] = self.train_poses_arr.copy()
                 label_data[start_i:end_i] = self.train_label_arr.copy()
 
                 del self.train_data_arr
@@ -1274,6 +1332,8 @@ class SGDOptimizer(object):
 
                     if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                         self.train_poses_arr[:,3] = -self.train_poses_arr[:,3]
+                    elif self.input_data_mode == InputDataMode.SUCTION:
+                        self.train_poses_arr[:,4] = -self.train_poses_arr[:,4]
                 # reflect left right with 50% probability
                 if np.random.rand() < 0.5:
                     train_image = np.fliplr(train_image)
@@ -1283,6 +1343,8 @@ class SGDOptimizer(object):
 
                     if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                         self.train_poses_arr[:,3] = -self.train_poses_arr[:,3]
+                    elif self.input_data_mode == InputDataMode.SUCTION:
+                        self.train_poses_arr[:,4] = -self.train_poses_arr[:,4]
                 self.train_data_arr[i,:,:,0] = train_image
         return self.train_data_arr, self.train_poses_arr
 

@@ -162,7 +162,20 @@ class GQCNN(object):
             else:
                 self._pose_mean = self._pose_mean[2]
                 self._pose_std = self._pose_std[2]
-
+        elif len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] == 5:
+            if self._input_data_mode == InputDataMode.PARALLEL_JAW:
+                # depth
+                if isinstance(self.pose_mean, numbers.Number) \
+                   or len(self.pose_mean.shape) == 0 \
+                   or self.pose_mean.shape[0] == 1:
+                    self._pose_mean = self.pose_mean
+                else:
+                    self._pose_mean = self._pose_mean[2]
+                    self._pose_std = self._pose_std[2]
+            elif self._input_data_mode == InputDataMode.SUCTION:
+                self._pose_mean = np.r_[self._pose_mean[2], self._pose_mean[4]]
+                self._pose_std = np.r_[self._pose_std[2], self._pose_std[4]]
+                
     def init_weights_file(self, model_filename):
         """ Initialize network weights from the specified model 
 
@@ -489,7 +502,11 @@ class GQCNN(object):
         self._input_data_mode = config['input_data_mode']
 
         # setup correct pose dimensions 
-        if self._input_data_mode == InputDataMode.TF_IMAGE:
+        if self._input_data_mode == InputDataMode.PARALLEL_JAW:
+            self._pose_dim = 1
+        elif self._input_data_mode == InputDataMode.SUCTION:
+            self._pose_dim = 2
+        elif self._input_data_mode == InputDataMode.TF_IMAGE:
             # depth
             self._pose_dim = 1
         elif self._input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:

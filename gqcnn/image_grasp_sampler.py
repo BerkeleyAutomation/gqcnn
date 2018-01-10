@@ -552,7 +552,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         normal_cloud_im = point_cloud_im.normal_cloud_im()
         nonzero_px = depth_im_mask.nonzero_pixels()
         num_nonzero_px = nonzero_px.shape[0]
-        
+
         # randomly sample points and add to image
         suction_points = []
         num_tries = 0
@@ -580,7 +580,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
             # keep if the angle between the camera optical axis and the suction direction is less than a threshold
             psi = np.arccos(axis.dot(np.array([0,0,1])))
-            dist_from_center = np.linalg.norm(center_px - np.array(depth_im.center[1], depth_im.center[0]))
+            dist_from_center = np.linalg.norm(center_px - np.array([depth_im.center[1], depth_im.center[0]]))
             if psi < self._max_suction_dir_optical_axis_angle and \
                dist_from_center < self._max_dist_from_center:
 
