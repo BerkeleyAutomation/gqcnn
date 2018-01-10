@@ -39,7 +39,12 @@ class Grasp2D(object):
     def axis(self):
         """ Returns the grasp axis. """
         return np.array([np.cos(self.angle), np.sin(self.angle)])        
-        
+
+    @property
+    def approach_angle(self):
+        """ The angle between the grasp approach axis and camera optical axis. """
+        return 0.0
+    
     @property
     def frame(self):
         """ The name of the frame of reference for the grasp. """

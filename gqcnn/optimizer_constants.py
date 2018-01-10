@@ -18,8 +18,10 @@ class ImageFileTemplates:
     gray_im_tf_tensor_template = 'gray_ims_tf'
     depth_im_tf_tensor_template = 'depth_ims_tf'
     depth_im_tf_table_tensor_template = 'depth_ims_tf_table'
+    tf_depth_ims_tensor_template = 'tf_depth_ims'
     table_mask_template = 'table_mask'
     hand_poses_template = 'hand_poses'
+    grasps_template = 'grasps'
     object_labels_template = 'object_labels'
     pose_labels_template = 'pose_labels'
 
@@ -32,7 +34,8 @@ class ImageMode:
     GRAY_TF = 'gray_tf'
     DEPTH_TF = 'depth_tf'
     DEPTH_TF_TABLE = 'depth_tf_table'
-
+    TF_DEPTH_IMS = 'tf_depth_ims'
+    
 # enum for training modes
 class TrainingMode:
     CLASSIFICATION = 'classification'
@@ -45,6 +48,8 @@ class PreprocMode:
 
 # enum for input data formats
 class InputDataMode:
+    PARALLEL_JAW = 'parallel_jaw'
+    SUCTION = 'suction'
     TF_IMAGE = 'tf_image'
     TF_IMAGE_PERSPECTIVE = 'tf_image_with_perspective'
     TF_IMAGE_SUCTION = 'tf_image_suction'
