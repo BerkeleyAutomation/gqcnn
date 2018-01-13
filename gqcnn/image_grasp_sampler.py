@@ -36,8 +36,10 @@ def force_closure(p1, p2, n1, n2, mu):
     
     # compute cone membership
     alpha = np.arctan(mu)
-    in_cone_1 = (np.arccos(n1.dot(-v)) < alpha)
-    in_cone_2 = (np.arccos(n2.dot(v)) < alpha)
+    dot_1 = max(min(n1.dot(-v), 1.0), -1.0)
+    dot_2 = max(min(n2.dot(v), 1.0), -1.0)
+    in_cone_1 = (np.arccos(dot_1) < alpha)
+    in_cone_2 = (np.arccos(dot_2) < alpha)
     return (in_cone_1 and in_cone_2)
 
 class DepthSamplingMode(object):
@@ -579,7 +581,8 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             depth = depth + delta_depth
 
             # keep if the angle between the camera optical axis and the suction direction is less than a threshold
-            psi = np.arccos(axis.dot(np.array([0,0,1])))
+            dot = max(min(axis.dot(np.array([0,0,1])), 1.0), -1.0)
+            psi = np.arccos(dot)
             dist_from_center = np.linalg.norm(center_px - np.array([depth_im.center[1], depth_im.center[0]]))
             if psi < self._max_suction_dir_optical_axis_angle and \
                dist_from_center < self._max_dist_from_center:

@@ -184,7 +184,8 @@ class Grasp2D(object):
         point_dist = np.linalg.norm(g1.center.data - g2.center.data)
 
         # axis distances
-        axis_dist = np.arccos(np.abs(g1.axis.dot(g2.axis)))
+        dot = max(min(np.abs(g1.axis.dot(g2.axis)), 1.0), -1.0)
+        axis_dist = np.arccos(dot)
         return point_dist + alpha * axis_dist
 
 class SuctionPoint2D(object):
@@ -238,7 +239,8 @@ class SuctionPoint2D(object):
     @property
     def approach_angle(self):
         """ The angle between the grasp approach axis and camera optical axis. """
-        return np.arccos(self.axis.dot(np.array([0,0,1])))
+        dot = max(min(self.axis.dot(np.array([0,0,1])), 1.0), -1.0)
+        return np.arccos(dot)
 
     @property
     def feature_vec(self):
@@ -325,6 +327,7 @@ class SuctionPoint2D(object):
         point_dist = np.linalg.norm(g1.center.data - g2.center.data)
 
         # axis distances
-        axis_dist = np.arccos(min(np.abs(g1.axis.dot(g2.axis)), 1.0))
+        dot = max(min(np.abs(g1.axis.dot(g2.axis)), 1.0), -1.0)
+        axis_dist = np.arccos(dot)
 
         return point_dist + alpha * axis_dist
