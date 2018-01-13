@@ -6,7 +6,7 @@ import tensorflow as tf
 
 # other constants
 class GeneralConstants:
-    SEED = 4117238
+    SEED = 347245
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
 
 # enum for templates for file reading
@@ -16,7 +16,7 @@ class ImageFileTemplates:
     binary_im_tf_tensor_template = 'binary_ims_tf'
     color_im_tf_tensor_template = 'color_ims_tf'
     gray_im_tf_tensor_template = 'gray_ims_tf'
-    depth_im_tf_tensor_template = 'depth_ims_tf'
+    depth_im_tf_tensor_template = 'tf_depth_ims'
     depth_im_tf_table_tensor_template = 'depth_ims_tf_table'
     tf_depth_ims_tensor_template = 'tf_depth_ims'
     table_mask_template = 'table_mask'

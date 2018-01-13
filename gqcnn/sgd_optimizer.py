@@ -65,6 +65,11 @@ class SGDOptimizer(object):
             return tf.nn.l2_loss(tf.sub(self.train_net_output, self.train_labels_node))
         elif self.cfg['loss'] == 'sparse':
             return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node, logits=self.train_net_output, name=None))
+        elif self.cfg['loss'] == 'weighted_cross_entropy':
+            return tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(targets=tf.reshape(self.train_labels_node, [-1,1]),
+                                                                           logits=self.train_net_output,
+                                                                           pos_weight=self.pos_weight,
+                                                                           name=None))
 
     def _create_optimizer(self, loss, batch, var_list, learning_rate):
         """ Create optimizer based on config file
@@ -144,28 +149,33 @@ class SGDOptimizer(object):
         
         # build training and validation networks
         with tf.name_scope('validation_network'):
-            self.gqcnn.initialize_network() # builds validation network inside gqcnn class
+            if self.cfg['loss'] != 'weighted_cross_entropy':
+                self.gqcnn.initialize_network(add_softmax=True, add_sigmoid=False) # builds validation network inside gqcnn class
+            else:
+                self.gqcnn.initialize_network(add_softmax=False, add_sigmoid=True) # builds validation network inside gqcnn class                
         with tf.name_scope('training_network'):
             self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node, drop_fc3, drop_fc4, fc3_drop_rate , fc4_drop_rate)
 
-        # form loss
-        # part 1: error
-        if self.training_mode == TrainingMode.CLASSIFICATION or self.preproc_mode == PreprocMode.NORMALIZATION:
-            train_predictions = tf.nn.softmax(self.train_net_output)
-            self.gqcnn.add_softmax_to_predict()
-            with tf.name_scope('loss'):
-                loss = self._create_loss()
-        elif self.training_mode == TrainingMode.REGRESSION:
-            train_predictions = self.train_net_output
-            with tf.name_scope('loss'):
-                loss = self._create_loss()
+            # form loss
+            # part 1: error
+            if self.training_mode == TrainingMode.CLASSIFICATION or self.preproc_mode == PreprocMode.NORMALIZATION:
+                if self.cfg['loss'] == 'weighted_cross_entropy':
+                    train_predictions = tf.nn.sigmoid(self.train_net_output)
+                else:
+                    train_predictions = tf.nn.softmax(self.train_net_output)
+                with tf.name_scope('loss'):
+                    loss = self._create_loss()
+            elif self.training_mode == TrainingMode.REGRESSION:
+                train_predictions = self.train_net_output
+                with tf.name_scope('loss'):
+                    loss = self._create_loss()
 
-        # part 2: regularization
-        layer_weights = self.weights.__dict__.values()
-        with tf.name_scope('regularization'):
-            regularizers = tf.nn.l2_loss(layer_weights[0])
-            for w in layer_weights[1:]:
-                regularizers = regularizers + tf.nn.l2_loss(w)
+            # part 2: regularization
+            layer_weights = self.weights.__dict__.values()
+            with tf.name_scope('regularization'):
+                regularizers = tf.nn.l2_loss(layer_weights[0])
+                for w in layer_weights[1:]:
+                    regularizers = regularizers + tf.nn.l2_loss(w)
             loss += self.train_l2_regularizer * regularizers
 
         # setup learning rate
@@ -251,18 +261,29 @@ class SGDOptimizer(object):
                 _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, train_poses = self.sess.run(
                         [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
 
-                ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
-                softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
+                if self.cfg['loss'] != 'weighted_cross_entropy':
+                    ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
+                    softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 		        
-                logging.debug('Max ' +  str(np.max(softmax[:,1])))
-                logging.debug('Min ' + str(np.min(softmax[:,1])))
-                logging.debug('Pred nonzero ' + str(np.sum(np.argmax(predictions, axis=1))))
-                logging.debug('True nonzero ' + str(np.sum(batch_labels)))
+                    logging.info('Max ' +  str(np.max(softmax[:,1])))
+                    logging.info('Min ' + str(np.min(softmax[:,1])))
+                    logging.info('Pred nonzero ' + str(np.sum(softmax[:,1] > self.metric_thresh)))
+                    logging.info('True nonzero ' + str(np.sum(batch_labels)))
+                else:
+                    sigmoid = 1.0 / (1.0 + np.exp(-output))
+                    logging.info('Max ' +  str(np.max(sigmoid)))
+                    logging.info('Min ' + str(np.min(sigmoid)))
+                    logging.info('Pred nonzero ' + str(np.sum(sigmoid > self.metric_thresh)))
+                    logging.info('True nonzero ' + str(np.sum(batch_labels > self.metric_thresh)))
 
+                    print sigmoid[sigmoid>self.metric_thresh], batch_labels[sigmoid[:,0]>self.metric_thresh]
+                    
                 if np.isnan(l) or np.any(np.isnan(train_poses)):
                     import IPython
                     IPython.embed()
-                
+                    logging.info('Exiting...')
+                    break
+                    
                 # log output
                 if step % self.log_frequency == 0:
                     elapsed_time = time.time() - start_time
@@ -273,6 +294,10 @@ class SGDOptimizer(object):
                     logging.info('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
+                        if self.cfg['loss'] == 'weighted_cross_entropy':
+                            print predictions[0], batch_labels[0]
+                            batch_labels = 1 * (batch_labels > self.metric_thresh)
+                            batch_labels = batch_labels.astype(np.uint8)
                         train_error = ClassificationResult([predictions], [batch_labels]).error_rate
                         logging.info('Minibatch error: %.3f%%' %train_error)
                     self.summary_writer.add_summary(self.sess.run(self.merged_log_summaries, feed_dict={self.minibatch_error_placeholder: train_error, self.minibatch_loss_placeholder: l, self.learning_rate_placeholder: lr}), step)
@@ -432,6 +457,9 @@ class SGDOptimizer(object):
         elif self.training_mode == TrainingMode.CLASSIFICATION:
             train_label_dtype = tf.int64
             self.numpy_dtype = np.int64
+            if self.cfg['loss'] == 'weighted_cross_entropy':
+                train_label_dtype = tf.float32
+                self.numpy_dtype = np.float32            
         else:
             raise ValueError('Training mode %s not supported' %(self.training_mode))
         with tf.name_scope('train_labels_node'):
@@ -484,6 +512,9 @@ class SGDOptimizer(object):
         if self.cfg['fine_tune']:
             self.data_mean = self.gqcnn.get_im_mean()
             self.data_std = self.gqcnn.get_im_std()
+        elif os.path.exists(mean_filename) and os.path.exists(std_filename):
+            self.data_mean = np.load(mean_filename)
+            self.data_std = np.load(std_filename)
         else:
             self.data_mean = 0
             self.data_std = 0
@@ -494,14 +525,14 @@ class SGDOptimizer(object):
                 im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
                 self.data_mean += np.sum(im_data[self.train_index_map[im_filename], :, :, :])
                 num_summed += im_data[self.train_index_map[im_filename], :, :, :].shape[0]
-            self.data_mean = self.data_mean / (num_summed * self.im_height * self.im_width)
+            self.data_mean = self.data_mean / (num_summed * im_data.shape[1] * im_data.shape[2])
             np.save(mean_filename, self.data_mean)
 
             for k in random_file_indices.tolist():
                 im_filename = self.im_filenames[k]
                 im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
                 self.data_std += np.sum((im_data[self.train_index_map[im_filename], :, :, :] - self.data_mean)**2)
-            self.data_std = np.sqrt(self.data_std / (num_summed * self.im_height * self.im_width))
+            self.data_std = np.sqrt(self.data_std / (num_summed * im_data.shape[1] * im_data.shape[2]))
             np.save(std_filename, self.data_std)
 
         # compute pose mean
@@ -511,6 +542,9 @@ class SGDOptimizer(object):
         if self.cfg['fine_tune']:
             self.pose_mean = self.gqcnn.get_pose_mean()
             self.pose_std = self.gqcnn.get_pose_std()
+        elif os.path.exists(self.pose_mean_filename) and os.path.exists(self.pose_std_filename):
+            self.pose_mean = np.load(self.pose_mean_filename)
+            self.pose_std = np.load(self.pose_std_filename)
         else:
             self.pose_mean = np.zeros(self.pose_shape)
             self.pose_std = np.zeros(self.pose_shape)
@@ -549,6 +583,30 @@ class SGDOptimizer(object):
 
             self.pose_std[self.pose_std==0] = 1.0
 
+            # update gqcnn pose_mean and pose_std according to data_mode
+            if self.input_data_mode == InputDataMode.TF_IMAGE:
+                # depth
+                if isinstance(self.pose_mean, numbers.Number) or len(self.pose_mean.shape) == 0 or self.pose_mean.shape[0] == 1:
+                    pass
+                else:
+                    self.pose_mean = self.pose_mean[2]
+                    self.pose_std = self.pose_std[2]
+            elif self.input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+                # depth, cx, cy
+                self.pose_mean = np.concatenate([self.pose_mean[2:3], self.pose_mean[4:6]])
+                self.pose_std = np.concatenate([self.pose_std[2:3], self.pose_std[4:6]])
+            elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                self.pose_mean = self.pose_mean[2:4]
+                self.pose_std = self.pose_std[2:4]
+            elif self.input_data_mode == InputDataMode.RAW_IMAGE:
+                # u, v, depth, theta
+                self.pose_mean = self.pose_mean[:4]
+                self.pose_std = self.pose_std[:4]
+            elif self.input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
+                # u, v, depth, theta, cx, cy
+                self.pose_mean = self.pose_mean[:6]
+                self.pose_std = self.pose_std[:6]
+            
             np.save(self.pose_mean_filename, self.pose_mean)
             np.save(self.pose_std_filename, self.pose_std)
 
@@ -616,7 +674,10 @@ class SGDOptimizer(object):
         logging.info('Computing metric stats')
         all_metrics = None
         all_val_metrics = None
-        for im_filename, metric_filename in zip(self.im_filenames, self.label_filenames):
+        random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
+        for k in random_file_indices.tolist():
+            im_filename = self.im_filenames[k]
+            metric_filename = self.label_filenames[k]
             self.metric_data = np.load(os.path.join(self.data_dir, metric_filename))['arr_0']
             indices = self.val_index_map[im_filename]
             val_metric_data = self.metric_data[indices]
@@ -637,7 +698,7 @@ class SGDOptimizer(object):
         pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
         np.save(pct_pos_val_filename, np.array(pct_pos_val))
         logging.info('Percent positive in val set: ' + str(pct_pos_val))
-
+        
     def _compute_indices_image_wise(self):
         """ Compute train and validation indices based on an image-wise split"""
 
@@ -818,6 +879,14 @@ class SGDOptimizer(object):
         self.training_mode = self.cfg['training_mode']
         self.preproc_mode = self.cfg['preproc_mode']
 
+        self.pos_weight = 0.0
+        if 'pos_weight' in self.cfg.keys():
+            self.pos_weight = self.cfg['pos_weight']
+
+        self.neg_reject_rate = 0.0
+        if 'neg_reject_rate' in self.cfg.keys():
+            self.neg_reject_rate = self.cfg['neg_reject_rate']
+            
         if self.train_pct < 0 or self.train_pct > 1:
             raise ValueError('Train percentage must be in range [0,1]')
 
@@ -832,8 +901,8 @@ class SGDOptimizer(object):
         self.pose_data = np.load(os.path.join(self.data_dir, self.pose_filenames[0]))['arr_0']
         self.metric_data = np.load(os.path.join(self.data_dir, self.label_filenames[0]))['arr_0']
         self.images_per_file = self.train_im_data.shape[0]
-        self.im_height = self.train_im_data.shape[1]
-        self.im_width = self.train_im_data.shape[2]
+        self.im_height = self.cfg['gqcnn_config']['im_height'] #self.train_im_data.shape[1]
+        self.im_width = self.cfg['gqcnn_config']['im_width'] #self.train_im_data.shape[2]
         self.im_channels = self.train_im_data.shape[3]
         self.im_center = np.array([float(self.im_height-1)/2, float(self.im_width-1)/2])
         self.num_tensor_channels = self.cfg['num_tensor_channels']
@@ -894,21 +963,10 @@ class SGDOptimizer(object):
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         if len(self.pose_filenames) == 0 :
             self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.grasps_template) > -1]            
-        self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
+        self.label_filenames = [f for f in all_filenames if f.startswith(self.target_metric_name) and f[len(self.target_metric_name)+6] == '.']
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
         self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
-
-        if self.debug:
-            random.shuffle(self.im_filenames)
-            random.shuffle(self.pose_filenames)
-            random.shuffle(self.label_filenames)
-            random.shuffle(self.obj_id_filenames)
-            self.im_filenames = self.im_filenames[:self.debug_num_files]
-            self.pose_filenames = self.pose_filenames[:self.debug_num_files]
-            self.label_filenames = self.label_filenames[:self.debug_num_files]
-            self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
-            self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
-
+            
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
@@ -1071,37 +1129,48 @@ class SGDOptimizer(object):
                 file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
                 train_data_filename = self.im_filenames_copy[file_num]
 
-                self.train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
-                                         'arr_0'].astype(np.float32)
+                train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
+                    'arr_0'].astype(np.float32)
                 self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
                 self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
-
+                
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
                 np.random.shuffle(train_ind)
                 if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                     tp_tmp = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
+
                 upper = min(num_remaining, train_ind.shape[
                             0], self.max_training_examples_per_load)
                 ind = train_ind[:upper]
                 num_loaded = ind.shape[0]
-                end_i = start_i + num_loaded
-
+                end_i = start_i + num_loaded                    
+                
                 # subsample data
-                self.train_data_arr = self.train_data_arr[ind, ...]
+                train_data_arr = train_data_arr[ind, ...]
                 self.train_poses_arr = self.train_poses_arr[ind, :]
                 self.train_label_arr = self.train_label_arr[ind]
-                self.num_images = self.train_data_arr.shape[0]
+                self.num_images = train_data_arr.shape[0]
 
+                # resize images
+                rescale_factor = float(self.im_height) / train_data_arr.shape[1]
+                self.train_data_arr = np.zeros([train_data_arr.shape[0], self.im_height,
+                                                self.im_width, self.im_channels]).astype(np.float32)
+                for i in range(self.num_images):
+                    for c in range(train_data_arr.shape[3]):
+                        self.train_data_arr[i,:,:,c] = sm.imresize(train_data_arr[i,:,:,c],
+                                                                   rescale_factor,
+                                                                   interp='bicubic', mode='F')
+                
                 # add noises to images
                 self._distort(num_loaded)
 
-                # set pose ind
+                # slice poses
                 self.train_poses_arr = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
-                
+
                 # subtract mean
                 self.train_data_arr = (self.train_data_arr - self.data_mean) / self.data_std
                 self.train_poses_arr = (self.train_poses_arr - self.pose_mean) / self.pose_std
@@ -1111,7 +1180,8 @@ class SGDOptimizer(object):
                     if self.preproc_mode == PreprocMode.NORMALIZATION:
                         self.train_label_arr = (self.train_label_arr - self.min_metric) / (self.max_metric - self.min_metric)
                 elif self.training_mode == TrainingMode.CLASSIFICATION:
-                    self.train_label_arr = 1 * (self.train_label_arr > self.metric_thresh)
+                    if self.cfg['loss'] != 'weighted_cross_entropy':
+                        self.train_label_arr = 1 * (self.train_label_arr > self.metric_thresh)
                     self.train_label_arr = self.train_label_arr.astype(self.numpy_dtype)
 
                 # enqueue training data batch
@@ -1308,7 +1378,7 @@ class SGDOptimizer(object):
             elif self.training_mode == TrainingMode.CLASSIFICATION:
                 labels = 1 * (labels > self.metric_thresh)
                 labels = labels.astype(np.uint8)
-
+                    
             # get predictions
             predictions = self.gqcnn.predict(data, poses)
 

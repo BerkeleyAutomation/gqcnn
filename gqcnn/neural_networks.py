@@ -6,12 +6,13 @@ Author: Jeff Mahler
 import copy
 import json
 import logging
+import matplotlib.pyplot as plt
 import numbers
 import numpy as np
 import os
+import scipy.misc as sm
 import sys
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
 from autolab_core import YamlConfig
 
@@ -784,6 +785,18 @@ class GQCNN(object):
         if num_images != num_poses:
             raise ValueError('Must provide same number of images and poses')
 
+        # resize if necessary
+        if image_arr.shape[1] != self._im_height or image_arr.shape[2] != self._im_width:
+            rescale_factor = float(self._im_height) / image_arr.shape[1]
+            new_image_arr = np.zeros([num_images, self._im_height,
+                                      self._im_width, image_arr.shape[3]])
+            for i in range(num_images):
+                for c in range(image_arr.shape[3]):
+                    new_image_arr[i,:,:,c] = sm.imresize(image_arr[i,:,:,c],
+                                                         rescale_factor,
+                                                         interp='bicubic', mode='F')
+            image_arr = new_image_arr
+                    
         # predict by filling in image array in batches
         close_sess = False
         with self._graph.as_default():

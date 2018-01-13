@@ -1,22 +1,24 @@
 ### TRAINING CONFIGURATIONS ###
+mode: training
+
 # dataset 
-dataset_dir: /home/vsatish/Data/dexnet/data/grasp_quality/3dnet_kit_06_13_17
-output_dir: /home/vsatish/Data/dexnet/data/models/grasp_quality
+dataset_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_2_robotiq/tensors
+output_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
 num_epochs: 25     # number of epochs to train for
-eval_frequency: 10000  # how often to get validation error 
-save_frequency: 10000  # how often to save output
-vis_frequency: 10000
+eval_frequency: 75000  # how often to get validation error 
+save_frequency: 75000  # how often to save output
+vis_frequency: 75000
 log_frequency: 1     # how often to log output
 show_filters: 0
 
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
-data_split_mode: object_wise # how to split up the data into training vs validation: options are image_wise, object_wise, or image_stable_pose_wise 
+data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, object_wise, or image_stable_pose_wise 
 train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
@@ -25,13 +27,13 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: .2   # number of times to go through training datapoints before stepping down decay rate
+decay_step_multiplier: .5   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
 
 fine_tune: 0
-update_fc_only: 1
+update_fc_only: 0
 update_conv0_only: 0
 reinit_fc3: 0
 reinit_fc4: 0
@@ -47,7 +49,7 @@ pos_weight: 0.1
 num_random_files: 100
 
 target_metric_name: robust_ferrari_canny
-metric_thresh: 0.002
+metric_thresh: 0.003
 
 # denoising / synthetic data params
 multiplicative_denoising: 1
@@ -94,8 +96,8 @@ drop_fc4: 0
 fc4_drop_rate: 0
 
 # debugging params
-debug: 0
-debug_num_files: 300
+debug: 1
+debug_num_files: 10000000
 
 ### GQCNN CONFIG ###
 gqcnn_config:
