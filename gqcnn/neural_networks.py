@@ -314,33 +314,37 @@ class GQCNN(object):
             self._im_width = fully_conv_config['im_width']
             self._im_height = fully_conv_config['im_height']
 
-    def initialize_network(self, add_softmax=False):
-        """ Set up input nodes and builds network.
+    def initialize_network(self, train_im_node=None, train_pose_node=None, train_gripper_node=None, add_softmax=False):
+        """ Set up input placeholders and build network.
 
         Parameters
         ----------
         add_softmax : float
-            whether or not to add a softmax layer
+            whether or not to add a softmax layer to output of network
         """
         with self._graph.as_default():
-            # setup tf input placeholders and build network
-            self._input_im_node = tf.placeholder(
-                tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels))
-            self._input_pose_node = tf.placeholder(
-                tf.float32, (self._batch_size, self._pose_dim))
-            if self._gripper_dim > 0:
-                self._input_gripper_node = tf.placeholder(
-                    tf.float32, (self._batch_size, self._gripper_dim))
+            # setup input placeholders
+            if train_im_node is not None:
+                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels))
+                self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim))
+                if self._gripper_dim > 0:
+                    self._input_gripper_node = tf.placeholder(train_gripper_node, (None, self._gripper_dim))
+            else:
+                self._input_im_node = tf.placeholder(tf.float32, (None, self._im_height, self._im_width, self._num_channels))
+                self._input_pose_node = tf.placeholder_with_default(tf.float32, (None, self._pose_dim))
+                if self._gripper_dim > 0:
+                    self._input_gripper_dim = tf.placeholder(train_gripper_node, (None, self._gripper_dim))
+            self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), ())
 
             # build network
             if self._gripper_dim > 0:
-                self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, input_gripper_node=self._input_gripper_node, inference=True)
+                self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node, input_gripper_node=self._input_gripper_node)
             else:
-                self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, inference=True)
+                self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
             
-            # add softmax function to output of inference network if specified
+            # add softmax function to output of network if specified
             if add_softmax:
-                self.add_softmax_to_predict()
+                self.add_softmax_to_output()
 
         # create feed tensors for prediction
         self._input_im_arr = np.zeros((self._batch_size, self._im_height, self._im_width, self._num_channels))
@@ -396,6 +400,10 @@ class GQCNN(object):
     @property
     def input_pose_node(self):
         return self._input_pose_node
+    
+    @property
+    def input_drop_rate_node(self):
+        return self._input_drop_rate_node
 
     @property
     def output(self):
@@ -582,8 +590,8 @@ class GQCNN(object):
         """
         return self._gripper_depth_mask_std
         
-    def add_softmax_to_predict(self):
-        """ Adds softmax to output tensor of prediction network """
+    def add_softmax_to_output(self):
+        """ Adds softmax to output of network """
         self._output_tensor = tf.nn.softmax(self._output_tensor)
 
     def update_batch_size(self, batch_size):
@@ -636,13 +644,11 @@ class GQCNN(object):
                 cur_ind = i
                 end_ind = cur_ind + dim
 
-#                self._input_im_arr[:dim, :, :, 0] = (
-#                    image_arr[cur_ind:end_ind, :, :, 0] - self._im_mean) / self._im_std
-                self._input_im_arr[:dim, :, :, 0] = image_arr[cur_ind:end_ind, :, :, 0] 
+                self._input_im_arr[:dim, ...] = (
+                    image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std 
                
-#                self._input_pose_arr[:dim, :] = (
-#                    pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
-                self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind, :]
+                self._input_pose_arr[:dim, :] = (
+                    pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
 
                 if gripper_arr is not None:
                     self._input_gripper_arr[:dim, :] = (
@@ -752,7 +758,7 @@ class GQCNN(object):
 
         return transform_layer, output_height, output_width, input_channels
 
-    def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, inference=False):
+    def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False):
         logging.info('Building convolutional layer: {}'.format(name))       
         with tf.name_scope(name):
             # initialize weights
@@ -770,10 +776,10 @@ class GQCNN(object):
                 self._weights.weights['{}_weights'.format(name)] = convW
                 self._weights.weights['{}_bias'.format(name)] = convb
             
-            if not inference:
-                if self._save_histograms:
-                    tf.summary.histogram('weights', convW, collections=["histogram"])
-                    tf.summary.histogram('bias', convb, collections=["histogram"])
+#            if not inference:
+#                if self._save_histograms:
+#                    tf.summary.histogram('weights', convW, collections=["histogram"])
+#                    tf.summary.histogram('bias', convb, collections=["histogram"])
 
             out_height = input_height / pool_stride_h
             out_width = input_width / pool_stride_w
@@ -783,15 +789,15 @@ class GQCNN(object):
             convh = tf.nn.conv2d(input_node, convW, strides=[
                                 1, 1, 1, 1], padding='SAME') + convb
             
-            if not inference:
-                if self._save_histograms:
-                    tf.summary.histogram('layer_raw', convh, collections=["histogram"])
+#            if not inference:
+#                if self._save_histograms:
+#                    tf.summary.histogram('layer_raw', convh, collections=["histogram"])
 
             convh = self._leaky_relu(convh)
             
-            if not inference:
-                if self._save_histograms:
-                    tf.summary.histogram('layer_act', convh, collections=["histogram"])
+#            if not inference:
+#                if self._save_histograms:
+#                    tf.summary.histogram('layer_act', convh, collections=["histogram"])
 
             if norm:
                 convh = tf.nn.local_response_normalization(convh,
@@ -799,9 +805,9 @@ class GQCNN(object):
                                                             alpha=self._normalization_alpha,
                                                             beta=self._normalization_beta,
                                                             bias=self._normalization_bias)
-            if not inference:
-                if self._save_histograms:
-                    tf.summary.histogram('layer_norm', convh, collections=["histogram"])
+#            if not inference:
+#                if self._save_histograms:
+#                    tf.summary.histogram('layer_norm', convh, collections=["histogram"])
 
             pool = tf.nn.max_pool(convh,
                                 ksize=[1, pool_size, pool_size, 1],
@@ -809,9 +815,9 @@ class GQCNN(object):
                                         pool_stride_w, 1],
                                 padding='SAME')
             
-            if not inference:
-                if self._save_histograms:
-                    tf.summary.histogram('layer_pool', pool, collections=["histogram"])     
+#            if not inference:
+#                if self._save_histograms:
+#                    tf.summary.histogram('layer_pool', pool, collections=["histogram"])     
 
             # add output to feature dict
             self._feature_tensors[name] = pool
@@ -885,7 +891,7 @@ class GQCNN(object):
 
         return convh
         
-    def _build_fc_layer(self, input_node, fan_in, out_size, name, input_is_multi, drop_rate=0.0, final_fc_layer=False, inference=False):
+    def _build_fc_layer(self, input_node, fan_in, out_size, name, input_is_multi, drop_rate, final_fc_layer=False):
         logging.info('Building fully connected layer: {}'.format(name))
         
         # initialize weights
@@ -911,9 +917,7 @@ class GQCNN(object):
             fc = self._leaky_relu(tf.matmul(input_flat, fcW) + fcb)
         else:
             fc = self._leaky_relu(tf.matmul(input_node, fcW) + fcb)
-
-        if drop_rate > 0 and not inference:
-            fc = tf.nn.dropout(fc, drop_rate)
+        fc = tf.nn.dropout(fc, 1 - drop_rate)
 
         # add output to feature dict
         self._feature_tensors[name] = fc
@@ -974,7 +978,7 @@ class GQCNN(object):
 
         return gc, out_size
 
-    def _build_fc_merge(self, input_fc_node_1, input_fc_node_2, fan_in_1, fan_in_2, out_size, name, input_fc_node_3=None, fan_in_3=None, drop_rate=0.0, inference=False):
+    def _build_fc_merge(self, input_fc_node_1, input_fc_node_2, fan_in_1, fan_in_2, out_size, drop_rate, name, input_fc_node_3=None, fan_in_3=None):
         logging.info('Building Merge Layer: {}'.format(name))
         
         if input_fc_node_3 is not None:
@@ -1021,21 +1025,19 @@ class GQCNN(object):
             fc = self._leaky_relu(tf.matmul(input_fc_node_1, input1W) +
                                     tf.matmul(input_fc_node_2, input2W) +
                                     fcb)
-        
-        if drop_rate > 0 and not inference:
-            fc = tf.nn.dropout(fc, drop_rate)
+        fc = tf.nn.dropout(fc, 1 - drop_rate)
 
         # add output to feature dict
         self._feature_tensors[name] = fc
 
         return fc, out_size
 
-    def _build_batch_norm(self, input_node, ep, inference=False):
+    def _build_batch_norm(self, input_node, ep, drop_rate):
         output_node = input_node
-        output_node = tf.layers.batch_normalization(output_node, training=inference, epsilon = ep)
+        output_node = tf.layers.batch_normalization(output_node, training=drop_rate, epsilon=ep)
         return output_node
 
-    def _build_residual_layer(self, input_node, input_channels, fan_in, num_filt, filt_h, filt_w, name, first=False, inference=False):
+    def _build_residual_layer(self, input_node, input_channels, fan_in, num_filt, filt_h, filt_w, drop_rate, name, first=False):
         logging.info('Building Residual Layer: {}'.format(name))
         if '{}_conv1_weights'.format(name) in self._weights.weights.keys():
             conv1W = self._weights.weights['{}_conv1_weights'.format(name)]
@@ -1061,10 +1063,10 @@ class GQCNN(object):
         EP = .001
         output_node = input_node
         if not first:
-            output_node = self._build_batch_norm(output_node, EP)
+            output_node = self._build_batch_norm(output_node, EP, drop_rate)
             output_node = self._leaky_relu(output_node)
         output_node = tf.nn.conv2d(output_node, conv1W, strides=[1, 1, 1, 1], padding='SAME') + conv1b
-        output_node = self._build_batch_norm(output_node, EP)
+        output_node = self._build_batch_norm(output_node, EP, drop_rate)
         output_node = self._leaky_relu(output_node)
         output_node = tf.nn.conv2d(output_node, conv2W, strides=[1, 1, 1, 1], padding='SAME') + conv2b
         output_node = input_node + output_node
@@ -1075,7 +1077,7 @@ class GQCNN(object):
         return output_node, num_filt  
 
 
-    def _build_im_stream(self, input_node, input_height, input_width, input_channels, layers, inference=False):
+    def _build_im_stream(self, input_node, input_height, input_width, input_channels, drop_rate, layers):
         logging.info('Building Image Stream')
         output_node = input_node
         prev_layer = "start"
@@ -1094,7 +1096,7 @@ class GQCNN(object):
                     raise ValueError('Cannot have conv layer after fc layer')
                 output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filt_dim'],
                     layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
-                    norm=layer_config['norm'], inference=inference)
+                    norm=layer_config['norm'])
                 prev_layer = layer_type
                 filter_dim /= layer_config['pool_stride']
             elif layer_type == 'fc':
@@ -1106,10 +1108,7 @@ class GQCNN(object):
                 if self._fully_conv:
                     output_node = self._build_fully_conv_layer(output_node, filter_dim, layer_name)
                 else:
-                    if 'dropout_rate' in layer_config.keys():
-                        output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv_or_res, drop_rate=layer_config['drop_rate'], inference=inference)
-                    else:
-                        output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv_or_res, inference=inference)
+                    output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv_or_res, drop_rate)
                     prev_layer = layer_type
                     filter_dim = 1
             elif layer_type == 'pc':
@@ -1121,18 +1120,18 @@ class GQCNN(object):
                 fan_in = input_height * input_width * input_channels
                 if first_residual:
                     output_node, input_channels = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
-                        layer_config['filt_dim'], layer_name, first=True)
+                        layer_config['filt_dim'], drop_rate, layer_name, first=True)
                     first_residual = False
                 else:
                     output_node, input_channels = self._build_residual_layer(output_node, input_channels, fan_in, layer_config['num_filt'], layer_config['filt_dim'],
-                        layer_config['filt_dim'], layer_name)
+                        layer_config['filt_dim'], drop_rate, layer_name)
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
 
         return output_node, fan_in
 
-    def _build_pose_stream(self, input_node, fan_in, layers, inference=False):
+    def _build_pose_stream(self, input_node, fan_in, layers):
         logging.info('Building Pose Stream')
         output_node = input_node
         prev_layer = "start"
@@ -1157,7 +1156,7 @@ class GQCNN(object):
 
         return output_node, fan_in
 
-    def _build_gripper_stream(self, input_node, fan_in, layers, inference=False):
+    def _build_gripper_stream(self, input_node, fan_in, layers):
         logging.info('Building Gripper Stream')
         output_node = input_node
         prev_layer = "start"
@@ -1184,7 +1183,7 @@ class GQCNN(object):
 
         return output_node, fan_in
 
-    def _build_merge_stream(self, input_stream_1, input_stream_2, fan_in_1, fan_in_2, layers, input_stream_3=None, fan_in_3=None, inference=False):
+    def _build_merge_stream(self, input_stream_1, input_stream_2, fan_in_1, fan_in_2, drop_rate, layers, input_stream_3=None, fan_in_3=None):
         logging.info('Building Merge Stream')
         
         # first check if first layer is a merge layer
@@ -1201,48 +1200,33 @@ class GQCNN(object):
             elif layer_type == 'conv':
                raise ValueError('Cannot have conv layer in merge stream')
             elif layer_type == 'fc':
-                # TODO: Clean this giant if statement up
                 if self._fully_conv:
                     output_node = self._build_fully_conv_layer(output_node, filter_dim, layer_name)
                 else:
                     if layer_index == last_index:
-                        if 'drop_rate' in layer_config.keys():
-                            output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, final_fc_layer=True, drop_rate=layer_config['drop_rate'], inference=inference)
-                        else:
-                            output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, final_fc_layer=True, inference=inference)
+                        output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, drop_rate, final_fc_layer=True)
                     else:
-                        if 'drop_rate' in layer_config.keys():
-                            output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, drop_rate=layer_config['drop_rate'], inference=inference)
-                        else:
-                            output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, inference=inference)
+                        output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, drop_rate)
                 prev_layer = layer_type
             elif layer_type == 'pc':  
                 raise ValueError('Cannot have pose-connected layer in merge stream')
             elif layer_type == 'fc_merge':
-                #TODO: Clean this giant if statement up
                 if self._fully_conv:
                     output_node = self._build_fully_conv_merge_layer(input_stream_1, input_stream_2, filter_dim, layer_name)
                 else:
                     if input_stream_3 is not None:
-                        if 'drop_rate' in layer_config.keys():
-                            output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, input_fc_node_3=input_stream_3, fan_in_3=fan_in_3, drop_rate=layer_config['drop_rate'], inference=inference)
-                        else:
-                            output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, input_fc_node_3=input_stream_3, fan_in_3=fan_in_3, inference=inference)
+                        output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], drop_rate, layer_name, input_fc_node_3=input_stream_3, fan_in_3=fan_in_3)
                     else:
-                        if 'drop_rate' in layer_config.keys():
-                            output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, drop_rate=layer_config['drop_rate'], inference=inference)
-                        else:
-                            output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], layer_name, inference=inference)
+                        output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], drop_rate, layer_name)
                 prev_layer = layer_type   
             elif layer_type == 'residual':
                 raise ValueError('Cannot have residual in merge stream')
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
-#        return output_node, fan_in
-        return output_node, None
+        return output_node, fan_in
 
-    def _build_network(self, input_im_node, input_pose_node, input_gripper_node=None, inference=False):
+    def _build_network(self, input_im_node, input_pose_node, input_drop_rate_node, input_gripper_node=None):
         """ Builds neural network 
 
         Parameters
@@ -1262,20 +1246,20 @@ class GQCNN(object):
         """
         logging.info('Building Network')
         with tf.name_scope('im_stream'):
-            output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, self._architecture['im_stream'], inference=inference)
+            output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'])
         with tf.name_scope('pose_stream'):
-            output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'], inference=inference)
+            output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'])
         if input_gripper_node is not None:
             with tf.name_scope('gripper_stream'):
-                output_gripper_stream, fan_out_gripper = self._build_gripper_stream(input_gripper_node, self._gripper_dim, self._architecture['gripper_stream'], inference=inference)
+                output_gripper_stream, fan_out_gripper = self._build_gripper_stream(input_gripper_node, self._gripper_dim, self._architecture['gripper_stream'])
             if 'gripper_pose_merge_stream' in self._architecture.keys():
                 with tf.name_scope('gripper_pose_merge_stream'):
-                    output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(output_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, self._architecture['gripper_pose_merge_stream'], inference=inference)
+                    output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(output_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, input_drop_rate_node, self._architecture['gripper_pose_merge_stream'])
                 with tf.name_scope('merge_stream'):
-                    return self._build_merge_stream(output_im_stream, output_gripper_pose_merge_stream, fan_out_im, fan_out_gripper_pose_merge_stream, self._architecture['merge_stream'], inference=inference)[0]
+                    return self._build_merge_stream(output_im_stream, output_gripper_pose_merge_stream, fan_out_im, fan_out_gripper_pose_merge_stream, input_drop_rate_node, self._architecture['merge_stream'])[0]
             else:
                 with tf.name_scope('merge_stream'):
-                    return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], input_stream_3=output_gripper_stream, fan_in_3=fan_out_gripper, inference=inference)[0]
+                    return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, input_drop_rate_node, self._architecture['merge_stream'], input_stream_3=output_gripper_stream, fan_in_3=fan_out_gripper)[0]
         else:
             with tf.name_scope('merge_stream'):
-                return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._architecture['merge_stream'], inference=inference)[0]
+                return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, input_drop_rate_node, self._architecture['merge_stream'])[0]

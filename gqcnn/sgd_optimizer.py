@@ -132,33 +132,30 @@ class SGDOptimizer(object):
         # run setup
         self._setup()
 
-        # build training and validation networks
-        with tf.name_scope('validation_network'):
-            logging.info('Building Validation Network')
-            self.gqcnn.initialize_network()  # builds validation network inside gqcnn class
-        with tf.name_scope('training_network'):
-            logging.info('Building Training Network')
+        # build network
+        if self.training_mode == TrainingMode.CLASSIFICATION:
             if self.gripper_dim > 0:
-                self.train_net_output = self.gqcnn._build_network(
-                    self.input_im_node, self.input_pose_node, input_gripper_node=self.input_gripper_node)
+                self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node, self.input_gripper_node)
             else:
-                self.train_net_output = self.gqcnn._build_network(
-                    self.input_im_node, self.input_pose_node)
+                self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node)
+            self.train_net_output = self.gqcnn.output
+            self.gqcnn.add_softmax_to_output()
+        elif self.training_mode == TrainingMode.REGRESSION:
+            if self.gripper_dim > 0:
+                self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node, self.input_gripper_node)
+            else:
+                self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node, self.input_gripper_node)
+            self.train_net_output = self.gqcnn.output
+        train_predictions = self.gqcnn.output
+        drop_rate = self.gqcnn.input_drop_rate_node
 
         # once weights have been initialized create tf Saver for weights
         self.saver = tf.train.Saver()
 
-        # form loss
+        ############# FORM LOSS #############
         # part 1: error
-        if self.training_mode == TrainingMode.CLASSIFICATION or self.preproc_mode == PreprocMode.NORMALIZATION:
-            train_predictions = tf.nn.softmax(self.train_net_output)
-            self.gqcnn.add_softmax_to_predict()
-            with tf.name_scope('loss'):
-                loss = self._create_loss()
-        elif self.training_mode == TrainingMode.REGRESSION:
-            train_predictions = self.train_net_output
-            with tf.name_scope('loss'):
-                loss = self._create_loss()
+        with tf.name_scope('loss'):
+            loss = self._create_loss()
 
         # part 2: regularization
         layer_weights = self.weights.values()
@@ -249,7 +246,7 @@ class SGDOptimizer(object):
             self.queue_thread = threading.Thread(target=self._load_and_enqueue)
             self.queue_thread.start()
 
-            # init and run tf self.sessions
+            # initialize all tf global variables
             init = tf.global_variables_initializer()
             self.sess.run(init)
             logging.info('Beginning Optimization')
@@ -267,13 +264,8 @@ class SGDOptimizer(object):
                 # run optimization
                 extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
                 # check_numeric_op = tf.add_check_numerics_ops()
-                if self.gripper_dim > 0:
-                    _, l, lr, predictions, batch_labels, output, train_images, pose_node, gripper_node, _ = self.sess.run(
-                        [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.input_gripper_node, extra_update_ops], options=GeneralConstants.timeout_option)
-                else:
-                    _, l, lr, predictions, batch_labels, output, train_images, pose_node, _ = self.sess.run(
-                                    [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, extra_update_ops], options=GeneralConstants.timeout_option)
-                ex = np.exp(output - np.tile(np.max(output, axis=1)
+                _, l, lr, predictions, batch_labels, net_output = self.sess.run([optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output], feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
+                ex = np.exp(net_output - np.tile(np.max(net_output, axis=1)
                             [:, np.newaxis], [1, 2]))
                 softmax = ex / np.tile(np.sum(ex, axis=1)[:, np.newaxis], [1, 2])
 
@@ -474,8 +466,8 @@ class SGDOptimizer(object):
         with self.sess.as_default():
             tf.global_variables_initializer().run()
 
-    def _setup_tensorflow(self):
-        """Setup Tensorflow placeholders, session, and queue """
+    def _setup_data_pipeline(self):
+        """Setup Tensorflow data pipeline for reading in data from dataset and piping it to model for training"""
 
         # setup nodes
         with tf.name_scope('train_data_node'):
@@ -496,12 +488,11 @@ class SGDOptimizer(object):
             self.train_labels_batch = tf.placeholder(
                 train_label_dtype, (self.train_batch_size,))
         if self.gripper_dim > 0:
-            # feed gripper channel in network
             with tf.name_scope('train_gripper_node'):
                 self.train_gripper_batch = tf.placeholder(
                     tf.float32, (self.train_batch_size, self.gripper_dim))
 
-        # create queue
+        # create data queue to fetch data from dataset in batches
         with tf.name_scope('data_queue'):
             if self.gripper_dim > 0:
                 self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels),
@@ -941,8 +932,7 @@ class SGDOptimizer(object):
 
         self.train_batch_size = self.cfg['train_batch_size']
         self.val_batch_size = self.cfg['val_batch_size']
-
-        # update the GQCNN's batch_size param to this one
+        # update the GQCNN's batch_size param to val_batch_size
         self.gqcnn.update_batch_size(self.val_batch_size)
 
         self.num_epochs = self.cfg['num_epochs']
@@ -960,6 +950,7 @@ class SGDOptimizer(object):
         self.decay_rate = self.cfg['decay_rate']
         self.momentum_rate = self.cfg['momentum_rate']
         self.max_training_examples_per_load = self.cfg['max_training_examples_per_load']
+        self.drop_rate = self.cfg['drop_rate']
 
         self.target_metric_name = self.cfg['target_metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
@@ -1242,8 +1233,8 @@ class SGDOptimizer(object):
         # compute means, std's, and normalization metrics
         self._compute_data_metrics()
 
-        # setup tensorflow session/placeholders/queue
-        self._setup_tensorflow()
+        # setup tensorflow data pipeline
+        self._setup_data_pipeline()
 
         # setup summaries for visualizing metrics in tensorboard
         # do this here if we are not saving histograms, else it will be done later after gradient/weight/etc. histograms have been setup

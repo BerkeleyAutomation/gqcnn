@@ -1,7 +1,7 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
 dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/mini_dexnet_all_trans_01_20_17/ 
-output_dir: /home/vsatish/Data/dexnet/data/models/grasp_quality/dev_vishal_models/
+output_dir: /home/vsatish/Data/dexnet/data/models/test_dump
 
 # general optimization parameters
 train_batch_size: 64
@@ -42,6 +42,7 @@ decay_step_multiplier: .66   # number of times to go through training datapoints
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
+drop_rate: 0.0
 
 fine_tune: 0
 update_fc_only: 0
@@ -185,11 +186,9 @@ gqcnn_config:
       fc3:
         type: fc
         out_size: 1024
-#        drop_rate: 0.5
 #      fc4: 
 #        type: fc
 #        out_size: 1048
-#        drop_rate: 0.3
     pose_stream:
       pc1:
         type: pc
@@ -205,7 +204,6 @@ gqcnn_config:
 #      gp_fc2:
 #        type: fc
 #        out_size: 512
-#        drop_rate: 0.5
     merge_stream:
       fc4:
         type: fc_merge
@@ -217,11 +215,9 @@ gqcnn_config:
 #      fc6:
 #        type: fc
 #        out_size: 2
-#        drop_rate: 0.5
 #      fc5:
 #        type: fc
 #        out_size: 128
-      #   drop_rate: 0.5
       # fc7: 
       #   type: fc
       #   out_size: 128   
@@ -230,7 +226,7 @@ gqcnn_config:
 #        final_layer: True
 #        out_size: 2
 
-  # architecture normalization constants
+  # network normalization constants
   radius: 2
   alpha: 2.0e-05
   beta: 0.75
