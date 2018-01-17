@@ -2,14 +2,14 @@
 mode: finetuning
 
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/bin_picking/datasets/training_composite_fully_observed_ensenso_v1/parallel_jaw/tensors
+dataset_dir: /nfs/diskstation/projects/dex-net/bin_picking/datasets/training_ensenso_v4/parallel_jaw/tensors
 output_dir: /nfs/diskstation/projects/dex-net/bin_picking/models/parallel_jaw
 model_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/GQ-Image-Wise
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
-num_epochs: 5     # number of epochs to train for
+num_epochs: 25     # number of epochs to train for
 eval_frequency: 1000  # how often to get validation error 
 save_frequency: 5000  # how often to save output
 vis_frequency: 1000

@@ -2,7 +2,7 @@
 mode: finetuning
 
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/bin_picking/datasets/training_composite_fully_observed_ensenso_v1/suction/tensors
+dataset_dir: /nfs/diskstation/projects/dex-net/bin_picking/datasets/training_ensenso_v4/suction/tensors
 output_dir: /nfs/diskstation/projects/dex-net/bin_picking/models/suction
 model_dir: /nfs/diskstation/projects/dex-net/suction/models/GQ-Image-Wise
 
