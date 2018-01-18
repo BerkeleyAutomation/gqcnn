@@ -330,8 +330,8 @@ class GQCNN(object):
                 if self._gripper_dim > 0:
                     self._input_gripper_node = tf.placeholder(train_gripper_node, (None, self._gripper_dim))
             else:
-                self._input_im_node = tf.placeholder(tf.float32, (None, self._im_height, self._im_width, self._num_channels))
-                self._input_pose_node = tf.placeholder_with_default(tf.float32, (None, self._pose_dim))
+                self._input_im_node = tf.placeholder(tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels))
+                self._input_pose_node = tf.placeholder(tf.float32, (self._batch_size, self._pose_dim))
                 if self._gripper_dim > 0:
                     self._input_gripper_dim = tf.placeholder(train_gripper_node, (None, self._gripper_dim))
             self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), ())
@@ -1193,6 +1193,7 @@ class GQCNN(object):
         prev_layer = "start"
         last_index = len(layers.keys()) - 1
         filter_dim = 1
+        fan_in = -1
         for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
             layer_type = layer_config['type']
             if layer_type == 'spatial_transformer':
