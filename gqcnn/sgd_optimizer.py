@@ -26,7 +26,7 @@ from gqcnn import GQCNNDataset
 from neon.transforms import CrossEntropyMulti, Misclassification, PrecisionRecall
 from neon.optimizers import GradientDescentMomentum, ExpSchedule, StepSchedule, Schedule
 from neon.callbacks import Callbacks
-from neon.callbacks.callbacks import MetricCallback
+from neon.callbacks.callbacks import MetricCallback, SerializeModelCallback
 from neon.layers import GeneralizedCost
 from neon.backends import gen_backend
 
@@ -192,15 +192,19 @@ class SGDOptimizer(object):
         eval_freq = self.eval_frequency * (
                 float(self.train_batch_size) / (self._train_iter.ndata + self._val_iter.ndata))
         self._callbacks = Callbacks(self._train_model, train_set=self._train_iter, eval_set=self._val_iter, eval_freq=1,
-                                    output_file="./data.h5")
+                                    output_file=os.path.join(self.experiment_dir, "data.h5"))
         self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=Misclassification()))
         self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=PrecisionRecall(2)))
-        self._callbacks.add_hist_callback(plot_per_mini=True, filter_key=['W', 'dW'])
+#        self._callbacks.add_hist_callback(plot_per_mini=True, filter_key=['W', 'dW'])
+        self._callbacks.add_callback(SerializeModelCallback(os.path.join(self.experiment_dir, 'model_ckpt.prm'), epoch_freq=1))
 
         # begin optimization
         logging.info('Beginning Optimization')
         self._train_model.fit(dataset=self._train_iter, cost=self._loss, optimizer=self._optimizer,
                               num_epochs=self.num_epochs, callbacks=self._callbacks)
+        
+        # save model
+        self._train_model.save_params(os.path.join(self.experiment_dir, "model.prm"))        
 
         # exit
         logging.info('Exiting Optimization')
@@ -272,6 +276,7 @@ class SGDOptimizer(object):
 
         # create dataset
         self._dataset = GQCNNDataset(self.cfg)
+        self.experiment_dir = self._dataset._experiment_dir        
 
         # get data iterators
         self._data_iters = self._dataset.gen_iterators()

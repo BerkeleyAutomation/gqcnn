@@ -82,7 +82,7 @@ class GQCNNTrainIterator(NervanaDataIterator):
 		self.ndata = 0
 		for file in self.indices:
 			self.ndata += len(self.indices[file])
-
+#	        IPython.embed()
 		# setup label datatype
 		if self.training_mode == TrainingMode.REGRESSION:
 			self.numpy_dtype = np.float32

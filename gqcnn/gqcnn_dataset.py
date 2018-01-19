@@ -19,6 +19,10 @@ class GQCNNDataset(Dataset):
 	def __init__(self, train_config):
 		self.cfg = train_config
 		self._setup()
+    
+    	@property
+    	def _experiment_dir(self):
+        	return self.experiment_dir    
 
 	def gen_iterators(self):
 		self._data_dict = {'train': GQCNNTrainIterator(self.im_filenames, self.pose_filenames, self.label_filenames, self.train_index_map, self.cfg, 

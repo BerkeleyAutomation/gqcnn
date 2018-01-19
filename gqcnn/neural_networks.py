@@ -401,9 +401,9 @@ class GQCNN(object):
         im_path_layers = []
         
         # load weights
-        logging.info('Loading weight dict')
-        with open('gqcnn_weights.pkl', 'rb') as in_file:
-            weight_dict = pkl.load(in_file)
+#        logging.info('Loading weight dict')
+#        with open('gqcnn_weights.pkl', 'rb') as in_file:
+#            weight_dict = pkl.load(in_file)
 
         reformat_convW = lambda tfW: tfW.swapaxes(0, 2).swapaxes(1, 2).reshape((reduce((lambda x, y: x*y), tfW.shape[:-1], 1), -1))
         reformat_fcW = lambda tfW: tfW.T.copy()
@@ -419,14 +419,14 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_1']['filt_dim'] - self._im_height, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming1()
+        ck = CustomKaiming()
         # build conv layer
         # w = weight_dict['conv1_1W']
         # for x in range(self._architecture['conv1_1']['num_filt']):
         #     w[:, :, 0, x] = w[:, :, 0, x].T.copy()
 #        w = np.ones(weight_dict['conv1_1W'].shape)
         conv1_1 = Conv((self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['num_filt']),
-        	init=wrap_weight(reformat_convW(weight_dict['conv1_1W'])), bias=wrap_weight(weight_dict['conv1_1b']), padding=single_side_pad,
+        	init=ck, bias=ck, padding=single_side_pad,
             activation=Rectlin(), name="conv1_1")
 #        conv1_1 = Conv((self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['num_filt']),
 #        	init=wrap_weight(reformat_convW(w)), padding=single_side_pad,
@@ -463,10 +463,10 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_2']['filt_dim'] - self.conv1_1_out_size, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming2()
+        ck = CustomKaiming()
         # build conv layer
         conv1_2 = Conv((self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['num_filt']), 
-        	init=wrap_weight(reformat_convW(weight_dict['conv1_2W'])), bias=wrap_weight(weight_dict['conv1_2b']),
+        	init=ck, bias=ck,
             padding=single_side_pad, activation=Rectlin(), name="conv1_2")
 
         # build norm layer
@@ -499,11 +499,11 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv2_1']['filt_dim'] - self.conv1_2_out_size, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming2()
+        ck = CustomKaiming()
         # build conv layer
         conv2_1 = Conv((self._architecture['conv2_1']['filt_dim'], self._architecture['conv2_1']['filt_dim'], self._architecture['conv2_1']['num_filt']),
-                       init=wrap_weight(reformat_convW(weight_dict['conv2_1W'])),
-                       bias=wrap_weight(weight_dict['conv2_1b']),
+                       init=ck,
+                       bias=ck,
             padding=single_side_pad, activation=Rectlin(), name="conv2_1")
 
         # build norm layer
@@ -536,11 +536,11 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv2_2']['filt_dim'] - self.conv2_1_out_size, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming2()
+        ck = CustomKaiming()
         # build conv layer
         conv2_2 = Conv((self._architecture['conv2_2']['filt_dim'], self._architecture['conv2_2']['filt_dim'], self._architecture['conv2_2']['num_filt']),
-                       init=wrap_weight(reformat_convW(weight_dict['conv2_2W'])),
-                       bias=wrap_weight(weight_dict['conv2_2b']),
+                       init=ck,
+                       bias=ck,
             padding=single_side_pad, activation=Rectlin(), name="conv2_2")
 
         # build norm layer
@@ -566,8 +566,8 @@ class GQCNN(object):
 
         ################################################FC3#########################################################
         # build fully-connected layer
-        ck = CustomKaiming3()
-        fc3 = Affine(nout=self.fc3_out_size, init=wrap_weight(reformat_fcW(weight_dict['fc3W'])), bias=wrap_weight(weight_dict['fc3b']), activation=Rectlin(), name='fc3')
+        ck = CustomKaiming(local=False)
+        fc3 = Affine(nout=self.fc3_out_size, init=ck, bias=ck, activation=Rectlin(), name='fc3')
 
         # drop fc3 if necessary
         fc3_drop = None
@@ -588,8 +588,8 @@ class GQCNN(object):
 
         ################################################PC1#########################################################
         # build fully-connected layer
-        ck = CustomKaiming4()
-        pc1 = Affine(nout=self.pc1_out_size, init=wrap_weight(reformat_fcW(weight_dict['pc1W'])), bias=wrap_weight(weight_dict['pc1b']), activation=Rectlin(), name='pc1')
+        ck = CustomKaiming(local=False)
+        pc1 = Affine(nout=self.pc1_out_size, init=ck, bias=ck, activation=Rectlin(), name='pc1')
         pose_path_layers.append(pc1)
         ####################################################################################################################
 
@@ -609,8 +609,8 @@ class GQCNN(object):
 
         ################################################FC4#########################################################
         # build fully-connected layer
-        ck = CustomKaiming5()
-        fc4 = Affine(nout=self.fc4_out_size, init=wrap_weight(reformat_fcW(join_fc4W(weight_dict['fc4W_im'], weight_dict['fc4W_pose']))), bias=wrap_weight(weight_dict['fc4b']), activation=Rectlin(), name='fc4')
+        ck = CustomKaiming(local=False)
+        fc4 = Affine(nout=self.fc4_out_size, init=ck, bias=ck, activation=Rectlin(), name='fc4')
 
         # drop fc4 if necessary
         fc4_drop = None
@@ -625,9 +625,9 @@ class GQCNN(object):
 
         ################################################FC5#########################################################
         # build fully-connected layer
-        ck = CustomKaiming6()
-        fc5 = Linear(nout=self.fc5_out_size, init=wrap_weight(reformat_fcW(weight_dict['fc5W'])), name='fc5')
-        fc5_bias=Bias(init=wrap_weight(weight_dict['fc5b']), name='fc5_bias')
+        ck = CustomKaiming(local=False)
+        fc5 = Linear(nout=self.fc5_out_size, init=ck, name='fc5')
+        fc5_bias=Bias(init=Constant(), name='fc5_bias')
 
         # add everything to the layers list
         combined_layers.append(fc5)
@@ -638,15 +638,15 @@ class GQCNN(object):
         return Model(layers=combined_layers), combined_layers
 
 class CustomKaiming(Initializer):
-    def __init__(self, name='CustomKaiming'):
+    def __init__(self, local=True, name='CustomKaiming'):
         super(CustomKaiming, self).__init__(name=name)
         self.scale = None
+        self.local = local
 
     def fill(self, param):
-        fan_in = param.shape[0]
         if self.scale is None:
+            fan_in = param.shape[0 if self.local else 1]
             self.scale = np.sqrt(2. / fan_in)
-            print(self.scale, param.shape)
 
         upper_bound = 2
         lower_bound = -1 * upper_bound 
