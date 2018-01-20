@@ -24,6 +24,9 @@ num_original_val_images: 50
 save_distorted_val_images: 0
 num_distorted_val_images: 50
 
+use_existing_indices: 1
+index_dir: /home/vsatish/Data/dexnet/data/models/test_dump/model_mefzdpxpyy
+
 mask_and_inpaint: 0
 
 queue_capacity: 100  # capacity of prefetch queue
