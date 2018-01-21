@@ -28,24 +28,6 @@ from neon.optimizers import GradientDescentMomentum, ExpSchedule, StepSchedule, 
 from neon.callbacks import Callbacks
 from neon.callbacks.callbacks import MetricCallback, SerializeModelCallback
 from neon.layers import GeneralizedCost
-from neon.backends import gen_backend
-
-
-# class l2_regularized_cross_entropy_cost(Cost):
-#     def __init__(self, l2_regularizer, cross_entropy_loss):
-#         self.cross_entropy_loss = cross_entropy_loss
-#         self.l2_regularizer = l2_regularizer
-
-#     def __call__(self, y, t, params):
-#         l = self.cross_entropy_loss(y, t)
-#         reg_l = 0
-#         for p in params:
-#             reg_l += self.be.sum(self.be.square(p)) / 2.0
-#         return l + self.l2_regularizer*reg_l
-
-#     def bprop(self, y, t):
-#         self.cross_entropy.brop(y, t)
-        
 
 class SGDOptimizer(object):
     """ Optimizer for gqcnn object """
@@ -100,7 +82,7 @@ class SGDOptimizer(object):
             raise ValueError('Optimizer %s not supported' % (self.cfg['optimizer']))
 
     def _learning_schedule(self, decay_rate):
-#        return ExpSchedule(decay_rate)
+        return ExpSchedule(decay_rate)
         epochs = [x for x in range(1, 25)]
         lrs = [0.0094999988,
                0.0085737491,
@@ -126,31 +108,6 @@ class SGDOptimizer(object):
                0.0018402583,
                0.0017482453,
                0.0015777914]
-
-    # lrs = [ .01,
-    #  0.01,
-    #  0.0081450613,
-    #  0.0073509179,
-    #  0.0069833719,
-    #  0.0063024932,
-    #  0.0059873681,
-    #  0.0054036002,
-    #  0.0051334193,
-    #  0.0046329112,
-    #  0.0044012656,
-    #  0.0039721425,
-    #  0.0037735351,
-    #  0.0034056152,
-    #  0.0032353343,
-    #  0.0029198891,
-    #  0.0027738949,
-    #  0.00250344,
-    #  0.0023782679,
-    #  0.0021463865,
-    #  0.0020390672,
-    #  0.0018402583,
-    #  0.0017482453,
-    #  0.0015777914]
         return StepSchedule(step_config=epochs, change=lrs)
 
     def optimize(self):
@@ -171,8 +128,7 @@ class SGDOptimizer(object):
         fc3_drop_rate = self.cfg['fc3_drop_rate']
         fc4_drop_rate = self.cfg['fc4_drop_rate']
 
-        # build training and validation networks
-        # self.gqcnn.initialize_network() # builds validation network inside gqcnn class
+        # build network
         self._be = self.gqcnn._be
 
         self._train_model, _ = self.gqcnn._build_network(drop_fc3, drop_fc4, fc3_drop_rate,
@@ -195,7 +151,6 @@ class SGDOptimizer(object):
                                     output_file=os.path.join(self.experiment_dir, "data.h5"))
         self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=Misclassification()))
         self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=PrecisionRecall(2)))
-#        self._callbacks.add_hist_callback(plot_per_mini=True, filter_key=['W', 'dW'])
         self._callbacks.add_callback(SerializeModelCallback(os.path.join(self.experiment_dir, 'model_ckpt.prm'), epoch_freq=1))
 
         # begin optimization
@@ -284,18 +239,3 @@ class SGDOptimizer(object):
         self._data_iters = self._dataset.gen_iterators()
         self._train_iter = self._data_iters['train']
         self._val_iter = self._data_iters['test']
-
-    # gen_backend(backend='gpu', batch_size=64)
-    # iterator = self._val_iter.__iter__()
-    # from perception import DepthImage
-    # from visualization import Visualizer2D as vis
-    # unpack_func = lambda gpu_batch: (gpu_batch[0][0].get().reshape((32, 32, 64)), gpu_batch[0][1].get(), gpu_batch[1].get())
-    # # IPython.embed()
-    # while self._val_iter.nbatches:
-    # 	images, poses, labels = unpack_func(iterator.next())
-    # 	depth_image = DepthImage(images[:, :, 0])
-    # 	pose = poses[:, 0]
-    # 	label = labels[:, 0]
-    # 	vis.imshow(depth_image)
-    # 	print(pose, label)
-    # 	vis.show()

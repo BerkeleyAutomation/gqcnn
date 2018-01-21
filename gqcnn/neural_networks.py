@@ -11,16 +11,14 @@ import os
 import sys
 import IPython
 import scipy.stats as stats
-import cPickle as pkl
 
 from gqcnn import GQCNNPredictIterator, InputDataMode
 
 from neon.models import Model
-from neon.initializers import Kaiming, Constant, Xavier, Uniform, Array
+from neon.initializers import Constant
 from neon.initializers.initializer import Initializer
 from neon.layers import Conv, Pooling, LRN, Sequential, Affine, Dropout, Linear, Bias, Activation, MergeMultistream
 from neon.transforms import Rectlin, Softmax
-from neon.transforms.transform import Transform
 from neon.backends import gen_backend
 
 class GQCNN(object):
@@ -34,7 +32,7 @@ class GQCNN(object):
             python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
             im_height, im_width, ...
         model :obj: str
-        	Neon model to load if fine-tuning, analyzing, or predicting using a pre-existing model
+            Neon model to load if fine-tuning, analyzing, or predicting using a pre-existing model
         """
         self._parse_config(config)
         self._model = model
@@ -189,14 +187,10 @@ class GQCNN(object):
 
         # if there is currently no model, ex. during initial training from scratch, then build a new network 
         if self._model is None:
-        	self._model, self._layers = self._build_network()
+            self._model, self._layers = self._build_network()
         else:
             # else there is a model location specified and we have to instantiate it
             self._model = Model(self._model)
-
-        # add softmax if specified
-        # if add_softmax:
-        #     self.add_softmax_to_predict()
 
     @property
     def backend(self):
@@ -399,17 +393,7 @@ class GQCNN(object):
 
         # image path layers
         im_path_layers = []
-        
-        # load weights
-#        logging.info('Loading weight dict')
-#        with open('gqcnn_weights.pkl', 'rb') as in_file:
-#            weight_dict = pkl.load(in_file)
 
-        reformat_convW = lambda tfW: tfW.swapaxes(0, 2).swapaxes(1, 2).reshape((reduce((lambda x, y: x*y), tfW.shape[:-1], 1), -1))
-        reformat_fcW = lambda tfW: tfW.T.copy()
-        join_fc4W = lambda im_W, pose_W: np.r_[im_W, pose_W]
-        wrap_weight = lambda nparray : Array(val=self._be.array(nparray))
-        # wrap_weight = lambda x: x
         #################################################CONV1_1#########################################################
         # calculate the padding so that input and output dimensions are the same, equivalent to SAME in TensorFlow
         # NOTE: WE ASSUME THAT THE HEIGHT AND WIDTH DIMENSIONS ARE ALWAYS EQUAL SO WE ONLY EVER COMPUTE ONE OF THEM
@@ -419,23 +403,18 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_1']['filt_dim'] - self._im_height, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming()
+        
         # build conv layer
-        # w = weight_dict['conv1_1W']
-        # for x in range(self._architecture['conv1_1']['num_filt']):
-        #     w[:, :, 0, x] = w[:, :, 0, x].T.copy()
-#        w = np.ones(weight_dict['conv1_1W'].shape)
+        ck = CustomKaiming()
         conv1_1 = Conv((self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['num_filt']),
-        	init=ck, bias=ck, padding=single_side_pad,
+            init=ck, bias=ck, padding=single_side_pad,
             activation=Rectlin(), name="conv1_1")
-#        conv1_1 = Conv((self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['filt_dim'], self._architecture['conv1_1']['num_filt']),
-#        	init=wrap_weight(reformat_convW(w)), padding=single_side_pad,
-#            activation=Rectlin(), name="conv1_1")
+
         # build norm layer
         norm1_1 = None
         if self._architecture['conv1_1']['norm']:
                 if self._architecture['conv1_1']['norm_type'] == "local_response":
-                	norm1_1 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm1_1")
+                    norm1_1 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm1_1")
 
         # build pool layer
         pool1_1_size = self._architecture['conv1_1']['pool_size']
@@ -448,7 +427,7 @@ class GQCNN(object):
         # add everything to the layers list
         im_path_layers.append(conv1_1)
         if norm1_1 is not None:
-        	im_path_layers.append(norm1_1)
+            im_path_layers.append(norm1_1)
         im_path_layers.append(pool1_1)
         ####################################################################################################################
 
@@ -463,17 +442,18 @@ class GQCNN(object):
         total_pad = max((out_dim - 1) * stride +
                     self._architecture['conv1_2']['filt_dim'] - self.conv1_1_out_size, 0)
         single_side_pad = int(total_pad // 2)
-        ck = CustomKaiming()
+
         # build conv layer
+        ck = CustomKaiming()
         conv1_2 = Conv((self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['filt_dim'], self._architecture['conv1_2']['num_filt']), 
-        	init=ck, bias=ck,
+            init=ck, bias=ck,
             padding=single_side_pad, activation=Rectlin(), name="conv1_2")
 
         # build norm layer
         norm1_2 = None
         if self._architecture['conv1_2']['norm']:
                 if self._architecture['conv1_2']['norm_type'] == "local_response":
-                	norm1_2 = LRN(depth=self.normalization_radius, ascale=self.normalization_alpha, bpower=self.normalization_beta, name="norm1_2")
+                    norm1_2 = LRN(depth=self.normalization_radius, ascale=self.normalization_alpha, bpower=self.normalization_beta, name="norm1_2")
 
         # build pool layer
         pool1_2_size = self._architecture['conv1_2']['pool_size']
@@ -486,7 +466,7 @@ class GQCNN(object):
         # add everything to the layers list
         im_path_layers.append(conv1_2)
         if norm1_2 is not None:
-        	im_path_layers.append(norm1_2)
+            im_path_layers.append(norm1_2)
         im_path_layers.append(pool1_2)
         ####################################################################################################################
 
@@ -510,7 +490,7 @@ class GQCNN(object):
         norm2_1 = None
         if self._architecture['conv2_1']['norm']:
                 if self._architecture['conv2_1']['norm_type'] == "local_response":
-                	norm2_1 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm2_1")
+                    norm2_1 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm2_1")
 
         # build pool layer
         pool2_1_size = self._architecture['conv2_1']['pool_size']
@@ -523,7 +503,7 @@ class GQCNN(object):
         # add everything to the layers list
         im_path_layers.append(conv2_1)
         if norm2_1 is not None:
-        	im_path_layers.append(norm2_1)
+            im_path_layers.append(norm2_1)
         im_path_layers.append(pool2_1)
         ####################################################################################################################
 
@@ -547,7 +527,7 @@ class GQCNN(object):
         norm2_2 = None
         if self._architecture['conv2_2']['norm']:
                 if self._architecture['conv2_2']['norm_type'] == "local_response":
-                	norm2_2 = LRN(depth=self.normalization_radius, ascale=self.normalization_alpha, bpower=self.normalization_beta, name="norm2_2")
+                    norm2_2 = LRN(depth=self.normalization_radius, ascale=self.normalization_alpha, bpower=self.normalization_beta, name="norm2_2")
 
         # build pool layer
         pool2_2_size = self._architecture['conv2_2']['pool_size']
@@ -560,7 +540,7 @@ class GQCNN(object):
         # add everything to the layers list
         im_path_layers.append(conv2_2)
         if norm2_2 is not None:
-        	im_path_layers.append(norm2_2)
+            im_path_layers.append(norm2_2)
         im_path_layers.append(pool2_2)
         ####################################################################################################################
 
@@ -577,7 +557,7 @@ class GQCNN(object):
         # add everything to the layers list
         im_path_layers.append(fc3)
         if fc3_drop is not None:
-        	im_path_layers.append(fc3_drop)
+            im_path_layers.append(fc3_drop)
         ####################################################################################################################
 
         # form the image path 
@@ -591,13 +571,6 @@ class GQCNN(object):
         ck = CustomKaiming(local=False)
         pc1 = Affine(nout=self.pc1_out_size, init=ck, bias=ck, activation=Rectlin(), name='pc1')
         pose_path_layers.append(pc1)
-        ####################################################################################################################
-
-        ################################################PC2#########################################################
-        if self._use_pc2:
-        	# build fully-connected layer
-            pc2 = Affine(nout=self.pc2_out_size, init=Kaiming(local=False), bias=Kaiming(local=False), activation=Rectlin(), name='pc2')
-            pose_path_layers.append(pc2)
         ####################################################################################################################
 
         # form the pose path
@@ -620,7 +593,7 @@ class GQCNN(object):
         # add everything to the layers list
         combined_layers.append(fc4)
         if fc4_drop is not None:
-        	combined_layers.append(fc4_drop)
+            combined_layers.append(fc4_drop)
         ####################################################################################################################
 
         ################################################FC5#########################################################
@@ -652,85 +625,3 @@ class CustomKaiming(Initializer):
         lower_bound = -1 * upper_bound 
         truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
         param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
-
-class CustomKaiming1(Initializer):
-    def __init__(self, name='CustomKaiming1'):
-        super(CustomKaiming1, self).__init__(name=name)
-        self.scale = 0.282842712475
-
-    def fill(self, param):
-        upper_bound = 2
-        lower_bound = -1 * upper_bound 
-        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
-        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
-
-class CustomKaiming2(Initializer):
-    def __init__(self, name='CustomKaiming2'):
-        super(CustomKaiming2, self).__init__(name=name)
-        self.scale = 0.0833333333333
-
-    def fill(self, param):
-        upper_bound = 2
-        lower_bound = -1 * upper_bound 
-        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
-        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
-
-class CustomKaiming3(Initializer):
-    def __init__(self, name='CustomKaiming3'):
-        super(CustomKaiming3, self).__init__(name=name)
-        self.scale = 0.011048543456
-
-    def fill(self, param):
-        upper_bound = 2
-        lower_bound = -1 * upper_bound 
-        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
-        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
-
-class CustomKaiming4(Initializer):
-    def __init__(self, name='CustomKaiming4'):
-        super(CustomKaiming4, self).__init__(name=name)
-        self.scale = 1.41421356237
-
-    def fill(self, param):
-        upper_bound = 2
-        lower_bound = -1 * upper_bound 
-        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
-        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
-
-class CustomKaiming5(Initializer):
-    def __init__(self, name='CustomKaiming5'):
-        super(CustomKaiming5, self).__init__(name=name)
-        self.scale = 0.0441081091391
-
-    def fill(self, param):
-        upper_bound = 2
-        lower_bound = -1 * upper_bound 
-        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
-        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
-
-class CustomKaiming6(Initializer):
-    def __init__(self, name='CustomKaiming6'):
-        super(CustomKaiming6, self).__init__(name=name)
-        self.scale = 0.0625
-
-    def fill(self, param):
-        upper_bound = 2
-        lower_bound = -1 * upper_bound 
-        truncated_norm = stats.truncnorm(lower_bound, upper_bound, scale=self.scale)
-        param[:] = truncated_norm.rvs(np.prod(param.shape)).reshape(param.shape)
-
-class LReLu(Transform):
-    " Leaky ReLu activation function. Implements f(x) = max(x,ax) "
-
-    def __init__(self, a=.1, name=None):
-        super(LReLu, self).__init__(name)
-        self.a = a
-
-    # f(x) = max(x,ax)
-    def __call__(self, x):
-        return self.be.maximum(x, self.a*x)
-
-    # If x > 0, gradient is 1; otherwise 0.
-    def bprop(self, x):
-        return 1 if x > 0 else self.a
-
