@@ -473,7 +473,7 @@ class GQCNN(object):
         norm1_2 = None
         if self._architecture['conv1_2']['norm']:
                 if self._architecture['conv1_2']['norm_type'] == "local_response":
-                	norm1_2 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, ascale=self.normalization_alpha, bpower=self.normalization_beta, name="norm1_2")
+                	norm1_2 = LRN(depth=self.normalization_radius, ascale=self.normalization_alpha, bpower=self.normalization_beta, name="norm1_2")
 
         # build pool layer
         pool1_2_size = self._architecture['conv1_2']['pool_size']
@@ -547,7 +547,7 @@ class GQCNN(object):
         norm2_2 = None
         if self._architecture['conv2_2']['norm']:
                 if self._architecture['conv2_2']['norm_type'] == "local_response":
-                	norm2_2 = LRN(depth=self.normalization_radius, alpha=self.normalization_alpha, beta=self.normalization_beta, name="norm2_2")
+                	norm2_2 = LRN(depth=self.normalization_radius, ascale=self.normalization_alpha, bpower=self.normalization_beta, name="norm2_2")
 
         # build pool layer
         pool2_2_size = self._architecture['conv2_2']['pool_size']

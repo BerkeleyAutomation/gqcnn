@@ -22,6 +22,9 @@ train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
 
+use_existing_indices: 1
+index_dir: /home/vsatish/Data/dexnet/data/models/test_dump/model_mefzdpxpyy
+
 loss: cross_entropy
 optimizer: momentum
 train_l2_regularizer: 0.0005
@@ -128,7 +131,7 @@ gqcnn_config:
       num_filt: 32
       pool_size: 2
       pool_stride: 2
-      norm: 0
+      norm: 1
       norm_type: local_response
     conv2_1:
       filt_dim: 3
@@ -142,7 +145,7 @@ gqcnn_config:
       num_filt: 32
       pool_size: 1
       pool_stride: 1
-      norm: 0
+      norm: 1
       norm_type: local_response
     pc1:
       out_size: 4
@@ -156,7 +159,7 @@ gqcnn_config:
       out_size: 2
 
   # architecture normalization constants
-  radius: 5
+  radius: 3
   alpha: 2.0e-05
   beta: 0.75
   bias: 1.0

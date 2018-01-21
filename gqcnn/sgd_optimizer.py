@@ -100,7 +100,7 @@ class SGDOptimizer(object):
             raise ValueError('Optimizer %s not supported' % (self.cfg['optimizer']))
 
     def _learning_schedule(self, decay_rate):
-        return ExpSchedule(decay_rate)
+#        return ExpSchedule(decay_rate)
         epochs = [x for x in range(1, 25)]
         lrs = [0.0094999988,
                0.0085737491,
@@ -151,7 +151,7 @@ class SGDOptimizer(object):
     #  0.0018402583,
     #  0.0017482453,
     #  0.0015777914]
-    # return StepSchedule(step_config=epochs, change=lrs)
+        return StepSchedule(step_config=epochs, change=lrs)
 
     def optimize(self):
         """ Perform optimization """
@@ -205,6 +205,8 @@ class SGDOptimizer(object):
         
         # save model
         self._train_model.save_params(os.path.join(self.experiment_dir, "model.prm"))        
+        
+        self._train_iter.set_term_event()
 
         # exit
         logging.info('Exiting Optimization')

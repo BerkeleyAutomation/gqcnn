@@ -13,6 +13,9 @@ import scipy.stats as ss
 import skimage.draw as sd
 import IPython
 import sys
+import Queue
+import threading
+import time
 
 from neon.data import NervanaDataIterator
 
@@ -97,6 +100,15 @@ class GQCNNTrainIterator(NervanaDataIterator):
 
 		self.start = 0
 
+        	self.queue = Queue.Queue(maxsize=100)
+                self.term_event = threading.Event()
+                for x in range(200):
+	       		queue_thread = threading.Thread(target=self._load_and_enqueue)
+	        	print('Starting Queue')
+	        	queue_thread.start()
+	        while self.queue.qsize() < 100:
+	        	time.sleep(.001)
+
 	@property
 	def nbatches(self):
 		"""
@@ -111,6 +123,9 @@ class GQCNNTrainIterator(NervanaDataIterator):
 		the last uneven minibatch. Not necessary when data is divisible by batch size
 		"""
 		self.start = 0
+
+        def set_term_event(self):
+                self.term_event.set()
 
 	def _read_pose_data(self, pose_arr, input_data_mode):
 		""" Read the pose data and slice it according to the specified input_data_mode
@@ -270,107 +285,107 @@ class GQCNNTrainIterator(NervanaDataIterator):
 
 		return im_arr, pose_arr
 
+	def _load_and_enqueue(self):
+	 	counter = 0
+        	while not self.term_event.is_set():
+            		time.sleep(.001)
+			start_time = time.time()
+            		im_arr = None
+            		pose_arr = None
+            		label_arr = None
+            		start_ind = 0
+            		while start_ind < self.be.bsz:
+                		index = np.random.choice(len(self.im_filenames))
+                		indices = self.indices[self.im_filenames[index]]
+                		np.random.shuffle(indices)
+	                        tmp = time.time()
+                		file_im_data = np.load(os.path.join(self.dataset_dir, self.im_filenames[index]))['arr_0'][indices]
+                		file_pose_data = self._read_pose_data(np.load(os.path.join(self.dataset_dir, self.pose_filenames[index]))['arr_0'][indices], self.input_data_mode)
+                		file_label_data = np.load(os.path.join(self.dataset_dir, self.label_filenames[index]))['arr_0'][indices]
+#        	                print('Reading data took {} seconds'.format(time.time() - tmp))
+                		# allocate arrays
+                                tmp = time.time()
+                		if im_arr is None:
+                    			im_arr = np.zeros((self.be.bsz, ) + file_im_data.shape[1:])
+                		if pose_arr is None:
+                    			pose_arr = np.zeros((self.be.bsz, ) + file_pose_data.shape[1:])
+                		if label_arr is None:
+                    			label_arr = np.zeros((self.be.bsz, ) + file_label_data.shape[1:])
+#                               print('Allocating took {} seconds'.format(time.time() - tmp))
+                		# threshold or normalize labels
+                		if self.training_mode == TrainingMode.REGRESSION:
+                    			if self.preproc_mode == PreprocMode.NORMALIZATION:
+                        			file_label_data = (file_label_data - self.min_metric) / (self.max_metric - self.min_metric)
+                		elif self.training_mode == TrainingMode.CLASSIFICATION:
+                    			file_label_data = 1 * (file_label_data > self.metric_thresh)
+                    			file_label_data = file_label_data.astype(self.numpy_dtype)
+
+                		# distort(add noise) to images
+                                tmp = time.time()
+                		if self.distort:
+                    			file_im_data, file_pose_data = self._distort(file_im_data, file_pose_data)
+#                                print('Distorting took {} seconds'.format(time.time() - tmp))
+                		# add data to arrays
+                		if file_im_data.shape[0] > self.be.bsz:
+                    			end_ind = self.be.bsz
+                		else:
+                    			end_ind = min(start_ind + file_im_data.shape[0], self.be.bsz)
+
+                		im_arr[start_ind:end_ind] = file_im_data[:end_ind - start_ind]
+                		pose_arr[start_ind:end_ind] = file_pose_data[:end_ind - start_ind]
+                		label_arr[start_ind:end_ind] = file_label_data[:end_ind - start_ind]
+
+                		# update start index
+                		start_ind = end_ind
+
+            		im_arr = (im_arr - self.im_mean) / self.im_std
+            		pose_arr = (pose_arr - self.pose_mean[2:3]) / self.pose_std[2:3]
+
+            		if not self.term_event.is_set():
+#                                print('Enqueueing {}'.format(counter))
+				counter += 1
+#                                print('Pre-processing took {} seconds.'.format(time.time() - start_time)) 
+                		self.queue.put((im_arr, pose_arr, label_arr))
+
 	def __iter__(self):
 		"""
 		Returns a new minibatch of data with each call.
 		Yields:
 			tuple: The next minibatch which includes both features and labels.
 		"""
-		im_arr = None
-		pose_arr = None
-		label_arr = None
+        	tmp1 = self.be.iobuf(32*32*1, dtype=np.float32, persist_values=False)
+        	tmp2 = self.be.iobuf(1, dtype=np.float32, persist_values=False)
+        	tmp3 = self.be.iobuf(2, persist_values=False)
 		for i in range(self.start, self.ndata, self.be.bsz):
-			start_ind = 0
-			while start_ind < self.be.bsz:
-				# choose a random file and get the indices corresponding to it
-				index = np.random.choice(len(self.im_filenames))
-#				index = 0
-				indices = self.indices[self.im_filenames[index]]
-				np.random.shuffle(indices)
-				# indices = np.arange(len(self.train_data_arr))
-
-				# get the corresponding data from that file
-				file_im_data = np.load(os.path.join(self.dataset_dir, self.im_filenames[index]))['arr_0'][indices]
-				file_pose_data = self._read_pose_data(np.load(os.path.join(self.dataset_dir, self.pose_filenames[index]))['arr_0'][indices], self.input_data_mode)
-				file_label_data = np.load(os.path.join(self.dataset_dir, self.label_filenames[index]))['arr_0'][indices]
-#				file_im_data = np.load(os.path.join(self.dataset_dir, self.im_filenames[index]))['arr_0'].astype(np.float32)
-#				file_pose_data = self._read_pose_data(np.load(os.path.join(self.dataset_dir, self.pose_filenames[index]))['arr_0'], self.input_data_mode).astype(np.float32)
-#				file_label_data = np.load(os.path.join(self.dataset_dir, self.label_filenames[index]))['arr_0'].astype(np.float32)
-
-				# allocate arrays
-				if im_arr is None:
-					im_arr = np.zeros((self.be.bsz, ) + file_im_data.shape[1:])
-				if pose_arr is None:
-					pose_arr = np.zeros((self.be.bsz, ) + file_pose_data.shape[1:])
-				if label_arr is None:
-					label_arr = np.zeros((self.be.bsz, ) + file_label_data.shape[1:])
-
-				# threshold or normalize labels
-				if self.training_mode == TrainingMode.REGRESSION:
-					if self.preproc_mode == PreprocMode.NORMALIZATION:
-						file_label_data = (file_label_data - self.min_metric) / (self.max_metric - self.min_metric)
-				elif self.training_mode == TrainingMode.CLASSIFICATION:
-					file_label_data = 1 * (file_label_data > self.metric_thresh)
-					file_label_data = file_label_data.astype(self.numpy_dtype)
-#                    			file_label_data = 1.0 - file_label_data
-
-				# distort(add noise) to images
-				if self.distort:
-					file_im_data, file_pose_data = self._distort(file_im_data, file_pose_data)
-				
-				# add data to arrays
-				if file_im_data.shape[0] > self.be.bsz:
-					end_ind = self.be.bsz
-				else:
-					end_ind = min(start_ind + file_im_data.shape[0], self.be.bsz)
-
-				im_arr[start_ind:end_ind] = file_im_data[:end_ind - start_ind]
-				pose_arr[start_ind:end_ind] = file_pose_data[:end_ind - start_ind]
-				label_arr[start_ind:end_ind] = file_label_data[:end_ind - start_ind]
-
-				# update start index
-				start_ind = end_ind
-		
-			# normalize images and poses
-#			self.im_mean = 0.66417919349795784
-#			self.im_std = 0.030262969604126728
-#			self.pose_mean = np.asarray([  6.20244773e-04,  -4.55267475e-03,   6.47679225e-01, 3.13411146e+00])
-#			self.pose_std = np.asarray([ 0.06067145,  0.06025154,  0.02584243,  1.81691023])
-#			original_im_arr = im_arr.copy()
-			im_arr = (im_arr - self.im_mean) / self.im_std
-			pose_arr = (pose_arr - self.pose_mean[2:3]) / self.pose_std[2:3]
-			# im_arr = im_arr - self.im_mean
-			# pose_arr = pose_arr - self.pose_mean[:pose_arr.shape[1]]
-			# IPython.embed()
-			# now flatten the image array for neon backend
-			im_arr_flat = im_arr.reshape((self.be.bsz, self.im_width * self.im_height * self.im_channels))
-
-			# load the data into device memory and perform faster transpose using neon backend
-			im_arr_dev = self.be.array(im_arr_flat, persist_values=False)
-			pose_arr_dev = self.be.array(pose_arr, persist_values=False)
-
-			if self.make_onehot:
-				label_arr_dev = self.be.array(label_arr.reshape((1, -1)), dtype=np.int32, persist_values=False)
-			else:
-				label_arr_dev = self.be.array(label_arr, persist_values=False)
-
-			im_arr_buf = self.be.iobuf(im_arr_flat.shape[1], dtype=np.float32, persist_values=False)
-			pose_arr_buf = self.be.iobuf(pose_arr.shape[1], dtype=np.float32, persist_values=False)
-
-			if self.make_onehot:
-				label_arr_buf = self.be.iobuf(self.nclass, persist_values=False)
-			else:
-				label_arr_buf = self.be.iobuf(label_arr.shape[1:], persist_values=False)
-
-			self.transpose_func(im_arr_dev, im_arr_buf)
-			self.transpose_func(pose_arr_dev, pose_arr_buf)
-
-			if self.make_onehot:
-				self.onehot_func(label_arr_dev, label_arr_buf)
-			else:
-				self.transpose_func(label_arr_dev, label_arr_buf)
-
 			# yield
-			yield (im_arr_buf, pose_arr_buf) , label_arr_buf
+#                    	print(self.queue.qsize())
+            		im_arr, pose_arr, label_arr = self.queue.get()
+#                        im_arr_flat = im_arr.reshape((self.be.bsz, self.im_width * self.im_height * self.im_channels))
+
+                        # load the data into device memory and perform faster transpose using neon backend
+ #                       im_arr_dev = self.be.array(im_arr_flat, persist_values=False)
+ #                       pose_arr_dev = self.be.array(pose_arr, persist_values=False)
+
+#                        if self.make_onehot:
+#                                label_arr_dev = self.be.array(label_arr.reshape((1, -1)), dtype=np.int32, persist_values=False)
+#                        else:
+#                                label_arr_dev = self.be.array(label_arr, persist_values=False)
+
+#			im_arr_buf = self.be.iobuf(im_arr_flat.shape[1], dtype=np.float32, persist_values=False)
+#			pose_arr_buf = self.be.iobuf(pose_arr.shape[1], dtype=np.float32, persist_values=False)
+
+#                        if self.make_onehot:
+#                                label_arr_buf = self.be.iobuf(self.nclass, persist_values=False)
+#                        else:
+#                                label_arr_buf = self.be.iobuf(label_arr.shape[1:], persist_values=False)
+
+#                        self.transpose_func(im_arr_dev, im_arr_buf)
+#                        self.transpose_func(pose_arr_dev, pose_arr_buf)
+
+#                        if self.make_onehot:
+#                                self.onehot_func(label_arr_dev, label_arr_buf)
+#                        else:
+#                                self.transpose_func(label_arr_dev, label_arr_buf)
+			yield (tmp1, tmp2), tmp3
 
 

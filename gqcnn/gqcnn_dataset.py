@@ -176,6 +176,9 @@ class GQCNNDataset(Dataset):
 		if os.path.exists(train_index_map_filename):
 			self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
 			self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
+                elif self.cfg['use_existing_indices']:
+                        self.train_index_map = pkl.load(open(os.path.join(self.cfg['index_dir'], 'train_indices_image_wise.pkl'), 'r'))
+                        self.val_index_map = pkl.load(open(os.path.join(self.cfg['index_dir'], 'val_indices_image_wise.pkl'), 'r'))
 		else:
 			self.train_index_map = {}
 			self.val_index_map = {}
