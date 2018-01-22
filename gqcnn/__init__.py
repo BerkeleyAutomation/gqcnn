@@ -1,6 +1,7 @@
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from gqcnn_predict_iterator import GQCNNPredictIterator
-from gqcnn_train_iterator import GQCNNTrainIterator, GQCNNValIterator
+from gqcnn_train_iterator import GQCNNTrainIterator
+from gqcnn_val_iterator import GQCNNValIterator
 from gqcnn_dataset import GQCNNDataset
 from neural_networks import GQCNN
 from sgd_optimizer import SGDOptimizer

@@ -33,7 +33,7 @@ class GQCNNTrainIterator(NervanaDataIterator):
         self.label_filenames = label_filenames
         self.indices = indices
         self.cfg = train_config
-        self.queue_capactiy = self.cfg['queue_capacity']
+        self.queue_capacity = self.cfg['queue_capacity']
         self.queue_sleep = self.cfg['queue_sleep']
         self.dataset_dir = self.cfg['dataset_dir']
         self.input_data_mode = self.cfg['input_data_mode']
@@ -314,8 +314,7 @@ class GQCNNTrainIterator(NervanaDataIterator):
                     file_label_data = file_label_data.astype(self.numpy_dtype)
 
                 # distort(add noise) to images
-                if self.distort:
-                    file_im_data, file_pose_data = self._distort(file_im_data, file_pose_data)
+                file_im_data, file_pose_data = self._distort(file_im_data, file_pose_data)
 
                 # add data to arrays
                 if file_im_data.shape[0] > self.be.bsz:

@@ -16,6 +16,7 @@ class GQCNNValIterator(NervanaDataIterator):
         super(GQCNNValIterator, self).__init__(name=name)
 
         #####################################READ PARAMETERS######################################## 
+        self.cfg = train_config
         self.make_onehot = make_onehot
         self.nclass = nclass
         self.im_filenames = im_filenames
@@ -154,7 +155,7 @@ class GQCNNValIterator(NervanaDataIterator):
 
                 # add data to arrays
                 end_ind_tensor = min(start_ind_tensor + file_im_data.shape[0] - start_ind_data, self.be.bsz)
-                end_ind_data = start_ind_data + start_ind_tensor - end_ind_tensor
+                end_ind_data = start_ind_data + end_ind_tensor - start_ind_tensor
 
                 im_arr[start_ind_tensor:end_ind_tensor] = file_im_data[start_ind_data:end_ind_data]
                 pose_arr[start_ind_tensor:end_ind_tensor] = file_pose_data[start_ind_data:end_ind_data]
@@ -164,7 +165,7 @@ class GQCNNValIterator(NervanaDataIterator):
                 start_ind_data = end_ind_data
                 if start_ind_data >= file_im_data.shape[0]:
                     start_ind_data = 0
-                    file_idx += 1
+                    file_idx = (file_idx + 1) % len(self.im_filenames)
 
             im_arr = (im_arr - self.im_mean) / self.im_std
             pose_arr = (pose_arr - self._read_pose_data(self.pose_mean, self.input_data_mode)) / self._read_pose_data(self.pose_std, self.input_data_mode)

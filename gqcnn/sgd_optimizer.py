@@ -23,11 +23,19 @@ import autolab_core.utils as utils
 from gqcnn import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from gqcnn import GQCNNDataset
 
-from neon.transforms import CrossEntropyMulti, Misclassification, PrecisionRecall
+from neon.transforms import CrossEntropyMulti, Misclassification, PrecisionRecall, Metric, Accuracy
 from neon.optimizers import GradientDescentMomentum, ExpSchedule, StepSchedule, Schedule
 from neon.callbacks import Callbacks
 from neon.callbacks.callbacks import MetricCallback, SerializeModelCallback
 from neon.layers import GeneralizedCost
+
+class ErrorRate(Metric):
+    def __init__(self):
+        self._acc_metric = Accuracy()
+        self.metric_names = ['Error Rate']
+
+    def __call__(self, y, t, calcrange=slice(0, None)):
+        return 1 - self._acc_metric(y, t, calcrange=calcrange)
 
 class SGDOptimizer(object):
     """ Optimizer for gqcnn object """
@@ -133,7 +141,7 @@ class SGDOptimizer(object):
 
         self._train_model, _ = self.gqcnn._build_network(drop_fc3, drop_fc4, fc3_drop_rate,
                                                          fc4_drop_rate)  # builds training network with dropouts
-
+#        IPython.embed()
         # create loss
         self._loss = self._create_loss()
 
@@ -149,8 +157,7 @@ class SGDOptimizer(object):
                 float(self.train_batch_size) / (self._train_iter.ndata + self._val_iter.ndata))
         self._callbacks = Callbacks(self._train_model, train_set=self._train_iter, eval_set=self._val_iter, eval_freq=1,
                                     output_file=os.path.join(self.experiment_dir, "data.h5"))
-        self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=Misclassification()))
-        self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=PrecisionRecall(2)))
+        self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=ErrorRate()))
         self._callbacks.add_callback(SerializeModelCallback(os.path.join(self.experiment_dir, 'model_ckpt.prm'), epoch_freq=1))
 
         # begin optimization
@@ -238,4 +245,4 @@ class SGDOptimizer(object):
         # get data iterators
         self._data_iters = self._dataset.gen_iterators()
         self._train_iter = self._data_iters['train']
-        self._val_iter = self._data_iters['test']
+        self._val_iter = self._data_iters['val']
