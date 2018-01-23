@@ -6,9 +6,10 @@ import tensorflow as tf
 
 # other constants
 class GeneralConstants:
-    SEED = 347233
+    SEED = 3472134
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
-
+    JSON_INDENT = 2
+    
 # enum for templates for file reading
 class ImageFileTemplates:
     binary_im_tensor_template = 'binary_ims_raw'

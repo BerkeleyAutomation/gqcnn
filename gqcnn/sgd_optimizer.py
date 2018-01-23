@@ -310,7 +310,7 @@ class SGDOptimizer(object):
                     self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
                 # evaluate validation error
-                if step % self.eval_frequency == 0 and step > 0:
+                if step % self.eval_frequency == 0:
                     if self.cfg['eval_total_train_error']:
                         train_error = self._error_rate_in_batches()
                         logging.info('Training error: %.3f' %train_error)
@@ -1046,12 +1046,16 @@ class SGDOptimizer(object):
         for key in self.cfg.keys():
             tempOrderedDict[key] = self.cfg[key]
         with open(out_config_filename, 'w') as outfile:
-            json.dump(tempOrderedDict, outfile)
+            json.dump(tempOrderedDict,
+                      outfile,
+                      indent=GeneralConstants.JSON_INDENT)
         this_filename = sys.argv[0]
         out_train_filename = os.path.join(self.experiment_dir, 'training_script.py')
         shutil.copyfile(this_filename, out_train_filename)
         out_architecture_filename = os.path.join(self.experiment_dir, 'architecture.json')
-        json.dump(self.cfg['gqcnn_config']['architecture'], open(out_architecture_filename, 'w'))
+        json.dump(self.cfg['gqcnn_config']['architecture'],
+                  open(out_architecture_filename, 'w'),
+                  indent=GeneralConstants.JSON_INDENT)
 
     def _setup(self):
         """ Setup for optimization """
