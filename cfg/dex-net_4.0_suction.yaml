@@ -1,18 +1,18 @@
 ### TRAINING CONFIGURATIONS ###
-mode: finetuning
+mode: training
 
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/bin_picking/datasets/training_phoxi_v3/suction/tensors
-output_dir: /nfs/diskstation/projects/dex-net/bin_picking/models/suction
+dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/grasps/tensors
+output_dir: /nfs/diskstation/projects/dex-net/suction/models/
 model_dir: /nfs/diskstation/projects/dex-net/suction/models/GQ-Image-Wise
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
-num_epochs: 10     # number of epochs to train for
-eval_frequency: 1000  # how often to get validation error 
-save_frequency: 5000  # how often to save output
-vis_frequency: 1000
+num_epochs: 25     # number of epochs to train for
+eval_frequency: 10000  # how often to get validation error 
+save_frequency: 10000  # how often to save output
+vis_frequency: 10000
 log_frequency: 1     # how often to log output
 show_filters: 0
 
@@ -20,20 +20,20 @@ queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
 data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
-train_pct: 0.9 # percentage of the data to use for training vs validation
+train_pct: 0.99 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
 
 loss: sparse
-optimizer: momentum
+optimizer: adam
 train_l2_regularizer: 0.0005
-base_lr: 0.01
-decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
+base_lr: 0.001
+decay_step_multiplier: 0.66   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
 
-fine_tune: 1
+fine_tune: 0
 update_fc_only: 0
 update_conv0_only: 0
 reinit_pc1: 0
@@ -49,8 +49,8 @@ num_tensor_channels: 1
 
 num_random_files: 100
 
-target_metric_name: rewards
-metric_thresh: 0.5
+target_metric_name: grasp_metrics
+metric_thresh: 0.8
 
 # denoising / synthetic data params
 multiplicative_denoising: 0
@@ -97,14 +97,14 @@ drop_fc4: 0
 fc4_drop_rate: 0.5
 
 # debugging params
-debug: 0
-debug_num_files: 100000
+debug: 1
+debug_num_files: 100
 
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 32
-  im_width: 32
+  im_height: 128
+  im_width: 128
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_data_mode: suction
@@ -126,7 +126,7 @@ gqcnn_config:
       num_filt: 64
       pool_size: 2
       pool_stride: 2
-      norm: 1
+      norm: 0
       norm_type: local_response
     conv2_1:
       filt_dim: 3
@@ -140,10 +140,10 @@ gqcnn_config:
       num_filt: 64
       pool_size: 1
       pool_stride: 1
-      norm: 1
+      norm: 0
       norm_type: local_response
     pc1:
-      out_size: 16
+      out_size: 128
     pc2:
       out_size: 0
     fc3:

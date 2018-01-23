@@ -62,7 +62,7 @@ class SGDOptimizer(object):
         """
         # TODO: Add Poisson Loss
         if self.cfg['loss'] == 'l2':
-            return tf.nn.l2_loss(tf.sub(self.train_net_output, self.train_labels_node))
+            return tf.reduce_mean(tf.nn.l2_loss(tf.subtract(tf.nn.sigmoid(self.train_net_output), self.train_labels_node)))
         elif self.cfg['loss'] == 'sparse':
             return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node, logits=self.train_net_output, name=None))
         elif self.cfg['loss'] == 'weighted_cross_entropy':
@@ -166,7 +166,7 @@ class SGDOptimizer(object):
                 with tf.name_scope('loss'):
                     loss = self._create_loss()
             elif self.training_mode == TrainingMode.REGRESSION:
-                train_predictions = self.train_net_output
+                train_predictions = tf.nn.sigmoid(self.train_net_output)
                 with tf.name_scope('loss'):
                     loss = self._create_loss()
 
@@ -261,7 +261,10 @@ class SGDOptimizer(object):
                 _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, train_poses = self.sess.run(
                         [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
 
-                if self.cfg['loss'] != 'weighted_cross_entropy':
+                if self.training_mode == TrainingMode.REGRESSION:
+                    logging.info('Max ' +  str(np.max(predictions)))
+                    logging.info('Min ' + str(np.min(predictions)))
+                elif self.cfg['loss'] != 'weighted_cross_entropy':
                     ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
                     softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 		        
@@ -307,7 +310,7 @@ class SGDOptimizer(object):
                     self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
                 # evaluate validation error
-                if step % self.eval_frequency == 0:
+                if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
                         train_error = self._error_rate_in_batches()
                         logging.info('Training error: %.3f' %train_error)
@@ -724,6 +727,7 @@ class SGDOptimizer(object):
             self.train_index_map = {}
             self.val_index_map = {}
             for i, im_filename in enumerate(self.im_filenames):
+                logging.info('Computing indices for file %d' %(i))
                 lower = i * self.images_per_file
                 upper = (i+1) * self.images_per_file
                 im_arr = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
@@ -966,7 +970,14 @@ class SGDOptimizer(object):
         self.label_filenames = [f for f in all_filenames if f.startswith(self.target_metric_name) and f[len(self.target_metric_name)+6] == '.']
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
         self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
-            
+
+        if self.debug and self.debug_num_files < len(self.im_filenames):
+            self.im_filenames = self.im_filenames[:self.debug_num_files]
+            self.pose_filenames = self.pose_filenames[:self.debug_num_files]
+            self.label_filenames = self.label_filenames[:self.debug_num_files]
+            self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
+            self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
+        
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
@@ -1182,7 +1193,7 @@ class SGDOptimizer(object):
                 elif self.training_mode == TrainingMode.CLASSIFICATION:
                     if self.cfg['loss'] != 'weighted_cross_entropy':
                         self.train_label_arr = 1 * (self.train_label_arr > self.metric_thresh)
-                    self.train_label_arr = self.train_label_arr.astype(self.numpy_dtype)
+                self.train_label_arr = self.train_label_arr.astype(self.numpy_dtype)
 
                 # enqueue training data batch
                 train_data[start_i:end_i, ...] = self.train_data_arr.copy()
