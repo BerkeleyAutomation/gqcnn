@@ -305,7 +305,9 @@ class RobustGraspingPolicy(GraspingPolicy):
             # display each grasp on the original image, colored by predicted success
             norm_q_values = (q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
             vis.figure(size=(FIGSIZE,FIGSIZE))
-            vis.imshow(rgbd_im.depth)
+            vis.imshow(rgbd_im.depth,
+                       vmin=self.config['vis']['vmin'],
+                       vmax=self.config['vis']['vmax'])
             for grasp, q in zip(grasps, norm_q_values):
                 vis.grasp(grasp, scale=1.0,
                           grasp_center_size=10,
@@ -323,7 +325,9 @@ class RobustGraspingPolicy(GraspingPolicy):
         q_value = q_values[index]
         if self.config['vis']['grasp_plan']:
             vis.figure()
-            vis.imshow(state.rgbd_im.depth)
+            vis.imshow(rgbd_im.depth,
+                       vmin=self.config['vis']['vmin'],
+                       vmax=self.config['vis']['vmax'])
             vis.grasp(grasp, scale=2.0, show_axis=True)
             vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth, q_value))
             vis.show()
@@ -472,7 +476,9 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 # display each grasp on the original image, colored by predicted success
                 norm_q_values = q_values #(q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
                 vis.figure(size=(FIGSIZE,FIGSIZE))
-                vis.imshow(rgbd_im.depth)
+                vis.imshow(rgbd_im.depth,
+                           vmin=self.config['vis']['vmin'],
+                           vmax=self.config['vis']['vmax'])
                 for grasp, q in zip(grasps, norm_q_values):
                     vis.grasp(grasp, scale=2.0,
                               jaw_width=2.0,
@@ -494,7 +500,9 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 # display each grasp on the original image, colored by predicted success
                 norm_q_values = (elite_q_values - np.min(elite_q_values)) / (np.max(elite_q_values) - np.min(elite_q_values))
                 vis.figure(size=(FIGSIZE,FIGSIZE))
-                vis.imshow(rgbd_im.depth)
+                vis.imshow(rgbd_im.depth,
+                           vmin=self.config['vis']['vmin'],
+                           vmax=self.config['vis']['vmax'])
                 for grasp, q in zip(elite_grasps, norm_q_values):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                               color=plt.cm.RdYlGn(q))
@@ -557,7 +565,9 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             # display each grasp on the original image, colored by predicted success
             norm_q_values = q_values #(q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
             vis.figure(size=(FIGSIZE,FIGSIZE))
-            vis.imshow(rgbd_im.depth)
+            vis.imshow(rgbd_im.depth,
+                       vmin=self.config['vis']['vmin'],
+                       vmax=self.config['vis']['vmax'])
             for grasp, q in zip(grasps, norm_q_values):
                 vis.grasp(grasp, scale=2.0,
                           jaw_width=2.0,
@@ -573,7 +583,9 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         q_value = q_values[index]
         if self.config['vis']['grasp_plan']:
             vis.figure()
-            vis.imshow(rgbd_im.depth)
+            vis.imshow(rgbd_im.depth,
+                       vmin=self.config['vis']['vmin'],
+                       vmax=self.config['vis']['vmax'])
             vis.grasp(grasp, scale=5.0, show_center=False, show_axis=True, jaw_width=1.0, grasp_axis_width=0.2)
             vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth,
                                                      q_value))

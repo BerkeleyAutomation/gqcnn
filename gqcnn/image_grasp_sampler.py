@@ -536,25 +536,15 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             vis.imshow(depth_im_mask)
             vis.show()
 
-            """
-            from visualization import Visualizer3D as vis3d
-            point_cloud_im = camera_intr.deproject_to_image(depth_im)
-            normal_cloud_im = point_cloud_im.normal_cloud_im()
-            point_cloud = point_cloud_im.to_point_cloud()
-            normal_cloud = normal_cloud_im.to_normal_cloud()
-            vis3d.figure()
-            vis3d.normals(normal_cloud, point_cloud,
-                          scale=0.05, subsample=20)
-            vis3d.points(point_cloud, subsample=20, scale=0.01, color=(0,0,1))
-            vis3d.show()
-            """
-
         # project to get the point cloud
         point_cloud_im = camera_intr.deproject_to_image(depth_im_mask)
         normal_cloud_im = point_cloud_im.normal_cloud_im()
         nonzero_px = depth_im_mask.nonzero_pixels()
         num_nonzero_px = nonzero_px.shape[0]
 
+        if num_nonzero_px == 0:
+            return []
+        
         # randomly sample points and add to image
         suction_points = []
         num_tries = 0

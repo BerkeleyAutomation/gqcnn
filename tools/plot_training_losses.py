@@ -81,14 +81,16 @@ if __name__ == '__main__':
     plt.xlabel('Iteration', fontsize=15)
     plt.ylabel('Normalized Error Rate', fontsize=15)
 
+    """
     train_losses[train_losses > 100.0] = 3.0
     plt.figure()
     plt.plot(train_iters, train_losses, linewidth=4, color='b')
     plt.ylim(0, 2.0)
     plt.xlabel('Iteration', fontsize=15)
     plt.ylabel('Training Loss', fontsize=15)
+    """
     plt.show()
-
+    
     plt.figure(figsize=(8,6))
     plt.plot(train_iters, train_errors, linewidth=4, color='b')
     plt.plot(val_iters, val_errors, linewidth=4, color='g')
@@ -97,7 +99,7 @@ if __name__ == '__main__':
     plt.xlabel('Iteration', fontsize=15)
     plt.ylabel('Error Rate', fontsize=15)
     plt.savefig(os.path.join(result_dir, 'training_curve.jpg'))
- 
+
     plt.figure(figsize=(8,6))
     plt.plot(train_iters, norm_train_errors, linewidth=4, color='b')
     plt.plot(val_iters, norm_val_errors, linewidth=4, color='g')
@@ -106,4 +108,3 @@ if __name__ == '__main__':
     plt.xlabel('Iteration', fontsize=15)
     plt.ylabel('Normalized Error Rate', fontsize=15)
     plt.savefig(os.path.join(result_dir, 'normalized_training_curve.jpg'))
-  
