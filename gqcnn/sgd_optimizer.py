@@ -329,7 +329,21 @@ class SGDOptimizer(object):
 
                     # save everything!
                     self.train_stats_logger.log()
-                
+
+                # save filters
+                if step % self.vis_frequency == 0:
+                    # conv1_1
+                    num_filt = conv1_1W.shape[3]
+                    d = int(np.ceil(np.sqrt(num_filt)))
+
+                    plt.clf()
+                    for i in range(num_filt):
+                        plt.subplot(d,d,i+1)
+                        plt.imshow(conv1_1W[:,:,0,i], cmap=plt.cm.gray, interpolation='nearest')
+                        plt.axis('off')
+                        plt.title('b=%.3f' %(conv1_1b[i]), fontsize=10)
+                    plt.savefig(os.path.join(self.filter_dir, 'conv1_1W_%05d.jpg' %(step)))
+                    
                 # save the model
                 if step % self.save_frequency == 0 and step > 0:
                     self.saver.save(self.sess, os.path.join(self.experiment_dir, 'model_%05d.ckpt' %(step)))
@@ -1067,8 +1081,8 @@ class SGDOptimizer(object):
 
         # set random seed for deterministic execution
         if self.debug:
-            np.random.seed(GeneralConstants.SEED)
-            random.seed(GeneralConstants.SEED)
+            np.random.seed(self.cfg['seed'])
+            random.seed(self.cfg['seed'])
             self.debug_num_files = self.cfg['debug_num_files']
 
         # setup output directories
