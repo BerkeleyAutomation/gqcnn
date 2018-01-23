@@ -768,6 +768,10 @@ class SGDOptimizer(object):
         self.num_train = int(self.train_pct * num_datapoints)
         self.decay_step = self.decay_step_multiplier * self.num_train
 
+        # an input eval_frequency of -1 defaults to every epoch
+        if self.eval_frequency == -1:
+            self.eval_frequency = self.num_train // self.train_batch_size
+
         # get training and validation indices
         all_indices = np.arange(num_datapoints)
         np.random.shuffle(all_indices)
