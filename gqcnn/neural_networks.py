@@ -262,7 +262,7 @@ class GQCNN(object):
                 self._weights.fc5W = tf.Variable(reader.get_tensor("validation_network/merge_stream/fc5_weights"), name="fc5W")
                 self._weights.fc5b = tf.Variable(reader.get_tensor("validation_network/merge_stream/fc5_bias"), name="fc5b")
 
-    def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5, reinit_pc1=False):
+    def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5, reinit_pc1=False, fc5_out_size=1):
         """ Re-initializes final fully-connected layers for fine-tuning 
 
         Parameters
@@ -294,6 +294,7 @@ class GQCNN(object):
                 self._weights.fc4W_pose = tf.Variable(tf.truncated_normal([self.fc4_pose_in_size, self.fc4_out_size], stddev=fc4_std), name='fc4W_pose')
                 self._weights.fc4b = tf.Variable(tf.truncated_normal([self.fc4_out_size], stddev=fc4_std), name='fc4b')
             if reinit_fc5:
+                self.fc5_out_size = fc5_out_size
                 fc5_std = np.sqrt(2.0 / (self.fc5_in_size))
                 self._weights.fc5W = tf.Variable(tf.truncated_normal([self.fc5_in_size, self.fc5_out_size], stddev=fc5_std), name='fc5W')
                 self._weights.fc5b = tf.Variable(tf.constant(0.0, shape=[self.fc5_out_size]), name='fc5b')

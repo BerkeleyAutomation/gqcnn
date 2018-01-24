@@ -23,7 +23,7 @@ TRAIN_ERRORS_FILENAME = 'train_errors.npy'
 VAL_ERRORS_FILENAME = 'val_errors.npy'
 TRAIN_ITERS_FILENAME = 'train_eval_iters.npy'
 VAL_ITERS_FILENAME = 'val_eval_iters.npy'
-WINDOW = 100
+WINDOW = 10
 
 if __name__ == '__main__':
     result_dir = sys.argv[1]
@@ -60,15 +60,18 @@ if __name__ == '__main__':
     init_val_error = val_errors[0]
     norm_train_errors = train_errors / init_val_error
     norm_val_errors = val_errors / init_val_error
-
+    norm_final_val_error = val_errors[-1] / val_errors[0]
+    if pct_pos_val > 0:
+        norm_final_val_error = val_errors[-1] / pct_pos_val        
+    
     print 'Original val error', pct_pos_val
     print 'Final val error', val_errors[-1]
-    print 'Normalized final val error', val_errors[-1] / pct_pos_val
+    print 'Normalized final val error', norm_final_val_error
 
     plt.figure()
     plt.plot(train_iters, train_errors, linewidth=4, color='b')
     plt.plot(val_iters, val_errors, linewidth=4, color='g')
-    plt.ylim(0, 100)
+    plt.ylim(0, 0.01)
     plt.legend(('Training (Minibatch)', 'Validation'), fontsize=15, loc='best')
     plt.xlabel('Iteration', fontsize=15)
     plt.ylabel('Error Rate', fontsize=15)

@@ -441,7 +441,7 @@ class RegressionResult(object):
 		: float
 			the error rate
 		"""
-		return np.sum((self.predictions - self.labels)**2) / (float(self.num_datapoints  * self.predictions.shape[1]))
+		return np.sum((self.predictions - self.labels)**2) / (2 * float(self.num_datapoints  * self.predictions.shape[1]))
 
 	@property
 	def num_datapoints(self):

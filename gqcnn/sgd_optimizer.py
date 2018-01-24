@@ -62,7 +62,7 @@ class SGDOptimizer(object):
         """
         # TODO: Add Poisson Loss
         if self.cfg['loss'] == 'l2':
-            return tf.reduce_mean(tf.nn.l2_loss(tf.subtract(tf.nn.sigmoid(self.train_net_output), self.train_labels_node)))
+            return (1.0 / self.train_batch_size) * tf.nn.l2_loss(tf.subtract(tf.nn.sigmoid(self.train_net_output), self.train_labels_node))
         elif self.cfg['loss'] == 'sparse':
             return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node, logits=self.train_net_output, name=None))
         elif self.cfg['loss'] == 'weighted_cross_entropy':
@@ -149,7 +149,9 @@ class SGDOptimizer(object):
         
         # build training and validation networks
         with tf.name_scope('validation_network'):
-            if self.cfg['loss'] != 'weighted_cross_entropy':
+            if self.training_mode == TrainingMode.REGRESSION:
+                self.gqcnn.initialize_network(add_softmax=False, add_sigmoid=True) # builds validation network inside gqcnn class
+            elif self.cfg['loss'] != 'weighted_cross_entropy':
                 self.gqcnn.initialize_network(add_softmax=True, add_sigmoid=False) # builds validation network inside gqcnn class
             else:
                 self.gqcnn.initialize_network(add_softmax=False, add_sigmoid=True) # builds validation network inside gqcnn class                
@@ -1410,7 +1412,7 @@ class SGDOptimizer(object):
                     
             # get predictions
             predictions = self.gqcnn.predict(data, poses)
-
+            
             # get error rate
             if self.training_mode == TrainingMode.CLASSIFICATION:
                 error_rates.append(ClassificationResult([predictions], [labels]).error_rate)
