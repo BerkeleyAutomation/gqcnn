@@ -466,9 +466,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             # predict grasps
             predict_start = time()
             q_values = self._grasp_quality_fn(state, grasps, params=self._config)
-            logging.debug('Prediction took %.3f sec' %(time()-predict_start))
+            logging.info('Prediction took %.3f sec' %(time()-predict_start))
 
             # sort grasps
+            resample_start = time()
             q_values_and_indices = zip(q_values, np.arange(num_grasps))
             q_values_and_indices.sort(key = lambda x : x[0], reverse=True)
 
@@ -494,7 +495,6 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             elite_grasp_indices = [i[1] for i in q_values_and_indices[:num_refit]]
             elite_grasps = [grasps[i] for i in elite_grasp_indices]
             elite_grasp_arr = np.array([g.feature_vec for g in elite_grasps])
-
 
             if self.config['vis']['elite_grasps']:
                 # display each grasp on the original image, colored by predicted success
@@ -555,11 +555,12 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             if num_grasps == 0:
                 logging.warning('No valid grasps could be found')
                 raise NoValidGraspsException()
+            logging.info('Resampling took %.3f sec' %(time()-resample_start))
 
         # predict final set of grasps
         predict_start = time()
         q_values = self._grasp_quality_fn(state, grasps, params=self._config)
-        logging.debug('Final prediction took %.3f sec' %(time()-predict_start))
+        logging.info('Final prediction took %.3f sec' %(time()-predict_start))
 
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success

@@ -737,7 +737,9 @@ class GQCnnQualityFunction(GraspQualityFunction):
             real-valued grasp quality predictions for each action, between 0 and 1
         """
         # form tensors
+        tensor_start = time()
         image_tensor, pose_tensor = self.grasps_to_tensors(actions, state)
+        logging.info('Image transformation took %.3f sec' %(time() - tensor_start))
         if params is not None and params['vis']['tf_images']:
             # read vis params
             k = params['vis']['k']
@@ -756,6 +758,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
         q_values = output_arr[:,-1]
+        logging.info('Inference took %.3f sec' %(time() - predict_start))
         return q_values.tolist()
 
 class NoMagicQualityFunction(GraspQualityFunction):

@@ -290,7 +290,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             edge_pixels = np.array([p for p in edge_pixels if np.any(segmask[p[0], p[1]] > 0)])
             depth_im_mask = depth_im.mask_binary(segmask)
         num_pixels = edge_pixels.shape[0]
-        logging.debug('Depth edge detection took %.3f sec' %(time() - edge_start))
+        logging.info('Depth edge detection took %.3f sec' %(time() - edge_start))
         logging.debug('Found %d edge pixels' %(num_pixels))
 
         # exit if no edge pixels
@@ -304,7 +304,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # compute surface normals
         normal_start = time()
         edge_normals = self._surface_normals(depth_im, edge_pixels)
-        logging.debug('Normal computation took %.3f sec' %(time() - normal_start))
+        logging.info('Normal computation took %.3f sec' %(time() - normal_start))
 
         if visualize:
             vis.figure()
@@ -326,7 +326,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             vis.show()
 
         # form set of valid candidate point pairs
-        sample_start = time()
+        pruning_start = time()
         max_grasp_width_px = Grasp2D(Point(np.zeros(2)), 0.0, min_depth,
                                      width = self._gripper_width,
                                      camera_intr=camera_intr).width_px
@@ -335,13 +335,14 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         valid_indices = np.where((normal_ip < -np.cos(np.arctan(self._friction_coef))) & (dists < max_grasp_width_px) & (dists > 0.0))
         valid_indices = np.c_[valid_indices[0], valid_indices[1]]
         num_pairs = valid_indices.shape[0]
-        logging.debug('Normal pruning %.3f sec' %(time() - sample_start))
+        logging.info('Normal pruning %.3f sec' %(time() - pruning_start))
 
         # raise exception if no antipodal pairs
         if num_pairs == 0:
             return []
 
         # iteratively sample grasps
+        sample_start = time()
         k = 0
         grasps = []
         sample_size = min(self._max_rejection_samples, num_pairs)
@@ -412,6 +413,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                             grasps.append(candidate_grasp)
 
         # return sampled grasps
+        logging.info('Loop took %.3f sec' %(time() - sample_start))
         return grasps
 
 class DepthImageSuctionPointSampler(ImageGraspSampler):
