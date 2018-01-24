@@ -334,84 +334,82 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         dists = ssd.squareform(ssd.pdist(edge_pixels))
         valid_indices = np.where((normal_ip < -np.cos(np.arctan(self._friction_coef))) & (dists < max_grasp_width_px) & (dists > 0.0))
         valid_indices = np.c_[valid_indices[0], valid_indices[1]]
-        num_pairs = valid_indices.shape[0]
         logging.info('Normal pruning %.3f sec' %(time() - pruning_start))
 
         # raise exception if no antipodal pairs
+        num_pairs = valid_indices.shape[0]
         if num_pairs == 0:
             return []
 
-        # iteratively sample grasps
+        # prune out grasps
+        contact_points1 = edge_pixels[valid_indices[:,0],:]
+        contact_points2 = edge_pixels[valid_indices[:,1],:]
+        contact_normals1 = edge_normals[valid_indices[:,0],:]
+        contact_normals2 = edge_normals[valid_indices[:,1],:]
+        v = contact_points1 - contact_points2
+        v_norm = np.linalg.norm(v, axis=1)
+        v = v / np.tile(v_norm[:,np.newaxis], [1,2])
+        ip1 = np.sum(contact_normals1 * v, axis=1)
+        ip2 = np.sum(contact_normals2 * (-v), axis=1)
+        ip1[ip1 > 1.0] = 1.0
+        ip1[ip1 < -1.0] = -1.0
+        ip2[ip2 > 1.0] = 1.0
+        ip2[ip2 < -1.0] = -1.0
+        beta1 = np.arccos(ip1)
+        beta2 = np.arccos(ip2)
+        alpha = np.arctan(self._friction_coef)
+        antipodal_indices = np.where((beta1 < alpha) & (beta2 < alpha))[0]
+
+        # raise exception if no antipodal pairs
+        num_pairs = antipodal_indices.shape[0]
+        if num_pairs == 0:
+            return []
+        sample_size = min(self._max_rejection_samples, num_pairs)
+        grasp_indices = np.random.choice(antipodal_indices,
+                                         size=sample_size,
+                                         replace=False)
+        logging.info('Grasp comp took %.3f sec' %(time() - pruning_start))
+
+        # compute grasps
         sample_start = time()
         k = 0
         grasps = []
-        sample_size = min(self._max_rejection_samples, num_pairs)
-        candidate_pair_indices = np.random.choice(num_pairs, size=sample_size,
-                                                  replace=False)
         while k < sample_size and len(grasps) < num_samples:
-            # sample a random pair without replacement
-            j = candidate_pair_indices[k]
-            pair_ind = valid_indices[j,:]
-            p1 = edge_pixels[pair_ind[0],:]
-            p2 = edge_pixels[pair_ind[1],:]
-            n1 = edge_normals[pair_ind[0],:]
-            n2 = edge_normals[pair_ind[1],:]
+            grasp_ind = grasp_indices[k]
+            p1 = contact_points1[grasp_ind,:]
+            p2 = contact_points2[grasp_ind,:]
+            n1 = contact_normals1[grasp_ind,:]
+            n2 = contact_normals2[grasp_ind,:]
             width = np.linalg.norm(p1 - p2)
             k += 1
 
-            # check force closure
-            if force_closure(p1, p2, n1, n2, self._friction_coef):
-                # compute grasp parameters
-                grasp_center = (p1 + p2) / 2
-                grasp_axis = p2 - p1
-                grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
-                grasp_theta = 0
-                if grasp_axis[1] != 0:
-                    grasp_theta = np.arctan(grasp_axis[0] / grasp_axis[1])
-                    
-                # compute distance from image center
-                dist_from_center = np.linalg.norm(grasp_center - depth_im.center)
-                dist_from_boundary = min(np.abs(depth_im.height - grasp_center[0]),
-                                         np.abs(depth_im.width - grasp_center[1]),
-                                         grasp_center[0],
-                                         grasp_center[1])
-                if dist_from_center < self._max_dist_from_center and \
-                   dist_from_boundary > self._min_dist_from_boundary:
-                    # form grasp object
-                    grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
-                    grasp = Grasp2D(grasp_center_pt, grasp_theta, 0.0)
-                    
-                    # check grasp dists
-                    grasp_dists = [Grasp2D.image_dist(grasp, candidate, alpha=self._angle_dist_weight) for candidate in grasps]
-                    if len(grasps) == 0 or np.min(grasp_dists) > self._min_grasp_dist:
-
-                        if visualize:
-                            vis.figure()
-                            vis.imshow(depth_im)
-                            vis.scatter(p1[1],p1[0])
-                            vis.scatter(p2[1],p2[0])
-                            vis.title('Grasp candidate %d' %(len(grasps)))
-                            vis.show()
-
-                        # sample depths
-                        for i in range(self._depth_samples_per_grasp):
-                            # get depth in the neighborhood of the center pixel
-                            depth_win = depth_im.data[grasp_center[0]-self._h:grasp_center[0]+self._h, grasp_center[1]-self._w:grasp_center[1]+self._w]
-                            center_depth = np.min(depth_win)
-                            if center_depth == 0 or np.isnan(center_depth):
-                                continue
-
-                            # sample depth between the min and max
-                            min_depth = np.min(center_depth) + self._min_depth_offset
-                            max_depth = np.max(center_depth) + self._max_depth_offset
-                            sample_depth = min_depth + (max_depth - min_depth) * np.random.rand()
-                            candidate_grasp = Grasp2D(grasp_center_pt,
-                                                      grasp_theta,
-                                                      sample_depth,
-                                                      width=self._gripper_width,
-                                                      camera_intr=camera_intr)
-                            grasps.append(candidate_grasp)
-
+            # check center and axis
+            grasp_center = (p1 + p2) / 2
+            grasp_axis = p2 - p1
+            grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
+            grasp_theta = 0
+            if grasp_axis[1] != 0:
+                grasp_theta = np.arctan(grasp_axis[0] / grasp_axis[1])
+            grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
+                
+            # sample depths
+            for i in range(self._depth_samples_per_grasp):
+                # get depth in the neighborhood of the center pixel
+                depth_win = depth_im.data[grasp_center[0]-self._h:grasp_center[0]+self._h, grasp_center[1]-self._w:grasp_center[1]+self._w]
+                center_depth = np.min(depth_win)
+                if center_depth == 0 or np.isnan(center_depth):
+                    continue
+                
+                # sample depth between the min and max
+                min_depth = np.min(center_depth) + self._min_depth_offset
+                max_depth = np.max(center_depth) + self._max_depth_offset
+                sample_depth = min_depth + (max_depth - min_depth) * np.random.rand()
+                candidate_grasp = Grasp2D(grasp_center_pt,
+                                          grasp_theta,
+                                          sample_depth,
+                                          width=self._gripper_width,
+                                          camera_intr=camera_intr)
+                grasps.append(candidate_grasp)
         # return sampled grasps
         logging.info('Loop took %.3f sec' %(time() - sample_start))
         return grasps
@@ -523,12 +521,14 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             list of 2D suction point candidates
         """
         # compute edge pixels
+        filter_start = time()
         depth_im = rgbd_im.depth
         depth_im = depth_im.apply(snf.gaussian_filter,
                                   sigma=self._depth_gaussian_sigma)
         depth_im_mask = depth_im.copy()
         if segmask is not None:
             depth_im_mask = depth_im.mask_binary(segmask)
+        logging.info('Filtering took %.3f sec' %(time() - filter_start)) 
             
         if visualize:
             vis.figure()
@@ -539,34 +539,34 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             vis.show()
 
         # project to get the point cloud
+        cloud_start = time()
         point_cloud_im = camera_intr.deproject_to_image(depth_im_mask)
         normal_cloud_im = point_cloud_im.normal_cloud_im()
         nonzero_px = depth_im_mask.nonzero_pixels()
         num_nonzero_px = nonzero_px.shape[0]
-
         if num_nonzero_px == 0:
             return []
+        logging.info('Normal cloud took %.3f sec' %(time() - cloud_start)) 
+
         
         # randomly sample points and add to image
+        sample_start = time()
         suction_points = []
-        num_tries = 0
-        while len(suction_points) < num_samples and num_tries < self._max_num_samples:
+        k = 0
+        sample_size = min(self._max_num_samples, num_nonzero_px)
+        indices = np.random.choice(num_nonzero_px,
+                                   size=sample_size,
+                                   replace=False)
+        while k < self._max_num_samples and len(suction_points) < num_samples:
             # update number of tries
-            num_tries += 1
+            k += 1
 
             # sample a point uniformly at random 
-            ind = np.random.choice(num_nonzero_px, size=1, replace=False)[0]
+            ind = indices[k]
             center_px = np.array([nonzero_px[ind,1], nonzero_px[ind,0]])
             center = Point(center_px, frame=camera_intr.frame)
             axis = -normal_cloud_im[center.y, center.x]
             depth = point_cloud_im[center.y, center.x][2]
-
-            # perturb axis
-            delta_theta = self._theta_rv.rvs(size=1)[0]
-            delta_phi = self._phi_rv.rvs(size=1)[0]
-            delta_T = RigidTransform.sph_coords_to_pose(delta_theta,
-                                                        delta_phi)
-            #axis = delta_T.rotation.dot(axis)
 
             # perturb depth
             delta_depth = self._depth_rv.rvs(size=1)[0]
@@ -575,23 +575,18 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             # keep if the angle between the camera optical axis and the suction direction is less than a threshold
             dot = max(min(axis.dot(np.array([0,0,1])), 1.0), -1.0)
             psi = np.arccos(dot)
-            dist_from_center = np.linalg.norm(center_px - np.array([depth_im.center[1], depth_im.center[0]]))
-            if psi < self._max_suction_dir_optical_axis_angle and \
-               dist_from_center < self._max_dist_from_center:
+            if psi < self._max_suction_dir_optical_axis_angle:
 
                 # check distance to ensure sample diversity
                 candidate = SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)
-                suction_point_dists = [SuctionPoint2D.image_dist(suction_point, candidate, alpha=self._angle_dist_weight) for suction_point in suction_points]
-                if len(suction_points) == 0 or np.min(suction_point_dists) > self._min_suction_dist:
+                if visualize:
+                    vis.figure()
+                    vis.imshow(depth_im)
+                    vis.scatter(center.x, center.y)
+                    vis.show()
 
-                    if visualize:
-                        vis.figure()
-                        vis.imshow(depth_im)
-                        vis.scatter(center.x, center.y)
-                        vis.show()
-
-                    suction_points.append(candidate)
-
+                suction_points.append(candidate)
+        logging.info('Loop took %.3f sec' %(time() - sample_start))
         return suction_points
         
 class ImageGraspSamplerFactory(object):
