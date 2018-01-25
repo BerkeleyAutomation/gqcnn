@@ -23,7 +23,8 @@ import autolab_core.utils as utils
 from gqcnn import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from gqcnn import GQCNNDataset
 
-from neon.transforms import CrossEntropyMulti, Misclassification, PrecisionRecall, Metric, Accuracy
+from neon.transforms.cost import Metric
+from neon.transforms import CrossEntropyMulti, Misclassification, PrecisionRecall, Accuracy
 from neon.optimizers import GradientDescentMomentum, ExpSchedule, StepSchedule, Schedule
 from neon.callbacks import Callbacks
 from neon.callbacks.callbacks import MetricCallback, SerializeModelCallback
