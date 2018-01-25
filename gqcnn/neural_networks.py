@@ -36,7 +36,7 @@ class GQCNN(object):
         """
         self._parse_config(config)
         self._model = model
-        self._be = gen_backend(backend='gpu', batch_size=64)
+#        self._be = gen_backend(backend='gpu', batch_size=64)
 
     @staticmethod
     def load(model_dir):
@@ -61,7 +61,7 @@ class GQCNN(object):
         gqcnn_config = train_config['gqcnn_config']
 
         # create GQCNN object and initialize network
-        gqcnn = GQCNN(gqcnn_config, os.path.join(model_dir, 'model.prm'))
+        gqcnn = GQCNN(gqcnn_config, model=os.path.join(model_dir, 'model.prm'))
         gqcnn.initialize_network()
         gqcnn.init_mean_and_std(model_dir)
 
@@ -354,7 +354,7 @@ class GQCNN(object):
         # setup for prediction
         num_images = image_arr.shape[0]
         num_poses = pose_arr.shape[0]
-        # output_arr = np.zeros([num_images, self.fc5_out_size])
+
         if num_images != num_poses:
             raise ValueError('Must provide same number of images and poses')
         # normalize image and pose data
@@ -362,7 +362,7 @@ class GQCNN(object):
         pose_arr = (pose_arr - self._pose_mean) / self._pose_std
 
         # create Data Iterator
-        pred_iter = GQCNNPredictIterator(image_arr.reshape((image_arr.shape[0], self._im_width * self._im_width * self._num_channels)), pose_arr, lshape=[(self._im_height, self._im_width, self._num_channels), (pose_arr.shape[1], )], name='prediction_iterator')
+        pred_iter = GQCNNPredictIterator(image_arr.reshape((image_arr.shape[0], self._im_width * self._im_width * self._num_channels)), pose_arr, lshape=[(self._num_channels, self._im_height, self._im_width), (pose_arr.shape[1], )], name='prediction_iterator')
 
         # predict 
         output_arr = self._model.get_outputs(pred_iter)
