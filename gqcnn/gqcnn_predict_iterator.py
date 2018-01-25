@@ -5,7 +5,6 @@ Author: Vishal Satish
 """
 
 import numpy as np
-import cv2
 
 from neon.data import NervanaDataIterator
 
