@@ -632,11 +632,9 @@ class GQCNN(object):
                 raise ValueError('Must provide same number of images and gripper parameters')
 
         # predict by filling in image array in batches
-        close_sess = False
         with self._graph.as_default():
             if self._sess is None:
-                close_sess = True
-                self.open_session()
+               raise RuntimeError('No TF session open. Please call open_session() first.')
             i = 0
             while i < num_images:
                 logging.debug('Predicting file %d' % (i))
@@ -676,8 +674,6 @@ class GQCNN(object):
 
                 output_arr[cur_ind:end_ind, :] = gqcnn_output[:dim, :]
                 i = end_ind
-            if close_sess:
-                self.close_session()
         return output_arr
     
     def featurize(self, image_arr, pose_arr, feature_layer='conv2_2'):
