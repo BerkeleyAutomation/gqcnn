@@ -22,8 +22,8 @@ train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
 
-use_existing_indices: 0
-index_dir: /home/vsatish/Data/dexnet/data/models/test_dump/model_mefzdpxpyy
+use_existing_indices: 1
+index_dir: /home/vsatish/Data/dexnet/data/models/test_dump/model_rdqjbsrymf
 
 loss: cross_entropy
 optimizer: momentum
