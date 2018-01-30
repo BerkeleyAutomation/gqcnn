@@ -205,10 +205,14 @@ class GQCNNPredictionVisualizer(object):
             self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tf_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH_TF_TABLE:
             self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.depth_im_tf_table_tensor_template) > -1]
+        elif self.image_mode== ImageMode.TF_DEPTH_IMS:
+            self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.tf_depth_ims_tensor_template) > -1]
         else:
             raise ValueError('Image mode %s not supported.' %(self.image_mode))
 
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
+        if len(self.pose_filenames) == 0 :
+            self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.grasps_template) > -1]            
         self.label_filenames = [f for f in all_filenames if f.find(self.target_metric_name) > -1]
 
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
@@ -241,7 +245,11 @@ class GQCNNPredictionVisualizer(object):
         :obj:`ndArray`
             sliced pose_data corresponding to input data mode
         """
-        if input_data_mode == InputDataMode.TF_IMAGE:
+        if input_data_mode == InputDataMode.PARALLEL_JAW:
+            return pose_arr[:,2:3]
+        elif input_data_mode == InputDataMode.SUCTION:
+            return np.c_[pose_arr[:,2], pose_arr[:,4]]
+        elif input_data_mode == InputDataMode.TF_IMAGE:
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
@@ -253,4 +261,4 @@ class GQCNNPredictionVisualizer(object):
             # depth, approach angle, and delta angle for reorientation
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:5], pose_arr[:,6:7]]
         else:
-            raise ValueError('Input data mode %s not supported' %(input_data_mode))
+            raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))
