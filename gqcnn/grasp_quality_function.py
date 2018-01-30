@@ -50,6 +50,27 @@ class GraspQualityFunction(object):
         """
         pass
 
+class ZeroGraspQualityFunction(object):
+    """ Null function. """
+    def quality(self, state, actions, params):
+        """ Returns zero for all grasps
+
+        Parameters
+        ----------
+        state : :obj:`object`
+            state of the world e.g. image
+        actions : :obj:`list`
+            list of actions to evaluate e.g. parallel-jaw or suction grasps
+        params : :obj:`dict`
+            optional parameters for the evaluation
+
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            vector containing the real-valued grasp quality for each candidate
+        """
+        return 0.0
+    
 class SuctionQualityFunction(GraspQualityFunction):
     """Abstract wrapper class for suction quality functions (only image based metrics for now). """
 
@@ -907,7 +928,9 @@ class GraspQualityFunctionFactory(object):
     """Factory for grasp quality functions. """
     @staticmethod
     def quality_function(metric_type, config):
-        if metric_type == 'best_fit_planarity':
+        if metric_type == 'zero':
+            return ZeroGraspQualityFunction()
+        elif metric_type == 'best_fit_planarity':
             return BestFitPlanaritySuctionQualityFunction(config)
         elif metric_type == 'approach_planarity':
             return ApproachPlanaritySuctionQualityFunction(config)
