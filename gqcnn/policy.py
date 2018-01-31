@@ -16,68 +16,13 @@ from sklearn.mixture import GaussianMixture
 
 import autolab_core.utils as utils
 from autolab_core import Point
-from perception import DepthImage
+from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, CameraIntrinsics
 
 from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode, GraspQualityFunctionFactory, GQCnnQualityFunction, NoValidGraspsException
 from gqcnn import Visualizer as vis
 
 FIGSIZE = 16
 SEED = 5234709
-
-class RgbdImageState(object):
-        """ State to encapsulate RGB-D images.
-
-    Attributes
-    ----------
-    rgbd_im : :obj:`perception.RgbdImage`
-        an RGB-D image to plan grasps on
-    camera_intr : :obj:`perception.CameraIntrinsics`
-        intrinsics of the RGB-D camera
-    segmask : :obj:`perception.BinaryImage`
-        segmentation mask for the binary image
-    full_observed : :obj:`object`
-        representation of the fully observed state
-    """
-        def __init__(self, rgbd_im, camera_intr, segmask=None,
-                     fully_observed=None):
-            self.rgbd_im = rgbd_im
-            self.camera_intr = camera_intr
-            self.segmask = segmask
-            self.fully_observed = fully_observed
-            
-        def save(self, save_dir):
-            if not os.path.exists(save_dir):
-                os.mkdir(save_dir)
-            color_image_filename = os.path.join(save_dir, 'color.png')
-            depth_image_filename = os.path.join(save_dir, 'depth.npy')
-            camera_intr_filename = os.path.join(save_dir, 'camera.intr')
-            segmask_filename = os.path.join(save_dir, 'segmask.npy')
-            state_filename = os.path.join(save_dir, 'state.pkl')
-            self.rgbd_im.color.save(color_image_filename)
-            self.rgbd_im.depth.save(depth_image_filename)
-            self.camera_intr.save(camera_intr_filename)
-            if self.segmask is not None:
-                self.segmask.save(segmask_filename)
-            if self.fully_observed is not None:
-                pkl.dump(self.fully_observed, state_filename)
-                
-class ParallelJawGrasp(object):
-    """ Action to encapsulate parallel jaw grasps.
-    """
-    def __init__(self, grasp, q_value, image):
-        self.grasp = grasp
-        self.q_value = q_value
-        self.image = image
-        
-    def save(self, save_dir):
-        if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
-        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
-        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
-        image_filename = os.path.join(save_dir, 'tf_image.npy')
-        pkl.dump(self.grasp, open(grasp_filename, 'wb'))
-        pkl.dump(self.q_value, open(q_value_filename, 'wb'))
-        self.image.save(image_filename)
 
 class RgbdImageState(object):
     """ State to encapsulate RGB-D images.
@@ -114,7 +59,60 @@ class RgbdImageState(object):
         if self.segmask is not None:
             self.segmask.save(segmask_filename)
         if self.fully_observed is not None:
-            pkl.dump(self.fully_observed, state_filename)
+            pkl.dump(self.fully_observed, open(state_filename, 'wb'))
+
+    @staticmethod
+    def load(save_dir):
+        if not os.path.exists(save_dir):
+            raise ValueError('Directory %s does not exist!' %(save_dir))
+        color_image_filename = os.path.join(save_dir, 'color.png')
+        depth_image_filename = os.path.join(save_dir, 'depth.npy')
+        camera_intr_filename = os.path.join(save_dir, 'camera.intr')
+        segmask_filename = os.path.join(save_dir, 'segmask.npy')
+        state_filename = os.path.join(save_dir, 'state.pkl')
+        camera_intr = CameraIntrinsics.load(camera_intr_filename)
+        color = ColorImage.open(color_image_filename, frame=camera_intr.frame)
+        depth = DepthImage.open(depth_image_filename, frame=camera_intr.frame)
+        segmask = None
+        if os.path.exists(segmask_filename):
+            segmask = BinaryImage.open(segmask_filename, frame=camera_intr.frame)
+        fully_observed = None    
+        if os.path.exists(state_filename):
+            fully_observed = pkl.load(open(state_filename, 'rb'))
+        return RgbdImageState(RgbdImage.from_color_and_depth(color, depth),
+                              camera_intr,
+                              segmask=segmask,
+                              fully_observed=fully_observed)
+            
+class ParallelJawGrasp(object):
+    """ Action to encapsulate parallel jaw grasps.
+    """
+    def __init__(self, grasp, q_value, image):
+        self.grasp = grasp
+        self.q_value = q_value
+        self.image = image
+
+    def save(self, save_dir):
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
+        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
+        image_filename = os.path.join(save_dir, 'tf_image.npy')
+        pkl.dump(self.grasp, open(grasp_filename, 'wb'))
+        pkl.dump(self.q_value, open(q_value_filename, 'wb'))
+        self.image.save(image_filename)
+
+    @staticmethod
+    def load(save_dir):
+        if not os.path.exists(save_dir):
+            raise ValueError('Directory %s does not exist!' %(save_dir))
+        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
+        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
+        image_filename = os.path.join(save_dir, 'tf_image.npy')
+        grasp = pkl.load(open(grasp_filename, 'rb'))
+        q_value = pkl.load(open(q_value_filename, 'rb'))
+        image = DepthImage.open(image_filename)
+        return ParallelJawGrasp(grasp, q_value, image)
         
 class GraspAction(object):
     """ Action to encapsulate parallel jaw grasps.
@@ -542,8 +540,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                               show_axis=True,
                               color=plt.cm.RdYlGn(q))
                 vis.title('Sampled grasps iter %d' %(j))
-                vis.show()
-
+                filename = None
+                if self._logging_dir is not None:
+                    filename = os.path.join(self._logging_dir, 'cem_iter_%d.png' %(j))
+                vis.show(filename)
+                
             # fit elite set
             num_refit = max(int(np.ceil(self._gmm_refit_p * num_grasps)), 1)
             elite_q_values = [i[0] for i in q_values_and_indices[:num_refit]]
@@ -562,8 +563,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                               color=plt.cm.RdYlGn(q))
                 vis.title('Elite grasps iter %d' %(j))
-                vis.show()
-
+                filename = None
+                if self._logging_dir is not None:
+                    filename = os.path.join(self._logging_dir, 'elite_set_iter_%d.png' %(j))
+                vis.show(filename)
+                    
             # normalize elite set
             elite_grasp_mean = np.mean(elite_grasp_arr, axis=0)
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
@@ -633,7 +637,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                           show_axis=True,
                           color=plt.cm.RdYlGn(q))
             vis.title('Final sampled grasps')
-            vis.show()
+            filename = None
+            if self._logging_dir is not None:
+                filename = os.path.join(self._logging_dir, 'final_grasps.png')
+            vis.show(filename)
 
         # select grasp
         index = self.select(grasps, q_values)
@@ -647,7 +654,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             vis.grasp(grasp, scale=5.0, show_center=False, show_axis=True, jaw_width=1.0, grasp_axis_width=0.2)
             vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth,
                                                      q_value))
-            vis.show()
+            filename = None
+            if self._logging_dir is not None:
+                filename = os.path.join(self._logging_dir, 'planned_grasp.png')
+            vis.show(filename)
 
         # form return image
         image = state.rgbd_im.depth

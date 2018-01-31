@@ -1,55 +1,58 @@
 # policy params
-    # optimization params
-    num_seed_samples: 250
-    num_gmm_samples: 50
-    num_iters: 3
-    gmm_refit_p: 0.25
-    gmm_component_frac: 0.4
-    gmm_reg_covar: 0.01
+policy:
+  # optimization params
+  num_seed_samples: 250
+  num_gmm_samples: 50
+  num_iters: 3
+  gmm_refit_p: 0.25
+  gmm_component_frac: 0.4
+  gmm_reg_covar: 0.01
 
-    # general params
-    deterministic: 0
-    gripper: righthand
+  # general params
+  deterministic: 0
+  gripper: righthand
+  logging_dir: /nfs/diskstation/projects/dex-net/industrial_partners/knapp/autolab_replication
 
-    # sampling params
-    sampling:
-      # type
-      type: suction
+  # sampling params
+  sampling:
+    # type
+    type: suction
 
-      # params
-      max_suction_dir_optical_axis_angle: 45
-      delta_theta: 1
-      delta_phi: 1
-      mean_depth: 0.0025
-      sigma_depth: 0.0001
-      min_suction_dist: 1.0
-      angle_dist_weight: 5.0
-      depth_gaussian_sigma: 1.0
+    # params
+    max_suction_dir_optical_axis_angle: 45
+    delta_theta: 1
+    delta_phi: 1
+    mean_depth: 0.0025
+    sigma_depth: 0.0001
+    min_suction_dist: 1.0
+    angle_dist_weight: 5.0
+    depth_gaussian_sigma: 1.0
 
-      max_dist_from_center: 200
-      max_num_samples: 10000
+    max_dist_from_center: 200
+    max_num_samples: 10000
 
-      num_grasp_samples: 500
+    num_grasp_samples: 500
 
-    # metric params
-    metric:
-      type: gqcnn
+  # metric params
+  metric:
+    type: gqcnn
 
-      gqcnn_model: /nfs/diskstation/projects/dex-net/suction/models/GQ-Suction
-      crop_height: 128
-      crop_width: 128
+    gqcnn_model: /nfs/diskstation/projects/dex-net/suction/models/dexnet_4_01_30_18
+    crop_height: 96
+    crop_width: 96
 
-    # visualization
-    vis:
-      input_images: 0
-      grasp_sampling : 0
-      tf_images: 0
-      grasp_candidates: 1
-      elite_grasps: 0
-      grasp_ranking: 0
-      grasp_plan: 1
+  # visualization
+  vis:
+    input_images: 1
+    grasp_sampling : 0
+    tf_images: 0
+    grasp_candidates: 1
+    elite_grasps: 0
+    grasp_rankinog: 0
+    grasp_plan: 0
+    final_grasp: 1
 
-      vmin: 0.6
-      vmax: 0.9
+    vmin: 1.4
+    vmax: 1.7
 
-      k: 25
+    k: 25

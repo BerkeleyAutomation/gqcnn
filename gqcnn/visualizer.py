@@ -33,9 +33,18 @@ class Visualizer:
         return plt.figure(figsize=size, *args, **kwargs)
     
     @staticmethod
-    def show(*args, **kwargs):
-        """ Show the current figure """
-        plt.show(*args, **kwargs)
+    def show(filename=None, *args, **kwargs):
+        """ Show the current figure.
+
+        Parameters
+        ----------
+        filename : :obj:`str`
+            filename to save the image to, for auto-saving
+        """
+        if filename is None:
+            plt.show(*args, **kwargs)
+        else:
+            plt.savefig(filename, *args, **kwargs)
 
     @staticmethod
     def clf(*args, **kwargs):

@@ -10,7 +10,7 @@ from visualizer import Visualizer
 from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
 from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
-from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction
+from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction, ParallelJawGrasp
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 
