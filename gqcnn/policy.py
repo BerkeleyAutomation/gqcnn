@@ -547,8 +547,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                         grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
                                                                 camera_intr=camera_intr)
                     if state.segmask is None or \
-                       np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0):
-                        grasps.append(grasp)
+                        (grasp.center.y >= 0 and grasp.center.y < state.segmask.height and \
+                         grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
+                         np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0)):
+                         grasps.append(grasp)
 
             # check num grasps
             num_grasps = len(grasps)
