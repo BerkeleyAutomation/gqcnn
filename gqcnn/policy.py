@@ -25,6 +25,61 @@ FIGSIZE = 16
 SEED = 5234709
 
 class RgbdImageState(object):
+        """ State to encapsulate RGB-D images.
+
+    Attributes
+    ----------
+    rgbd_im : :obj:`perception.RgbdImage`
+        an RGB-D image to plan grasps on
+    camera_intr : :obj:`perception.CameraIntrinsics`
+        intrinsics of the RGB-D camera
+    segmask : :obj:`perception.BinaryImage`
+        segmentation mask for the binary image
+    full_observed : :obj:`object`
+        representation of the fully observed state
+    """
+        def __init__(self, rgbd_im, camera_intr, segmask=None,
+                     fully_observed=None):
+            self.rgbd_im = rgbd_im
+            self.camera_intr = camera_intr
+            self.segmask = segmask
+            self.fully_observed = fully_observed
+            
+        def save(self, save_dir):
+            if not os.path.exists(save_dir):
+                os.mkdir(save_dir)
+            color_image_filename = os.path.join(save_dir, 'color.png')
+            depth_image_filename = os.path.join(save_dir, 'depth.npy')
+            camera_intr_filename = os.path.join(save_dir, 'camera.intr')
+            segmask_filename = os.path.join(save_dir, 'segmask.npy')
+            state_filename = os.path.join(save_dir, 'state.pkl')
+            self.rgbd_im.color.save(color_image_filename)
+            self.rgbd_im.depth.save(depth_image_filename)
+            self.camera_intr.save(camera_intr_filename)
+            if self.segmask is not None:
+                self.segmask.save(segmask_filename)
+            if self.fully_observed is not None:
+                pkl.dump(self.fully_observed, state_filename)
+                
+class ParallelJawGrasp(object):
+    """ Action to encapsulate parallel jaw grasps.
+    """
+    def __init__(self, grasp, q_value, image):
+        self.grasp = grasp
+        self.q_value = q_value
+        self.image = image
+        
+    def save(self, save_dir):
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
+        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
+        image_filename = os.path.join(save_dir, 'tf_image.npy')
+        pkl.dump(self.grasp, open(grasp_filename, 'wb'))
+        pkl.dump(self.q_value, open(q_value_filename, 'wb'))
+        self.image.save(image_filename)
+
+class RgbdImageState(object):
     """ State to encapsulate RGB-D images.
 
     Attributes
