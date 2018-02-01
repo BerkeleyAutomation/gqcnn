@@ -24,10 +24,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a saved test case through a GQ-CNN policy. For debugging purposes only.')
     parser.add_argument('test_case_path', type=str, default=None, help='path to test case')
     parser.add_argument('--config_filename', type=str, default='cfg/tools/run_policy.yaml', help='path to configuration file to use')
+    parser.add_argument('--output_dir', type=str, default=None, help='directory to store output')
     args = parser.parse_args()
     test_case_path = args.test_case_path
     config_filename = args.config_filename
+    output_dir = args.output_dir
 
+    # make output dir
+    if output_dir is not None and not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    
     # make relative paths absolute
     if not os.path.isabs(config_filename):
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -42,7 +48,7 @@ if __name__ == '__main__':
     state_path = os.path.join(test_case_path, 'state')
     action_path = os.path.join(test_case_path, 'action')
     state = RgbdImageState.load(state_path)
-    action = ParallelJawGrasp.load(action_path)
+    original_action = ParallelJawGrasp.load(action_path)
 
     # init policy
     policy = CrossEntropyRobustGraspingPolicy(policy_config)
@@ -54,21 +60,25 @@ if __name__ == '__main__':
             vis.imshow(state.rgbd_im.color)
             vis.title('COLOR')
             vis.subplot(1,2,2)
-            vis.imshow(state.rgbd_im.depth)
+            vis.imshow(state.rgbd_im.depth,
+                       vmin=policy_config['vis']['vmin'],
+                       vmax=policy_config['vis']['vmax'])
             vis.title('DEPTH')
         else:
             vis.subplot(1,3,1)
             vis.imshow(state.rgbd_im.color)
             vis.title('COLOR')
             vis.subplot(1,3,2)
-            vis.imshow(state.rgbd_im.depth)            
+            vis.imshow(state.rgbd_im.depth,
+                       vmin=policy_config['vis']['vmin'],
+                       vmax=policy_config['vis']['vmax'])
             vis.title('DEPTH')
             vis.subplot(1,3,3)
             vis.imshow(state.segmask)            
             vis.title('SEGMASK')
         filename = None
-        if policy._logging_dir is not None:
-            filename = os.path.join(policy._logging_dir, 'input_images.png')
+        if output_dir is not None:
+            filename = os.path.join(output_dir, 'input_images.png')
         vis.show(filename)    
 
     # query policy
@@ -80,15 +90,19 @@ if __name__ == '__main__':
     if policy_config['vis']['final_grasp']:
         vis.figure(size=(10,10))
         vis.subplot(1,2,1)
-        vis.imshow(state.rgbd_im.color)
-        vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on color (Q=%.3f)' %(action.q_value))
+        vis.imshow(state.rgbd_im.depth,
+                   vmin=policy_config['vis']['vmin'],
+                   vmax=policy_config['vis']['vmax'])
+        vis.grasp(original_action.grasp, scale=policy_config['vis']['grasp_scale'], show_center=False, show_axis=True, color='r')
+        vis.title('Original (Q=%.3f)' %(original_action.q_value))
         vis.subplot(1,2,2)
-        vis.imshow(state.rgbd_im.depth)
-        vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
+        vis.imshow(state.rgbd_im.depth,
+                   vmin=policy_config['vis']['vmin'],
+                   vmax=policy_config['vis']['vmax'])
+        vis.grasp(action.grasp, scale=policy_config['vis']['grasp_scale'], show_center=False, show_axis=True, color='r')
+        vis.title('New (Q=%.3f)' %(action.q_value))
         filename = None
-        if policy._logging_dir is not None:
-            filename = os.path.join(policy._logging_dir, 'planned_grasp.png')
+        if output_dir is not None:
+            filename = os.path.join(output_dir, 'planned_grasp.png')
         vis.show(filename)
     

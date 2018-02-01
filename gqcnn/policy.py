@@ -604,7 +604,9 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                                          camera_intr=camera_intr)
                     elif grasp_type == 'suction':
                         grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
-                                                                camera_intr=camera_intr)
+                                                                depth_im=rgbd_im.depth,                                                                
+                                                                camera_intr=camera_intr,
+                                                                depth_offset=self._grasp_sampler._mean_depth)
                     if state.segmask is None or \
                         (grasp.center.y >= 0 and grasp.center.y < state.segmask.height and \
                          grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \

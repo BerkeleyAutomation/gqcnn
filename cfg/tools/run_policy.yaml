@@ -11,7 +11,7 @@ policy:
   # general params
   deterministic: 0
   gripper: righthand
-  logging_dir: /nfs/diskstation/projects/dex-net/industrial_partners/knapp/autolab_replication
+  #logging_dir: /nfs/diskstation/projects/dex-net/industrial_partners/knapp/autolab_replication
 
   # sampling params
   sampling:
@@ -37,16 +37,16 @@ policy:
   metric:
     type: gqcnn
 
-    gqcnn_model: /nfs/diskstation/projects/dex-net/suction/models/dexnet_4_01_30_18
-    crop_height: 96
-    crop_width: 96
+    gqcnn_model: /nfs/diskstation/projects/dex-net/suction/models/GQ-Suction
+    crop_height: 128
+    crop_width: 128
 
   # visualization
   vis:
-    input_images: 1
+    input_images: 0
     grasp_sampling : 0
     tf_images: 0
-    grasp_candidates: 1
+    grasp_candidates: 0
     elite_grasps: 0
     grasp_rankinog: 0
     grasp_plan: 0
@@ -54,5 +54,6 @@ policy:
 
     vmin: 1.4
     vmax: 1.7
+    grasp_scale: 3
 
     k: 25

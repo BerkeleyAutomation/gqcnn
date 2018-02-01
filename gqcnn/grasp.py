@@ -247,25 +247,30 @@ class SuctionPoint2D(object):
         """ Returns the feature vector for the suction point.
         v = [center, axis, depth]
         """
-        return np.r_[self.center.data, self.axis, self.depth]
+        #return np.r_[self.center.data, self.axis, self.depth]
+        return np.r_[self.center.data, self.axis]
 
     @staticmethod
-    def from_feature_vec(v, camera_intr=None):
+    def from_feature_vec(v, depth_im, camera_intr=None, depth_offset=0.0):
         """ Creates a SuctionPoint2D obj from a feature vector and additional parameters.
 
         Parameters
         ----------
         v : :obj:`numpy.ndarray`
             feature vector, see Grasp2D.feature_vec
+        depth_im : :obj:`perception.DepthImage`
+            depth image to constrain the approach axis of the grasp
         camera_intr : :obj:`perception.CameraIntrinsics`
             frame of reference for camera that the grasp corresponds to
+        depth_offset : float
+            amount to offset the depth for the target point
         """
         # read feature vec
         center_px = v[:2]
-        axis = v[2:5]
-        depth = v[5]
+        axis = v[2:]
         axis = axis / np.linalg.norm(axis)
-
+        depth = depth_im[int(center_px[1]), int(center_px[0])] + depth_offset
+        
         # compute center and angle
         center = Point(center_px, camera_intr.frame)
         return SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)
