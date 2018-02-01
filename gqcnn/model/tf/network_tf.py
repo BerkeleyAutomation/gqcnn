@@ -1,24 +1,19 @@
 """
-Wrapper for grasp quality neural network
-Authors: Jeff Mahler, Vishal Satish
+GQCNN network implemented in Tensorflow
+Author: Vishal Satish
 """
-import copy
 import json
 from collections import OrderedDict
 import logging
-import numpy as np
 import os
-import sys
+
+import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf 
-import matplotlib.pyplot as plt
 
-from autolab_core import YamlConfig
-from gqcnn import InputPoseMode, InputGripperMode, TrainingMode
-
+from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data
+from gqcnn.utils.training_utils import setup_python_logger
 from spatial_transformer import transformer
-
-import IPython
 
 def reduce_shape(shape):
     """ Get shape of a layer for flattening """
@@ -26,15 +21,14 @@ def reduce_shape(shape):
     f = lambda x, y: 1 if y is None else x * y
     return reduce(f, shape, 1)
 
-
 class GQCNNWeights(object):
     """ Struct helper for storing weights """
     weights = {}
     def __init__(self):
         pass
 
-class GQCNN(object):
-    """ Wrapper for grasp quality CNN """
+class GQCNNTF(object):
+    """ GQCNN network implemented in Tensorflow """
 
     def __init__(self, gqcnn_config, fully_conv_config=None):
         """
@@ -44,6 +38,9 @@ class GQCNN(object):
             python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
             im_height, im_width, ...
         """
+        # setup python logging
+        setup_python_logger()
+
         self._sess = None
         self._weights = GQCNNWeights()
         self._graph = tf.Graph()
@@ -104,52 +101,6 @@ class GQCNN(object):
         """
         return self._weights.weights
 
-    def _read_pose_data(self, pose_arr, input_pose_mode):
-        """ Read the pose data and slice it according to the specified input_data_mode
-
-        Parameters
-        ----------
-        pose_arr: :obj:`ndArray`
-            full pose data array read in from file
-        input_pose_mode: :enum:`InputPoseMode`
-            enum for input pose mode, see optimizer_constants.py for all
-            possible input pose modes 
-
-        Returns
-        -------
-        :obj:`ndArray`
-            sliced pose_data corresponding to input pose mode
-        """
-        if len(pose_arr.shape) == 1:
-            pose_arr = np.asarray([pose_arr])
-        if input_pose_mode == InputPoseMode.TF_IMAGE:
-            # depth
-            return pose_arr[:,2:3]
-        elif input_pose_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
-            # depth, cx, cy
-            return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-        elif input_pose_mode == InputPoseMode.RAW_IMAGE:
-            # u, v, depth, theta
-            return pose_arr[:,:4]
-        elif input_pose_mode == InputPoseMode.RAW_IMAGE_PERSPECTIVE:
-            # u, v, depth, theta, cx, cy
-            return pose_arr[:,:6]
-        elif input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
-            # depth, theta
-            return pose_arr[:,2:4]
-        else:
-            raise ValueError('Input pose mode {} not supported'.format(input_pose_mode))
-
-    def _read_gripper_data(self, gripper_param_arr, input_gripper_mode):
-        if len(gripper_param_arr.shape) == 1:
-            gripper_param_arr = np.asarray([gripper_param_arr])
-        if input_gripper_mode == InputGripperMode.WIDTH:
-            return gripper_param_arr[:, 0:1]
-        elif input_gripper_mode == InputGripperMode.ALL:
-            return gripper_param_arr
-        else:
-            raise ValueError('Input gripper mode {} not supportd'.format(input_gripper_mode))
-
     def init_mean_and_std(self, model_dir):
         """ Initializes the mean and std to use for data normalization during prediction 
 
@@ -170,11 +121,11 @@ class GQCNN(object):
             self._gripper_std = np.load(os.path.join(model_dir, 'gripper_std.npy'))
 
         # read the certain parts of the pose and gripper mean/std that we want
-        self._pose_mean = self._read_pose_data(self._pose_mean, self._input_pose_mode)
-        self._pose_std = self._read_pose_data(self._pose_std, self._input_pose_mode)
+        self._pose_mean = parse_pose_data(self._pose_mean, self._input_pose_mode)
+        self._pose_std = parse_pose_data(self._pose_std, self._input_pose_mode)
         if self._gripper_dim > 0:
-            self._gripper_mean = self._read_gripper_data(self._gripper_mean, self._input_gripper_mode)
-            self._gripper_std = self._read_gripper_data(self._gripper_std, self._input_gripper_mode)
+            self._gripper_mean = parse_gripper_data(self._gripper_mean, self._input_gripper_mode)
+            self._gripper_std = parse_gripper_data(self._gripper_std, self._input_gripper_mode)
 
     def init_weights_file(self, ckpt_file):
         """ Initialize network weights from the specified model 
@@ -390,8 +341,8 @@ class GQCNN(object):
         return self._pose_dim
 
     @property
-    def input_data_mode(self):
-        return self._input_data_mode
+    def input_pose_mode(self):
+        return self._input_pose_mode
 
     @property
     def input_im_node(self):
@@ -909,10 +860,12 @@ class GQCNN(object):
         # build layer
         if input_is_multi:
             input_num_nodes = reduce_shape(input_node.get_shape())
-            input_flat = tf.reshape(input_node, [-1, input_num_nodes])
-            fc = self._leaky_relu(tf.matmul(input_flat, fcW) + fcb)
+            input_node = tf.reshape(input_node, [-1, input_num_nodes])
+        if final_fc_layer:
+            fc = tf.matmul(input_node, fcW) + fcb
         else:
             fc = self._leaky_relu(tf.matmul(input_node, fcW) + fcb)
+
         fc = tf.nn.dropout(fc, 1 - drop_rate)
 
         # add output to feature dict

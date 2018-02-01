@@ -5,7 +5,9 @@ Author: Vishal Satish
 import time
 import logging
 
-from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
+from gqcnn import GQCNNAnalyzer
+from gqcnn.models import get_gqcnn_model
+from gqcnn.training import get_gqcnn_trainer
 from autolab_core import YamlConfig
 	
 # setup logger
@@ -13,6 +15,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 train_config = YamlConfig('cfg/tools/training.yaml')
 gqcnn_config = train_config['gqcnn_config']
+backend = 'tf'
 
 def get_elapsed_time(time_in_seconds):
 	""" Helper function to get elapsed time """
@@ -27,10 +30,9 @@ def get_elapsed_time(time_in_seconds):
 
 # Training from Scratch
 start_time = time.time()
-gqcnn = GQCNN(gqcnn_config)
-sgdOptimizer = SGDOptimizer(gqcnn, train_config)
-with gqcnn.get_tf_graph().as_default():
-    sgdOptimizer.optimize()
+gqcnn = get_gqcnn_model(backend)(gqcnn_config)
+gqcnn_trainer = get_gqcnn_trainer(backend)(gqcnn, train_config)
+gqcnn_trainer.train()
 logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
 
 
@@ -38,7 +40,7 @@ logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_t
 
 # start_time = time.time()
 # model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
-# gqcnn = GQCNN.load(model_dir)
+# gqcnn = get_gqcnn_model(backend).load(model_dir)
 # output = gqcnn.predict(images, poses)
 # pred_p_success = output[:,1]
 # gqcnn.close_session()

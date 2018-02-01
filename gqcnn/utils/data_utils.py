@@ -30,7 +30,7 @@ def parse_pose_data(pose_arr, input_pose_mode):
         parsed pose data corresponding to input pose mode
     """
     if len(pose_arr.shape) == 1:
-        # wrap so that pose_arr.dim=2
+        # wrap so that dim of pose_arr is 2
         pose_arr = np.asarray([pose_arr])
     if input_pose_mode == InputPoseMode.TF_IMAGE:
         # depth
@@ -179,7 +179,7 @@ def compute_data_metrics(experiment_dir, data_dir, im_height, im_width, total_po
 
     return image_mean, image_std, pose_mean, pose_std, gripper_mean, gripper_std, gripper_depth_mask_mean, gripper_depth_mask_std
 
-def compute_grasp_metric_stats(data_dir, im_filenames, label_filenames, val_index_map, metric_thresh):
+def compute_grasp_label_metrics(data_dir, im_filenames, label_filenames, val_index_map, metric_thresh):
     """ Computes min, max, mean, median statistics for grasp robustness metric. Also computes percentage of
     positive labels. """
 
@@ -207,7 +207,8 @@ def compute_grasp_metric_stats(data_dir, im_filenames, label_filenames, val_inde
     
     return min_metric, max_metric, mean_metric, median_metric, pct_pos_val
 
-def denoise(self, im_arr, im_height, im_width, im_channels, denoising_params, pose_arr=None, pose_dim=1, only_dropout=False, mask_and_inpaint=False):
+def denoise(im_arr, im_height, im_width, im_channels, denoising_params, 
+    ose_arr=None, pose_dim=1, only_dropout=False, mask_and_inpaint=False):
     """ Adds noise to a batch of images and possibly poses """
     
     # make deepcopy of input arrays
@@ -219,7 +220,8 @@ def denoise(self, im_arr, im_height, im_width, im_channels, denoising_params, po
     for method, params in denoising_params.iteritems():
         # multiplicative denoising
         if method == DenoisingMethods.MULTIPLICATIVE_DENOISING and not only_dropout:
-            mult_samples = ss.gamma.rvs(params['gamma_shape'], scale=params['gamma_scale'], size=len(im_arr))
+            gamma_scale = 1 / params['gamma_shape']
+            mult_samples = ss.gamma.rvs(params['gamma_shape'], scale=gamma_scale, size=len(im_arr))
             mult_samples = mult_samples[:,np.newaxis,np.newaxis,np.newaxis]
             im_arr = im_arr * np.tile(mult_samples, [1, im_height, im_width, im_channels])
 
@@ -261,10 +263,13 @@ def denoise(self, im_arr, im_height, im_width, im_channels, denoising_params, po
 
         # add correlated Gaussian noise
         elif method == DenoisingMethods.GAUSSIAN_PROCESS_DENOISING and not only_dropout:
+            gp_sample_height = int(im_height / params['gp_rescale_factor'])
+            gp_sample_width = int(im_width / params['gp_rescale_factor'])
+            gp_num_pix = gp_sample_height * gp_sample_width
             for i in range(len(im_arr)):
                 if np.random.rand() < params['gaussian_process_rate']:
                     image = im_arr[i,:,:,0]
-                    gp_noise = ss.norm.rvs(scale=params['gp_sigma'], size=params['gp_num_pix']).reshape(params['gp_sample_height'], params['gp_sample_width'])
+                    gp_noise = ss.norm.rvs(scale=params['gp_sigma'], size=gp_num_pix).reshape(gp_sample_height, gp_sample_width)
                     gp_noise = sm.imresize(gp_noise, params['gp_rescale_factor'], interp='bicubic', mode='F')
                     image[image > 0] += gp_noise[image > 0]
                     im_arr[i,:,:,0] = image
@@ -367,5 +372,7 @@ def denoise(self, im_arr, im_height, im_width, im_channels, denoising_params, po
                     if pose_dim > 4:
                         pose_arr[i,4] = -pose_arr[i,4]
                 im_arr[i,:,:,0] = image
+        else:
+            raise ValueError('Invalid Denoising Method: {}'.format(method))
 
     return im_arr, pose_arr

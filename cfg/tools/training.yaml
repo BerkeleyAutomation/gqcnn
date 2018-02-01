@@ -7,8 +7,8 @@ output_dir: /home/vsatish/Data/dexnet/data/models/test_dump
 train_batch_size: 64
 val_batch_size: 16
 num_epochs: 25     # number of epochs to train for
-eval_frequency: -1  # how often to get validation error, -1 defaults to every epoch 
-save_frequency: 10000  # how often to save output
+eval_frequency: -1  # how often to get validation error in steps, -1 defaults to every epoch 
+save_frequency: -1  # how often to save output in steps, -1 defaults to every epoch
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
@@ -24,10 +24,13 @@ num_original_val_images: 50
 save_distorted_val_images: 0
 num_distorted_val_images: 50
 
-use_existing_indices: 1
+use_existing_indices: 0
 index_dir: /home/vsatish/Data/dexnet/data/models/test_dump/model_mefzdpxpyy
 
 mask_and_inpaint: 0
+
+# backend for use with Neon
+backend: 'gpu'
 
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
@@ -37,7 +40,7 @@ train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
 
-loss: sparse
+loss: cross_entropy
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
@@ -68,45 +71,46 @@ target_metric_name: robust_ferrari_canny
 metric_thresh: 0.002
 
 # denoising / synthetic data params
-multiplicative_denoising: 1
-gamma_shape: 1000.00
+denoise:
+  multiplicative_denoising: 
+    gamma_shape: 1000.00
 
-symmetrize: 1
+  symmetrize: 
 
-morphological: 0
-morph_open_rate: 0.25
-morph_poisson_mean: 1.5
+  # morphological: 
+  #   morph_open_rate: 0.25
+  #   morph_poisson_mean: 1.5
 
-image_dropout: 0
-image_dropout_rate: 0.25
-dropout_poisson_mean: 1.0
-dropout_radius_shape: 3.0
-dropout_radius_scale: 1.0
+  # image_dropout: 
+  #   image_dropout_rate: 0.25
+  #   dropout_poisson_mean: 1.0
+  #   dropout_radius_shape: 3.0
+  #   dropout_radius_scale: 1.0
 
-gradient_dropout: 0
-gradient_dropout_rate: 0.1
-gradient_dropout_sigma: 0.5
-gradient_dropout_shape: 15
-gradient_dropout_scale: 0.001
+  # gradient_dropout: 
+  #   gradient_dropout_rate: 0.1
+  #   gradient_dropout_sigma: 0.5
+  #   gradient_dropout_shape: 15
+  #   gradient_dropout_scale: 0.001
 
-gaussian_process_denoising: 1
-gaussian_process_rate: 0.5
-gaussian_process_scaling_factor: 4.0
-gaussian_process_sigma: 0.005
+  gaussian_process_denoising: 
+    gaussian_process_rate: 0.5
+    gaussian_process_scaling_factor: 4.0
+    gaussian_process_sigma: 0.005
 
-border_distortion: 0
-border_distortion_rate: .5
-border_grad_sigma: 1.0
-border_grad_thresh: 0.005
-border_poisson_mean: 8.0
-border_radius_shape: 3.75
-border_radius_scale: 0.4
-border_fill_type: zero
+  # border_distortion: 
+  #   border_distortion_rate: .5
+  #   border_grad_sigma: 1.0
+  #   border_grad_thresh: 0.005
+  #   border_poisson_mean: 8.0
+  #   border_radius_shape: 3.75
+  #   border_radius_scale: 0.4
+  #   border_fill_type: zero
 
-background_denoising: 0
-background_rate: 0.25
-background_min_depth: 0.0
-background_max_depth: 0.65
+  # background_denoising: 
+  #   background_rate: 0.25
+  #   background_min_depth: 0.0
+  #   background_max_depth: 0.65
 
 # debugging params
 debug: 0
@@ -125,8 +129,11 @@ gqcnn_config:
   input_pose_mode: tf_image
   input_gripper_mode: none
 
-  # prediction batch size, in training this will be overriden by the val_batch_size in the SGDOptimizer's config file
+  # prediction batch size, in training this will be overriden by the val_batch_size 
   batch_size: 16
+
+  # backend for use with Neon
+  backend: 'gpu'
 
   # architecture
   architecture: 

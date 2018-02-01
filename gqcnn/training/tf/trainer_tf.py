@@ -1,41 +1,28 @@
 """
-Optimizer class for training a gqcnn(Grasp Quality Neural Network).
+Class for training a GQCNN using Tensorflow backend.
 Author: Vishal Satish
 """
-import argparse
-import copy
-import cv2
-import json
 import logging
-import numpy as np
 import cPickle as pkl
 import os
 import random
 import signal
-import sys
-import shutil
-import threading
 import time
-import urllib
-import matplotlib.pyplot as plt
+
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
-import yaml
-from autolab_core import YamlConfig
-import autolab_core.utils as utils
-import collections
 
-import IPython as ip
+from gqcnn.utils.learning_analysis import ClassificationResult, RegressionResult
+from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data, 
+    compute_data_metrics, compute_grasp_label_metrics, denoise
+from gqcnn.utils.training_utils import copy_config, compute_indices_image_wise, 
+    compute_indices_pose_wise, compute_indices_object_wise, get_decay_step, 
+    setup_data_filenames, setup_output_dirs
+from gqcnn.utils.enums import GeneralConstants, DataSplitMode
 
-from learning_analysis import ClassificationResult, RegressionResult
-from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputPoseMode, InputGripperMode, GeneralConstants, FileTemplates
-from train_stats_logger import TrainStatsLogger
-
-from visualization import Visualizer2D as vis
-from perception import DepthImage
-
-class SGDOptimizer(object):
-    """ Optimizer for gqcnn object """
+class GQCNNTrainerTF(object):
+    """ Trains GQCNN with Tensorflow backend """
 
     def __init__(self, gqcnn, config):
         """
@@ -51,7 +38,7 @@ class SGDOptimizer(object):
         self.tensorboard_has_launched = False
 
     def _create_loss(self):
-        """ Creates a loss based on config file
+        """ Creates loss
 
         Returns
         -------
@@ -61,8 +48,9 @@ class SGDOptimizer(object):
         # TODO: Add Poisson Loss
         if self.cfg['loss'] == 'l2':
             return tf.nn.l2_loss(tf.sub(self.train_net_output, self.train_labels_node))
-        elif self.cfg['loss'] == 'sparse':
-            return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node, logits=self.train_net_output, name=None))
+        elif self.cfg['loss'] == 'cross_entropy':
+            return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, 
+                labels=self.train_labels_node, logits=self.train_net_output, name=None))
 
     def _create_optimizer(self, loss, batch, var_list, learning_rate):
         """ Create optimizer based on config file
@@ -96,7 +84,8 @@ class SGDOptimizer(object):
             raise ValueError('Optimizer %s not supported' % (self.cfg['optimizer']))
 
     def _check_dead_queue(self):
-        """ Checks to see if the queue is dead and if so closes the tensorflow session and cleans up the variables """
+        """ Checks to see if the queue is dead and if so closes the 
+        tensorflow session and cleans up the variables """
         if self.dead_event.is_set():
             # close self.session
             self.sess.close()
@@ -119,7 +108,7 @@ class SGDOptimizer(object):
         tensorboard_pid = os.popen('pgrep tensorboard').read()
         os.system('kill ' + tensorboard_pid)
 
-    def optimize(self):
+    def train(self):
         """ Perform optimization """
         start_time = time.time()
 
@@ -179,6 +168,7 @@ class SGDOptimizer(object):
         with tf.name_scope('optimizer'):
             optimizer, true_optimizer = self._create_optimizer(
                 loss, batch, var_list, learning_rate)
+
             # if flag to save histograms is on, then generate gradient histograms and finally setup the summaries
             if self.save_histograms:
                 gradients = true_optimizer.compute_gradients(loss, var_list)
@@ -204,7 +194,8 @@ class SGDOptimizer(object):
             logging.info('Forcefully Exiting Optimization')
             self.forceful_exit = True
 
-            # forcefully kill the session to terminate any current graph ops that are stalling because the enqueue op has ended
+            # forcefully kill the session to terminate any current graph 
+            # ops that are stalling because the enqueue op has ended
             self.sess.close()
 
             # close tensorboard
@@ -249,25 +240,26 @@ class SGDOptimizer(object):
             self.train_stats_logger = TrainStatsLogger(self.experiment_dir)
 
             # loop through training steps
-            training_range = xrange(
-                int(self.num_epochs * self.num_train) // self.train_batch_size)
+            training_range = xrange(int(self.num_epochs * self.num_train) // self.train_batch_size)
             for step in training_range:
                 # check for dead queue
                 self._check_dead_queue()
 
-                # run optimization
                 extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
                 # check_numeric_op = tf.add_check_numerics_ops()
-                _, l, lr, predictions, batch_labels, net_output = self.sess.run([optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output], feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
-                ex = np.exp(net_output - np.tile(np.max(net_output, axis=1)
-                            [:, np.newaxis], [1, 2]))
+
+                # fprop + bprop
+                _, l, lr, predictions, batch_labels, net_output = self.sess.run([optimizer, loss, learning_rate,
+                    train_predictions, self.train_labels_node, self.train_net_output], 
+                    feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
+                
+                ex = np.exp(net_output - np.tile(np.max(net_output, axis=1)[:, np.newaxis], [1, 2]))
                 softmax = ex / np.tile(np.sum(ex, axis=1)[:, np.newaxis], [1, 2])
 
-                logging.debug('Max ' + str(np.max(softmax[:, 1])))
-                logging.debug('Min ' + str(np.min(softmax[:, 1])))
-                logging.debug('Pred nonzero ' +
-                              str(np.sum(np.argmax(predictions, axis=1))))
-                logging.debug('True nonzero ' + str(np.sum(batch_labels)))
+                logging.debug('Max: ' + str(np.max(softmax[:, 1])))
+                logging.debug('Min: ' + str(np.min(softmax[:, 1])))
+                logging.debug('Pred nonzero: ' + str(np.sum(np.argmax(predictions, axis=1))))
+                logging.debug('True nonzero: ' + str(np.sum(batch_labels)))
 
                 # log output
                 if step % self.log_frequency == 0:
@@ -279,16 +271,14 @@ class SGDOptimizer(object):
                     logging.info('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
-                        train_error = ClassificationResult(
-                            [predictions], [batch_labels]).error_rate
+                        train_error = ClassificationResult([predictions], [batch_labels]).error_rate
                         logging.info('Minibatch error: %.3f%%' % train_error)
                     self.summary_writer.add_summary(self.sess.run(self.merged_log_summaries, feed_dict={
-                                                    self.minibatch_error_placeholder: train_error, self.minibatch_loss_placeholder: l, self.learning_rate_placeholder: lr}), step)
-                    sys.stdout.flush()
+                        self.minibatch_error_placeholder: train_error, self.minibatch_loss_placeholder: l, self.learning_rate_placeholder: lr}), step)
 
                     # update the TrainStatsLogger
-                    self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error,
-                                                   total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
+                    self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, 
+                        total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
                 # evaluate validation error
                 if step % self.eval_frequency == 0:
@@ -297,21 +287,20 @@ class SGDOptimizer(object):
                         logging.info('Training error: %.3f' % train_error)
 
                         # update the TrainStatsLogger and save
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None,
-                                                       total_train_error=train_error, val_eval_iter=None, val_error=None, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, 
+                            total_train_error=train_error, val_eval_iter=None, val_error=None, learning_rate=None)
                         self.train_stats_logger.log()
 
                     val_error = self._error_rate_in_batches()
                     self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={
                                                     self.val_error_placeholder: val_error}), step)
                     logging.info('Validation error: %.3f' % val_error)
-                    sys.stdout.flush()
 
                     # update the TrainStatsLogger
-                    self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None,
-                                                   total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+                    self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, 
+                        total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
 
-                    # save everything!
+                    # save everything
                     self.train_stats_logger.log()
 
                 # save the model
@@ -328,22 +317,21 @@ class SGDOptimizer(object):
 
                 # write histogram summaries if specified
                 if self.save_histograms:
-                    self.summary_writer.add_summary(self.sess.run([self.merged_histogram_summaries], feed_dict={
-                                                    self.gqcnn.input_im_node: train_images, self.gqcnn.input_pose_node: pose_node}))
+                    self.summary_writer.add_summary(self.sess.run([self.merged_histogram_summaries], 
+                        feed_dict={self.gqcnn.input_im_node: train_images, self.gqcnn.input_pose_node: pose_node}))
                     self.summary_writer.add_summary(merged_histogram_summaries)
 
             # get final logs
             val_error = self._error_rate_in_batches()
             logging.info('Final validation error: %.1f%%' % val_error)
-            sys.stdout.flush()
 
             # update the TrainStatsLogger
-            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None,
-                                           total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, 
+                total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
 
-            # log & save everything!
+            # log & save everything
             self.train_stats_logger.log()
-            self.saver.save(self.sess, os.path.join(self.experiment_dir, 'model.ckpt'))
+            self.saver.save(self.sess, self.exp_path_gen('model.ckpt'))
 
         except Exception as e:
             self.term_event.set()
@@ -384,6 +372,99 @@ class SGDOptimizer(object):
         # exit
         logging.info('Exiting Optimization')
 
+    def _save_index_maps(self, train_idx_map, val_idx_map, train_fname, val_fname):
+        with open(self.exp_path_gen(train_fname), 'w') as fhandle:
+            pkl.dump(train_idx_map, fhandle)
+        with open(self.exp_path_gen(val_fname), 'w') as fhandle:
+            pkl.dump(val_idx_map, fhandle)
+
+    def _compute_indices(self, data_split_mode, *computation_args):
+        train_idx_map_fname = 'train_indices_{}.pkl'.format(data_split_mode)
+        val_idx_map_fname = 'val_indices_{}.pkl'.format(data_split_mode)
+        train_idx_map_fpath = self.exp_path_gen(train_idx_map_fname)
+        val_idx_map_fpath = self.exp_path_gen(val_idx_map_fname)
+        if os.path.exists(train_idx_map_fpath):
+            with open(train_idx_map_fpath, 'r') as fhandle:
+                train_idx_map = pkl.load(fhandle)
+            with open(val_idx_map_fname, 'r') as fhandle:
+                val_idx_map = pkl.load(fhandle)
+        elif self.cfg['use_existing_indices']:
+            with open(os.path.join(self.cfg['index_dir'], train_idx_map_fname)) as fhandle:
+                train_idx_map = pkl.load(fhandle)
+            with open(os.path.join(self.cfg['index_dir'], val_idx_map_fname)) as fhandle:
+                val_idx_map = pkl.load(fhandle)
+        else:
+            if data_split_mode == DataSplitMode.IMAGE_WISE:
+                train_idx_map, val_idx_map = compute_indices_image_wise(*computation_args)
+            elif data_split_mode == DataSplitMode.OBJECT_WISE:
+                train_idx_map, val_idx_map = compute_indices_object_wise(*computation_args)
+            else:
+                train_idx_map, val_idx_map = compute_indices_pose_wise(*computation_args)
+
+        # save indices
+        self._save_index_maps(train_idx_map, val_idx_map, train_idx_map_fname, val_idx_map_fname)
+
+        return train_idx_map, val_idx_map
+
+    def _compute_data_metrics(self):
+        if self.cfg['fine_tune']:
+            self.im_mean = self.gqcnn.get_im_mean()
+            self.im_std = self.gqcnn.get_im_std()
+            self.pose_mean = self.gqcnn.get_pose_mean()
+            self.pose_std = self.gqcnn.get_pose_std()
+            if self.gripper_dim > 0:
+                self.gripper_mean = self.gqcnn.get_gripper_mean()
+                self.gripper_std = self.gqcnn.get_gripper_std()
+            elif self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
+                self.gripper_depth_mask_mean = self.gqcnn.get_gripper_depth_mask_mean()
+                self.gripper_depth_mask_std = self.gqcnn.get_gripper_depth_mask_std()
+        else:
+            im_mean_fname = self.exp_path_gen('im_mean.npy')
+            im_std_fname = self.exp_path_gen('im_std.npy')
+            pose_mean_fname = self.exp_path_gen('pose_mean.npy')
+            pose_std_fname = self.exp_path_gen('pose_std.npy')
+            if self.gripper_dim > 0:
+                gripper_mean_fname = self.exp_path_gen('gripper_mean.npy')
+                gripper_std_fname = self.exp_path_gen('gripper_std.npy')
+                self.image_mean, self.image_std, self.pose_mean, self.pose_std, self.gripper_mean, self.gripper_std, _, _ = compute_data_metrics(
+                    self.experiment_dir, self.data_dir, self.im_height, self.im_width, self.pose_shape, self.input_pose_mode, self.train_index_map, 
+                    self.im_filenames, self.pose_filenames, gripper_param_filenames=self.gripper_param_filenames, total_gripper_param_elems=self.gripper_shape, 
+                    num_random_files=self.num_random_files)
+
+                np.save(self.gripper_mean, gripper_mean_fname)
+                np.save(self.gripper_std, gripper_std_fname)
+
+                self.gqcnn.update_gripper_mean(self.gripper_mean)
+                self.gqcnn.update_gripper_std(self.gripper_std)
+
+            elif self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
+                gripper_depth_mask_mean_fname = self.exp_path_gen('gripper_depth_mask_mean.npy')
+                gripper_depth_mask_std_fname = self.exp_path_gen('gripper_depth_mask_std.npy')
+                self.image_mean, self.image_std, self.pose_mean, self.pose_std, _, _, self.gripper_depth_mask_mean, self.gripper_depth_mask_std = compute_data_metrics(
+                    self.experiment_dir, self.data_dir, self.im_height, self.im_width, self.pose_shape, self.input_pose_mode, self.train_index_map, 
+                    self.im_filenames, self.pose_filenames, gripper_depth_mask_filenames=self.gripper_depth_mask_filenames, num_random_files=self.num_random_files)
+
+                np.save(self.gripper_depth_mask_mean, gripper_depth_mask_mean_fname)
+                np.save(self.gripper_depth_mask_std, gripper_depth_mask_std_fname)
+
+                self.gqcnn.update_gripper_depth_mask_mean(self.gripper_depth_mask_mean)
+                self.gqcnn.update_gripper_depth_mask_std(self.gripper_depth_mask_std)
+
+            else:
+                self.image_mean, self.image_std, self.pose_mean, self.pose_std, _, _, _, _ = compute_data_metrics(
+                    self.experiment_dir, self.data_dir, self.im_height, self.im_width, self.pose_shape, self.input_pose_mode, self.train_index_map, 
+                    self.im_filenames, self.pose_filenames, num_random_files=self.num_random_files)
+
+            np.save(self.im_mean, im_mean_fname)
+            np.save(self.im_std, im_std_fname)
+            np.save(self.pose_mean, pose_mean_fname)
+            np.save(self.pose_std, pose_std_fname)
+
+            self.gqcnn.update_im_mean(self.im_mean)
+            self.gqcnn.update_im_std(self.im_std)
+            self.gqcnn.update_pose_mean(self.pose_mean)
+            self.gqcnn.update_pose_std(self.pose_std)
+
     def _setup_summaries(self):
         """ Sets up placeholders for summary values and creates summary writer """
         # we create placeholders for our python values because summary_scalar expects
@@ -409,12 +490,13 @@ class SGDOptimizer(object):
         # create a tf summary writer with the specified summary directory
         self.summary_writer = tf.summary.FileWriter(self.summary_dir)
         self.gqcnn.set_summary_writer(self.summary_writer)
+
         # initialize the variables again now that we have added some new ones
         with self.sess.as_default():
             tf.global_variables_initializer().run()
 
     def _setup_data_pipeline(self):
-        """Setup Tensorflow data pipeline for reading in data from dataset and piping it to model for training"""
+        """Setup Tensorflow data pipeline for reading in data from dataset and forwarding it to model for training"""
 
         # setup nodes
         with tf.name_scope('train_data_node'):
@@ -476,7 +558,6 @@ class SGDOptimizer(object):
         self.term_event.clear()
         self.dead_event = threading.Event()
         self.dead_event.clear()
-
     
     def _read_training_params(self):
         """ Read training parameters from configuration file """
@@ -527,18 +608,14 @@ class SGDOptimizer(object):
     def _read_data_params(self):
         """ Read data parameters from configuration file """
 
-        self.train_im_data = np.load(os.path.join(
-            self.data_dir, self.im_filenames[0]))['arr_0']
-        self.pose_data = np.load(os.path.join(
-            self.data_dir, self.pose_filenames[0]))['arr_0']
-        self.metric_data = np.load(os.path.join(
-            self.data_dir, self.label_filenames[0]))['arr_0']
+        self.train_im_data = np.load(os.path.join(self.data_dir, self.im_filenames[0]))['arr_0']
+        self.pose_data = np.load(os.path.join(self.data_dir, self.pose_filenames[0]))['arr_0']
+        self.metric_data = np.load(os.path.join(self.data_dir, self.label_filenames[0]))['arr_0']
         self.images_per_file = self.train_im_data.shape[0]
         self.im_height = self.train_im_data.shape[1]
         self.im_width = self.train_im_data.shape[2]
         self.im_channels = self.train_im_data.shape[3]
-        self.im_center = np.array(
-            [float(self.im_height - 1) / 2, float(self.im_width - 1) / 2])
+
         self.num_tensor_channels = self.cfg['num_tensor_channels']
         self.pose_shape = self.pose_data.shape[1]
         self.input_pose_mode = self.cfg['input_pose_mode']
@@ -581,199 +658,79 @@ class SGDOptimizer(object):
         self.num_random_files = min(self.num_files, self.cfg['num_random_files'])
         self.num_categories = 2
 
-    def _setup_denoising_and_synthetic(self):
-        """ Setup denoising and synthetic data parameters """
-
-        if self.cfg['multiplicative_denoising']:
-            self.gamma_shape = self.cfg['gamma_shape']
-            self.gamma_scale = 1.0 / self.gamma_shape
-
-    def _setup_data_filenames(self):
-        """ Setup data filenames, subsample files, check validity of filenames"""
-
-        # read in filenames of training data(poses, images, labels, obj_id's, stable_poses, gripper_params)
-        logging.info('Reading filenames')
-        all_filenames = os.listdir(self.data_dir)
-        if self.image_mode == ImageMode.BINARY:
-            self.im_filenames = [f for f in all_filenames if f.find(
-                FileTemplates.binary_im_tensor_template) > -1]
-        elif self.image_mode == ImageMode.DEPTH:
-            self.im_filenames = [f for f in all_filenames if f.find(
-                FileTemplates.depth_im_tensor_template) > -1]
-        elif self.image_mode == ImageMode.BINARY_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(
-                FileTemplates.binary_im_tf_tensor_template) > -1]
-        elif self.image_mode == ImageMode.COLOR_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(
-                FileTemplates.color_im_tf_tensor_template) > -1]
-        elif self.image_mode == ImageMode.GRAY_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(
-                FileTemplates.gray_im_tf_tensor_template) > -1]
-        elif self.image_mode == ImageMode.DEPTH_TF:
-            self.im_filenames = [f for f in all_filenames if f.find(
-                FileTemplates.depth_im_tf_tensor_template) > -1]
-        elif self.image_mode == ImageMode.DEPTH_TF_TABLE:
-            self.im_filenames = [f for f in all_filenames if f.find(
-                FileTemplates.depth_im_tf_table_tensor_template) > -1]
-        else:
-            raise ValueError('Image mode %s not supported.' % (self.image_mode))
-
-        self.pose_filenames = [f for f in all_filenames if f.find(
-            FileTemplates.hand_poses_template) > -1]
-        self.label_filenames = [
-            f for f in all_filenames if f.find(self.target_metric_name) > -1]
-        # since these are not required in the dataset, we fill them with FileTemplates.FILENAME_PLACEHOLDER just to prevent sorting exceptions down the line
-        # however, if they do not exist then exceptions will be thrown if the user tries to use object_wise/pose_wise splits
-        # or tries to input the gripper parameters to the network during training
-        self.obj_id_filenames = [f if (f.find(FileTemplates.object_labels_template) > -1)
-                                       else FileTemplates.filename_placeholder for f in all_filenames]
-        self._obj_files_exist = True
-        if self.obj_id_filenames[0] == FileTemplates.filename_placeholder:
-            self._obj_files_exist = False
-        self.stable_pose_filenames = [f if (f.find(FileTemplates.pose_labels_template) > -1)
-                                            else FileTemplates.filename_placeholder for f in all_filenames]
-        self._stable_pose_files_exist = True
-        if self.stable_pose_filenames[0] == FileTemplates.filename_placeholder:
-            self._stable_pose_files_exist = False
-        self.gripper_param_filenames = [f if (f.find(
-            FileTemplates.gripper_params_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
-        self.gripper_depth_mask_filenames = [f if (f.find(
-            FileTemplates.gripper_depth_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
-        self.gripper_seg_mask_filenames = [f if (f.find(
-            FileTemplates.gripper_segmask_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
-
-        if self.debug:
-            # sort
-            self.im_filenames.sort(key=lambda x: int(x[-9:-4]))
-            self.pose_filenames.sort(key=lambda x: int(x[-9:-4]))
-            self.label_filenames.sort(key=lambda x: int(x[-9:-4]))
-            self.obj_id_filenames.sort(key=lambda x: int(x[-9:-4]))
-            self.stable_pose_filenames.sort(key=lambda x: int(x[-9:-4]))
-            self.gripper_param_filenames.sort(key=lambda x: int(x[-9:-4]))
-            self.gripper_depth_mask_filenames.sort(key = lambda x: int(x[-9:-4]))
-            self.gripper_seg_mask_filenames.sort(key = lambda x: int(x[-9:-4]))
-
-            # pack, shuffle and sample
-            zipped = zip(self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, 
-                self.stable_pose_filenames, self.gripper_param_filenames, self.gripper_depth_mask_filenames, self.gripper_seg_mask_filenames)
-
-            random.shuffle(zipped)
-            zipped = zipped[:self.debug_num_files]
-
-            # unpack
-            self.im_filenames, self.pose_filenames, self.label_filenames, self.obj_id_filenames, self.stable_pose_filenames, self.gripper_param_filenames, self.gripper_depth_mask_filenames, self.gripper_seg_mask_filenames = zip(*zipped)
-
-        self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.gripper_param_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.gripper_depth_mask_filenames.sort(key = lambda x: int(x[-9:-4]))
-        self.gripper_seg_mask_filenames.sort(key = lambda x: int(x[-9:-4]))
-
-        # check valid filenames
-        if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
-            raise RuntimeError('One or more required training files(Images, Poses, Labels) in the dataset could not be found.')
-
-        # subsample files
-        self.num_files = len(self.im_filenames)
-        num_files_used = int(self.total_pct * self.num_files)
-        filename_indices = np.random.choice(self.num_files, size=num_files_used, replace=False)
-        filename_indices.sort()
-        self.im_filenames = [self.im_filenames[k] for k in filename_indices]
-        self.pose_filenames = [self.pose_filenames[k] for k in filename_indices]
-        self.label_filenames = [self.label_filenames[k] for k in filename_indices]
-        self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]   
-        self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
-        self.gripper_param_filenames = [self.gripper_param_filenames[k] for k in filename_indices]
-        self.gripper_depth_mask_filenames = [self.gripper_depth_mask_filenames[k] for k in filename_indices]
-        self.gripper_seg_mask_filenames = [self.gripper_seg_mask_filenames[k] for k in filename_indices]
-
-        # create copy of image, pose, gripper_param, and label filenames because original cannot be accessed by load and enqueue op in the case that             the error_rate_in_batches method is sorting the original
-        self.im_filenames_copy = self.im_filenames[:]
-        self.pose_filenames_copy = self.pose_filenames[:]
-        self.label_filenames_copy = self.label_filenames[:]
-        self.gripper_param_filenames_copy = self.gripper_param_filenames[:]
-        self.gripper_depth_mask_filenames_copy = self.gripper_depth_mask_filenames[:]
-        self.gripper_seg_mask_filenames_copy = self.gripper_seg_mask_filenames[:]
-
-    def _setup_output_dirs(self):
-        """ Setup output directories """
-
-        # setup general output directory
-        output_dir = self.cfg['output_dir']
-        if not os.path.exists(output_dir):
-            os.mkdir(output_dir)
-        experiment_id = utils.gen_experiment_id()
-        self.experiment_dir = os.path.join(output_dir, 'model_%s' %(experiment_id))
-        if not os.path.exists(self.experiment_dir):
-            os.mkdir(self.experiment_dir)
-        self.summary_dir = os.path.join(self.experiment_dir, 'tensorboard_summaries')
-        if not os.path.exists(self.summary_dir):
-            os.mkdir(self.summary_dir)
-        else:
-            # if the summary directory already exists, clean it out by deleting all files in it
-            # we don't want tensorboard to get confused with old logs while debugging with the same directory
-            old_files = os.listdir(self.summary_dir)
-            for file in old_files:
-                os.remove(os.path.join(self.summary_dir, file))
-
-        logging.info('Saving model to %s' %(self.experiment_dir))
-
-        # setup filter directory
-        self.filter_dir = os.path.join(self.experiment_dir, 'filters')
-        if not os.path.exists(self.filter_dir):
-            os.mkdir(self.filter_dir)
+        self.denoising_params = self.cfg['denoise']
 
     def _setup(self):
-        """ Setup for optimization """
+        """ Setup for training """
 
-        # set up logger
-        logging.getLogger().setLevel(logging.INFO)
-
+        # get debug flag and number of files to use when debugging
         self.debug = self.cfg['debug']
+        self.debug_num_files = self.cfg['debug_num_files']
         
         # initialize thread exit booleans
         self.queue_thread_exited = False
         self.forceful_exit = False
 
-        # set random seed for deterministic execution
+        # set random seed for deterministic execution if in debug mode
         if self.debug:
             np.random.seed(GeneralConstants.SEED)
             random.seed(GeneralConstants.SEED)
-            self.debug_num_files = self.cfg['debug_num_files']
 
         # setup output directories
-        self._setup_output_dirs()
+        output_dir = self.cfg['output_dir']
+        self.experiment_dir, self.summary_dir, self.filter_dir = setup_output_dirs(output_dir)
+
+        # create python lambda function to help create file paths to experiment_dir
+        self.exp_path_gen = lambda fname: os.path.join(self.experiment_dir, fname)
 
         # copy config file
-        self._copy_config()
+        copy_config(self.experiment_dir, self.cfg)
 
         # read training parameters from config file
         self._read_training_params()
 
-        # setup denoising and synthetic data parameters
-        self._setup_denoising_and_synthetic()
-
-        # setup image and pose data files
-        self._setup_data_filenames()
+        # read dataset filenames
+        self.im_filenames, self.pose_filenames, self.label_filenames, self.gripper_param_filenames, 
+        self.gripper_depth_mask_filenames, self.gripper_seg_mask_filenames,self.im_filenames_copy, 
+        self.pose_filenames_copy, self.label_filenames_copy, self.gripper_param_filenames_copy, 
+        self.gripper_depth_mask_filenames_copy, self.gripper_seg_mask_filenames_copy, self.obj_id_filenames, 
+        self.stable_pose_filenames, self.num_files = setup_data_filenames(self.data_dir, self.image_mode, self.target_metric_name, self.debug, self.debug_num_files)
 
         # read data parameters from config file
         self._read_data_params()
 
-        # compute train/test indices based on how the data is to be split
-        if self.data_split_mode == 'image_wise':
-            self._compute_indices_image_wise()
-        elif self.data_split_mode == 'object_wise':
-            self._compute_indices_object_wise()
-        elif self.data_split_mode == 'stable_pose_wise':
-            self._compute_indices_pose_wise()
-        else:
-            raise ValueError('Data Split Mode Not Supported')
+        # compute total number of datapoints in dataset(rounded up to num_datapoints_per_file)
+        self.num_datapoints = self.num_datapoints_per_file * self.num_files
 
-        # compute means, std's, and normalization metrics
+        steps_per_epoch = self.num_datapoints * self.train_pct / self.batch_size
+        # if self.eval_frequency == -1, change it to reflect a single epoch
+        if self.eval_frequency == -1:
+            self.eval_frequency = steps_per_epoch
+
+        # if self.save_frequency == -1, change it to reflect a single epoch
+        if self.save_frequency == -1:
+            self.save_frequency == steps_per_epoch
+
+        # compute train/test indices based on how the data is to be split
+        if self.data_split_mode == DataSplitMode.IMAGE_WISE:
+            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.IMAGE_WISE, self.data_dir, self.num_datapoints, self.train_pct, self.im_filenames)
+        elif self.data_split_mode == DataSplitMode.OBJECT_WISE:
+            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.OBJECT_WISE, self.data_dir, self.train_pct, self.im_filenames, self.obj_id_filenames)
+        elif self.data_split_mode == DataSplitMode.STABLE_POSE_WISE:
+            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.STABLE_POSE_WISE, self.data_dir, self.train_pct, self.im_filenames, self.stable_pose_filenames)
+        else:
+            raise ValueError('Data split mode: {} not supported'.format(self.data_split_mode))
+
+        # calculate learning rate decay step
+        self.decay_step = get_decay_step(self.train_pct, self.num_datapoints_per_file, self.decay_step_multiplier)
+
+        # compute data metrics
         self._compute_data_metrics()
+
+        # compute grasp label metrics
+        self.min_grasp_metric, self.max_grasp_metric, self.mean_grasp_metric, self.median_grasp_metric, self.pct_pose_val = self.compute_grasp_label_metrics(
+            self.data_dir, self.im_filenames, self.label_filenames, self.val_index_map, self.metric_thresh)
+        logging.info('Percent positive in val set: ' + str(self.pct_pos_val))
 
         # setup tensorflow data pipeline
         self._setup_data_pipeline()
@@ -789,7 +746,7 @@ class SGDOptimizer(object):
         self._num_distorted_val_images_saved = 0
   
     def _load_and_enqueue(self):
-        """ Loads and Enqueues a batch of images, poses, labels, and possibly gripper paramters for training """
+        """ Loads and Enqueues a batch of images, poses, labels, and possibly gripper parameters for training """
 
         # read parameters of gaussian process
         self.gp_rescale_factor = self.cfg['gaussian_process_scaling_factor']
@@ -840,7 +797,7 @@ class SGDOptimizer(object):
                 train_ind = self.train_index_map[train_data_filename]
                 np.random.shuffle(train_ind)
                 if self.input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
-                    tp_tmp = self._read_pose_data(self.train_poses_arr.copy(), self.input_pose_mode)
+                    tp_tmp = parse_pose_data(self.train_poses_arr.copy(), self.input_pose_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
                 upper = min(num_remaining, train_ind.shape[
                             0], self.max_training_examples_per_load)
@@ -862,7 +819,7 @@ class SGDOptimizer(object):
                 # save undistorted train images for debugging
                 if self.cfg['save_original_train_images']:
                     if self._num_original_train_images_saved < self.cfg['num_original_train_images']:
-                        output_dir = os.path.join(self.experiment_dir, 'original_train_images')
+                        output_dir = self.exp_path_gen('original_train_images')
                         if not os.path.exists(output_dir):
                             os.mkdir(output_dir)
                         np.savez_compressed(os.path.join(output_dir, 'original_image_{}'.format(self._num_original_train_images_saved)), train_data_arr[0, :, :, 0])
@@ -874,14 +831,14 @@ class SGDOptimizer(object):
                     mask_arr = np.zeros((train_data_arr.shape[0], train_data_arr.shape[1], train_data_arr.shape[2], self.num_tensor_channels))
                     mask_arr[:, :, :, 0] = train_data_arr[:, :, :, 0]
                     train_data_arr = mask_arr
-                    train_data_arr, train_poses_arr = self._distort(train_data_arr, train_poses_arr, mask_and_inpaint=True)
+                    train_data_arr, train_poses_arr = denoise(train_data_arr, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=train_poses_arr, pose_dim=self.pose_dim, mask_and_inpaint=True)
                 else:
-                    train_data_arr, train_poses_arr = self._distort(train_data_arr, train_poses_arr)
+                    train_data_arr, train_poses_arr = denoise(train_data_arr, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=train_poses_arr, pose_dim=self.pose_dim)
 
                 # save distorted train images for debugging 
                 if self.cfg['save_distorted_train_images']:
                     if self._num_distorted_train_images_saved < self.cfg['num_distorted_train_images']:
-                        output_dir = os.path.join(self.experiment_dir, 'distorted_train_images')
+                        output_dir = self.exp_path_gen('distorted_train_images')
                         if not os.path.exists(output_dir):
                             os.mkdir(output_dir)
                         np.savez_compressed(os.path.join(output_dir, 'distorted_image_{}'.format(self._num_distorted_train_images_saved)), train_data_arr[0, :, :, 0])
@@ -898,34 +855,20 @@ class SGDOptimizer(object):
                 # normalize labels
                 if self.training_mode == TrainingMode.REGRESSION:
                     if self.preproc_mode == PreprocMode.NORMALIZATION:
-                        train_label_arr = (train_label_arr - self.min_metric) / (self.max_metric - self.min_metric)
+                        train_label_arr = (train_label_arr - self.min_grasp_metric) / (self.max_grasp_metric - self.min_grasp_metric)
                 elif self.training_mode == TrainingMode.CLASSIFICATION:
                     train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                     train_label_arr = train_label_arr.astype(self.numpy_dtype)
-                
-#                for i in range(train_data_arr.shape[0]):
-#                    d_image = DepthImage(train_data_arr[i])
-#                    f_mask = DepthImage(train_gripper_depth_mask_arr[i, :, :, 1])
-#                    p_mask = DepthImage(train_gripper_depth_mask_arr[i, :, :, 0])
-#                    print(train_label_arr[i])
-#                    vis.figure() 
-#                    vis.subplot(131)
-#                    vis.imshow(d_image)
-#                    vis.subplot(132)
-#                    vis.imshow(f_mask)
-#                    vis.subplot(133)
-#                    vis.imshow(p_mask)
-#                    vis.show()
 
                 # enqueue training data batch
                 train_data[start_i:end_i, :, :, 0] = train_data_arr[:, :, :, 0]
                 if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
                     train_data[start_i:end_i, :, :, 1] = train_gripper_depth_mask_arr[:, :, :,  0]
                     train_data[start_i:end_i, :, :, 2] = train_gripper_depth_mask_arr[:, :, :,  1]
-                train_poses[start_i:end_i,:] = self._read_pose_data(train_poses_arr, self.input_pose_mode)
+                train_poses[start_i:end_i,:] = parse_pose_data(train_poses_arr, self.input_pose_mode)
                 label_data[start_i:end_i] = train_label_arr
                 if self.gripper_dim > 0:
-                    train_gripper[start_i:end_i] = self._read_gripper_data(train_gripper_arr, self.input_gripper_mode)
+                    train_gripper[start_i:end_i] = parse_gripper_data(train_gripper_arr, self.input_gripper_mode)
 
                 del train_data_arr
                 del train_poses_arr
@@ -999,13 +942,13 @@ class SGDOptimizer(object):
                 continue
         
             if self.input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
-                tp_tmp = self._read_pose_data(poses.copy(), self.input_pose_mode)
+                tp_tmp = parse_pose_data(poses.copy(), self.input_pose_mode)
                 val_indices = val_indices[np.isfinite(tp_tmp[val_indices,1])]
 
             data = data[val_indices,...]
-            poses = self._read_pose_data(poses[val_indices, :], self.input_pose_mode)
+            poses = parse_pose_data(poses[val_indices, :], self.input_pose_mode)
             if self.gripper_dim > 0:
-                gripper_params = self._read_gripper_data(gripper_params[val_indices, :], self.input_gripper_mode)
+                gripper_params = parse_gripper_data(gripper_params[val_indices, :], self.input_gripper_mode)
             if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
                 gripper_depth_mask = gripper_depth_mask[val_indices]
                 gripper_seg_mask = gripper_seg_mask[val_indices]
@@ -1013,7 +956,7 @@ class SGDOptimizer(object):
 
             if self.training_mode == TrainingMode.REGRESSION:
                 if self.preproc_mode == PreprocMode.NORMALIZATION:
-                    labels = (labels - self.min_metric) / (self.max_metric - self.min_metric)
+                    labels = (labels - self.min_grasp_metric) / (self.max_grasp_metric - self.min_grasp_metric)
             elif self.training_mode == TrainingMode.CLASSIFICATION:
                 labels = 1 * (labels > self.metric_thresh)
                 labels = labels.astype(np.uint8)
@@ -1021,7 +964,7 @@ class SGDOptimizer(object):
             # save undistorted validation images for debugging 
             if self.cfg['save_original_val_images']:
                 if self._num_original_val_images_saved < self.cfg['num_original_val_images']:
-                    output_dir = os.path.join(self.experiment_dir, 'original_val_images')
+                    output_dir = self.exp_path_gen('original_val_images')
                     if not os.path.exists(output_dir):
                         os.mkdir(output_dir)
                     np.savez_compressed(os.path.join(output_dir, 'original_image_{}'.format(self._num_original_val_images_saved)), data[0, :, :, 0])
@@ -1035,7 +978,7 @@ class SGDOptimizer(object):
 
             # distort
             if self.cfg['distort_val_data']:
-                data, poses = self._distort(data, poses)
+                data, poses = denoise(data, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=poses, pose_dim=self.pose_dim)
 
             # add gripper mask channels if needed
             if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
@@ -1055,7 +998,7 @@ class SGDOptimizer(object):
             # save distorted validation images for debugging
             if self.cfg['save_distorted_val_images']:
                 if self._num_distorted_val_images_saved < self.cfg['num_distorted_val_images']:
-                    output_dir = os.path.join(self.experiment_dir, 'distorted_val_images')
+                    output_dir = self.exp_path_gen('distorted_val_images')
                     if not os.path.exists(output_dir):
                         os.mkdir(output_dir)
                     np.savez_compressed(os.path.join(output_dir, 'distorted_image_{}'.format(self._num_distorted_val_images_saved)), data[0, :, :, 0])
