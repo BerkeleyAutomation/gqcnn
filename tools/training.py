@@ -6,7 +6,7 @@ import time
 import logging
 
 from gqcnn import GQCNNAnalyzer
-from gqcnn.models import get_gqcnn_model
+from gqcnn.model import get_gqcnn_model
 from gqcnn.training import get_gqcnn_trainer
 from autolab_core import YamlConfig
 	

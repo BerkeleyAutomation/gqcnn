@@ -21,6 +21,17 @@ class DataSplitMode:
     OBJECT_WISE = 'object_wise'
     STABLE_POSE_WISE = 'stable_pose_wise'
 
+# enum for denoising methods
+class DenoisingMethods:
+    MULTIPLICATIVE_DENOISING = 'multiplicative_denoising'
+    SYMMETRIZE = 'symmetrize'
+    MORPHOLOGICAL = 'morphological'
+    IMAGE_DROPOUT = 'image_dropout'
+    GRADIENT_DROPOUT = 'gradient_dropout'
+    GAUSSIAN_PROCESS_DENOISING = 'gaussian_process_denoising'
+    BORDER_DISTORTION = 'border_distortion'
+    BACKGROUND_DENOISING = 'background_denoising'
+
 # enum for templates for file reading
 class DataFileTemplates:
     binary_im_tensor_template = 'binary_ims_raw'

@@ -2,6 +2,10 @@
 Various helper functions for handling data, denoising, and computing data metrics.
 Author: Vishal Satish
 """
+import logging
+import os
+import copy
+
 import numpy as np
 import cv2
 import scipy.stats as ss
@@ -177,7 +181,7 @@ def compute_data_metrics(experiment_dir, data_dir, im_height, im_width, total_po
             gripper_depth_mask_var[1] += np.sum((mask_data[train_index_map[im_filename], ..., 1] - gripper_depth_mask_mean[1])**2)
         gripper_depth_mask_std = np.sqrt(gripper_depth_mask_var / (num_summed * im_height * im_width))
 
-    return image_mean, image_std, pose_mean, pose_std, gripper_mean, gripper_std, gripper_depth_mask_mean, gripper_depth_mask_std
+    return im_mean, im_std, pose_mean, pose_std, gripper_mean, gripper_std, gripper_depth_mask_mean, gripper_depth_mask_std
 
 def compute_grasp_label_metrics(data_dir, im_filenames, label_filenames, val_index_map, metric_thresh):
     """ Computes min, max, mean, median statistics for grasp robustness metric. Also computes percentage of
@@ -208,12 +212,12 @@ def compute_grasp_label_metrics(data_dir, im_filenames, label_filenames, val_ind
     return min_metric, max_metric, mean_metric, median_metric, pct_pos_val
 
 def denoise(im_arr, im_height, im_width, im_channels, denoising_params, 
-    ose_arr=None, pose_dim=1, only_dropout=False, mask_and_inpaint=False):
+    pose_arr=None, pose_dim=1, only_dropout=False, mask_and_inpaint=False):
     """ Adds noise to a batch of images and possibly poses """
     
     # make deepcopy of input arrays
     im_arr = copy.deepcopy(im_arr)
-    if pose_arr:
+    if pose_arr is not None:
         pose_arr = copy.deepcopy(pose_arr)
 
     # apply denoising
@@ -263,14 +267,14 @@ def denoise(im_arr, im_height, im_width, im_channels, denoising_params,
 
         # add correlated Gaussian noise
         elif method == DenoisingMethods.GAUSSIAN_PROCESS_DENOISING and not only_dropout:
-            gp_sample_height = int(im_height / params['gp_rescale_factor'])
-            gp_sample_width = int(im_width / params['gp_rescale_factor'])
+            gp_sample_height = int(im_height / params['gaussian_process_scaling_factor'])
+            gp_sample_width = int(im_width / params['gaussian_process_scaling_factor'])
             gp_num_pix = gp_sample_height * gp_sample_width
             for i in range(len(im_arr)):
                 if np.random.rand() < params['gaussian_process_rate']:
                     image = im_arr[i,:,:,0]
-                    gp_noise = ss.norm.rvs(scale=params['gp_sigma'], size=gp_num_pix).reshape(gp_sample_height, gp_sample_width)
-                    gp_noise = sm.imresize(gp_noise, params['gp_rescale_factor'], interp='bicubic', mode='F')
+                    gp_noise = ss.norm.rvs(scale=params['gaussian_process_sigma'], size=gp_num_pix).reshape(gp_sample_height, gp_sample_width)
+                    gp_noise = sm.imresize(gp_noise, params['gaussian_process_scaling_factor'], interp='bicubic', mode='F')
                     image[image > 0] += gp_noise[image > 0]
                     im_arr[i,:,:,0] = image
 
@@ -341,7 +345,7 @@ def denoise(im_arr, im_height, im_width, im_channels, denoising_params,
                         im_arr[i,:,:,0] = image
 
         # randomly replace background pixels with constant depth
-        elif method == DenoisingMethods.BACKROUND_DENOISING and not only_dropout:
+        elif method == DenoisingMethods.BACKGROUND_DENOISING and not only_dropout:
             for i in range(len(im_arr)):
                 image = im_arr[i,:,:,0]                
                 if np.random.rand() < params['background_rate']:

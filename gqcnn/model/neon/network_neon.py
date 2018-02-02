@@ -19,6 +19,7 @@ from neon.backends import gen_backend
 
 from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data
 from gqcnn.utils.training_utils import setup_python_logger
+from gqcnn.utils.enums import InputPoseMode, InputGripperMode
 
 class CustomKaiming(Initializer):
     def __init__(self, local=True, name='CustomKaiming'):

@@ -13,6 +13,7 @@ import tensorflow.contrib.framework as tcf
 
 from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data
 from gqcnn.utils.training_utils import setup_python_logger
+from gqcnn.utils.enums import InputPoseMode, InputGripperMode
 from spatial_transformer import transformer
 
 def reduce_shape(shape):
@@ -543,6 +544,7 @@ class GQCNNTF(object):
         
     def add_softmax_to_output(self):
         """ Adds softmax to output of network """
+        logging.info('Building Softmax Layer')
         self._output_tensor = tf.nn.softmax(self._output_tensor)
 
     def update_batch_size(self, batch_size):
@@ -595,7 +597,7 @@ class GQCNNTF(object):
 
                 self._input_im_arr[:dim, ...] = (
                     image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std 
-               
+                
                 self._input_pose_arr[:dim, :] = (
                     pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
 

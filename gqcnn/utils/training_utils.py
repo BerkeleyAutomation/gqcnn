@@ -10,8 +10,10 @@ import sys
 import shutil
 import logging
 
+import numpy as np
+
 from autolab_core import utils
-from enums import FileTemplates, ImageMode, OutputDirTemplates
+from enums import DataFileTemplates, ImageMode, OutputDirTemplates
 
 def copy_config(experiment_dir, cfg):
     """ Copy entire configuration dict and GQCNN architecture dict to JSON files in experiment_dir. Also copy
@@ -34,11 +36,11 @@ def copy_config(experiment_dir, cfg):
     out_train_filename = os.path.join(experiment_dir, 'training_script.py')
     shutil.copyfile(this_filename, out_train_filename)
 
-def compute_indices_image_wise(data_dir, num_datapoints, train_pct, im_filenames):
+def compute_indices_image_wise(data_dir, images_per_file, num_datapoints, train_pct, im_filenames):
     """ Compute train and validation indices based on an image-wise split of the data"""
 
     # get total number of training datapoints
-    num_train = train_pct * num_datapoints
+    num_train = int(train_pct * num_datapoints)
     
     # get training and validation indices
     all_indices = np.arange(num_datapoints)
@@ -146,7 +148,7 @@ def get_decay_step(train_pct, num_datapoints, decay_step_multiplier):
     num_train = int(train_pct * num_datapoints)
     return decay_step_multiplier * num_train
 
-def setup_data_filenames(data_dir, image_mode, target_metric_name, debug, debug_num_files):
+def setup_data_filenames(data_dir, image_mode, target_metric_name, total_pct, debug, debug_num_files):
     """ Setup data filenames, subsample files, check validity of filenames"""
 
     # read in filenames of training data(poses, images, labels, obj_id's, stable_poses, gripper_params)
@@ -154,51 +156,48 @@ def setup_data_filenames(data_dir, image_mode, target_metric_name, debug, debug_
     all_filenames = os.listdir(data_dir)
     if image_mode == ImageMode.BINARY:
         im_filenames = [f for f in all_filenames if f.find(
-            FileTemplates.binary_im_tensor_template) > -1]
+            DataFileTemplates.binary_im_tensor_template) > -1]
     elif image_mode == ImageMode.DEPTH:
         im_filenames = [f for f in all_filenames if f.find(
-            FileTemplates.depth_im_tensor_template) > -1]
+            DataFileTemplates.depth_im_tensor_template) > -1]
     elif image_mode == ImageMode.BINARY_TF:
         im_filenames = [f for f in all_filenames if f.find(
-            FileTemplates.binary_im_tf_tensor_template) > -1]
+            DataFileTemplates.binary_im_tf_tensor_template) > -1]
     elif image_mode == ImageMode.COLOR_TF:
         im_filenames = [f for f in all_filenames if f.find(
-            FileTemplates.color_im_tf_tensor_template) > -1]
+            DataFileTemplates.color_im_tf_tensor_template) > -1]
     elif image_mode == ImageMode.GRAY_TF:
         im_filenames = [f for f in all_filenames if f.find(
-            FileTemplates.gray_im_tf_tensor_template) > -1]
+            DataFileTemplates.gray_im_tf_tensor_template) > -1]
     elif image_mode == ImageMode.DEPTH_TF:
         im_filenames = [f for f in all_filenames if f.find(
-            FileTemplates.depth_im_tf_tensor_template) > -1]
+            DataFileTemplates.depth_im_tf_tensor_template) > -1]
     elif image_mode == ImageMode.DEPTH_TF_TABLE:
         im_filenames = [f for f in all_filenames if f.find(
-            FileTemplates.depth_im_tf_table_tensor_template) > -1]
+            DataFileTemplates.depth_im_tf_table_tensor_template) > -1]
     else:
         raise ValueError('Image mode %s not supported.' % (image_mode))
 
-    pose_filenames = [f for f in all_filenames if f.find(
-        FileTemplates.hand_poses_template) > -1]
-    label_filenames = [
-        f for f in all_filenames if f.find(target_metric_name) > -1]
+    pose_filenames = [f for f in all_filenames if f.find(DataFileTemplates.hand_poses_template) > -1]
+    label_filenames = [f for f in all_filenames if f.find(target_metric_name) > -1]
     # since these are not required in the dataset, we fill them with FileTemplates.FILENAME_PLACEHOLDER just to prevent sorting exceptions down the line
     # however, if they do not exist then exceptions will be thrown if the user tries to use object_wise/pose_wise splits
     # or tries to input the gripper parameters to the network during training
-    obj_id_filenames = [f if (f.find(FileTemplates.object_labels_template) > -1)
-                                   else FileTemplates.filename_placeholder for f in all_filenames]
+    obj_id_filenames = [f if (f.find(DataFileTemplates.object_labels_template) > -1) else DataFileTemplates.filename_placeholder for f in all_filenames]
     obj_id_files_exist = True
-    if obj_id_filenames[0] == FileTemplates.filename_placeholder:
+    if obj_id_filenames[0] == DataFileTemplates.filename_placeholder:
         obj_id_files_exist = False
-    stable_pose_filenames = [f if (f.find(FileTemplates.pose_labels_template) > -1)
-                                        else FileTemplates.filename_placeholder for f in all_filenames]
+    stable_pose_filenames = [f if (f.find(DataFileTemplates.pose_labels_template) > -1)
+                                        else DataFileTemplates.filename_placeholder for f in all_filenames]
     stable_pose_files_exist = True
-    if stable_pose_filenames[0] == FileTemplates.filename_placeholder:
+    if stable_pose_filenames[0] == DataFileTemplates.filename_placeholder:
         stable_pose_files_exist = False
     gripper_param_filenames = [f if (f.find(
-        FileTemplates.gripper_params_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
+        DataFileTemplates.gripper_params_template) > -1) else DataFileTemplates.filename_placeholder for f in all_filenames]
     gripper_depth_mask_filenames = [f if (f.find(
-        FileTemplates.gripper_depth_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
+        DataFileTemplates.gripper_depth_template) > -1) else DataFileTemplates.filename_placeholder for f in all_filenames]
     gripper_seg_mask_filenames = [f if (f.find(
-        FileTemplates.gripper_segmask_template) > -1) else FileTemplates.filename_placeholder for f in all_filenames]
+        DataFileTemplates.gripper_segmask_template) > -1) else DataFileTemplates.filename_placeholder for f in all_filenames]
 
     if debug:
         # sort
@@ -242,7 +241,7 @@ def setup_data_filenames(data_dir, image_mode, target_metric_name, debug, debug_
     filename_indices.sort()
     im_filenames = [im_filenames[k] for k in filename_indices]
     pose_filenames = [pose_filenames[k] for k in filename_indices]
-    label_filenames = [slabel_filenames[k] for k in filename_indices]
+    label_filenames = [label_filenames[k] for k in filename_indices]
     obj_id_filenames = [obj_id_filenames[k] for k in filename_indices]   
     stable_pose_filenames = [stable_pose_filenames[k] for k in filename_indices]
     gripper_param_filenames = [gripper_param_filenames[k] for k in filename_indices]
@@ -258,9 +257,9 @@ def setup_data_filenames(data_dir, image_mode, target_metric_name, debug, debug_
     gripper_depth_mask_filenames_copy = gripper_depth_mask_filenames[:]
     gripper_seg_mask_filenames_copy = gripper_seg_mask_filenames[:]
 
-    return im_filenames, pose_filenames, label_filenames, gripper_param_filenames, gripper_depth_mask_filenames, gripper_seg_mask_filenames,
-        im_filenames_copy, pose_filenames_copy, label_filenames_copy, gripper_param_filenames_copy, gripper_depth_mask_filenames_copy, 
-        gripper_seg_mask_filenames_copy, obj_id_filenames, stable_pose_filenames, num_files
+    return im_filenames, pose_filenames, label_filenames, gripper_param_filenames, gripper_depth_mask_filenames, gripper_seg_mask_filenames, \
+        im_filenames_copy, pose_filenames_copy, label_filenames_copy, gripper_param_filenames_copy, gripper_depth_mask_filenames_copy, \
+        gripper_seg_mask_filenames_copy, obj_id_filenames, stable_pose_filenames, num_files 
 
 def setup_output_dirs(output_dir):
     """ Setup output directories """

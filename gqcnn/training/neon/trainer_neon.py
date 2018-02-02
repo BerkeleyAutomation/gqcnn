@@ -8,13 +8,13 @@ import random
 
 import numpy as np
 
-from gqcnn.utils.data_utils import setup_output_dirs, copy_config
+from gqcnn.utils.training_utils import setup_output_dirs, copy_config
 from gqcnn.utils.enums import TrainingMode
-from gqcnn import GQCNNDataset
+from gqcnn.training.neon.gqcnn_dataset import GQCNNDataset
 
 from neon.transforms.cost import Metric
 from neon.transforms import CrossEntropyMulti, Accuracy
-from neon.optimizers import GradientDescentMomentum, ExpSchedule,
+from neon.optimizers import GradientDescentMomentum, ExpSchedule
 from neon.callbacks import Callbacks
 from neon.callbacks.callbacks import MetricCallback, SerializeModelCallback
 
@@ -40,21 +40,21 @@ class GQCNNTrainerNeon(object):
             dictionary of configuration parameters
         """
         self._gqcnn = gqcnn
-        self._cfg = config
+        self.cfg = config
 
     def _create_loss(self):
         """ Creat loss based on config """
-        if self._cfg['loss'] == 'cross_entropy':
+        if self.cfg['loss'] == 'cross_entropy':
             return GeneralizedCost(costfunc=CrossEntropyMulti())
         else:
             raise ValueError('Loss: {} not supported'.format(self._cfg['loss']))
 
     def _create_optimizer(self, learning_rate, momentum_rate, weight_decay, schedule):
         """ Create optimizer based on config """
-        if self._cfg['optimizer'] == 'momentum':
+        if self.cfg['optimizer'] == 'momentum':
             return GradientDescentMomentum(learning_rate, momentum_rate, schedule=Schedule())
         else:
-            raise ValueError('Optimizer %s not supported' % (self._cfg['optimizer']))
+            raise ValueError('Optimizer %s not supported' % (self.cfg['optimizer']))
 
     def _learning_schedule(self, decay_rate):
         """ Create exponential learning schedule with specified decay rate"""

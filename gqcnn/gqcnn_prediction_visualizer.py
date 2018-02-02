@@ -13,10 +13,10 @@ import autolab_core.utils as utils
 from autolab_core import YamlConfig, Point
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
-from gqcnn import Grasp2D, GQCNN, ClassificationResult, InputPoseMode,InputGripperMode, ImageMode, FileTemplates
+from gqcnn import Grasp2D
+from gqcnn.model import get_gqcnn_model
+from gqcnn.utils.enums import InputPoseMode, InputGripperMode, ImageMode, DataFileTemplates
 from gqcnn import Visualizer as vis2d
-
-import IPython as ip
 
 class GQCNNPredictionVisualizer(object):
     """ Class to visualize predictions of GQCNN on a specified dataset. Visualizes TP, TN, FP, FN. """
@@ -194,7 +194,8 @@ class GQCNNPredictionVisualizer(object):
         # load gqcnn
         logging.info('Loading GQ-CNN')
         self.model_dir = self.cfg['model_dir']
-        self._gqcnn = GQCNN.load(self.model_dir)
+        self.gqcnn_backend = self.cfg['gqcnn_backend']
+        self._gqcnn = get_gqcnn_model(self.gqcnn_backend).load(self.model_dir)
         self._gqcnn.open_session()
 
     def _setup_data_filenames(self):

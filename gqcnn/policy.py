@@ -17,9 +17,11 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage
 
-from gqcnn import Grasp2D, ImageGraspSamplerFactory, GQCNN, InputPoseMode
+from gqcnn import Grasp2D, ImageGraspSamplerFactory
+from gqcnn.utils.enums import InputPoseMode
+from gqcnn.model import get_gqcnn_model
 from gqcnn import Visualizer as vis
-from gqcnn import NoValidGraspsException
+from gqcnn.utils.policy_exceptions import NoValidGraspsException
 
 FIGSIZE = 16
 SEED = 5234709
@@ -93,6 +95,7 @@ class GraspingPolicy(Policy):
         self._crop_width = config['crop_width']
         self._sampling_config = config['sampling']
         self._gqcnn_model_dir = config['gqcnn_model']
+        self._gqcnn_backend = config['gqcnn_backend']
         sampler_type = self._sampling_config['type']
         
         # init grasp sampler
@@ -101,7 +104,7 @@ class GraspingPolicy(Policy):
                                                                self._gripper_width)
         
         # init GQ-CNN
-        self._gqcnn = GQCNN.load(self._gqcnn_model_dir)
+        self._gqcnn = get_gqcnn_model(self._gqcnn_backend).load(self._gqcnn_model_dir)
 
         # open tensorflow session for gqcnn
         self._gqcnn.open_session()

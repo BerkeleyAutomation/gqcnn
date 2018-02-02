@@ -8,18 +8,20 @@ import os
 import random
 import signal
 import time
+import threading
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
 
 from gqcnn.utils.learning_analysis import ClassificationResult, RegressionResult
-from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data, 
+from gqcnn.utils.train_stats_logger import TrainStatsLogger
+from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data, \
     compute_data_metrics, compute_grasp_label_metrics, denoise
-from gqcnn.utils.training_utils import copy_config, compute_indices_image_wise, 
-    compute_indices_pose_wise, compute_indices_object_wise, get_decay_step, 
+from gqcnn.utils.training_utils import copy_config, compute_indices_image_wise, \
+    compute_indices_pose_wise, compute_indices_object_wise, get_decay_step, \
     setup_data_filenames, setup_output_dirs
-from gqcnn.utils.enums import GeneralConstants, DataSplitMode
+from gqcnn.utils.enums import GeneralConstants, DataSplitMode, InputPoseMode, InputGripperMode, TrainingMode
 
 class GQCNNTrainerTF(object):
     """ Trains GQCNN with Tensorflow backend """
@@ -109,7 +111,11 @@ class GQCNNTrainerTF(object):
         os.system('kill ' + tensorboard_pid)
 
     def train(self):
-        """ Perform optimization """
+        """ Perform Optimization  """
+        with self.gqcnn.get_tf_graph().as_default():
+            self._train()
+
+    def _train(self):
         start_time = time.time()
 
         # run setup
@@ -431,11 +437,11 @@ class GQCNNTrainerTF(object):
                     self.im_filenames, self.pose_filenames, gripper_param_filenames=self.gripper_param_filenames, total_gripper_param_elems=self.gripper_shape, 
                     num_random_files=self.num_random_files)
 
-                np.save(self.gripper_mean, gripper_mean_fname)
-                np.save(self.gripper_std, gripper_std_fname)
+                np.save(gripper_mean_fname, self.gripper_mean)
+                np.save(gripper_std_fname, self.gripper_std)
 
-                self.gqcnn.update_gripper_mean(self.gripper_mean)
-                self.gqcnn.update_gripper_std(self.gripper_std)
+                self.gqcnn.update_gripper_mean(parse_gripper_data(self.gripper_mean, self.input_gripper_mode))
+                self.gqcnn.update_gripper_std(parse_gripper_data(self.gripper_std, self.input_gripper_mode))
 
             elif self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
                 gripper_depth_mask_mean_fname = self.exp_path_gen('gripper_depth_mask_mean.npy')
@@ -444,26 +450,26 @@ class GQCNNTrainerTF(object):
                     self.experiment_dir, self.data_dir, self.im_height, self.im_width, self.pose_shape, self.input_pose_mode, self.train_index_map, 
                     self.im_filenames, self.pose_filenames, gripper_depth_mask_filenames=self.gripper_depth_mask_filenames, num_random_files=self.num_random_files)
 
-                np.save(self.gripper_depth_mask_mean, gripper_depth_mask_mean_fname)
-                np.save(self.gripper_depth_mask_std, gripper_depth_mask_std_fname)
+                np.save(gripper_depth_mask_mean_fname, self.gripper_depth_mask_mean)
+                np.save(gripper_depth_mask_std_fname, self.gripper_depth_mask_std)
 
                 self.gqcnn.update_gripper_depth_mask_mean(self.gripper_depth_mask_mean)
                 self.gqcnn.update_gripper_depth_mask_std(self.gripper_depth_mask_std)
 
             else:
-                self.image_mean, self.image_std, self.pose_mean, self.pose_std, _, _, _, _ = compute_data_metrics(
+                self.im_mean, self.im_std, self.pose_mean, self.pose_std, _, _, _, _ = compute_data_metrics(
                     self.experiment_dir, self.data_dir, self.im_height, self.im_width, self.pose_shape, self.input_pose_mode, self.train_index_map, 
                     self.im_filenames, self.pose_filenames, num_random_files=self.num_random_files)
 
-            np.save(self.im_mean, im_mean_fname)
-            np.save(self.im_std, im_std_fname)
-            np.save(self.pose_mean, pose_mean_fname)
-            np.save(self.pose_std, pose_std_fname)
+            np.save(im_mean_fname, self.im_mean)
+            np.save(im_std_fname, self.im_std)
+            np.save(pose_mean_fname, self.pose_mean)
+            np.save(pose_std_fname, self.pose_std)
 
             self.gqcnn.update_im_mean(self.im_mean)
             self.gqcnn.update_im_std(self.im_std)
-            self.gqcnn.update_pose_mean(self.pose_mean)
-            self.gqcnn.update_pose_std(self.pose_std)
+            self.gqcnn.update_pose_mean(parse_pose_data(self.pose_mean, self.input_pose_mode))
+            self.gqcnn.update_pose_std(parse_pose_data(self.pose_std, self.input_pose_mode))
 
     def _setup_summaries(self):
         """ Sets up placeholders for summary values and creates summary writer """
@@ -690,19 +696,22 @@ class GQCNNTrainerTF(object):
         self._read_training_params()
 
         # read dataset filenames
-        self.im_filenames, self.pose_filenames, self.label_filenames, self.gripper_param_filenames, 
-        self.gripper_depth_mask_filenames, self.gripper_seg_mask_filenames,self.im_filenames_copy, 
-        self.pose_filenames_copy, self.label_filenames_copy, self.gripper_param_filenames_copy, 
-        self.gripper_depth_mask_filenames_copy, self.gripper_seg_mask_filenames_copy, self.obj_id_filenames, 
-        self.stable_pose_filenames, self.num_files = setup_data_filenames(self.data_dir, self.image_mode, self.target_metric_name, self.debug, self.debug_num_files)
+        self.im_filenames, self.pose_filenames, self.label_filenames, self.gripper_param_filenames, \
+        self.gripper_depth_mask_filenames, self.gripper_seg_mask_filenames,self.im_filenames_copy, \
+        self.pose_filenames_copy, self.label_filenames_copy, self.gripper_param_filenames_copy, \
+        self.gripper_depth_mask_filenames_copy, self.gripper_seg_mask_filenames_copy, self.obj_id_filenames, \
+        self.stable_pose_filenames, self.num_files = setup_data_filenames(self.data_dir, self.image_mode, self.target_metric_name, self.total_pct, self.debug, self.debug_num_files)
 
         # read data parameters from config file
         self._read_data_params()
 
         # compute total number of datapoints in dataset(rounded up to num_datapoints_per_file)
-        self.num_datapoints = self.num_datapoints_per_file * self.num_files
+        self.num_datapoints = self.images_per_file * self.num_files
 
-        steps_per_epoch = self.num_datapoints * self.train_pct / self.batch_size
+        # compute the number of training datapoints to use in training loop counter
+        self.num_train = self.train_pct * self.num_datapoints
+
+        steps_per_epoch = self.num_datapoints * self.train_pct / self.train_batch_size
         # if self.eval_frequency == -1, change it to reflect a single epoch
         if self.eval_frequency == -1:
             self.eval_frequency = steps_per_epoch
@@ -713,7 +722,7 @@ class GQCNNTrainerTF(object):
 
         # compute train/test indices based on how the data is to be split
         if self.data_split_mode == DataSplitMode.IMAGE_WISE:
-            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.IMAGE_WISE, self.data_dir, self.num_datapoints, self.train_pct, self.im_filenames)
+            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.IMAGE_WISE, self.data_dir, self.images_per_file, self.num_datapoints, self.train_pct, self.im_filenames)
         elif self.data_split_mode == DataSplitMode.OBJECT_WISE:
             self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.OBJECT_WISE, self.data_dir, self.train_pct, self.im_filenames, self.obj_id_filenames)
         elif self.data_split_mode == DataSplitMode.STABLE_POSE_WISE:
@@ -722,13 +731,13 @@ class GQCNNTrainerTF(object):
             raise ValueError('Data split mode: {} not supported'.format(self.data_split_mode))
 
         # calculate learning rate decay step
-        self.decay_step = get_decay_step(self.train_pct, self.num_datapoints_per_file, self.decay_step_multiplier)
+        self.decay_step = get_decay_step(self.train_pct, self.images_per_file, self.decay_step_multiplier)
 
         # compute data metrics
         self._compute_data_metrics()
 
         # compute grasp label metrics
-        self.min_grasp_metric, self.max_grasp_metric, self.mean_grasp_metric, self.median_grasp_metric, self.pct_pose_val = self.compute_grasp_label_metrics(
+        self.min_grasp_metric, self.max_grasp_metric, self.mean_grasp_metric, self.median_grasp_metric, self.pct_pos_val = compute_grasp_label_metrics(
             self.data_dir, self.im_filenames, self.label_filenames, self.val_index_map, self.metric_thresh)
         logging.info('Percent positive in val set: ' + str(self.pct_pos_val))
 
@@ -747,13 +756,6 @@ class GQCNNTrainerTF(object):
   
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images, poses, labels, and possibly gripper parameters for training """
-
-        # read parameters of gaussian process
-        self.gp_rescale_factor = self.cfg['gaussian_process_scaling_factor']
-        self.gp_sample_height = int(self.im_height / self.gp_rescale_factor)
-        self.gp_sample_width = int(self.im_width / self.gp_rescale_factor)
-        self.gp_num_pix = self.gp_sample_height * self.gp_sample_width
-        self.gp_sigma = self.cfg['gaussian_process_sigma']
 
         while not self.term_event.is_set():
             time.sleep(self.cfg['queue_sleep'])
@@ -833,7 +835,8 @@ class GQCNNTrainerTF(object):
                     train_data_arr = mask_arr
                     train_data_arr, train_poses_arr = denoise(train_data_arr, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=train_poses_arr, pose_dim=self.pose_dim, mask_and_inpaint=True)
                 else:
-                    train_data_arr, train_poses_arr = denoise(train_data_arr, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=train_poses_arr, pose_dim=self.pose_dim)
+                     i = 0
+#                    train_data_arr, train_poses_arr = denoise(train_data_arr, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=train_poses_arr, pose_dim=self.pose_dim)
 
                 # save distorted train images for debugging 
                 if self.cfg['save_distorted_train_images']:
@@ -844,7 +847,7 @@ class GQCNNTrainerTF(object):
                         np.savez_compressed(os.path.join(output_dir, 'distorted_image_{}'.format(self._num_distorted_train_images_saved)), train_data_arr[0, :, :, 0])
                         self._num_distorted_train_images_saved += 1
 
-                train_data_arr[:, :, :, 0] = (train_data_arr[:, :, :, 0] - self.data_mean) / self.data_std
+                train_data_arr[:, :, :, 0] = (train_data_arr[:, :, :, 0] - self.im_mean) / self.im_std
                 train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
                 if self.gripper_dim > 0:
                     train_gripper_arr = (train_gripper_arr - self.gripper_mean) / self.gripper_std

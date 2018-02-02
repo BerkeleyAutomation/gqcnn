@@ -11,7 +11,7 @@ import numpy as np
 
 from neon.data.datasets import Dataset
 
-from gqcnn.utils.training_utils import setup_data_filenames, compute_indices_image_wise,
+from gqcnn.utils.training_utils import setup_data_filenames, compute_indices_image_wise, \
     compute_indices_object_wise, compute_indices_pose_wise
 from gqcnn.utils.data_utils import compute_data_metrics
 
@@ -142,7 +142,7 @@ class GQCNNDataset(Dataset):
         self.gripper_depth_mask_filenames, self.gripper_seg_mask_filenames,self.im_filenames_copy, 
         self.pose_filenames_copy, self.label_filenames_copy, self.gripper_param_filenames_copy, 
         self.gripper_depth_mask_filenames_copy, self.gripper_seg_mask_filenames_copy, self.obj_id_filenames, 
-        self.stable_pose_filenames, self.num_files = setup_data_filenames(self.data_dir, self.image_mode, self.target_metric_name, self.debug, self.debug_num_files)
+        self.stable_pose_filenames, self.num_files = setup_data_filenames(self.data_dir, self.image_mode, self.target_metric_name, self.total_pct, self.debug, self.debug_num_files)
 
         # read data parameters from config file
         self._read_data_params()
@@ -152,7 +152,7 @@ class GQCNNDataset(Dataset):
 
         # compute train/test indices based on how the data is to be split
         if self.data_split_mode == DataSplitMode.IMAGE_WISE:
-            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.IMAGE_WISE, self.data_dir, self.num_datapoints, self.train_pct, self.im_filenames)
+            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.IMAGE_WISE, self.data_dir, self.images_per_file, self.num_datapoints, self.train_pct, self.im_filenames)
         elif self.data_split_mode == DataSplitMode.OBJECT_WISE:
             self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.OBJECT_WISE, self.data_dir, self.train_pct, self.im_filenames, self.obj_id_filenames)
         elif self.data_split_mode == DataSplitMode.STABLE_POSE_WISE:

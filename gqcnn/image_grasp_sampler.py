@@ -26,7 +26,7 @@ from perception import BinaryImage, ColorImage, DepthImage, RgbdImage
 from gqcnn import Grasp2D
 from gqcnn import Visualizer as vis
 
-from gqcnn import NoAntipodalPairsFoundException
+from gqcnn.utils.policy_exceptions import NoAntipodalPairsFoundException
 
 def force_closure(p1, p2, n1, n2, mu):
     """ Computes whether or not the point and normal pairs are in force closure. """

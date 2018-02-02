@@ -16,11 +16,9 @@ import scipy.misc as sm
 import sys
 import time
 
-import IPython 
-
-from gqcnn import GQCNN, ClassificationResult
-
-from optimizer_constants import InputPoseMode, ImageMode, InputGripperMode, FileTemplates
+from gqcnn.model import get_gqcnn_model
+from gqcnn.utils.learning_analysis import ClassificationResult
+from gqcnn.utils.enums import InputPoseMode, ImageMode, InputGripperMode, DataFileTemplates
 
 class GQCNNAnalyzer(object):
 	""" Analyzes GQCNN models """
@@ -56,6 +54,8 @@ class GQCNNAnalyzer(object):
 		self.output_dir = self.cfg['output_dir']
 		if not os.path.exists(self.output_dir):
 			os.mkdir(self.output_dir)
+        
+        	self.backend = self.cfg['backend']
 
 		self.font_size = self.cfg['font_size']
 		self.dpi = self.cfg['dpi']
@@ -142,7 +142,7 @@ class GQCNNAnalyzer(object):
 			# load
 			logging.info('Loading model %s' %(model_name))
 			if model_type == 'gqcnn':
-				model = GQCNN.load(model_subdir)
+				model = get_gqcnn_model(self.backend).load(model_subdir)
 				# load indices based on dataset-split-type
 				if split_type == 'image_wise':
 					train_indices_filename = os.path.join(model_subdir, 'train_indices_image_wise.pkl')
