@@ -35,6 +35,7 @@ class GQCNNValIterator(NervanaDataIterator):
         self.im_std = im_std
         self.pose_mean = pose_mean
         self.pose_std = pose_std
+        self.pose_dim = pose_dim
 
         # sort filename arrays
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))

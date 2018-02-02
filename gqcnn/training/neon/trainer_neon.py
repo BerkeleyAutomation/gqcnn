@@ -17,6 +17,7 @@ from neon.transforms import CrossEntropyMulti, Accuracy
 from neon.optimizers import GradientDescentMomentum, ExpSchedule
 from neon.callbacks import Callbacks
 from neon.callbacks.callbacks import MetricCallback, SerializeModelCallback
+from neon.layers import GeneralizedCost
 
 class ErrorRate(Metric):
     """ Custom metric for calculating error rate during training """
@@ -52,7 +53,7 @@ class GQCNNTrainerNeon(object):
     def _create_optimizer(self, learning_rate, momentum_rate, weight_decay, schedule):
         """ Create optimizer based on config """
         if self.cfg['optimizer'] == 'momentum':
-            return GradientDescentMomentum(learning_rate, momentum_rate, schedule=Schedule())
+            return GradientDescentMomentum(learning_rate, momentum_rate, wdecay=weight_decay, schedule=schedule)
         else:
             raise ValueError('Optimizer %s not supported' % (self.cfg['optimizer']))
 
@@ -73,7 +74,7 @@ class GQCNNTrainerNeon(object):
             self._gqcnn.initialize_network()
         else:
             raise ValueError('Training mode: {} not supported.'.format(self.training_mode))
-        self._model = self.gqcnn.model
+        self._model = self._gqcnn.model
 
         # create loss
         self._loss = self._create_loss()
@@ -86,7 +87,7 @@ class GQCNNTrainerNeon(object):
             self._learn_schedule)
 
         # create callbacks
-        self._callbacks = Callbacks(self._model, train_set=self._train_iter, eval_set=self._val_iter, 
+        self._callbacks = Callbacks(self._model, eval_set=self._val_iter, 
             eval_freq=self.eval_frequency, output_file=self.exp_path_gen('data.h5'))
         self._callbacks.add_callback(MetricCallback(eval_set=self._val_iter, metric=ErrorRate()))
         self._callbacks.add_callback(SerializeModelCallback(self.exp_path_gen('model_ckpt.prm'), 
@@ -110,13 +111,15 @@ class GQCNNTrainerNeon(object):
         """ Read training parameters from config"""
 
         self.data_dir = self.cfg['dataset_dir']
+        self.image_mode = self.cfg['image_mode']
+        self.data_split_mode = self.cfg['data_split_mode']
         self.train_pct = self.cfg['train_pct']
         self.total_pct = self.cfg['total_pct']
 
         self.train_batch_size = self.cfg['train_batch_size']
         # update the GQCNN's batch size to self.train_batch_size,
         # we will use the same batch size for training and validation since Neon backends have a fixed batch size
-        self.gqcnn.update_batch_size(self.train_batch_size)
+        self._gqcnn.update_batch_size(self.train_batch_size)
 
         self.num_epochs = self.cfg['num_epochs']
         self.eval_frequency = self.cfg['eval_frequency']
@@ -133,13 +136,14 @@ class GQCNNTrainerNeon(object):
         # update the GQCNN's drop rate
         self._gqcnn.update_drop_rate(self.drop_rate)
 
+        self.target_metric_name = self.cfg['target_metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
         self.training_mode = self.cfg['training_mode']
         self.preproc_mode = self.cfg['preproc_mode']
 
         self._backend = self.cfg['backend']
         # override GQCNN backend 
-        self.gqcnn.update_backend(self._backend)
+        self._gqcnn.update_backend(self._backend)
 
         if self.train_pct < 0 or self.train_pct > 1:
             raise ValueError('Train percentage must be in range [0,1]')
@@ -173,11 +177,11 @@ class GQCNNTrainerNeon(object):
         self._read_training_params()
 
         # create dataset
-        self._dataset = GQCNNDataset(self.metric_thresh, self.data_dir, self.queue_sleep, 
-            self.queue_capacity, self.training_mode, self.preproc_mode, self.cfg, 
+        self._dataset = GQCNNDataset(self._gqcnn, self.experiment_dir, self.total_pct, self.train_pct, self.data_split_mode, self.target_metric_name, self.metric_thresh, self.data_dir, self.queue_sleep, 
+            self.queue_capacity, self.image_mode, self.training_mode, self.preproc_mode, self.cfg, 
             debug=self.debug, debug_num_files=self.debug_num_files)
 
-        steps_per_epoch = self._dataset.num_datapoinst * self.train_pct / self.train_batch_size
+        steps_per_epoch = self._dataset.num_datapoints * self.train_pct / self.train_batch_size
         # if self.eval_frequency == -1, change it to reflect a single epoch(this is so it plays well with Tensorflow implementation)
         if self.eval_frequency == -1:
             self.eval_frequency = 1
@@ -188,6 +192,9 @@ class GQCNNTrainerNeon(object):
             self.save_frequency = 1
         else:
             self.save_frequency = int(math.ceil(float(self.eval_frequency) / steps_per_epoch))
+
+        # generate backend prematurely so that iterators can access batch size
+        self._gqcnn.init_backend()
 
         # get data iterators
         self._data_iters = self._dataset.gen_iterators()

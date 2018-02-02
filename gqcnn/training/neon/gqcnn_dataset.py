@@ -13,32 +13,47 @@ from neon.data.datasets import Dataset
 
 from gqcnn.utils.training_utils import setup_data_filenames, compute_indices_image_wise, \
     compute_indices_object_wise, compute_indices_pose_wise
-from gqcnn.utils.data_utils import compute_data_metrics
+from gqcnn.utils.data_utils import compute_data_metrics, compute_grasp_label_metrics
+from gqcnn.utils.enums import InputPoseMode, InputGripperMode, DataSplitMode
+from gqcnn_train_iterator import GQCNNTrainIterator
+from gqcnn_val_iterator import GQCNNValIterator
 
 class GQCNNDataset(Dataset):
-    def __init__(self, metric_thresh, data_dir, queue_sleep, queue_capacity, training_mode, preproc_mode, cfg, debug=False, debug_num_files=100):
+    def __init__(self, gqcnn, experiment_dir, total_pct, train_pct, data_split_mode, target_metric_name, metric_thresh, data_dir, queue_sleep, queue_capacity,
+        image_mode, training_mode, preproc_mode, cfg, debug=False, debug_num_files=100):
+        self.experiment_dir = experiment_dir
+        # create python lambda function to help create file paths to experiment_dir
+        self.exp_path_gen = lambda fname: os.path.join(self.experiment_dir, fname)
+
+        self.gqcnn = gqcnn
         self.cfg = cfg
+        self.total_pct = total_pct
+        self.train_pct = train_pct
+        self.data_split_mode = data_split_mode
+        self.target_metric_name = target_metric_name
         self.metric_thresh = metric_thresh
         self.data_dir = data_dir
         self.queue_sleep = queue_sleep
         self.queue_capacity = queue_capacity
         self.training_mode = training_mode
         self.preproc_mode = preproc_mode
+        self.image_mode = image_mode
         self.debug = debug
         self.debug_num_files = debug_num_files
         self._setup()  
 
     @property
     def num_datapoints(self):
-        return self.num_datapoints  
+        return self._num_datapoints  
 
     def gen_iterators(self):
         self._data_iter_dict = {'train': GQCNNTrainIterator(self.im_filenames, self.pose_filenames, self.label_filenames, 
             self.pose_dim, self.input_pose_mode, self.im_width, self.im_height, self.im_channels, self.metric_thresh, self.data_dir, 
-            self.queue_sleep, self.queue_capacity, self.train_index_map, self.data_mean, self.data_std, self.pose_mean, 
+            self.queue_sleep, self.queue_capacity, self.training_mode, self.preproc_mode, self.train_index_map, self.im_mean, self.im_std, self.pose_mean, 
             self.pose_std, self.denoising_params, name='train_data')}
-        self._data_iter_dict['val'] = GQCNNValIterator(self.im_filenames, self.pose_filenames, self.label_filenames, self.val_index_map, 
-            self.data_mean, self.data_std, self.pose_mean, self.pose_std, name='val_data')
+        self._data_iter_dict['val'] = GQCNNValIterator(self.im_filenames, self.pose_filenames, self.label_filenames, self.pose_dim, self.input_pose_mode,
+            self.im_width, self.im_height, self.im_channels, self.metric_thresh, self.data_dir, self.training_mode, self.preproc_mode, self.val_index_map, 
+            self.im_mean, self.im_std, self.pose_mean, self.pose_std, name='val_data')
         return self._data_iter_dict
 
     def _save_index_maps(self, train_idx_map, val_idx_map, train_fname, val_fname):
@@ -100,8 +115,8 @@ class GQCNNDataset(Dataset):
                     self.im_filenames, self.pose_filenames, gripper_param_filenames=self.gripper_param_filenames, total_gripper_param_elems=self.gripper_shape, 
                     num_random_files=self.num_random_files)
 
-                np.save(self.gripper_mean, gripper_mean_fname)
-                np.save(self.gripper_std, gripper_std_fname)
+                np.save(gripper_mean_fname, self.gripper_mean)
+                np.save(gripper_std_fname, self.gripper_std)
 
                 self.gqcnn.update_gripper_mean(self.gripper_mean)
                 self.gqcnn.update_gripper_std(self.gripper_std)
@@ -113,21 +128,21 @@ class GQCNNDataset(Dataset):
                     self.experiment_dir, self.data_dir, self.im_height, self.im_width, self.pose_shape, self.input_pose_mode, self.train_index_map, 
                     self.im_filenames, self.pose_filenames, gripper_depth_mask_filenames=self.gripper_depth_mask_filenames, num_random_files=self.num_random_files)
 
-                np.save(self.gripper_depth_mask_mean, gripper_depth_mask_mean_fname)
-                np.save(self.gripper_depth_mask_std, gripper_depth_mask_std_fname)
+                np.save(gripper_depth_mask_mean_fname, self.gripper_depth_mask_mean)
+                np.save(gripper_depth_mask_std_fname, self.gripper_depth_mask_std)
 
                 self.gqcnn.update_gripper_depth_mask_mean(self.gripper_depth_mask_mean)
                 self.gqcnn.update_gripper_depth_mask_std(self.gripper_depth_mask_std)
 
             else:
-                self.image_mean, self.image_std, self.pose_mean, self.pose_std, _, _, _, _ = compute_data_metrics(
+                self.im_mean, self.im_std, self.pose_mean, self.pose_std, _, _, _, _ = compute_data_metrics(
                     self.experiment_dir, self.data_dir, self.im_height, self.im_width, self.pose_shape, self.input_pose_mode, self.train_index_map, 
                     self.im_filenames, self.pose_filenames, num_random_files=self.num_random_files)
 
-            np.save(self.im_mean, im_mean_fname)
-            np.save(self.im_std, im_std_fname)
-            np.save(self.pose_mean, pose_mean_fname)
-            np.save(self.pose_std, pose_std_fname)
+            np.save(im_mean_fname, self.im_mean)
+            np.save(im_std_fname, self.im_std)
+            np.save(pose_mean_fname, self.pose_mean)
+            np.save(pose_std_fname, self.pose_std)
 
             self.gqcnn.update_im_mean(self.im_mean)
             self.gqcnn.update_im_std(self.im_std)
@@ -138,21 +153,21 @@ class GQCNNDataset(Dataset):
         """ Setup Dataset """
 
         # read dataset filenames
-        self.im_filenames, self.pose_filenames, self.label_filenames, self.gripper_param_filenames, 
-        self.gripper_depth_mask_filenames, self.gripper_seg_mask_filenames,self.im_filenames_copy, 
-        self.pose_filenames_copy, self.label_filenames_copy, self.gripper_param_filenames_copy, 
-        self.gripper_depth_mask_filenames_copy, self.gripper_seg_mask_filenames_copy, self.obj_id_filenames, 
+        self.im_filenames, self.pose_filenames, self.label_filenames, self.gripper_param_filenames, \
+        self.gripper_depth_mask_filenames, self.gripper_seg_mask_filenames,self.im_filenames_copy, \
+        self.pose_filenames_copy, self.label_filenames_copy, self.gripper_param_filenames_copy, \
+        self.gripper_depth_mask_filenames_copy, self.gripper_seg_mask_filenames_copy, self.obj_id_filenames, \
         self.stable_pose_filenames, self.num_files = setup_data_filenames(self.data_dir, self.image_mode, self.target_metric_name, self.total_pct, self.debug, self.debug_num_files)
 
         # read data parameters from config file
         self._read_data_params()
 
         # compute total number of datapoints in dataset(rounded up to num_datapoints_per_file)
-        self.num_datapoints = self.num_datapoints_per_file * self.num_files
+        self._num_datapoints = self.images_per_file * self.num_files
 
         # compute train/test indices based on how the data is to be split
         if self.data_split_mode == DataSplitMode.IMAGE_WISE:
-            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.IMAGE_WISE, self.data_dir, self.images_per_file, self.num_datapoints, self.train_pct, self.im_filenames)
+            self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.IMAGE_WISE, self.data_dir, self.images_per_file, self._num_datapoints, self.train_pct, self.im_filenames)
         elif self.data_split_mode == DataSplitMode.OBJECT_WISE:
             self.train_index_map, self.val_index_map = self._compute_indices(DataSplitMode.OBJECT_WISE, self.data_dir, self.train_pct, self.im_filenames, self.obj_id_filenames)
         elif self.data_split_mode == DataSplitMode.STABLE_POSE_WISE:
@@ -164,9 +179,9 @@ class GQCNNDataset(Dataset):
         self._compute_data_metrics()
 
         # compute grasp label metrics
-        self.min_grasp_metric, self.max_grasp_metric, self.mean_grasp_metric, self.median_grasp_metric, self.pct_pose_val = self.compute_grasp_label_metrics(
+        self.min_grasp_metric, self.max_grasp_metric, self.mean_grasp_metric, self.median_grasp_metric, pct_pos_val = compute_grasp_label_metrics(
             self.data_dir, self.im_filenames, self.label_filenames, self.val_index_map, self.metric_thresh)
-        logging.info('Percent positive in val set: ' + str(self.pct_pos_val))
+        logging.info('Percent positive in val set: ' + str(pct_pos_val))
 
     def _read_data_params(self):
         """ Read data parameters from configuration file """

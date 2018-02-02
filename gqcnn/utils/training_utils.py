@@ -290,5 +290,7 @@ def setup_output_dirs(output_dir):
 
     return experiment_dir, summary_dir, filter_dir
 
-def setup_python_logger():
-    logging.getLogger().setLevel(logging.INFO)
+def setup_python_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    return logger

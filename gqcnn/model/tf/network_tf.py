@@ -12,7 +12,6 @@ import tensorflow as tf
 import tensorflow.contrib.framework as tcf 
 
 from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data
-from gqcnn.utils.training_utils import setup_python_logger
 from gqcnn.utils.enums import InputPoseMode, InputGripperMode
 from spatial_transformer import transformer
 
@@ -39,9 +38,6 @@ class GQCNNTF(object):
             python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
             im_height, im_width, ...
         """
-        # setup python logging
-        setup_python_logger()
-
         self._sess = None
         self._weights = GQCNNWeights()
         self._graph = tf.Graph()

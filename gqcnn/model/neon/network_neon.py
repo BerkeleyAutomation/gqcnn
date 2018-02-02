@@ -13,12 +13,11 @@ import scipy.stats as stats
 from neon.models import Model
 from neon.initializers import Constant
 from neon.initializers.initializer import Initializer
-from neon.layers import Conv, Pooling, LRN, Sequential, Affine, Dropout, MergeMultistream
+from neon.layers import Conv, Pooling, LRN, Sequential, Affine, Dropout, MergeMultistream, Activation
 from neon.transforms import Rectlin, Softmax, Identity
 from neon.backends import gen_backend
 
 from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data
-from gqcnn.utils.training_utils import setup_python_logger
 from gqcnn.utils.enums import InputPoseMode, InputGripperMode
 
 class CustomKaiming(Initializer):
@@ -48,11 +47,12 @@ class GQCNNNeon(object):
             python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
             im_height, im_width, ...
         """
-        # setup python logging
-        setup_python_logger()
-
+        self._be = None
         self._model_path = model_path
         self._parse_config(gqcnn_config)
+
+        # fully-convolutional architecture not yet supported in Neon
+        self._fully_conv = False
 
     @staticmethod
     def load(model_dir):
@@ -193,17 +193,21 @@ class GQCNNNeon(object):
         """ Sets up backend and builds network. """
         
         # first generate a neon backend
-        self._be = gen_backend(backend=self._backend, batch_size=self._batch_size)
+        if self._be is None:
+            self.init_backend()
 
         if self._model_path is None:
             # if there is currently no model specified, ex. during initial training from scratch, then build a new network 
             self._layers = self._build_network()
-            if add_softmax():
+            if add_softmax:
                 self._add_softmax()
             self._model = Model(self._layers) 
         else:
             # else there is a model location specified and we have to instantiate it
             self._model = Model(self._model_path)
+
+    def init_backend(self):
+        self._be = gen_backend(backend=self._backend, batch_size=self._batch_size)
 
     @property
     def backend(self):
@@ -451,7 +455,7 @@ class GQCNNNeon(object):
     def _build_spatial_transformer(self, input_height, input_width, num_transform_params, output_width, output_height, name):
         raise NotImplementedError("Spatial transformer layer not yet supported with Neon. Please use Tensorflow backend instead.")
 
-    def _build_conv_layer(self, input_height, input_width, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False):
+    def _build_conv_layer(self, input_height, input_width, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, use_norm=False):
         logging.info('Building convolutional layer: {}'.format(name))
 
         stride = 1
@@ -465,14 +469,15 @@ class GQCNNNeon(object):
         conv = Conv((filter_h, filter_w, num_filt), init=ck, bias=ck, padding=single_side_pad, activation=Rectlin(), name=name)
 
         # build norm layer
-        if norm:
+        norm = None
+        if use_norm:
             norm = LRN(depth=self._normalization_radius, ascale=self._normalization_alpha, bpower=self._normalization_beta)
 
         # build pool layer
-        if pool_size == 1 and pool_stride == 1:
-            pool = Pooling((pool_size, pool_size), strides=pool_stride,)
+        if pool_size == 1 and pool_stride_h == 1:
+            pool = Pooling((pool_size, pool_size), strides={'str_h': pool_stride_h, 'str_w': pool_stride_w})
         else:
-            pool = Pooling((pool_size, pool_size), strides=pool_stride, padding=0,)
+            pool = Pooling((pool_size, pool_size), strides={'str_h': pool_stride_h, 'str_w': pool_stride_w}, padding=0)
 
         # create a list of layers
         layers = []
@@ -526,7 +531,7 @@ class GQCNNNeon(object):
         logging.info('Building Merge Layer: {}'.format(name))
         
         layers = []
-        layers.append(MergeMultistream(layers=[input_path_1, input_path_2], merge="stack"))
+        layers.append(MergeMultistream(layers=[input_stream_1, input_stream_2], merge="stack"))
 
         l, out_size = self._build_fc_layer(out_size, name, drop_rate)
         layers.extend(l)
@@ -556,9 +561,9 @@ class GQCNNNeon(object):
                 first_residual = True
                 if prev_layer == 'fc':
                     raise ValueError('Cannot have conv layer after fc layer')
-                l, input_height, input_width, input_channels = self._build_conv_layer(input_height, input_width, input_channels, layer_config['filt_dim'],
+                l, input_height, input_width, input_channels = self._build_conv_layer(input_height, input_width, layer_config['filt_dim'],
                     layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
-                    norm=layer_config['norm'])
+                    use_norm=layer_config['norm'])
                 layers.extend(l)
                 prev_layer = layer_type
                 filter_dim /= layer_config['pool_stride']
@@ -571,7 +576,7 @@ class GQCNNNeon(object):
                 if self._fully_conv:
                     output_node = self._build_fully_conv_layer(filter_dim, layer_name)
                 else:
-                    l, fan_in = self._build_fc_layer(layer_config['out_size'], layer_name, prev_layer_is_conv_or_res, drop_rate)
+                    l, fan_in = self._build_fc_layer(layer_config['out_size'], layer_name, drop_rate)
                     layers.extend(l)
                     prev_layer = layer_type
                     filter_dim = 1
@@ -598,7 +603,6 @@ class GQCNNNeon(object):
     def _build_pose_stream(self, fan_in, layer_dict):
         logging.info('Building Pose Stream')
         layers = []
-        output_node = input_node
         prev_layer = "start"
         for layer_name, layer_config in layer_dict.iteritems():
             layer_type = layer_config['type']
@@ -648,9 +652,9 @@ class GQCNNNeon(object):
                     output_node = self._build_fully_conv_layer(output_node, filter_dim, layer_name)
                 else:
                     if layer_index == last_index:
-                        l, fan_in = self._build_fc_layer(layer_config['out_size'], layer_name, False, drop_rate, final_fc_layer=True)
+                        l, fan_in = self._build_fc_layer(layer_config['out_size'], layer_name, drop_rate, final_fc_layer=True)
                     else:
-                        l, fan_in = self._build_fc_layer(layer_config['out_size'], layer_name, False, drop_rate)
+                        l, fan_in = self._build_fc_layer(layer_config['out_size'], layer_name, drop_rate)
                     layers.extend(l)
                 prev_layer = layer_type
             elif layer_type == 'pc':  
@@ -675,21 +679,15 @@ class GQCNNNeon(object):
     def _build_network(self):
         """ Builds neural network """
         logging.info('Building Network')
-        with tf.name_scope('im_stream'):
-            output_im_stream, fan_out_im = self._build_im_stream(self._im_height, self._im_width, self._num_channels, self._drop_rate, self._architecture['im_stream'])
-        with tf.name_scope('pose_stream'):
-            output_pose_stream, fan_out_pose = self._build_pose_stream(self._pose_dim, self._architecture['pose_stream'])
+        output_im_stream, fan_out_im = self._build_im_stream(self._im_height, self._im_width, self._num_channels, self._drop_rate, self._architecture['im_stream'])
+        output_pose_stream, fan_out_pose = self._build_pose_stream(self._pose_dim, self._architecture['pose_stream'])
+        input_gripper_node = None
         if input_gripper_node is not None:
-            with tf.name_scope('gripper_stream'):
-                output_gripper_stream, fan_out_gripper = self._build_gripper_stream(input_gripper_node, self._gripper_dim, self._architecture['gripper_stream'])
+            output_gripper_stream, fan_out_gripper = self._build_gripper_stream(input_gripper_node, self._gripper_dim, self._architecture['gripper_stream'])
             if 'gripper_pose_merge_stream' in self._architecture.keys():
-                with tf.name_scope('gripper_pose_merge_stream'):
-                    output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(output_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, self._drop_rate, self._architecture['gripper_pose_merge_stream'])
-                with tf.name_scope('merge_stream'):
-                    return self._build_merge_stream(output_im_stream, output_gripper_pose_merge_stream, fan_out_im, fan_out_gripper_pose_merge_stream, self.drop_rate, self._architecture['merge_stream'])
+                output_gripper_pose_merge_stream, fan_out_gripper_pose_merge_stream = self._build_merge_stream(output_pose_stream, output_gripper_stream, fan_out_pose, fan_out_gripper, self._drop_rate, self._architecture['gripper_pose_merge_stream'])
+                return self._build_merge_stream(output_im_stream, output_gripper_pose_merge_stream, fan_out_im, fan_out_gripper_pose_merge_stream, self.drop_rate, self._architecture['merge_stream'])[0]
             else:
-                with tf.name_scope('merge_stream'):
-                    return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._drop_rate, self._architecture['merge_stream'], input_stream_3=output_gripper_stream, fan_in_3=fan_out_gripper)
+                return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._drop_rate, self._architecture['merge_stream'], input_stream_3=output_gripper_stream, fan_in_3=fan_out_gripper)[0]
         else:
-            with tf.name_scope('merge_stream'):
-                return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._drop_rate, self._architecture['merge_stream'])
+            return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, self._drop_rate, self._architecture['merge_stream'])[0]

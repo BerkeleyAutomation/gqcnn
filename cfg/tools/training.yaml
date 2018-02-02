@@ -237,7 +237,7 @@ gqcnn_config:
 #        out_size: 2
 
   # network normalization constants
-  radius: 2
+  radius: 3 # must be odd for compatibility with Neon
   alpha: 2.0e-05
   beta: 0.75
   bias: 1.0

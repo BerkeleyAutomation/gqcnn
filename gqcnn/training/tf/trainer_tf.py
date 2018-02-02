@@ -718,7 +718,7 @@ class GQCNNTrainerTF(object):
 
         # if self.save_frequency == -1, change it to reflect a single epoch
         if self.save_frequency == -1:
-            self.save_frequency == steps_per_epoch
+            self.save_frequency = steps_per_epoch
 
         # compute train/test indices based on how the data is to be split
         if self.data_split_mode == DataSplitMode.IMAGE_WISE:
@@ -731,7 +731,7 @@ class GQCNNTrainerTF(object):
             raise ValueError('Data split mode: {} not supported'.format(self.data_split_mode))
 
         # calculate learning rate decay step
-        self.decay_step = get_decay_step(self.train_pct, self.images_per_file, self.decay_step_multiplier)
+        self.decay_step = get_decay_step(self.train_pct, self.num_datapoints, self.decay_step_multiplier)
 
         # compute data metrics
         self._compute_data_metrics()
@@ -835,8 +835,7 @@ class GQCNNTrainerTF(object):
                     train_data_arr = mask_arr
                     train_data_arr, train_poses_arr = denoise(train_data_arr, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=train_poses_arr, pose_dim=self.pose_dim, mask_and_inpaint=True)
                 else:
-                     i = 0
-#                    train_data_arr, train_poses_arr = denoise(train_data_arr, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=train_poses_arr, pose_dim=self.pose_dim)
+                    train_data_arr, train_poses_arr = denoise(train_data_arr, self.im_height, self.im_width, self.im_channels, self.denoising_params, pose_arr=train_poses_arr, pose_dim=self.pose_dim)
 
                 # save distorted train images for debugging 
                 if self.cfg['save_distorted_train_images']:

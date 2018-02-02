@@ -112,7 +112,7 @@ class GQCNNTrainIterator(NervanaDataIterator):
                 np.random.shuffle(indices)
 
                 file_im_data = np.load(os.path.join(self.dataset_dir, self.im_filenames[index]))['arr_0'][indices]
-                file_pose_data = self._read_pose_data(np.load(os.path.join(self.dataset_dir, self.pose_filenames[index]))['arr_0'][indices], self.input_pose_mode)
+                file_pose_data = parse_pose_data(np.load(os.path.join(self.dataset_dir, self.pose_filenames[index]))['arr_0'][indices], self.input_pose_mode)
                 file_label_data = np.load(os.path.join(self.dataset_dir, self.label_filenames[index]))['arr_0'][indices]
 
                 # allocate arrays
