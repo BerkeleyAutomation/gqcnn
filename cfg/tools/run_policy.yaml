@@ -10,8 +10,6 @@ policy:
 
   # general params
   deterministic: 0
-  gripper: righthand
-  #logging_dir: /nfs/diskstation/projects/dex-net/industrial_partners/knapp/autolab_replication
 
   # sampling params
   sampling:
@@ -48,7 +46,7 @@ policy:
     tf_images: 0
     grasp_candidates: 0
     elite_grasps: 0
-    grasp_rankinog: 0
+    grasp_ranking: 0
     grasp_plan: 0
     final_grasp: 1
 
