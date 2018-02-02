@@ -12,6 +12,13 @@ Created and maintained by the AUTOLAB at UC Berkeley: https://autolab.berkeley.e
 ## Installation
 See the website at [https://berkeleyautomation.github.io/gqcnn](https://berkeleyautomation.github.io/gqcnn) for installation instructions and API Documentation.
 
+## Usage
+As of Feb. 1, 2018, the code is licensed according to the UC Berkeley Copyright and Disclaimer Notice.
+The code is available for educational, research, and not-for-profit purposes (for full details, see LICENSE).
+If you use this code in a publication, please cite:
+
+Mahler, Jeffrey, Jacky Liang, Sherdil Niyaz, Michael Laskey, Richard Doan, Xinyu Liu, Juan Aparicio Ojea, and Ken Goldberg. "Dex-Net 2.0: Deep Learning to Plan Robust Grasps with Synthetic Point Clouds and Analytic Grasp Metrics." Robotics: Science and Systems (2017). Boston, MA.
+
 ## Datasets
 Our GQ-CNN training datasets and trained models can be downloaded from [this link](https://berkeley.box.com/s/p85ov4dx7vbq6y1l02gzrnsexg6yyayb).
 
