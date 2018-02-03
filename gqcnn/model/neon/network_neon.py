@@ -19,6 +19,7 @@ from neon.backends import gen_backend
 
 from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data
 from gqcnn.utils.enums import InputPoseMode, InputGripperMode
+from gqcnn.training.neon.gqcnn_predict_iterator import GQCNNPredictIterator
 
 class CustomKaiming(Initializer):
     def __init__(self, local=True, name='CustomKaiming'):
@@ -77,7 +78,7 @@ class GQCNNNeon(object):
         gqcnn_config = train_config['gqcnn_config']
 
         # create GQCNN object and initialize network
-        gqcnn = GQCNN(gqcnn_config, model_path=os.path.join(model_dir, 'model.prm'))
+        gqcnn = GQCNNNeon(gqcnn_config, model_path=os.path.join(model_dir, 'model.prm'))
         gqcnn.initialize_network()
         gqcnn.init_mean_and_std(model_dir)
 
@@ -94,8 +95,8 @@ class GQCNNNeon(object):
         # load in means and stds 
         # pose format is: grasp center row, grasp center col, gripper depth, grasp theta, crop center row, crop center col, grip width
         # gripper format is: min_width, force_limit, max_width, finger_radius
-        self._im_mean = np.load(os.path.join(model_dir, 'image_mean.npy'))
-        self._im_std = np.load(os.path.join(model_dir, 'image_std.npy'))
+        self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
+        self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
         self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
         self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
         if self._gripper_dim > 0:
@@ -132,6 +133,9 @@ class GQCNNNeon(object):
         self._num_channels = gqcnn_config['im_channels']
         self._input_pose_mode = gqcnn_config['input_pose_mode']
         self._input_gripper_mode = gqcnn_config['input_gripper_mode']
+
+        # get backend type
+        self._backend = gqcnn_config['backend']
 
         # setup correct pose dimensions 
         if self._input_pose_mode == InputPoseMode.TF_IMAGE:

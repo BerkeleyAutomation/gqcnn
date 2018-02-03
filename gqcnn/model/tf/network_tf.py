@@ -12,7 +12,7 @@ import tensorflow as tf
 import tensorflow.contrib.framework as tcf 
 
 from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data
-from gqcnn.utils.enums import InputPoseMode, InputGripperMode
+from gqcnn.utils.enums import InputPoseMode, InputGripperMode, TrainingMode
 from spatial_transformer import transformer
 
 def reduce_shape(shape):
@@ -65,7 +65,7 @@ class GQCNNTF(object):
         gqcnn_config = train_config['gqcnn_config']
 
         # create GQCNN object and initialize weights and network
-        gqcnn = GQCNN(gqcnn_config, fully_conv_config=fully_conv_config)
+        gqcnn = GQCNNTF(gqcnn_config, fully_conv_config=fully_conv_config)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         training_mode = train_config['training_mode']
         if training_mode == TrainingMode.CLASSIFICATION:
@@ -109,8 +109,8 @@ class GQCNNTF(object):
         # load in means and stds 
         # pose format is: grasp center row, grasp center col, gripper depth, grasp theta, crop center row, crop center col, grip width
         # gripper format is: min_width, force_limit, max_width, finger_radius
-        self._im_mean = np.load(os.path.join(model_dir, 'image_mean.npy'))
-        self._im_std = np.load(os.path.join(model_dir, 'image_std.npy'))
+        self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
+        self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
         self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
         self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
         if self._gripper_dim > 0:
