@@ -272,7 +272,7 @@ class SuctionPoint2D(object):
         return np.r_[self.center.data, self.axis]
 
     @staticmethod
-    def from_feature_vec(v, depth_im, camera_intr=None, depth_offset=0.0):
+    def from_feature_vec(v, depth_im=None, camera_intr=None, depth_offset=0.0):
         """ Creates a SuctionPoint2D obj from a feature vector and additional parameters.
 
         Parameters
@@ -288,9 +288,12 @@ class SuctionPoint2D(object):
         """
         # read feature vec
         center_px = v[:2]
-        axis = v[2:]
+        axis = v[2:5]
         axis = axis / np.linalg.norm(axis)
-        depth = depth_im[int(center_px[1]), int(center_px[0])] + depth_offset
+        if v.shape[0] > 5:
+            depth = v[5]
+        if depth_im is not None:
+            depth = depth_im[int(center_px[1]), int(center_px[0])] + depth_offset
         
         # compute center and angle
         center = Point(center_px, camera_intr.frame)

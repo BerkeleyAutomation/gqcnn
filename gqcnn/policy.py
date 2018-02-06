@@ -567,6 +567,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 vis.show(filename)
                 
             # fit elite set
+            elite_start = time()
             num_refit = max(int(np.ceil(self._gmm_refit_p * num_grasps)), 1)
             elite_q_values = [i[0] for i in q_values_and_indices[:num_refit]]
             elite_grasp_indices = [i[1] for i in q_values_and_indices[:num_refit]]
@@ -594,6 +595,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
             elite_grasp_std[elite_grasp_std == 0] = 1.0
             elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
+            logging.info('Elite set computation took %.3f sec' %(time()-elite_start))
 
             # fit a GMM to the top samples
             num_components = max(int(np.ceil(self._gmm_component_frac * num_refit)), 1)
@@ -602,43 +604,50 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                   weights_init=uniform_weights,
                                   reg_covar=self._gmm_reg_covar)
             train_start = time()
-
             gmm.fit(elite_grasp_arr)
-            train_duration = time() - train_start
-            logging.info('GMM fitting with %d components took %.3f sec' %(num_components, train_duration))
+            logging.info('GMM fitting with %d components took %.3f sec' %(num_components, time()-train_start))
 
             # sample the next grasps
             grasps = []
+            loop_start = time()
             while len(grasps) < self._num_gmm_samples:
                 # sample from GMM
                 sample_start = time()
                 grasp_vecs, _ = gmm.sample(n_samples=self._num_gmm_samples)
                 grasp_vecs = elite_grasp_std * grasp_vecs + elite_grasp_mean
-                sample_duration = time() - sample_start
-                logging.debug('GMM sampling took %.3f sec' %(sample_duration))
+                logging.info('GMM sampling took %.3f sec' %(time()-sample_start))
 
                 # convert features to grasps and store if in segmask
                 for grasp_vec in grasp_vecs:
+                    feature_start = time()
                     if grasp_type == 'parallel_jaw':
                         grasp = Grasp2D.from_feature_vec(grasp_vec,
                                                          width=self._gripper_width,
                                                          camera_intr=camera_intr)
                     elif grasp_type == 'suction':
+                        #grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
+                        #                                        camera_intr=camera_intr)
                         grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
-                                                                depth_im=rgbd_im.depth,                                                                
+                                                                depth_im=rgbd_im.depth,
                                                                 camera_intr=camera_intr,
                                                                 depth_offset=self._grasp_sampler._mean_depth)
+                    logging.debug('Feature vec took %.5f sec' %(time()-feature_start))
+
+                        
+                    bounds_start = time()
                     if state.segmask is None or \
                         (grasp.center.y >= 0 and grasp.center.y < state.segmask.height and \
                          grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
                          np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0)):
                          grasps.append(grasp)
+                    logging.debug('Bounds took %.5f sec' %(time()-bounds_start))
 
             # check num grasps
             num_grasps = len(grasps)
             if num_grasps == 0:
                 logging.warning('No valid grasps could be found')
                 raise NoValidGraspsException()
+            logging.info('Resample loop took %.3f sec' %(time()-loop_start))
             logging.info('Resampling took %.3f sec' %(time()-resample_start))
 
         # predict final set of grasps
