@@ -418,6 +418,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     (5) repeat steps 2-4 for K iters
     (6) return the best candidate from the final sample set
 
+    Parameters
+    ----------
+    filters : :obj:`dict` mapping names to functions
+        list of functions to apply to filter the final grasps
+
     Notes
     -----
     Required configuration parameters are specified in Other Parameters
@@ -441,10 +446,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     gripper_width : float, optional
         width of the gripper in meters
     """
-    def __init__(self, config):
+    def __init__(self, config, filters=None):
         GraspingPolicy.__init__(self, config)
         CrossEntropyRobustGraspingPolicy._parse_config(self)
-
+        self._filters = filters
+        
     def _parse_config(self):
         """ Parses the parameters of the policy. """
         # cross entropy method parameters
@@ -455,6 +461,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         self._gmm_component_frac = self.config['gmm_component_frac']
         self._gmm_reg_covar = self.config['gmm_reg_covar']
 
+        self._max_grasps_filter = 1
+        if 'max_grasps_filter' in self.config.keys():
+            self._max_grasps_filter = self.config['max_grasps_filter']
+        
         # gripper parameters
         self._seed = None
         if self.config['deterministic']:
@@ -470,17 +480,39 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             if not os.path.exists(self._logging_dir):
                 os.mkdir(self._logging_dir)
             
-    def select(self, grasps, q_value):
+    def select(self, grasps, q_values):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
-        """
+        """ 
         # sort
+        logging.info('Sorting grasps')
         num_grasps = len(grasps)
         if num_grasps == 0:
             raise ValueError('Zero grasps')
-        grasps_and_predictions = zip(np.arange(num_grasps), q_value)
+        grasps_and_predictions = zip(np.arange(num_grasps), q_values)
         grasps_and_predictions.sort(key = lambda x : x[1], reverse=True)
-        return grasps_and_predictions[0][0]
+
+        # return top grasps
+        if self._filters is None:
+            return grasps_and_predictions[0][0]
+        
+        # filter grasps
+        logging.info('Filtering grasps')
+        i = 0
+        while i < self._max_grasps_filter and i < len(grasps_and_predictions):
+            index = grasps_and_predictions[i][0]
+            grasp = grasps[index]
+            valid = True
+            for filter_name, is_valid in self._filters.iteritems():
+                valid = is_valid(grasp) 
+                logging.info('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                if not valid:
+                    valid = False
+                    break
+            if valid:
+                return index
+            i += 1
+        raise ValueError('No grasps satisfied filters')
 
     def action(self, state):
         """ Plans the grasp with the highest probability of success on
