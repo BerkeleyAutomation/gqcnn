@@ -785,7 +785,7 @@ class GQCNNTF(object):
 
         return packed
 
-    def _build_fully_conv_layer(self, input_node, filter_dim, fc_name):
+    def _build_fully_conv_layer(self, input_node, filter_dim, fc_name, final_fc_layer=False):
         logging.info('Converting fc layer: {} to fully convolutional'.format(fc_name))
         
         # create new set of weights
@@ -804,7 +804,8 @@ class GQCNNTF(object):
         convh = convh + bias_packed
 
         # apply activation
-        convh = self._leaky_relu(convh)
+        if not final_fc_layer:
+            convh = self._leaky_relu(convh)
 
         return convh
 
@@ -1149,7 +1150,10 @@ class GQCNNTF(object):
                raise ValueError('Cannot have conv layer in merge stream')
             elif layer_type == 'fc':
                 if self._fully_conv:
-                    output_node = self._build_fully_conv_layer(output_node, filter_dim, layer_name)
+                    if layer_index == last_index:
+                        output_node = self._build_fully_conv_layer(output_node, filter_dim, layer_name, final_fc_layer=True)
+                    else:
+                        output_node = self._build_fully_conv_layer(output_node, filter_dim, layer_name)
                 else:
                     if layer_index == last_index:
                         output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, drop_rate, final_fc_layer=True)
