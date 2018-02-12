@@ -293,7 +293,9 @@ class SuctionPoint2D(object):
         if v.shape[0] > 5:
             depth = v[5]
         if depth_im is not None:
-            depth = depth_im[int(center_px[1]), int(center_px[0])] + depth_offset
+            i = int(min(max(center_px[1], 0), depth_im.height-1))
+            j = int(min(max(center_px[0], 0), depth_im.width-1))
+            depth = depth_im[i, j] + depth_offset
         
         # compute center and angle
         center = Point(center_px, camera_intr.frame)

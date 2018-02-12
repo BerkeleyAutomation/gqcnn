@@ -488,7 +488,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         logging.info('Sorting grasps')
         num_grasps = len(grasps)
         if num_grasps == 0:
-            raise ValueError('Zero grasps')
+            raise NoValidGraspsException('Zero grasps')
         grasps_and_predictions = zip(np.arange(num_grasps), q_values)
         grasps_and_predictions.sort(key = lambda x : x[1], reverse=True)
 
@@ -512,7 +512,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             if valid:
                 return index
             i += 1
-        raise ValueError('No grasps satisfied filters')
+        raise NoValidGraspsException('No grasps satisfied filters')
 
     def action(self, state):
         """ Plans the grasp with the highest probability of success on

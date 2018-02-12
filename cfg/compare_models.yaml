@@ -18,10 +18,9 @@ earliest:
 
 # SUCTION FC
 compare:
-  dexnet_4_01_29_18: 512
-  dexnet_4_01_31_18: 256
-  dexnet_4_02_01_18: 128
-  model_my: 64
+  dexnet_4_02_02_18: best
+  model_ql: v1
+  model_ur: v2
 
 # SUCTION FC
 #compare:

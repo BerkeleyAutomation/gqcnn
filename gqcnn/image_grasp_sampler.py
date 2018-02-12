@@ -578,10 +578,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         indices = np.random.choice(num_nonzero_px,
                                    size=sample_size,
                                    replace=False)
-        while k < self._max_num_samples and len(suction_points) < num_samples:
-            # update number of tries
-            k += 1
-
+        while k < sample_size and len(suction_points) < num_samples:
             # sample a point uniformly at random 
             ind = indices[k]
             center_px = np.array([nonzero_px[ind,1], nonzero_px[ind,0]])
@@ -589,6 +586,9 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             axis = -normal_cloud_im[center.y, center.x]
             depth = point_cloud_im[center.y, center.x][2]
 
+            # update number of tries
+            k += 1
+            
             # perturb depth
             delta_depth = self._depth_rv.rvs(size=1)[0]
             depth = depth + delta_depth
