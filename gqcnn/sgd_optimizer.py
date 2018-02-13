@@ -293,17 +293,15 @@ class SGDOptimizer(object):
 		        
                     logging.info('Max ' +  str(np.max(softmax[:,1])))
                     logging.info('Min ' + str(np.min(softmax[:,1])))
-                    logging.info('Pred nonzero ' + str(np.sum(softmax[:,1] > self.metric_thresh)))
+                    logging.info('Pred nonzero ' + str(np.sum(softmax[:,1] > 0.5)))
                     logging.info('True nonzero ' + str(np.sum(batch_labels)))
                 else:
                     sigmoid = 1.0 / (1.0 + np.exp(-output))
                     logging.info('Max ' +  str(np.max(sigmoid)))
                     logging.info('Min ' + str(np.min(sigmoid)))
-                    logging.info('Pred nonzero ' + str(np.sum(sigmoid > self.metric_thresh)))
-                    logging.info('True nonzero ' + str(np.sum(batch_labels > self.metric_thresh)))
+                    logging.info('Pred nonzero ' + str(np.sum(sigmoid > 0.5)))
+                    logging.info('True nonzero ' + str(np.sum(batch_labels > 0.5)))
 
-                    print sigmoid[sigmoid>self.metric_thresh], batch_labels[sigmoid[:,0]>self.metric_thresh]
-                    
                 if np.isnan(l) or np.any(np.isnan(train_poses)):
                     import IPython
                     IPython.embed()
@@ -333,7 +331,7 @@ class SGDOptimizer(object):
                     self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
                 # evaluate validation error
-                if step % self.eval_frequency == 0:
+                if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
                         train_error = self._error_rate_in_batches()
                         logging.info('Training error: %.3f' %train_error)
@@ -379,7 +377,7 @@ class SGDOptimizer(object):
                     self._launch_tensorboard()
 
             # get final logs
-            val_error = self._error_rate_in_batches()
+            val_error = self._error_rate_in_batches(num_files_eval=-1)
             logging.info('Final validation error: %.1f%%' %val_error)
             sys.stdout.flush()
 
@@ -895,7 +893,10 @@ class SGDOptimizer(object):
 
         self.train_batch_size = self.cfg['train_batch_size']
         self.val_batch_size = self.cfg['val_batch_size']
-
+        self.max_files_eval = None
+        if 'max_files_eval' in self.cfg.keys():
+            self.max_files_eval = self.cfg['max_files_eval']
+        
         # update the GQCNN's batch_size param to this one
         self.gqcnn.update_batch_size(self.val_batch_size)
 
@@ -1400,7 +1401,7 @@ class SGDOptimizer(object):
                 self.train_data_arr[i,:,:,0] = train_image
         return self.train_data_arr, self.train_poses_arr
 
-    def _error_rate_in_batches(self):
+    def _error_rate_in_batches(self, num_files_eval=None):
         """ Get all predictions for a dataset by running it in small batches
 
         Returns
@@ -1409,7 +1410,14 @@ class SGDOptimizer(object):
             validation error
         """
         error_rates = []
-        for data_filename, pose_filename, label_filename in zip(self.im_filenames, self.pose_filenames, self.label_filenames):
+        all_filenames = zip(self.im_filenames, self.pose_filenames, self.label_filenames)
+        random.shuffle(all_filenames)
+        if num_files_eval is None:
+            num_files_eval = self.max_files_eval
+        if self.max_files_eval is not None and num_files_eval > 0:
+            all_filenames = all_filenames[:num_files_eval]
+        
+        for data_filename, pose_filename, label_filename in all_filenames:
 
             # load next file
             data = np.load(os.path.join(self.data_dir, data_filename))['arr_0']
