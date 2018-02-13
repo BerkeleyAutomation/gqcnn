@@ -269,37 +269,46 @@ class SuctionPoint2D(object):
         v = [center, axis, depth]
         """
         #return np.r_[self.center.data, self.axis, self.depth]
-        return np.r_[self.center.data, self.axis]
-
+        #return np.r_[self.center.data, self.axis]
+        return self.center.data
+        
     @staticmethod
-    def from_feature_vec(v, depth_im=None, camera_intr=None, depth_offset=0.0):
+    def from_feature_vec(v, camera_intr=None, depth=None, axis=None):
         """ Creates a SuctionPoint2D obj from a feature vector and additional parameters.
 
         Parameters
         ----------
         v : :obj:`numpy.ndarray`
             feature vector, see Grasp2D.feature_vec
-        depth_im : :obj:`perception.DepthImage`
-            depth image to constrain the approach axis of the grasp
         camera_intr : :obj:`perception.CameraIntrinsics`
             frame of reference for camera that the grasp corresponds to
-        depth_offset : float
-            amount to offset the depth for the target point
+        depth : float
+            hard-set the depth for the suction grasp
+        axis : :obj:`numpy.ndarray`
+            normalized 3-vector specifying the approach direction
         """
         # read feature vec
         center_px = v[:2]
-        axis = v[2:5]
-        axis = axis / np.linalg.norm(axis)
-        if v.shape[0] > 5:
-            depth = v[5]
-        if depth_im is not None:
-            i = int(min(max(center_px[1], 0), depth_im.height-1))
-            j = int(min(max(center_px[0], 0), depth_im.width-1))
-            depth = depth_im[i, j] + depth_offset
-        
+
+        grasp_axis = np.array([0,0,-1])
+        if v.shape > 2 and axis is None:
+            grasp_axis = v[2:5]
+            grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
+        elif axis is not None:
+            grasp_axis = axis
+            
+        grasp_depth = 0.5    
+        if v.shape[0] > 5 and depth is None:
+            grasp_depth = v[5]
+        elif depth is not None:
+            grasp_depth = depth
+            
         # compute center and angle
         center = Point(center_px, camera_intr.frame)
-        return SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)
+        return SuctionPoint2D(center,
+                              grasp_axis,
+                              grasp_depth,
+                              camera_intr=camera_intr)
 
     def pose(self):
         """ Computes the 3D pose of the grasp relative to the camera.

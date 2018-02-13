@@ -543,12 +543,15 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             state.save(state_dir)
         
         # parse state
+        seed_set_start = time()
         rgbd_im = state.rgbd_im
+        depth_im = rgbd_im.depth
         camera_intr = state.camera_intr
         segmask = state.segmask
-
+        point_cloud_im = camera_intr.deproject_to_image(depth_im)
+        normal_cloud_im = point_cloud_im.normal_cloud_im()
+        
         # sample grasps
-        seed_set_start = time()
         grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
                                             self._num_seed_samples,
                                             segmask=segmask,
@@ -653,16 +656,24 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 for grasp_vec in grasp_vecs:
                     feature_start = time()
                     if grasp_type == 'parallel_jaw':
+                        # form grasp object
                         grasp = Grasp2D.from_feature_vec(grasp_vec,
                                                          width=self._gripper_width,
                                                          camera_intr=camera_intr)
                     elif grasp_type == 'suction':
-                        #grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
-                        #                                        camera_intr=camera_intr)
+                        # read depth and approach axis
+                        u = int(min(max(grasp_vec[1], 0), depth_im.height-1))
+                        v = int(min(max(grasp_vec[0], 0), depth_im.width-1))
+                        grasp_depth = depth_im[u, v]
+
+                        # approach_axis
+                        grasp_axis = -normal_cloud_im[u, v]
+                        
+                        # form grasp object
                         grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
-                                                                depth_im=rgbd_im.depth,
                                                                 camera_intr=camera_intr,
-                                                                depth_offset=self._grasp_sampler._mean_depth)
+                                                                depth=grasp_depth,
+                                                                axis=grasp_axis)
                     logging.debug('Feature vec took %.5f sec' %(time()-feature_start))
 
                         
