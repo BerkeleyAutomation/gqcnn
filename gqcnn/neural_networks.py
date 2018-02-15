@@ -466,11 +466,6 @@ class GQCNN(object):
             # u, v, depth, theta, cx, cy
             self._pose_dim = 6
 
-        # create feed tensors for prediction
-        self._input_im_arr = np.zeros([self._batch_size, self._im_height,
-                                       self._im_width, self._num_channels])
-        self._input_pose_arr = np.zeros([self._batch_size, self._pose_dim])
-
         # load architecture
         self._architecture = config['architecture']
         self._use_conv3 = False
@@ -516,6 +511,11 @@ class GQCNN(object):
         add_softmax : float
             whether or not to add a softmax layer
         """
+
+        # create feed tensors for prediction
+        self._input_im_arr = np.zeros([self._batch_size, self._im_height,
+                                           self._im_width, self._num_channels])
+        self._input_pose_arr = np.zeros([self._batch_size, self._pose_dim])
 
         with self._graph.as_default():
             # setup tf input placeholders and build network
