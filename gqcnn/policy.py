@@ -464,7 +464,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         self._max_grasps_filter = 1
         if 'max_grasps_filter' in self.config.keys():
             self._max_grasps_filter = self.config['max_grasps_filter']
-        
+
+        self._max_resamples_per_iteration = 100
+        if 'max_resamples_per_iteration' in self.config.keys():
+            self._max_resamples_per_iteration = self.config['max_resamples_per_iteration']
+            
         # gripper parameters
         self._seed = None
         if self.config['deterministic']:
@@ -566,6 +570,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if isinstance(grasps[0], SuctionPoint2D):
             grasp_type = 'suction'
 
+        logging.info('Sampled %d grasps' %(len(grasps)))
         logging.info('Computing the seed set took %.3f sec' %(time() - seed_set_start))
 
         # iteratively refit and sample
@@ -645,7 +650,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             # sample the next grasps
             grasps = []
             loop_start = time()
-            while len(grasps) < self._num_gmm_samples:
+            num_tries = 0
+            while len(grasps) < self._num_gmm_samples and num_tries < self._max_resamples_per_iteration:
                 # sample from GMM
                 sample_start = time()
                 grasp_vecs, _ = gmm.sample(n_samples=self._num_gmm_samples)
@@ -684,7 +690,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                          np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0)):
                          grasps.append(grasp)
                     logging.debug('Bounds took %.5f sec' %(time()-bounds_start))
-
+                    num_tries += 1
+                    
             # check num grasps
             num_grasps = len(grasps)
             if num_grasps == 0:
