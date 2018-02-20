@@ -468,6 +468,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         self._max_resamples_per_iteration = 100
         if 'max_resamples_per_iteration' in self.config.keys():
             self._max_resamples_per_iteration = self.config['max_resamples_per_iteration']
+
+        self._max_approach_angle = np.inf
+        if 'max_approach_angle' in self.config.keys():
+            self._max_approach_angle = np.deg2rad(self.config['max_approach_angle'])
             
         # gripper parameters
         self._seed = None
@@ -687,7 +691,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                     if state.segmask is None or \
                         (grasp.center.y >= 0 and grasp.center.y < state.segmask.height and \
                          grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
-                         np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0)):
+                         np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0) and \
+                         grasp.approach_angle < self._max_approach_angle):
                          grasps.append(grasp)
                     logging.debug('Bounds took %.5f sec' %(time()-bounds_start))
                     num_tries += 1
