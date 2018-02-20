@@ -636,6 +636,9 @@ class SGDOptimizer(object):
             elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                 self.pose_mean = self.pose_mean[2:4]
                 self.pose_std = self.pose_std[2:4]
+            elif self.input_data_mode == InputDataMode.PARALLEL_JAW:
+                self.pose_mean = self.pose_mean[2:3]
+                self.pose_std = self.pose_std[2:3]
             elif self.input_data_mode == InputDataMode.RAW_IMAGE:
                 # u, v, depth, theta
                 self.pose_mean = self.pose_mean[:4]
