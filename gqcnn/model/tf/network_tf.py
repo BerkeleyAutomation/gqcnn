@@ -703,7 +703,7 @@ class GQCNNTF(object):
 
         return transform_layer, output_height, output_width, input_channels
 
-    def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False):
+    def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, pad='SAME'):
         logging.info('Building convolutional layer: {}'.format(name))       
         with tf.name_scope(name):
             # initialize weights
@@ -726,13 +726,17 @@ class GQCNNTF(object):
 #                    tf.summary.histogram('weights', convW, collections=["histogram"])
 #                    tf.summary.histogram('bias', convb, collections=["histogram"])
 
-            out_height = input_height / pool_stride_h
-            out_width = input_width / pool_stride_w
+            if pad == 'SAME':
+                out_height = input_height / pool_stride_h
+                out_width = input_width / pool_stride_w
+            else:
+                out_height = (((input_height - filter_h) / 1) + 1) / pool_stride_h
+                out_width = (((input_width - filter_w) / 1) +1) / pool_stride_w
             out_channels = num_filt
 
             # build layer
             convh = tf.nn.conv2d(input_node, convW, strides=[
-                                1, 1, 1, 1], padding='SAME') + convb
+                                1, 1, 1, 1], padding=pad) + convb
             
 #            if not inference:
 #                if self._save_histograms:
@@ -769,19 +773,19 @@ class GQCNNTF(object):
 
             return pool, out_height, out_width, out_channels
 
-    def _pack(self, dim, data, vector=False):
+    def _pack(self, dim_h, dim_w, data, vector=False):
         if vector:
             # first reshape vector into 3-dimensional tensor
             reshaped = tf.reshape(data, tf.concat([[1, 1], tf.shape(data)], 0))
          
             # then tile into tensor of shape dimxdimxdata.dim0
-            packed = tf.tile(reshaped, [dim, dim, 1])
+            packed = tf.tile(reshaped, [dim_h, dim_w, 1])
         else:
             # first reshape second dimension of tensor into 3-dimensional tensor
             reshaped = tf.reshape(data, tf.concat([tf.shape(data)[0:1], [1, 1], tf.shape(data)[1:]], 0))
 
             # then tile into tensor of shape bsizexdimxdimxdata.dim1
-            packed = tf.tile(reshaped, [1, dim, dim, 1])
+            packed = tf.tile(reshaped, [1, dim_h, dim_w, 1])
 
         return packed
 
@@ -798,7 +802,7 @@ class GQCNNTF(object):
         convh = tf.nn.conv2d(input_node, convW, strides=[1, 1, 1, 1], padding='VALID')
 
         # pack bias into tensor of shape=tf.shape(convh)
-        bias_packed = self._pack(tf.shape(convh)[1], convb, vector=True)
+        bias_packed = self._pack(tf.shape(convh)[1], tf.shape(convh)[2], convb, vector=True)
 
         # add bias term
         convh = convh + bias_packed
@@ -823,14 +827,14 @@ class GQCNNTF(object):
         pose_out = tf.matmul(input_node_pose, fcW_pose)
 
         # pack pose_out into a tensor of shape=tf.shape(convh_im)
-        pose_packed = self._pack(tf.shape(convh_im)[1], pose_out)
+        pose_packed = self._pack(tf.shape(convh_im)[1], tf.shape(convh_im)[2], pose_out)
 
         # add the im and pose tensors 
         convh = convh_im + pose_packed
 
         # pack bias
         fc_bias = self._weights.weights['{}_bias'.format(fc_name)]
-        bias_packed = self._pack(tf.shape(convh_im)[1], fc_bias, vector=True)
+        bias_packed = self._pack(tf.shape(convh_im)[1], tf.shape(convh_im)[2], fc_bias, vector=True)
 
         # add bias and apply activation
         convh = self._leaky_relu(convh + bias_packed)
@@ -846,7 +850,6 @@ class GQCNNTF(object):
             fcb = self._weights.weights['{}_bias'.format(name)] 
         else:
             std = np.sqrt(2.0 / (fan_in))
-
             fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std), name='{}_weights'.format(name))
             if final_fc_layer:
                 fcb = tf.Variable(tf.constant(0.0, shape=[out_size]), name='{}_bias'.format(name))
@@ -1044,9 +1047,12 @@ class GQCNNTF(object):
                     raise ValueError('Cannot have conv layer after fc layer')
                 output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filt_dim'],
                     layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
-                    norm=layer_config['norm'])
+                    norm=layer_config['norm'], pad=layer_config['pad'])
                 prev_layer = layer_type
-                filter_dim /= layer_config['pool_stride']
+                if layer_config['pad'] == 'SAME':
+                    filter_dim /= layer_config['pool_stride']
+                else:
+                    filter_dim = ((filter_dim - layer_config['filt_dim']) / layer_config['pool_stride']) + 1
             elif layer_type == 'fc':
                 prev_layer_is_conv_or_res = False
                 first_residual = True
