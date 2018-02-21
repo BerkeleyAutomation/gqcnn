@@ -9,6 +9,7 @@ import json
 import sys
 import shutil
 import logging
+import random
 
 import numpy as np
 
@@ -216,10 +217,18 @@ def setup_data_filenames(data_dir, image_mode, target_metric_name, total_pct, de
 
         random.shuffle(zipped)
         zipped = zipped[:debug_num_files]
-
+        
         # unpack
-        im_filenames, pose_filenames, label_filenames, obj_id_filenames, stable_pose_filenames, gripper_param_filenames, 
+        im_filenames, pose_filenames, label_filenames, obj_id_filenames, stable_pose_filenames, gripper_param_filenames, \
         gripper_depth_mask_filenames, gripper_seg_mask_filenames = zip(*zipped)
+        im_filenames = list(im_filenames)
+        pose_filenames = list(pose_filenames)
+        label_filenames = list(label_filenames)
+        obj_id_filenames = list(obj_id_filenames)
+        stable_pose_filenames = list(stable_pose_filenames)
+        gripper_param_filenames = list(gripper_param_filenames)
+        gripper_depth_mask_filenames = list(gripper_depth_mask_filenames)
+        gripper_seg_mask_filenames = list(gripper_seg_mask_filenames)        
 
     im_filenames.sort(key = lambda x: int(x[-9:-4]))
     pose_filenames.sort(key = lambda x: int(x[-9:-4]))
