@@ -9,6 +9,7 @@ import random
 import signal
 import time
 import threading
+import math
 
 import numpy as np
 import tensorflow as tf
@@ -51,8 +52,12 @@ class GQCNNTrainerTF(object):
         if self.cfg['loss'] == 'l2':
             return tf.nn.l2_loss(tf.sub(self.train_net_output, self.train_labels_node))
         elif self.cfg['loss'] == 'cross_entropy':
-            return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, 
-                labels=self.train_labels_node, logits=self.train_net_output, name=None))
+            if self.angular_bins > 0:
+                return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node,
+                    logits=tf.reshape(tf.boolean_mask(self.train_net_output, self.train_pred_mask_node), (-1, 2))))
+            else:
+                return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, 
+                    labels=self.train_labels_node, logits=self.train_net_output, name=None))
 
     def _create_optimizer(self, loss, batch, var_list, learning_rate):
         """ Create optimizer based on config file
@@ -255,15 +260,20 @@ class GQCNNTrainerTF(object):
                 # check_numeric_op = tf.add_check_numerics_ops()
 
                 # fprop + bprop
-                _, l, lr, predictions, batch_labels, net_output = self.sess.run([optimizer, loss, learning_rate,
+                if self.angular_bins > 0:
+                    _, l, lr, predictions, batch_labels, pred_mask, net_output = self.sess.run([optimizer, loss, learning_rate,
+                    train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output], 
+                    feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
+                else:
+                    _, l, lr, predictions, batch_labels, net_output = self.sess.run([optimizer, loss, learning_rate,
                     train_predictions, self.train_labels_node, self.train_net_output], 
                     feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
                 
-                ex = np.exp(net_output - np.tile(np.max(net_output, axis=1)[:, np.newaxis], [1, 2]))
-                softmax = ex / np.tile(np.sum(ex, axis=1)[:, np.newaxis], [1, 2])
+#                ex = np.exp(net_output - np.tile(np.max(net_output, axis=1)[:, np.newaxis], [1, 2]))
+#                softmax = ex / np.tile(np.sum(ex, axis=1)[:, np.newaxis], [1, 2])
 
-                logging.debug('Max: ' + str(np.max(softmax[:, 1])))
-                logging.debug('Min: ' + str(np.min(softmax[:, 1])))
+#                logging.debug('Max: ' + str(np.max(softmax[:, 1])))
+#                logging.debug('Min: ' + str(np.min(softmax[:, 1])))
                 logging.debug('Pred nonzero: ' + str(np.sum(np.argmax(predictions, axis=1))))
                 logging.debug('True nonzero: ' + str(np.sum(batch_labels)))
 
@@ -277,6 +287,8 @@ class GQCNNTrainerTF(object):
                     logging.info('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
+                        if self.angular_bins > 0:
+                            predictions = predictions[pred_mask].reshape((-1, 2))
                         train_error = ClassificationResult([predictions], [batch_labels]).error_rate
                         logging.info('Minibatch error: %.3f%%' % train_error)
                     self.summary_writer.add_summary(self.sess.run(self.merged_log_summaries, feed_dict={
@@ -526,17 +538,23 @@ class GQCNNTrainerTF(object):
             with tf.name_scope('train_gripper_node'):
                 self.train_gripper_batch = tf.placeholder(
                     tf.float32, (self.train_batch_size, self.gripper_dim))
-
+        if self.angular_bins > 0:
+            self.train_pred_mask_batch = tf.placeholder(tf.bool, (self.train_batch_size, self.angular_bins*2))
         # create data queue to fetch data from dataset in batches
         with tf.name_scope('data_queue'):
             if self.gripper_dim > 0:
-                self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels),
+                self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, tf.float32, train_label_dtype, tf.bool], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels),
                  (self.train_batch_size, self.pose_dim), (self.train_batch_size, self.gripper_dim), (self.train_batch_size,)])
                 self.enqueue_op = self.q.enqueue(
                     [self.train_data_batch, self.train_poses_batch, self.train_gripper_batch, self.train_labels_batch])
                 self.train_labels_node = tf.placeholder(
                     train_label_dtype, (self.train_batch_size,))
                 self.input_im_node, self.input_pose_node, self.input_gripper_node, self.train_labels_node = self.q.dequeue()
+            elif self.angular_bins > 0:
+                self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, train_label_dtype, tf.bool], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,), (self.train_batch_size, self.angular_bins*2)])
+                self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch, self.train_pred_mask_batch])
+                self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+                self.input_im_node, self.input_pose_node, self.train_labels_node, self.train_pred_mask_node = self.q.dequeue()
             else:
                 self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels),
                  (self.train_batch_size, self.pose_dim), (self.train_batch_size,)])
@@ -610,6 +628,8 @@ class GQCNNTrainerTF(object):
             raise ValueError('Train percentage must be in range [0,1]')
 
         self.gqcnn.set_mask_and_inpaint(self.cfg['mask_and_inpaint'])
+
+        self.angular_bins = self.cfg['angular_bins']
 
     def _read_data_params(self):
         """ Read data parameters from configuration file """
@@ -770,9 +790,11 @@ class GQCNNTrainerTF(object):
             train_data = np.zeros(
                         [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
             train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
-            label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
+            label_data = np.zeros((self.train_batch_size,)).astype(self.numpy_dtype)
             if self.gripper_dim > 0:
                 train_gripper = np.zeros((self.train_batch_size, self.gripper_dim)).astype(np.float32)
+            if self.angular_bins > 0:
+                train_pred_mask = np.zeros((self.train_batch_size, self.angular_bins*2), dtype=bool)
 
             while start_i < self.train_batch_size:
                 # compute num remaining
@@ -854,13 +876,24 @@ class GQCNNTrainerTF(object):
                     train_gripper_depth_mask_arr[:, :, :, 0] = (train_gripper_depth_mask_arr[:, :, :, 0] - self.gripper_depth_mask_mean[0]) / self.gripper_depth_mask_std[0]
                     train_gripper_depth_mask_arr[:, :, :, 1] = (train_gripper_depth_mask_arr[:, :, :, 1] - self.gripper_depth_mask_mean[1]) / self.gripper_depth_mask_std[1]
 
-                # normalize labels
+                # pre-process labels
                 if self.training_mode == TrainingMode.REGRESSION:
                     if self.preproc_mode == PreprocMode.NORMALIZATION:
+                        # normalize labels
                         train_label_arr = (train_label_arr - self.min_grasp_metric) / (self.max_grasp_metric - self.min_grasp_metric)
                 elif self.training_mode == TrainingMode.CLASSIFICATION:
+                    # binary threshold labels
                     train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                     train_label_arr = train_label_arr.astype(self.numpy_dtype)
+                    if self.angular_bins > 0:
+                        # form prediction mask to use when calculating loss
+                        angles = train_poses_arr[:, 3]
+                        angles[np.where(angles > math.pi)] = angles[np.where(angles > math.pi)] - math.pi
+                        bin_width = math.pi / self.angular_bins
+                        train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self.angular_bins*2), dtype=bool)
+                        for i in range(angles.shape[0]):
+                            train_pred_mask_arr[i, int((angles[i] // bin_width)*2)] = True
+                            train_pred_mask_arr[i, int((angles[i] // bin_width)*2 + 1)] = True
 
                 # enqueue training data batch
                 train_data[start_i:end_i, :, :, 0] = train_data_arr[:, :, :, 0]
@@ -871,6 +904,8 @@ class GQCNNTrainerTF(object):
                 label_data[start_i:end_i] = train_label_arr
                 if self.gripper_dim > 0:
                     train_gripper[start_i:end_i] = parse_gripper_data(train_gripper_arr, self.input_gripper_mode)
+                if self.angular_bins > 0:
+                    train_pred_mask[start_i:end_i] = train_pred_mask_arr
 
                 del train_data_arr
                 del train_poses_arr
@@ -893,6 +928,11 @@ class GQCNNTrainerTF(object):
                                                 self.train_poses_batch: train_poses,
                                                 self.train_gripper_batch: train_gripper,
                                                 self.train_labels_batch: label_data})
+                    elif self.angular_bins > 0:
+                        self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_data,
+                                                 self.train_poses_batch: train_poses,
+                                                 self.train_pred_mask_batch: train_pred_mask,
+                                                 self.train_labels_batch: label_data})
                     else:
                         self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_data,
                                                 self.train_poses_batch: train_poses,
@@ -930,6 +970,7 @@ class GQCNNTrainerTF(object):
             # load next file
             data = np.load(os.path.join(self.data_dir, data_filename))['arr_0']
             poses = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+            raw_poses = np.array(poses, copy=True)
             labels = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
             if self.gripper_dim > 0:
                 gripper_params = np.load(os.path.join(self.data_dir, gripper_filename))['arr_0']
@@ -949,6 +990,7 @@ class GQCNNTrainerTF(object):
 
             data = data[val_indices,...]
             poses = parse_pose_data(poses[val_indices, :], self.input_pose_mode)
+            raw_poses = raw_poses[val_indices, :]
             if self.gripper_dim > 0:
                 gripper_params = parse_gripper_data(gripper_params[val_indices, :], self.input_gripper_mode)
             if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
@@ -962,6 +1004,15 @@ class GQCNNTrainerTF(object):
             elif self.training_mode == TrainingMode.CLASSIFICATION:
                 labels = 1 * (labels > self.metric_thresh)
                 labels = labels.astype(np.uint8)
+                if self.angular_bins > 0:
+                    # form prediction mask to use when calculating error_rate
+                    angles = raw_poses[:, 3]
+                    angles[np.where(angles > math.pi)] = angles[np.where(angles > math.pi)] - math.pi
+                    bin_width = math.pi / self.angular_bins
+                    pred_mask = np.zeros((labels.shape[0], self.angular_bins*2), dtype=bool)
+                    for i in range(angles.shape[0]):
+                        pred_mask[i, int((angles[i] // bin_width)*2)] = True
+                        pred_mask[i, int((angles[i] // bin_width)*2 + 1)] = True
             
             # save undistorted validation images for debugging 
             if self.cfg['save_original_val_images']:
@@ -994,6 +1045,9 @@ class GQCNNTrainerTF(object):
             # get predictions
             if self.gripper_dim > 0:
                 predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK), gripper_arr=gripper_params)
+            elif self.angular_bins > 0:
+                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK))
+                predictions = predictions[pred_mask].reshape((-1, 2))
             else:
                 predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK))
             
