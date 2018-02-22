@@ -2,7 +2,7 @@
 mode: training
 
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/big_window_01_28_18/grasps/tensors
+dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v0/grasps/tensors
 output_dir: /nfs/diskstation/projects/dex-net/suction/models/
 model_dir: /nfs/diskstation/projects/dex-net/suction/models/GQ-Image-Wise
 
@@ -12,7 +12,7 @@ val_batch_size: 16
 max_files_eval: 1000
 
 # epochs
-num_epochs: 50     # number of epochs to train for
+num_epochs: 25     # number of epochs to train for
 eval_frequency: 50000  # how often to get validation error 
 save_frequency: 50000  # how often to save output
 vis_frequency: 50000
@@ -50,10 +50,8 @@ preproc_mode: none
 input_data_mode: suction
 num_tensor_channels: 1
 
-num_random_files: 1000
-
 target_metric_name: grasp_metrics
-metric_thresh: 0.6
+metric_thresh: 0.25
 
 # denoising / synthetic data params
 multiplicative_denoising: 0
@@ -101,8 +99,9 @@ fc4_drop_rate: 0.5
 
 # debugging params
 debug: 1
-debug_num_files: 1000000000
-seed: 414092
+debug_num_files: 10000000
+num_random_files: 1000
+seed: 52136
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -123,6 +122,7 @@ gqcnn_config:
       num_filt: 16
       pool_size: 1
       pool_stride: 1  
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv1_2:
@@ -130,6 +130,7 @@ gqcnn_config:
       num_filt: 16
       pool_size: 2
       pool_stride: 2
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv2_1:
@@ -137,6 +138,7 @@ gqcnn_config:
       num_filt: 16
       pool_size: 1
       pool_stride: 1
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv2_2:
@@ -144,6 +146,7 @@ gqcnn_config:
       num_filt: 16
       pool_size: 2
       pool_stride: 2
+      padding: VALID
       norm: 0
       norm_type: local_response
     pc1:

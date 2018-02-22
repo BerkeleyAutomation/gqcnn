@@ -2,7 +2,7 @@
 mode: training
 
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/phoxi_v7/grasps/tensors
+dataset_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/phoxi_v13/grasps/tensors
 output_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/
 model_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/GQ-Image-Wise
 
@@ -53,7 +53,7 @@ num_tensor_channels: 1
 num_random_files: 1000
 
 target_metric_name: grasp_metrics
-metric_thresh: 0.1
+metric_thresh: 0.25
 
 # denoising / synthetic data params
 multiplicative_denoising: 0
@@ -102,13 +102,13 @@ fc4_drop_rate: 0.5
 # debugging params
 debug: 1
 debug_num_files: 1000000000
-seed: 86777
+seed: 8679999
 
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 32
-  im_width: 32
+  im_height: 48
+  im_width: 48
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_data_mode: parallel_jaw
@@ -120,30 +120,34 @@ gqcnn_config:
   architecture:
     conv1_1:
       filt_dim: 5
-      num_filt: 8
+      num_filt: 16
       pool_size: 1
       pool_stride: 1  
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv1_2:
       filt_dim: 3
-      num_filt: 8
+      num_filt: 16
       pool_size: 2
       pool_stride: 2
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 8
+      num_filt: 16
       pool_size: 1
       pool_stride: 1
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 8
+      num_filt: 16
       pool_size: 2
       pool_stride: 2
+      padding: VALID
       norm: 0
       norm_type: local_response
     pc1:
@@ -151,9 +155,9 @@ gqcnn_config:
     pc2:
       out_size: 0
     fc3:
-      out_size: 32
+      out_size: 64
     fc4:
-      out_size: 32
+      out_size: 64
     fc5:
       out_size: 2
 
