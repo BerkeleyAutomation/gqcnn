@@ -122,7 +122,7 @@ import sys
 import time
 
 from autolab_core import RigidTransform, YamlConfig
-from perception import RgbdImage, RgbdSensorFactory
+from perception import BinaryImage, RgbdImage, RgbdSensorFactory
 
 from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState
 from gqcnn import Visualizer as vis
@@ -133,8 +133,10 @@ if __name__ == '__main__':
 
     # parse args
     parser = argparse.ArgumentParser(description='Capture a set of test images from the Kinect2')
+    parser.add_argument('--segmask_filename', type=str, default=None, help='path to a segmask to use')
     parser.add_argument('--config_filename', type=str, default='cfg/examples/policy.yaml', help='path to configuration file to use')
     args = parser.parse_args()
+    segmask_filename = args.segmask_filename
     config_filename = args.config_filename
 
     # read config
@@ -157,8 +159,15 @@ if __name__ == '__main__':
     color_im, depth_im, _ = sensor.frames()
     color_im = color_im.inpaint(rescale_factor=inpaint_rescale_factor)
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
+
+    # optionally read a segmask
+    segmask = None
+    if segmask_filename is not None:
+        segmask = BinaryImage.open(segmask_filename)
+    
+    # create state
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
-    state = RgbdImageState(rgbd_im, camera_intr)
+    state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
 
     # init policy
     policy = CrossEntropyRobustGraspingPolicy(policy_config)

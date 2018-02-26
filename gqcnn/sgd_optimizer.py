@@ -26,6 +26,7 @@ Author: Vishal Satish
 import argparse
 import copy
 import cv2
+import gc
 import json
 import logging
 import numbers
@@ -776,13 +777,18 @@ class SGDOptimizer(object):
         else:
             self.train_index_map = {}
             self.val_index_map = {}
-            for i, im_filename in enumerate(self.im_filenames):
+            i = 0
+            for im_filename, pose_filename in zip(self.im_filenames, self.pose_filenames):
                 logging.info('Computing indices for file %d' %(i))
                 lower = i * self.images_per_file
                 upper = (i+1) * self.images_per_file
-                im_arr = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
-                self.train_index_map[im_filename] = train_indices[(train_indices >= lower) & (train_indices < upper) &  (train_indices - lower < im_arr.shape[0])] - lower
-                self.val_index_map[im_filename] = val_indices[(val_indices >= lower) & (val_indices < upper) & (val_indices - lower < im_arr.shape[0])] - lower
+                pose_arr = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+                self.train_index_map[im_filename] = train_indices[(train_indices >= lower) & (train_indices < upper) &  (train_indices - lower < pose_arr.shape[0])] - lower
+                self.val_index_map[im_filename] = val_indices[(val_indices >= lower) & (val_indices < upper) & (val_indices - lower < pose_arr.shape[0])] - lower
+                del pose_arr
+                if i % 10 == 0:
+                    gc.collect()
+                i += 1
             pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
             pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
 
@@ -1060,7 +1066,7 @@ class SGDOptimizer(object):
             self.stable_pose_filenames = None
 
         # subsample files
-        self.num_files = len(self.im_filenames)
+        self.num_files = min(len(self.im_filenames), len(self.label_filenames))
         num_files_used = int(self.total_pct * self.num_files)
         filename_indices = np.random.choice(self.num_files, size=num_files_used, replace=False)
         filename_indices.sort()
