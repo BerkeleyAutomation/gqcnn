@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
+Permission to use, copy, modify, and distribute this software and its documentation for educational,
+research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
+hereby granted, provided that the above copyright notice, this paragraph and the following two
+paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
+Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
+7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+
+IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
+THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
+HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
+MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+"""
 """
 Classes to encapsulate parallel-jaw grasps in image space
 Author: Jeff
@@ -247,10 +268,12 @@ class SuctionPoint2D(object):
         """ Returns the feature vector for the suction point.
         v = [center, axis, depth]
         """
-        return np.r_[self.center.data, self.axis, self.depth]
-
+        #return np.r_[self.center.data, self.axis, self.depth]
+        #return np.r_[self.center.data, self.axis]
+        return self.center.data
+        
     @staticmethod
-    def from_feature_vec(v, camera_intr=None):
+    def from_feature_vec(v, camera_intr=None, depth=None, axis=None):
         """ Creates a SuctionPoint2D obj from a feature vector and additional parameters.
 
         Parameters
@@ -259,16 +282,33 @@ class SuctionPoint2D(object):
             feature vector, see Grasp2D.feature_vec
         camera_intr : :obj:`perception.CameraIntrinsics`
             frame of reference for camera that the grasp corresponds to
+        depth : float
+            hard-set the depth for the suction grasp
+        axis : :obj:`numpy.ndarray`
+            normalized 3-vector specifying the approach direction
         """
         # read feature vec
         center_px = v[:2]
-        axis = v[2:5]
-        depth = v[5]
-        axis = axis / np.linalg.norm(axis)
 
+        grasp_axis = np.array([0,0,-1])
+        if v.shape > 2 and axis is None:
+            grasp_axis = v[2:5]
+            grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
+        elif axis is not None:
+            grasp_axis = axis
+            
+        grasp_depth = 0.5    
+        if v.shape[0] > 5 and depth is None:
+            grasp_depth = v[5]
+        elif depth is not None:
+            grasp_depth = depth
+            
         # compute center and angle
         center = Point(center_px, camera_intr.frame)
-        return SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)
+        return SuctionPoint2D(center,
+                              grasp_axis,
+                              grasp_depth,
+                              camera_intr=camera_intr)
 
     def pose(self):
         """ Computes the 3D pose of the grasp relative to the camera.

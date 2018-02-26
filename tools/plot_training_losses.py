@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
+Permission to use, copy, modify, and distribute this software and its documentation for educational,
+research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
+hereby granted, provided that the above copyright notice, this paragraph and the following two
+paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
+Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
+7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+
+IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
+THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
+HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
+MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+"""
 """
 Script to plot the various errors saved during training.
 
@@ -23,7 +44,7 @@ TRAIN_ERRORS_FILENAME = 'train_errors.npy'
 VAL_ERRORS_FILENAME = 'val_errors.npy'
 TRAIN_ITERS_FILENAME = 'train_eval_iters.npy'
 VAL_ITERS_FILENAME = 'val_eval_iters.npy'
-WINDOW = 10
+WINDOW = 1000
 
 if __name__ == '__main__':
     result_dir = sys.argv[1]
@@ -43,6 +64,9 @@ if __name__ == '__main__':
         pct_pos_val = 100.0 * np.load(pct_pos_val_filename)
     raw_train_losses = np.load(train_losses_filename)
 
+    val_errors = np.r_[pct_pos_val, val_errors]
+    val_iters = np.r_[0, val_iters]
+    
     # window the training error
     i = 0
     train_errors = []
@@ -71,7 +95,7 @@ if __name__ == '__main__':
     plt.figure()
     plt.plot(train_iters, train_errors, linewidth=4, color='b')
     plt.plot(val_iters, val_errors, linewidth=4, color='g')
-    plt.ylim(0, 0.01)
+    plt.ylim(0, 100)
     plt.legend(('Training (Minibatch)', 'Validation'), fontsize=15, loc='best')
     plt.xlabel('Iteration', fontsize=15)
     plt.ylabel('Error Rate', fontsize=15)

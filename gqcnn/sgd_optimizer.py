@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
+Permission to use, copy, modify, and distribute this software and its documentation for educational,
+research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
+hereby granted, provided that the above copyright notice, this paragraph and the following two
+paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
+Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
+7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+
+IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
+THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
+HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
+MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+"""
 """
 Optimizer class for training a gqcnn(Grasp Quality Neural Network) object.
 Author: Vishal Satish
@@ -5,6 +26,7 @@ Author: Vishal Satish
 import argparse
 import copy
 import cv2
+import gc
 import json
 import logging
 import numbers
@@ -272,17 +294,15 @@ class SGDOptimizer(object):
 		        
                     logging.info('Max ' +  str(np.max(softmax[:,1])))
                     logging.info('Min ' + str(np.min(softmax[:,1])))
-                    logging.info('Pred nonzero ' + str(np.sum(softmax[:,1] > self.metric_thresh)))
+                    logging.info('Pred nonzero ' + str(np.sum(softmax[:,1] > 0.5)))
                     logging.info('True nonzero ' + str(np.sum(batch_labels)))
                 else:
                     sigmoid = 1.0 / (1.0 + np.exp(-output))
                     logging.info('Max ' +  str(np.max(sigmoid)))
                     logging.info('Min ' + str(np.min(sigmoid)))
-                    logging.info('Pred nonzero ' + str(np.sum(sigmoid > self.metric_thresh)))
-                    logging.info('True nonzero ' + str(np.sum(batch_labels > self.metric_thresh)))
+                    logging.info('Pred nonzero ' + str(np.sum(sigmoid > 0.5)))
+                    logging.info('True nonzero ' + str(np.sum(batch_labels > 0.5)))
 
-                    print sigmoid[sigmoid>self.metric_thresh], batch_labels[sigmoid[:,0]>self.metric_thresh]
-                    
                 if np.isnan(l) or np.any(np.isnan(train_poses)):
                     import IPython
                     IPython.embed()
@@ -312,7 +332,7 @@ class SGDOptimizer(object):
                     self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
                 # evaluate validation error
-                if step % self.eval_frequency == 0:
+                if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
                         train_error = self._error_rate_in_batches()
                         logging.info('Training error: %.3f' %train_error)
@@ -358,7 +378,7 @@ class SGDOptimizer(object):
                     self._launch_tensorboard()
 
             # get final logs
-            val_error = self._error_rate_in_batches()
+            val_error = self._error_rate_in_batches(num_files_eval=-1)
             logging.info('Final validation error: %.1f%%' %val_error)
             sys.stdout.flush()
 
@@ -742,13 +762,18 @@ class SGDOptimizer(object):
         else:
             self.train_index_map = {}
             self.val_index_map = {}
-            for i, im_filename in enumerate(self.im_filenames):
+            i = 0
+            for im_filename, pose_filename in zip(self.im_filenames, self.pose_filenames):
                 logging.info('Computing indices for file %d' %(i))
                 lower = i * self.images_per_file
                 upper = (i+1) * self.images_per_file
-                im_arr = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
-                self.train_index_map[im_filename] = train_indices[(train_indices >= lower) & (train_indices < upper) &  (train_indices - lower < im_arr.shape[0])] - lower
-                self.val_index_map[im_filename] = val_indices[(val_indices >= lower) & (val_indices < upper) & (val_indices - lower < im_arr.shape[0])] - lower
+                pose_arr = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+                self.train_index_map[im_filename] = train_indices[(train_indices >= lower) & (train_indices < upper) &  (train_indices - lower < pose_arr.shape[0])] - lower
+                self.val_index_map[im_filename] = val_indices[(val_indices >= lower) & (val_indices < upper) & (val_indices - lower < pose_arr.shape[0])] - lower
+                del pose_arr
+                if i % 10 == 0:
+                    gc.collect()
+                i += 1
             pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
             pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
 
@@ -874,7 +899,10 @@ class SGDOptimizer(object):
 
         self.train_batch_size = self.cfg['train_batch_size']
         self.val_batch_size = self.cfg['val_batch_size']
-
+        self.max_files_eval = None
+        if 'max_files_eval' in self.cfg.keys():
+            self.max_files_eval = self.cfg['max_files_eval']
+        
         # update the GQCNN's batch_size param to this one
         self.gqcnn.update_batch_size(self.val_batch_size)
 
@@ -1009,7 +1037,7 @@ class SGDOptimizer(object):
             self.stable_pose_filenames = None
 
         # subsample files
-        self.num_files = len(self.im_filenames)
+        self.num_files = min(len(self.im_filenames), len(self.label_filenames))
         num_files_used = int(self.total_pct * self.num_files)
         filename_indices = np.random.choice(self.num_files, size=num_files_used, replace=False)
         filename_indices.sort()
@@ -1379,7 +1407,7 @@ class SGDOptimizer(object):
                 self.train_data_arr[i,:,:,0] = train_image
         return self.train_data_arr, self.train_poses_arr
 
-    def _error_rate_in_batches(self):
+    def _error_rate_in_batches(self, num_files_eval=None):
         """ Get all predictions for a dataset by running it in small batches
 
         Returns
@@ -1388,7 +1416,14 @@ class SGDOptimizer(object):
             validation error
         """
         error_rates = []
-        for data_filename, pose_filename, label_filename in zip(self.im_filenames, self.pose_filenames, self.label_filenames):
+        all_filenames = zip(self.im_filenames, self.pose_filenames, self.label_filenames)
+        random.shuffle(all_filenames)
+        if num_files_eval is None:
+            num_files_eval = self.max_files_eval
+        if self.max_files_eval is not None and num_files_eval > 0:
+            all_filenames = all_filenames[:num_files_eval]
+        
+        for data_filename, pose_filename, label_filename in all_filenames:
 
             # load next file
             data = np.load(os.path.join(self.data_dir, data_filename))['arr_0']

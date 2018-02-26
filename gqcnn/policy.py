@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
+Permission to use, copy, modify, and distribute this software and its documentation for educational,
+research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
+hereby granted, provided that the above copyright notice, this paragraph and the following two
+paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
+Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
+7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+
+IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
+THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
+HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
+MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+"""
 """
 Grasping policies
 Author: Jeff Mahler
@@ -16,7 +37,7 @@ from sklearn.mixture import GaussianMixture
 
 import autolab_core.utils as utils
 from autolab_core import Point
-from perception import DepthImage
+from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, CameraIntrinsics
 
 from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode, GraspQualityFunctionFactory, GQCnnQualityFunction, NoValidGraspsException
 from gqcnn import Visualizer as vis
@@ -59,7 +80,60 @@ class RgbdImageState(object):
         if self.segmask is not None:
             self.segmask.save(segmask_filename)
         if self.fully_observed is not None:
-            pkl.dump(self.fully_observed, state_filename)
+            pkl.dump(self.fully_observed, open(state_filename, 'wb'))
+
+    @staticmethod
+    def load(save_dir):
+        if not os.path.exists(save_dir):
+            raise ValueError('Directory %s does not exist!' %(save_dir))
+        color_image_filename = os.path.join(save_dir, 'color.png')
+        depth_image_filename = os.path.join(save_dir, 'depth.npy')
+        camera_intr_filename = os.path.join(save_dir, 'camera.intr')
+        segmask_filename = os.path.join(save_dir, 'segmask.npy')
+        state_filename = os.path.join(save_dir, 'state.pkl')
+        camera_intr = CameraIntrinsics.load(camera_intr_filename)
+        color = ColorImage.open(color_image_filename, frame=camera_intr.frame)
+        depth = DepthImage.open(depth_image_filename, frame=camera_intr.frame)
+        segmask = None
+        if os.path.exists(segmask_filename):
+            segmask = BinaryImage.open(segmask_filename, frame=camera_intr.frame)
+        fully_observed = None    
+        if os.path.exists(state_filename):
+            fully_observed = pkl.load(open(state_filename, 'rb'))
+        return RgbdImageState(RgbdImage.from_color_and_depth(color, depth),
+                              camera_intr,
+                              segmask=segmask,
+                              fully_observed=fully_observed)
+            
+class ParallelJawGrasp(object):
+    """ Action to encapsulate parallel jaw grasps.
+    """
+    def __init__(self, grasp, q_value, image):
+        self.grasp = grasp
+        self.q_value = q_value
+        self.image = image
+
+    def save(self, save_dir):
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
+        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
+        image_filename = os.path.join(save_dir, 'tf_image.npy')
+        pkl.dump(self.grasp, open(grasp_filename, 'wb'))
+        pkl.dump(self.q_value, open(q_value_filename, 'wb'))
+        self.image.save(image_filename)
+
+    @staticmethod
+    def load(save_dir):
+        if not os.path.exists(save_dir):
+            raise ValueError('Directory %s does not exist!' %(save_dir))
+        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
+        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
+        image_filename = os.path.join(save_dir, 'tf_image.npy')
+        grasp = pkl.load(open(grasp_filename, 'rb'))
+        q_value = pkl.load(open(q_value_filename, 'rb'))
+        image = DepthImage.open(image_filename)
+        return ParallelJawGrasp(grasp, q_value, image)
         
 class GraspAction(object):
     """ Action to encapsulate parallel jaw grasps.
@@ -344,6 +418,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     (5) repeat steps 2-4 for K iters
     (6) return the best candidate from the final sample set
 
+    Parameters
+    ----------
+    filters : :obj:`dict` mapping names to functions
+        list of functions to apply to filter the final grasps
+
     Notes
     -----
     Required configuration parameters are specified in Other Parameters
@@ -367,10 +446,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     gripper_width : float, optional
         width of the gripper in meters
     """
-    def __init__(self, config):
+    def __init__(self, config, filters=None):
         GraspingPolicy.__init__(self, config)
         CrossEntropyRobustGraspingPolicy._parse_config(self)
-
+        self._filters = filters
+        
     def _parse_config(self):
         """ Parses the parameters of the policy. """
         # cross entropy method parameters
@@ -381,6 +461,18 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         self._gmm_component_frac = self.config['gmm_component_frac']
         self._gmm_reg_covar = self.config['gmm_reg_covar']
 
+        self._max_grasps_filter = 1
+        if 'max_grasps_filter' in self.config.keys():
+            self._max_grasps_filter = self.config['max_grasps_filter']
+
+        self._max_resamples_per_iteration = 100
+        if 'max_resamples_per_iteration' in self.config.keys():
+            self._max_resamples_per_iteration = self.config['max_resamples_per_iteration']
+
+        self._max_approach_angle = np.inf
+        if 'max_approach_angle' in self.config.keys():
+            self._max_approach_angle = np.deg2rad(self.config['max_approach_angle'])
+            
         # gripper parameters
         self._seed = None
         if self.config['deterministic']:
@@ -396,17 +488,39 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             if not os.path.exists(self._logging_dir):
                 os.mkdir(self._logging_dir)
             
-    def select(self, grasps, q_value):
+    def select(self, grasps, q_values):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
-        """
+        """ 
         # sort
+        logging.info('Sorting grasps')
         num_grasps = len(grasps)
         if num_grasps == 0:
-            raise ValueError('Zero grasps')
-        grasps_and_predictions = zip(np.arange(num_grasps), q_value)
+            raise NoValidGraspsException('Zero grasps')
+        grasps_and_predictions = zip(np.arange(num_grasps), q_values)
         grasps_and_predictions.sort(key = lambda x : x[1], reverse=True)
-        return grasps_and_predictions[0][0]
+
+        # return top grasps
+        if self._filters is None:
+            return grasps_and_predictions[0][0]
+        
+        # filter grasps
+        logging.info('Filtering grasps')
+        i = 0
+        while i < self._max_grasps_filter and i < len(grasps_and_predictions):
+            index = grasps_and_predictions[i][0]
+            grasp = grasps[index]
+            valid = True
+            for filter_name, is_valid in self._filters.iteritems():
+                valid = is_valid(grasp) 
+                logging.info('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                if not valid:
+                    valid = False
+                    break
+            if valid:
+                return index
+            i += 1
+        raise NoValidGraspsException('No grasps satisfied filters')
 
     def action(self, state):
         """ Plans the grasp with the highest probability of success on
@@ -437,12 +551,15 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             state.save(state_dir)
         
         # parse state
+        seed_set_start = time()
         rgbd_im = state.rgbd_im
+        depth_im = rgbd_im.depth
         camera_intr = state.camera_intr
         segmask = state.segmask
-
+        point_cloud_im = camera_intr.deproject_to_image(depth_im)
+        normal_cloud_im = point_cloud_im.normal_cloud_im()
+        
         # sample grasps
-        seed_set_start = time()
         grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
                                             self._num_seed_samples,
                                             segmask=segmask,
@@ -457,6 +574,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if isinstance(grasps[0], SuctionPoint2D):
             grasp_type = 'suction'
 
+        logging.info('Sampled %d grasps' %(len(grasps)))
         logging.info('Computing the seed set took %.3f sec' %(time() - seed_set_start))
 
         # iteratively refit and sample
@@ -487,9 +605,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                               show_axis=True,
                               color=plt.cm.RdYlGn(q))
                 vis.title('Sampled grasps iter %d' %(j))
-                vis.show()
-
+                filename = None
+                if self._logging_dir is not None:
+                    filename = os.path.join(self._logging_dir, 'cem_iter_%d.png' %(j))
+                vis.show(filename)
+                
             # fit elite set
+            elite_start = time()
             num_refit = max(int(np.ceil(self._gmm_refit_p * num_grasps)), 1)
             elite_q_values = [i[0] for i in q_values_and_indices[:num_refit]]
             elite_grasp_indices = [i[1] for i in q_values_and_indices[:num_refit]]
@@ -507,13 +629,17 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
                               color=plt.cm.RdYlGn(q))
                 vis.title('Elite grasps iter %d' %(j))
-                vis.show()
-
+                filename = None
+                if self._logging_dir is not None:
+                    filename = os.path.join(self._logging_dir, 'elite_set_iter_%d.png' %(j))
+                vis.show(filename)
+                    
             # normalize elite set
             elite_grasp_mean = np.mean(elite_grasp_arr, axis=0)
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
             elite_grasp_std[elite_grasp_std == 0] = 1.0
             elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
+            logging.info('Elite set computation took %.3f sec' %(time()-elite_start))
 
             # fit a GMM to the top samples
             num_components = max(int(np.ceil(self._gmm_component_frac * num_refit)), 1)
@@ -522,39 +648,61 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                   weights_init=uniform_weights,
                                   reg_covar=self._gmm_reg_covar)
             train_start = time()
-
             gmm.fit(elite_grasp_arr)
-            train_duration = time() - train_start
-            logging.info('GMM fitting with %d components took %.3f sec' %(num_components, train_duration))
+            logging.info('GMM fitting with %d components took %.3f sec' %(num_components, time()-train_start))
 
             # sample the next grasps
             grasps = []
-            while len(grasps) < self._num_gmm_samples:
+            loop_start = time()
+            num_tries = 0
+            while len(grasps) < self._num_gmm_samples and num_tries < self._max_resamples_per_iteration:
                 # sample from GMM
                 sample_start = time()
                 grasp_vecs, _ = gmm.sample(n_samples=self._num_gmm_samples)
                 grasp_vecs = elite_grasp_std * grasp_vecs + elite_grasp_mean
-                sample_duration = time() - sample_start
-                logging.debug('GMM sampling took %.3f sec' %(sample_duration))
+                logging.info('GMM sampling took %.3f sec' %(time()-sample_start))
 
                 # convert features to grasps and store if in segmask
                 for grasp_vec in grasp_vecs:
+                    feature_start = time()
                     if grasp_type == 'parallel_jaw':
+                        # form grasp object
                         grasp = Grasp2D.from_feature_vec(grasp_vec,
                                                          width=self._gripper_width,
                                                          camera_intr=camera_intr)
                     elif grasp_type == 'suction':
-                        grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
-                                                                camera_intr=camera_intr)
-                    if state.segmask is None or \
-                       np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0):
-                        grasps.append(grasp)
+                        # read depth and approach axis
+                        u = int(min(max(grasp_vec[1], 0), depth_im.height-1))
+                        v = int(min(max(grasp_vec[0], 0), depth_im.width-1))
+                        grasp_depth = depth_im[u, v]
 
+                        # approach_axis
+                        grasp_axis = -normal_cloud_im[u, v]
+                        
+                        # form grasp object
+                        grasp = SuctionPoint2D.from_feature_vec(grasp_vec,
+                                                                camera_intr=camera_intr,
+                                                                depth=grasp_depth,
+                                                                axis=grasp_axis)
+                    logging.debug('Feature vec took %.5f sec' %(time()-feature_start))
+
+                        
+                    bounds_start = time()
+                    if state.segmask is None or \
+                        (grasp.center.y >= 0 and grasp.center.y < state.segmask.height and \
+                         grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
+                         np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0) and \
+                         grasp.approach_angle < self._max_approach_angle):
+                         grasps.append(grasp)
+                    logging.debug('Bounds took %.5f sec' %(time()-bounds_start))
+                    num_tries += 1
+                    
             # check num grasps
             num_grasps = len(grasps)
             if num_grasps == 0:
                 logging.warning('No valid grasps could be found')
                 raise NoValidGraspsException()
+            logging.info('Resample loop took %.3f sec' %(time()-loop_start))
             logging.info('Resampling took %.3f sec' %(time()-resample_start))
 
         # predict final set of grasps
@@ -576,7 +724,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                           show_axis=True,
                           color=plt.cm.RdYlGn(q))
             vis.title('Final sampled grasps')
-            vis.show()
+            filename = None
+            if self._logging_dir is not None:
+                filename = os.path.join(self._logging_dir, 'final_grasps.png')
+            vis.show(filename)
 
         # select grasp
         index = self.select(grasps, q_values)
@@ -590,7 +741,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             vis.grasp(grasp, scale=5.0, show_center=False, show_axis=True, jaw_width=1.0, grasp_axis_width=0.2)
             vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth,
                                                      q_value))
-            vis.show()
+            filename = None
+            if self._logging_dir is not None:
+                filename = os.path.join(self._logging_dir, 'planned_grasp.png')
+            vis.show(filename)
 
         # form return image
         image = state.rgbd_im.depth

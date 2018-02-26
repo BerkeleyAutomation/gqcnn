@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
+Permission to use, copy, modify, and distribute this software and its documentation for educational,
+research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
+hereby granted, provided that the above copyright notice, this paragraph and the following two
+paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
+Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
+7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+
+IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
+THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
+HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
+MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+"""
 """
 Classes for sampling a set of grasps directly from images to generate data for a neural network
 Author: Jeff Mahler, Sherdil Niyaz
@@ -290,7 +311,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             edge_pixels = np.array([p for p in edge_pixels if np.any(segmask[p[0], p[1]] > 0)])
             depth_im_mask = depth_im.mask_binary(segmask)
         num_pixels = edge_pixels.shape[0]
-        logging.info('Depth edge detection took %.3f sec' %(time() - edge_start))
+        logging.debug('Depth edge detection took %.3f sec' %(time() - edge_start))
         logging.debug('Found %d edge pixels' %(num_pixels))
 
         # exit if no edge pixels
@@ -304,7 +325,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # compute surface normals
         normal_start = time()
         edge_normals = self._surface_normals(depth_im, edge_pixels)
-        logging.info('Normal computation took %.3f sec' %(time() - normal_start))
+        logging.debug('Normal computation took %.3f sec' %(time() - normal_start))
 
         if visualize:
             vis.figure()
@@ -334,7 +355,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         dists = ssd.squareform(ssd.pdist(edge_pixels))
         valid_indices = np.where((normal_ip < -np.cos(np.arctan(self._friction_coef))) & (dists < max_grasp_width_px) & (dists > 0.0))
         valid_indices = np.c_[valid_indices[0], valid_indices[1]]
-        logging.info('Normal pruning %.3f sec' %(time() - pruning_start))
+        logging.debug('Normal pruning %.3f sec' %(time() - pruning_start))
 
         # raise exception if no antipodal pairs
         num_pairs = valid_indices.shape[0]
@@ -368,7 +389,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         grasp_indices = np.random.choice(antipodal_indices,
                                          size=sample_size,
                                          replace=False)
-        logging.info('Grasp comp took %.3f sec' %(time() - pruning_start))
+        logging.debug('Grasp comp took %.3f sec' %(time() - pruning_start))
 
         # compute grasps
         sample_start = time()
@@ -411,7 +432,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                                           camera_intr=camera_intr)
                 grasps.append(candidate_grasp)
         # return sampled grasps
-        logging.info('Loop took %.3f sec' %(time() - sample_start))
+        logging.debug('Loop took %.3f sec' %(time() - sample_start))
         return grasps
 
 class DepthImageSuctionPointSampler(ImageGraspSampler):
@@ -523,12 +544,10 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         # compute edge pixels
         filter_start = time()
         depth_im = rgbd_im.depth
-        depth_im = depth_im.apply(snf.gaussian_filter,
-                                  sigma=self._depth_gaussian_sigma)
         depth_im_mask = depth_im.copy()
         if segmask is not None:
             depth_im_mask = depth_im.mask_binary(segmask)
-        logging.info('Filtering took %.3f sec' %(time() - filter_start)) 
+        logging.debug('Filtering took %.3f sec' %(time() - filter_start)) 
             
         if visualize:
             vis.figure()
@@ -546,7 +565,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         num_nonzero_px = nonzero_px.shape[0]
         if num_nonzero_px == 0:
             return []
-        logging.info('Normal cloud took %.3f sec' %(time() - cloud_start)) 
+        logging.debug('Normal cloud took %.3f sec' %(time() - cloud_start)) 
 
         
         # randomly sample points and add to image
@@ -557,10 +576,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         indices = np.random.choice(num_nonzero_px,
                                    size=sample_size,
                                    replace=False)
-        while k < self._max_num_samples and len(suction_points) < num_samples:
-            # update number of tries
-            k += 1
-
+        while k < sample_size and len(suction_points) < num_samples:
             # sample a point uniformly at random 
             ind = indices[k]
             center_px = np.array([nonzero_px[ind,1], nonzero_px[ind,0]])
@@ -568,6 +584,9 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             axis = -normal_cloud_im[center.y, center.x]
             depth = point_cloud_im[center.y, center.x][2]
 
+            # update number of tries
+            k += 1
+            
             # perturb depth
             delta_depth = self._depth_rv.rvs(size=1)[0]
             depth = depth + delta_depth
@@ -586,7 +605,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
                     vis.show()
 
                 suction_points.append(candidate)
-        logging.info('Loop took %.3f sec' %(time() - sample_start))
+        logging.debug('Loop took %.3f sec' %(time() - sample_start))
         return suction_points
         
 class ImageGraspSamplerFactory(object):

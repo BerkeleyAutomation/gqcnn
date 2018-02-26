@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
+Permission to use, copy, modify, and distribute this software and its documentation for educational,
+research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
+hereby granted, provided that the above copyright notice, this paragraph and the following two
+paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
+Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
+7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+
+IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
+THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
+HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
+MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+"""
 """
 Quick wrapper for grasp quality neural network
 Author: Jeff Mahler
@@ -200,10 +221,13 @@ class GQCNN(object):
                 self._weights.conv1_1b = tf.Variable(reader.get_tensor("conv1_1b"), name="conv1_1b")
                 self._weights.conv1_2W = tf.Variable(reader.get_tensor("conv1_2W"), name="conv1_2W")
                 self._weights.conv1_2b = tf.Variable(reader.get_tensor("conv1_2b"), name="conv1_2b")
-                self._weights.conv2_1W = tf.Variable(reader.get_tensor("conv2_1W"), name="conv2_1W")
-                self._weights.conv2_1b = tf.Variable(reader.get_tensor("conv2_1b"), name="conv2_1b")
-                self._weights.conv2_2W = tf.Variable(reader.get_tensor("conv2_2W"), name="conv2_2W")
-                self._weights.conv2_2b = tf.Variable(reader.get_tensor("conv2_2b"), name="conv2_2b")
+
+                # if conv2 is to be used, read in conv2
+                if self._use_conv2:
+                    self._weights.conv2_1W = tf.Variable(reader.get_tensor("conv2_1W"), name="conv2_1W")
+                    self._weights.conv2_1b = tf.Variable(reader.get_tensor("conv2_1b"), name="conv2_1b")
+                    self._weights.conv2_2W = tf.Variable(reader.get_tensor("conv2_2W"), name="conv2_2W")
+                    self._weights.conv2_2b = tf.Variable(reader.get_tensor("conv2_2b"), name="conv2_2b")
 
                 # if conv3 is to be used, read in conv3
                 if self._use_conv3:
@@ -233,10 +257,13 @@ class GQCNN(object):
                 self._weights.conv1_1b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv1_1/conv1_1_bias"), name="conv1_1b")
                 self._weights.conv1_2W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv1_2/conv1_2_weights"), name="conv1_2W")
                 self._weights.conv1_2b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv1_2/conv1_2_bias"), name="conv1_2b")
-                self._weights.conv2_1W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_1/conv2_1_weights"), name="conv2_1W")
-                self._weights.conv2_1b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_1/conv2_1_bias"), name="conv2_1b")
-                self._weights.conv2_2W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_2/conv2_2_weights"), name="conv2_2W")
-                self._weights.conv2_2b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_2/conv2_2_bias"), name="conv2_2b")
+
+                # if conv3 is to be used, read in conv3
+                if self._use_conv2:
+                    self._weights.conv2_1W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_1/conv2_1_weights"), name="conv2_1W")
+                    self._weights.conv2_1b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_1/conv2_1_bias"), name="conv2_1b")
+                    self._weights.conv2_2W = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_2/conv2_2_weights"), name="conv2_2W")
+                    self._weights.conv2_2b = tf.Variable(reader.get_tensor("validation_network/im_stream/conv2_2/conv2_2_bias"), name="conv2_2b")
 
                 # if conv3 is to be used, read in conv3
                 if self._use_conv3:
@@ -319,10 +346,17 @@ class GQCNN(object):
         conv1_1W = tf.Variable(tf.truncated_normal(conv1_1_shape, stddev=conv1_1_std), name='conv1_1W')
         conv1_1b = tf.Variable(tf.truncated_normal([conv1_1_num_filt], stddev=conv1_1_std), name='conv1_1b')
 
-        layer_height = layer_height / cfg['conv1_1']['pool_stride']
-        layer_width = layer_width / cfg['conv1_1']['pool_stride']
+        conv1_1_padding = 'SAME'
+        if 'padding' in self._architecture['conv1_1'].keys():
+            conv1_1_padding = self._architecture['conv1_1']['padding']
+        if conv1_1_padding == 'VALID':
+            border_dim = (conv1_1_filt_dim - 1) / 2
+            layer_height = layer_height - 2 * border_dim
+            layer_width = layer_width - 2 * border_dim
+        layer_height = int(np.ceil(float(layer_height) / cfg['conv1_1']['pool_stride']))
+        layer_width = int(np.ceil(float(layer_width) / cfg['conv1_1']['pool_stride']))
         layer_channels = conv1_1_num_filt
-
+        
         # conv1_2
         conv1_2_filt_dim = cfg['conv1_2']['filt_dim']
         conv1_2_num_filt = cfg['conv1_2']['num_filt']
@@ -334,40 +368,73 @@ class GQCNN(object):
         conv1_2W = tf.Variable(tf.truncated_normal(conv1_2_shape, stddev=conv1_2_std), name='conv1_2W')
         conv1_2b = tf.Variable(tf.truncated_normal([conv1_2_num_filt], stddev=conv1_2_std), name='conv1_2b')
 
-        layer_height = layer_height / cfg['conv1_2']['pool_stride']
-        layer_width = layer_width / cfg['conv1_2']['pool_stride']
+        conv1_2_padding = 'SAME'
+        if 'padding' in self._architecture['conv1_2'].keys():
+            conv1_2_padding = self._architecture['conv1_2']['padding']
+        if conv1_2_padding == 'VALID':
+            border_dim = (conv1_2_filt_dim - 1) / 2
+            layer_height = layer_height - 2 * border_dim
+            layer_width = layer_width - 2 * border_dim                    
+        layer_height = int(np.ceil(float(layer_height) / cfg['conv1_2']['pool_stride']))
+        layer_width = int(np.ceil(float(layer_width) / cfg['conv1_2']['pool_stride']))
         layer_channels = conv1_2_num_filt
-
-        # conv2_1
-        conv2_1_filt_dim = cfg['conv2_1']['filt_dim']
-        conv2_1_num_filt = cfg['conv2_1']['num_filt']
-        conv2_1_size = layer_height * layer_width * conv2_1_num_filt
-        conv2_1_shape = [conv2_1_filt_dim, conv2_1_filt_dim, layer_channels, conv2_1_num_filt]
-
-        conv2_1_num_inputs = conv2_1_filt_dim**2 * layer_channels
-        conv2_1_std = np.sqrt(2.0 / (conv2_1_num_inputs))
-        conv2_1W = tf.Variable(tf.truncated_normal(conv2_1_shape, stddev=conv2_1_std), name='conv2_1W')
-        conv2_1b = tf.Variable(tf.truncated_normal([conv2_1_num_filt], stddev=conv2_1_std), name='conv2_1b')
-
-        layer_height = layer_height / cfg['conv2_1']['pool_stride']
-        layer_width = layer_width / cfg['conv2_1']['pool_stride']
-        layer_channels = conv2_1_num_filt
-
-        # conv2_2
-        conv2_2_filt_dim = cfg['conv2_2']['filt_dim']
-        conv2_2_num_filt = cfg['conv2_2']['num_filt']
-        conv2_2_size = layer_height * layer_width * conv2_2_num_filt
-        conv2_2_shape = [conv2_2_filt_dim, conv2_2_filt_dim, layer_channels, conv2_2_num_filt]
-
-        conv2_2_num_inputs = conv2_2_filt_dim**2 * layer_channels
-        conv2_2_std = np.sqrt(2.0 / (conv2_2_num_inputs))
-        conv2_2W = tf.Variable(tf.truncated_normal(conv2_2_shape, stddev=conv2_2_std), name='conv2_2W')
-        conv2_2b = tf.Variable(tf.truncated_normal([conv2_2_num_filt], stddev=conv2_2_std), name='conv2_2b')
-
-        layer_height = layer_height / cfg['conv2_2']['pool_stride']
-        layer_width = layer_width / cfg['conv2_2']['pool_stride']
-        layer_channels = conv2_2_num_filt
         conv_output_size = layer_height * layer_width * layer_channels
+        logging.info('Conv1 output size: %d' %(conv_output_size))
+
+        use_conv2 = False
+        if 'conv2_1' in cfg.keys():
+            use_conv2 = True
+
+        if use_conv2:
+            # conv2_1
+            conv2_1_filt_dim = cfg['conv2_1']['filt_dim']
+            conv2_1_num_filt = cfg['conv2_1']['num_filt']
+            conv2_1_size = layer_height * layer_width * conv2_1_num_filt
+            conv2_1_shape = [conv2_1_filt_dim, conv2_1_filt_dim, layer_channels, conv2_1_num_filt]
+            
+            conv2_1_num_inputs = conv2_1_filt_dim**2 * layer_channels
+            conv2_1_std = np.sqrt(2.0 / (conv2_1_num_inputs))
+            conv2_1W = tf.Variable(tf.truncated_normal(conv2_1_shape, stddev=conv2_1_std), name='conv2_1W')
+            conv2_1b = tf.Variable(tf.truncated_normal([conv2_1_num_filt], stddev=conv2_1_std), name='conv2_1b')
+
+            conv2_1_padding = 'SAME'
+            if 'padding' in self._architecture['conv2_1'].keys():
+                conv2_1_padding = self._architecture['conv2_1']['padding']
+            if conv2_1_padding == 'VALID':
+                border_dim = (conv2_1_filt_dim - 1) / 2
+                layer_height = layer_height - 2 * border_dim
+                layer_width = layer_width - 2 * border_dim            
+            layer_height = int(np.ceil(float(layer_height) / cfg['conv2_1']['pool_stride']))
+            layer_width = int(np.ceil(float(layer_width) / cfg['conv2_1']['pool_stride']))
+            layer_channels = conv2_1_num_filt
+
+            conv_output_size = layer_height * layer_width * layer_channels
+            logging.info('Conv2_1 output size: %d' %(conv_output_size))
+            
+            # conv2_2
+            conv2_2_filt_dim = cfg['conv2_2']['filt_dim']
+            conv2_2_num_filt = cfg['conv2_2']['num_filt']
+            conv2_2_size = layer_height * layer_width * conv2_2_num_filt
+            conv2_2_shape = [conv2_2_filt_dim, conv2_2_filt_dim, layer_channels, conv2_2_num_filt]
+            
+            conv2_2_num_inputs = conv2_2_filt_dim**2 * layer_channels
+            conv2_2_std = np.sqrt(2.0 / (conv2_2_num_inputs))
+            conv2_2W = tf.Variable(tf.truncated_normal(conv2_2_shape, stddev=conv2_2_std), name='conv2_2W')
+            conv2_2b = tf.Variable(tf.truncated_normal([conv2_2_num_filt], stddev=conv2_2_std), name='conv2_2b')
+            
+            conv2_2_padding = 'SAME'
+            if 'padding' in self._architecture['conv2_2'].keys():
+                conv2_2_padding = self._architecture['conv2_2']['padding']
+            if conv2_2_padding == 'VALID':
+                border_dim = (conv2_2_filt_dim - 1) / 2
+                layer_height = layer_height - 2 * border_dim
+                layer_width = layer_width - 2 * border_dim            
+            layer_height = int(np.ceil(float(layer_height) / cfg['conv2_2']['pool_stride']))
+            layer_width = int(np.ceil(float(layer_width) / cfg['conv2_2']['pool_stride']))
+            layer_channels = conv2_2_num_filt
+
+            conv_output_size = layer_height * layer_width * layer_channels
+            logging.info('Conv2_2 output size: %d' %(conv_output_size))
 
         use_conv3 = False
         if 'conv3_1' in cfg.keys():
@@ -385,8 +452,15 @@ class GQCNN(object):
             conv3_1W = tf.Variable(tf.truncated_normal(conv3_1_shape, stddev=conv3_1_std), name='conv3_1W')
             conv3_1b = tf.Variable(tf.truncated_normal([conv3_1_num_filt], stddev=conv3_1_std), name='conv3_1b')
             
-            layer_height = layer_height / cfg['conv3_1']['pool_stride']
-            layer_width = layer_width / cfg['conv3_1']['pool_stride']
+            conv3_1_padding = 'SAME'
+            if 'padding' in self._architecture['conv3_1'].keys():
+                conv3_1_padding = self._architecture['conv3_1']['padding']
+            if conv3_1_padding == 'VALID':
+                border_dim = (conv3_1_filt_dim - 1) / 2
+                layer_height = layer_height - 2 * border_dim
+                layer_width = layer_width - 2 * border_dim            
+            layer_height = int(np.ceil(float(layer_height) / cfg['conv3_1']['pool_stride']))
+            layer_width = int(np.ceil(float(layer_width) / cfg['conv3_1']['pool_stride']))
             layer_channels = conv3_1_num_filt
 
             # conv3_2
@@ -400,8 +474,15 @@ class GQCNN(object):
             conv3_2W = tf.Variable(tf.truncated_normal(conv3_2_shape, stddev=conv3_2_std), name='conv3_2W')
             conv3_2b = tf.Variable(tf.truncated_normal([conv3_2_num_filt], stddev=conv3_2_std), name='conv3_2b')
             
-            layer_height = layer_height / cfg['conv3_2']['pool_stride']
-            layer_width = layer_width / cfg['conv3_2']['pool_stride']
+            conv3_2_padding = 'SAME'
+            if 'padding' in self._architecture['conv3_2'].keys():
+                conv3_2_padding = self._architecture['conv3_2']['padding']
+            if conv3_2_padding == 'VALID':
+                border_dim = (conv3_2_filt_dim - 1) / 2
+                layer_height = layer_height - 2 * border_dim
+                layer_width = layer_width - 2 * border_dim            
+            layer_height = int(np.ceil(float(layer_height) / cfg['conv3_2']['pool_stride']))
+            layer_width = int(np.ceil(float(layer_width) / cfg['conv3_2']['pool_stride']))
             layer_channels = conv3_2_num_filt
 
             conv_output_size = layer_height * layer_width * layer_channels
@@ -460,10 +541,11 @@ class GQCNN(object):
         self._weights.conv1_1b = conv1_1b
         self._weights.conv1_2W = conv1_2W
         self._weights.conv1_2b = conv1_2b
-        self._weights.conv2_1W = conv2_1W
-        self._weights.conv2_1b = conv2_1b
-        self._weights.conv2_2W = conv2_2W
-        self._weights.conv2_2b = conv2_2b
+        if use_conv2:
+            self._weights.conv2_1W = conv2_1W
+            self._weights.conv2_1b = conv2_1b
+            self._weights.conv2_2W = conv2_2W
+            self._weights.conv2_2b = conv2_2b
         
         if use_conv3:
             self._weights.conv3_1W = conv3_1W
@@ -530,6 +612,9 @@ class GQCNN(object):
 
         # load architecture
         self._architecture = config['architecture']
+        self._use_conv2 = False
+        if 'conv2_1' in self._architecture.keys():
+            self._use_conv2 = True
         self._use_conv3 = False
         if 'conv3_1' in self._architecture.keys():
             self._use_conv3 = True
@@ -920,10 +1005,12 @@ class GQCNN(object):
         :obj:`tensorflow Tensor`
             output of network
         """
-
         # conv1_1
+        conv1_1_padding = 'SAME'
+        if 'padding' in self._architecture['conv1_1'].keys():
+            conv1_1_padding = self._architecture['conv1_1']['padding']
         conv1_1h = tf.nn.relu(tf.nn.conv2d(input_im_node, self._weights.conv1_1W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv1_1b)
+                                1, 1, 1, 1], padding=conv1_1_padding) + self._weights.conv1_1b)
         if self._architecture['conv1_1']['norm']:
             conv1_1h = tf.nn.local_response_normalization(conv1_1h,
                                                           depth_radius=self.normalization_radius,
@@ -941,8 +1028,11 @@ class GQCNN(object):
         conv1_1_flat = tf.reshape(pool1_1, [-1, conv1_1_num_nodes])
 
         # conv1_2
+        conv1_2_padding = 'SAME'
+        if 'padding' in self._architecture['conv1_2'].keys():
+            conv1_2_padding = self._architecture['conv1_2']['padding']
         conv1_2h = tf.nn.relu(tf.nn.conv2d(pool1_1, self._weights.conv1_2W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv1_2b)
+                                1, 1, 1, 1], padding=conv1_2_padding) + self._weights.conv1_2b)
         if self._architecture['conv1_2']['norm']:
             conv1_2h = tf.nn.local_response_normalization(conv1_2h,
                                                           depth_radius=self.normalization_radius,
@@ -959,48 +1049,60 @@ class GQCNN(object):
         conv1_2_num_nodes = reduce_shape(pool1_2.get_shape())
         conv1_2_flat = tf.reshape(pool1_2, [-1, conv1_2_num_nodes])
 
-        # conv2_1
-        conv2_1h = tf.nn.relu(tf.nn.conv2d(pool1_2, self._weights.conv2_1W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv2_1b)
-        if self._architecture['conv2_1']['norm']:
-            conv2_1h = tf.nn.local_response_normalization(conv2_1h,
-                                                          depth_radius=self.normalization_radius,
-                                                          alpha=self.normalization_alpha,
-                                                          beta=self.normalization_beta,
-                                                          bias=self.normalization_bias)
-        pool2_1_size = self._architecture['conv2_1']['pool_size']
-        pool2_1_stride = self._architecture['conv2_1']['pool_stride']
-        pool2_1 = tf.nn.max_pool(conv2_1h,
-                                ksize=[1, pool2_1_size, pool2_1_size, 1],
-                                strides=[1, pool2_1_stride,
-                                        pool2_1_stride, 1],
-                                padding='SAME')
-        conv2_1_num_nodes = reduce_shape(pool2_1.get_shape())
-        conv2_1_flat = tf.reshape(pool2_1, [-1, conv2_1_num_nodes])
+        if self._use_conv2:
+            # conv2_1
+            conv2_1_padding = 'SAME'
+            if 'padding' in self._architecture['conv2_1'].keys():
+                conv2_1_padding = self._architecture['conv2_1']['padding']
+            conv2_1h = tf.nn.relu(tf.nn.conv2d(pool1_2, self._weights.conv2_1W, strides=[
+                1, 1, 1, 1], padding=conv2_1_padding) + self._weights.conv2_1b)
+            if self._architecture['conv2_1']['norm']:
+                conv2_1h = tf.nn.local_response_normalization(conv2_1h,
+                                                              depth_radius=self.normalization_radius,
+                                                              alpha=self.normalization_alpha,
+                                                              beta=self.normalization_beta,
+                                                              bias=self.normalization_bias)
+            pool2_1_size = self._architecture['conv2_1']['pool_size']
+            pool2_1_stride = self._architecture['conv2_1']['pool_stride']
+            pool2_1 = tf.nn.max_pool(conv2_1h,
+                                     ksize=[1, pool2_1_size, pool2_1_size, 1],
+                                     strides=[1, pool2_1_stride,
+                                              pool2_1_stride, 1],
+                                     padding='SAME')
+            conv2_1_num_nodes = reduce_shape(pool2_1.get_shape())
+            conv2_1_flat = tf.reshape(pool2_1, [-1, conv2_1_num_nodes])
 
-        # conv2_2
-        conv2_2h = tf.nn.relu(tf.nn.conv2d(pool2_1, self._weights.conv2_2W, strides=[
-                                1, 1, 1, 1], padding='SAME') + self._weights.conv2_2b)
-        if self._architecture['conv2_2']['norm']:
-            conv2_2h = tf.nn.local_response_normalization(conv2_2h,
-                                                          depth_radius=self.normalization_radius,
-                                                          alpha=self.normalization_alpha,
-                                                          beta=self.normalization_beta,
-                                                          bias=self.normalization_bias)
-        pool2_2_size = self._architecture['conv2_2']['pool_size']
-        pool2_2_stride = self._architecture['conv2_2']['pool_stride']
-        pool2_2 = tf.nn.max_pool(conv2_2h,
-                                ksize=[1, pool2_2_size, pool2_2_size, 1],
-                                strides=[1, pool2_2_stride,
-                                        pool2_2_stride, 1],
-                                padding='SAME')
-        conv2_2_num_nodes = reduce_shape(pool2_2.get_shape())
-        conv2_2_flat = tf.reshape(pool2_2, [-1, conv2_2_num_nodes])
+            # conv2_2
+            conv2_2_padding = 'SAME'
+            if 'padding' in self._architecture['conv2_2'].keys():
+                conv2_2_padding = self._architecture['conv2_2']['padding']
+            conv2_2h = tf.nn.relu(tf.nn.conv2d(pool2_1, self._weights.conv2_2W, strides=[
+                1, 1, 1, 1], padding=conv2_2_padding) + self._weights.conv2_2b)
+            if self._architecture['conv2_2']['norm']:
+                conv2_2h = tf.nn.local_response_normalization(conv2_2h,
+                                                              depth_radius=self.normalization_radius,
+                                                              alpha=self.normalization_alpha,
+                                                              beta=self.normalization_beta,
+                                                              bias=self.normalization_bias)
+            pool2_2_size = self._architecture['conv2_2']['pool_size']
+            pool2_2_stride = self._architecture['conv2_2']['pool_stride']
+            pool2_2 = tf.nn.max_pool(conv2_2h,
+                                     ksize=[1, pool2_2_size, pool2_2_size, 1],
+                                     strides=[1, pool2_2_stride,
+                                              pool2_2_stride, 1],
+                                    padding='SAME')
+            conv2_2_num_nodes = reduce_shape(pool2_2.get_shape())
+            conv2_2_flat = tf.reshape(pool2_2, [-1, conv2_2_num_nodes])
+        else:
+            pool2_2 = pool1_2
 
         if self._use_conv3:
             # conv3_1
+            conv3_1_padding = 'SAME'
+            if 'padding' in self._architecture['conv3_1'].keys():
+                conv3_1_padding = self._architecture['conv3_1']['padding']
             conv3_1h = tf.nn.relu(tf.nn.conv2d(pool2_2, self._weights.conv3_1W, strides=[
-                1, 1, 1, 1], padding='SAME') + self._weights.conv3_1b)
+                1, 1, 1, 1], padding=conv3_1_padding) + self._weights.conv3_1b)
             if self._architecture['conv3_1']['norm']:
                 conv3_1h = tf.nn.local_response_normalization(conv3_1h,
                                                               depth_radius=self.normalization_radius,
@@ -1018,8 +1120,11 @@ class GQCNN(object):
             conv3_1_flat = tf.reshape(pool3_1, [-1, conv3_1_num_nodes])
 
             # conv3_2
+            conv3_2_padding = 'SAME'
+            if 'padding' in self._architecture['conv3_2'].keys():
+                conv3_2_padding = self._architecture['conv3_2']['padding']
             conv3_2h = tf.nn.relu(tf.nn.conv2d(pool3_1, self._weights.conv3_2W, strides=[
-                1, 1, 1, 1], padding='SAME') + self._weights.conv3_2b)
+                1, 1, 1, 1], padding=conv3_2_padding) + self._weights.conv3_2b)
             if self._architecture['conv3_2']['norm']:
                 conv3_2h = tf.nn.local_response_normalization(conv3_2h,
                                                               depth_radius=self.normalization_radius,
@@ -1040,10 +1145,13 @@ class GQCNN(object):
         if self._use_conv3:
             fc3 = tf.nn.relu(tf.matmul(conv3_2_flat, self._weights.fc3W) +
                              self._weights.fc3b)
-        else:
+        elif self._use_conv2:
             fc3 = tf.nn.relu(tf.matmul(conv2_2_flat, self._weights.fc3W) +
                              self._weights.fc3b)
-
+        else:
+            fc3 = tf.nn.relu(tf.matmul(conv1_2_flat, self._weights.fc3W) +
+                             self._weights.fc3b)            
+            
         # drop fc3 if necessary
         if drop_fc3:
             fc3 = tf.nn.dropout(fc3, fc3_drop_rate)
@@ -1076,8 +1184,9 @@ class GQCNN(object):
         # setup feature tensors
         self._feature_tensors['conv1_1'] = pool1_1
         self._feature_tensors['conv1_2'] = pool1_2
-        self._feature_tensors['conv2_1'] = pool2_1
-        self._feature_tensors['conv2_2'] = pool2_2
+        if self._use_conv2:
+            self._feature_tensors['conv2_1'] = pool2_1
+            self._feature_tensors['conv2_2'] = pool2_2
         if self._use_conv3:
             self._feature_tensors['conv3_1'] = pool3_1
             self._feature_tensors['conv3_2'] = pool3_2
