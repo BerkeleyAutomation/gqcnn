@@ -4,10 +4,12 @@ output_dir: /mnt/data/jmahler/suction/analyses/dexnet_v2
 out_rate: 1
 font_size: 15
 dpi: 100
+vis_conv: 1
 
 models:
-  gqcnn_dexnet_low_thresh_09_13_17:
-    tag: GQ-CNN
-    type: gqcnn
-    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
-    vis_conv: 1
+
+#  gqcnn_dexnet_low_thresh_09_13_17:
+#    tag: GQ-CNN
+#    type: gqcnn
+#    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+#    vis_conv: 1
