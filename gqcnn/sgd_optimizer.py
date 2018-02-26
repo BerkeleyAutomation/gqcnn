@@ -331,7 +331,8 @@ class SGDOptimizer(object):
                     self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
                 # evaluate validation error
-                if step % self.eval_frequency == 0 and step > 0:
+                # evaluate, even before training
+                if step % self.eval_frequency == 0:
                     if self.cfg['eval_total_train_error']:
                         train_error = self._error_rate_in_batches()
                         logging.info('Training error: %.3f' %train_error)
@@ -722,14 +723,17 @@ class SGDOptimizer(object):
             self.metric_data = np.load(os.path.join(self.data_dir, metric_filename))['arr_0']
             indices = self.val_index_map[im_filename]
             val_metric_data = self.metric_data[indices]
+
             if all_metrics is None:
                 all_metrics = self.metric_data
             else:
                 all_metrics = np.r_[all_metrics, self.metric_data]
+
             if all_val_metrics is None:
                 all_val_metrics = val_metric_data
             else:
                 all_val_metrics = np.r_[all_val_metrics, val_metric_data]
+
         self.min_metric = np.min(all_metrics)
         self.max_metric = np.max(all_metrics)
         self.mean_metric = np.mean(all_metrics)
@@ -739,6 +743,11 @@ class SGDOptimizer(object):
         pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
         np.save(pct_pos_val_filename, np.array(pct_pos_val))
         logging.info('Percent positive in val set: ' + str(pct_pos_val))
+
+        pct_pos_random_filename = os.path.join(self.experiment_dir, 'pct_pos_random.npy')
+        pct_pos_random = float(np.sum(all_metrics > self.metric_thresh)) / all_metrics.shape[0]
+        np.save(pct_pos_random_filename, np.array(pct_pos_random))
+        logging.info('Percent positive in random file set: ' + str(pct_pos_random))
         
     def _compute_indices_image_wise(self):
         """ Compute train and validation indices based on an image-wise split"""
@@ -746,6 +755,9 @@ class SGDOptimizer(object):
         # get total number of training datapoints and set the decay_step
         num_datapoints = self.images_per_file * self.num_files
         self.num_train = int(self.train_pct * num_datapoints)
+
+        logging.info("num_datapoints (images_per_file * num_files): %d" %(num_datapoints))
+        logging.info("num train %d" %(self.num_train))
         self.decay_step = self.decay_step_multiplier * self.num_train
 
         # get training and validation indices
@@ -901,6 +913,7 @@ class SGDOptimizer(object):
             self.max_files_eval = self.cfg['max_files_eval']
         
         # update the GQCNN's batch_size param to this one
+        logging.info("updating val_batch_size to %d" %(self.val_batch_size))
         self.gqcnn.update_batch_size(self.val_batch_size)
 
         self.num_epochs = self.cfg['num_epochs']
@@ -986,6 +999,10 @@ class SGDOptimizer(object):
         # read in filenames of training data(poses, images, labels)
         logging.info('Reading filenames')
         all_filenames = os.listdir(self.data_dir)
+        logging.info('data_dir = %s' %(self.data_dir))
+        logging.info('all_filnames = %s' %(all_filenames))
+
+        logging.info("image_mode %s" %(self.image_mode))
         if self.image_mode== ImageMode.BINARY:
             self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.binary_im_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH:
@@ -1007,7 +1024,9 @@ class SGDOptimizer(object):
 
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         if len(self.pose_filenames) == 0 :
-            self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.grasps_template) > -1]            
+            self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.grasps_template) > -1]
+
+
         self.label_filenames = [f for f in all_filenames if f.startswith(self.target_metric_name) and f[len(self.target_metric_name)+6] == '.']
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
         self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
@@ -1026,6 +1045,13 @@ class SGDOptimizer(object):
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         
         # check valid filenames
+
+
+        logging.info("target_metric_name: %s" %(self.target_metric_name))
+        logging.info("len(im_filenames) {:d}".format(len(self.im_filenames)))
+        logging.info("len(pose_filenames) {:d}".format(len(self.pose_filenames)))
+        logging.info("len(label_filenames) {:d}".format(len(self.label_filenames)))
+
         if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
         if len(self.obj_id_filenames) == 0:
