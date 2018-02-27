@@ -1,14 +1,20 @@
 # dataset params
-dataset_dir: /mnt/data/jmahler/suction/datasets/mini_dexnet_09_10_17/tensors 
+dataset_path: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v0/grasps
 
-image_mode: depth_tf_table
-data_format: tf_image_suction
-metric_name: robust_suction_wrench_resistance
-metric_thresh: 0.3
+image_mode: tf_depth_ims
+data_format: suction
+metric_name: grasp_metrics
+metric_thresh: 0.5
 gripper_width_m: 0.05
 
+aux_fields:
+  - grasp_metrics
+  - collisions
+  - lift_blocked
+  - approach_contact_unstable
+
 # gqcnn params
-model_dir: /mnt/data/jmahler/suction/models/gqcnn_v2_adv_09_11_17
+model_dir: /nfs/diskstation/projects/dex-net/suction/models/model_wbxihjjfko
 
 # vis params
 datapoint_type: false_positive # which datapoints to visualize, possible values are true positive, false positive, true negative, false negative

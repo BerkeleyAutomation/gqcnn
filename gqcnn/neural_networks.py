@@ -183,7 +183,7 @@ class GQCNN(object):
             else:
                 self._pose_mean = self._pose_mean[2]
                 self._pose_std = self._pose_std[2]
-        elif len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] == 5:
+        elif len(self._pose_mean.shape) > 0 and (self._pose_mean.shape[0] == 5 or self._pose_mean.shape[0] == 6):
             if self._input_data_mode == InputDataMode.PARALLEL_JAW:
                 # depth
                 if isinstance(self.pose_mean, numbers.Number) \
