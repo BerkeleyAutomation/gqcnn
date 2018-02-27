@@ -53,7 +53,7 @@ num_tensor_channels: 1
 num_random_files: 1000
 
 target_metric_name: grasp_metrics
-metric_thresh: 0.25
+metric_thresh: 0.5
 
 # denoising / synthetic data params
 multiplicative_denoising: 0
@@ -102,7 +102,7 @@ fc4_drop_rate: 0.5
 # debugging params
 debug: 1
 debug_num_files: 1000000000
-seed: 8679999
+seed: 8674666
 
 ### GQCNN CONFIG ###
 gqcnn_config:
