@@ -882,7 +882,7 @@ class GQCNN(object):
                                                          rescale_factor,
                                                          interp='bicubic', mode='F')
             image_arr = new_image_arr
-                    
+
         # predict by filling in image array in batches
         close_sess = False
         with self._graph.as_default():
@@ -899,7 +899,6 @@ class GQCNN(object):
                     image_arr[cur_ind:end_ind, :, :, :] - self._im_mean) / self._im_std
                 self._input_pose_arr[:dim, :] = (
                     pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
-
                 gqcnn_output = self._sess.run(self._output_tensor,
                                               feed_dict={self._input_im_node: self._input_im_arr,
                                                          self._input_pose_node: self._input_pose_arr})

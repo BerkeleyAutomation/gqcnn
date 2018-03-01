@@ -1,12 +1,13 @@
-model_dir: /mnt/data/jmahler/suction/models
-output_dir: /mnt/data/jmahler/suction/analyses/dexnet_v2
-
 out_rate: 1
 font_size: 15
 dpi: 100
+vis_histograms: 1
+num_bins: 100
 
+#model_dir: /path/to/your/gqcnn/models
+model_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/
 models:
-  gqcnn_dexnet_low_thresh_09_13_17:
+  dexnet_4_02_27_18:
     tag: GQ-CNN
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
