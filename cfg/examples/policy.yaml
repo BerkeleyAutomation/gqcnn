@@ -39,7 +39,7 @@ policy:
 
     # depth sampling
     depth_sampling_mode: uniform
-    depth_samples_per_grasp: 1
+    depth_samples_per_grasp: 3
     depth_sample_win_height: 1
     depth_sample_win_width: 1
     min_depth_offset: 0.015

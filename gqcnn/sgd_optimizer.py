@@ -895,6 +895,8 @@ class SGDOptimizer(object):
                     else:
                         val_indices.append(i)
 
+
+                logging.info("num_train_indices: %d" )
                 self.train_index_map[im_filename] = np.asarray(train_indices, dtype=np.intc)
                 self.val_index_map[im_filename] = np.asarray(val_indices, dtype=np.intc)
                 train_indices = []
@@ -1171,6 +1173,7 @@ class SGDOptimizer(object):
             self._compute_indices_image_wise()
         elif self.data_split_mode == 'object_wise':
             self._compute_indices_object_wise()
+            self._compute_indices_object_wise()
         elif self.data_split_mode == 'stable_pose_wise':
             self._compute_indices_pose_wise()
         else:
@@ -1436,7 +1439,7 @@ class SGDOptimizer(object):
                 self.train_data_arr[i,:,:,0] = train_image
         return self.train_data_arr, self.train_poses_arr
 
-    def _error_rate_in_batches(self, num_files_eval=None):
+    def _error_rate_in_batches(self, num_files_eval=None, validation_set=True):
         """ Get all predictions for a dataset by running it in small batches
 
         Returns
@@ -1460,8 +1463,9 @@ class SGDOptimizer(object):
             labels = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
 
             # if no datapoints from this file are in validation then just continue
-            if len(self.val_index_map[data_filename]) == 0:
+            if self.val_index_map[data_filename] == 0:
                 continue
+
 
             data = data[self.val_index_map[data_filename],...]
             poses = self._read_pose_data(poses[self.val_index_map[data_filename],:], self.input_data_mode)

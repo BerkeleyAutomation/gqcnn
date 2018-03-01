@@ -14,12 +14,12 @@ models:
 #    vis_conv: 1
 #    model_subdir: 20180220-212054_generated_adv_synth_20_epochs/model_eirwjdzguj
 
-  original_dataset_adv_synth:
-    tag: GQ-CNN_original
+  generated_dataset_single_object:
+    tag: GQ_CNN_kit_single_object
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
     vis_conv: 1
-    model_subdir: 20180220-172945_orig_adv_synth_default_config_15_epochs/model_ozitkbabup
+    model_subdir: 20180301-005452_single_object_generated_dataset_20_epochs/model_ewoblwgfhg
 #
 #  dex_net_2_large:
 #    tag: dex_net_2_large
