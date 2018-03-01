@@ -1489,7 +1489,7 @@ class SGDOptimizer(object):
             labels = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
 
             # if no datapoints from this file are in validation then just continue
-            if self.val_index_map[data_filename] == 0:
+            if len(self.val_index_map[data_filename]) == 0:
                 continue
 
 

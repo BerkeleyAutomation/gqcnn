@@ -19,7 +19,7 @@ models:
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
     vis_conv: 1
-    model_subdir: 20180301-005452_single_object_generated_dataset_20_epochs/model_ewoblwgfhg
+    model_subdir: 20180301-014715_single_object_generated_dataset_20_epochs/model_ewoblwgfhg
 #
 #  dex_net_2_large:
 #    tag: dex_net_2_large

@@ -164,7 +164,6 @@ class GQCNNAnalyzer(object):
         model_image_mode = model_config['image_mode']
         model_target_metric = model_config['target_metric_name']
         model_metric_thresh = model_config['metric_thresh']
-        logging.info("model_metric_thresh: %.3f" %(model_metric_thresh))
         model_input_data_mode = model_config['input_data_mode']
 
         # read in training, val indices
