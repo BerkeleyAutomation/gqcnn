@@ -948,7 +948,13 @@ class SGDOptimizer(object):
         self.pos_weight = 0.0
         if 'pos_weight' in self.cfg.keys():
             self.pos_weight = self.cfg['pos_weight']
-
+            self.pos_accept_prob = 1.0
+            self.neg_accept_prob = 1.0
+            if self.pos_weight > 1:
+                self.neg_accept_prob = 1.0 / self.pos_weight
+            else:
+                self.pos_accept_prob = self.pos_weight
+                
         self.neg_reject_rate = 0.0
         if 'neg_reject_rate' in self.cfg.keys():
             self.neg_reject_rate = self.cfg['neg_reject_rate']
@@ -1234,11 +1240,27 @@ class SGDOptimizer(object):
                     tp_tmp = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
 
+                # filter positives and negatives
+                if self.training_mode == TrainingMode.CLASSIFICATION and self.pos_weight != 0.0:
+                    labels = 1 * (self.train_label_arr > self.metric_thresh)
+                    np.random.shuffle(train_ind)
+                    filtered_ind = []
+                    for index in train_ind:
+                        if labels[index] == 0 and np.random.rand() < self.neg_accept_prob:
+                            filtered_ind.append(index)
+                        elif labels[index] == 1 and np.random.rand() < self.pos_accept_prob:
+                            filtered_ind.append(index)
+                    train_ind = np.array(filtered_ind)
+                    
+                # compute the number loaded
                 upper = min(num_remaining, train_ind.shape[
                             0], self.max_training_examples_per_load)
                 ind = train_ind[:upper]
                 num_loaded = ind.shape[0]
-                end_i = start_i + num_loaded                    
+
+                if num_loaded == 0:
+                    logging.warning('Loaded zero examples!!!!')
+                    continue
                 
                 # subsample data
                 train_data_arr = train_data_arr[ind, ...]
@@ -1275,6 +1297,10 @@ class SGDOptimizer(object):
                         self.train_label_arr = 1 * (self.train_label_arr > self.metric_thresh)
                 self.train_label_arr = self.train_label_arr.astype(self.numpy_dtype)
 
+                # compute the number of examples loaded
+                num_loaded = self.train_data_arr.shape[0]
+                end_i = start_i + num_loaded
+                    
                 # enqueue training data batch
                 train_data[start_i:end_i, ...] = self.train_data_arr.copy()
                 train_poses[start_i:end_i,:] = self.train_poses_arr.copy()
