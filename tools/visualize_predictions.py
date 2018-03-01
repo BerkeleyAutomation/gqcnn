@@ -67,5 +67,6 @@ if __name__ == '__main__':
 	visualization_config = YamlConfig('cfg/tools/gqcnn_prediction_visualizer.yaml')
 
 	logging.info('Beginning Visualization')
-	visualizer = GQCNNPredictionVisualizer(visualization_config)
+	visualizer = GQCNNPredictionVisualizer(visualization_config['dataset_path'],
+                                               visualization_config)
 	visualizer.visualize()

@@ -228,6 +228,7 @@ class GQCNNAnalyzer(object):
             pose_arr = np.load(pose_filename)['arr_0']
             metric_arr = np.load(metric_filename)['arr_0']
             labels_arr = 1 * (metric_arr > model_metric_thresh)
+
             num_datapoints = image_arr.shape[0]
 
             if model_type == 'gqcnn':
@@ -310,6 +311,14 @@ class GQCNNAnalyzer(object):
         # aggregate results
         train_class_result = ClassificationResult(copy.copy(train_preds), copy.copy(train_labels))
         val_class_result = ClassificationResult(copy.copy(val_preds), copy.copy(val_labels))
+
+
+        fracion_pos_in_train = np.sum(train_class_result.labels)*1.0/train_class_result.num_datapoints
+
+        logging.info("Fraction positive in train: %.3f" %(fracion_pos_in_train))
+        #
+        fraction_pos_in_val = np.sum(val_class_result.labels) * 1.0 / val_class_result.num_datapoints
+        logging.info("Fraction positive in train: %.3f" % (fraction_pos_in_val))
 
         self.train_class_results[model_tag] = train_class_result
         self.val_class_results[model_tag] = val_class_result
