@@ -210,7 +210,7 @@ class GQCNNAnalyzer(object):
             # predict
             pred_start = time.time()
             pred_arr = model.predict(image_arr, pose_arr)
-            pred_stop = time.time()                    
+            pred_stop = time.time()
             evaluation_time += pred_stop - pred_start
 
             # break into training / val
@@ -219,6 +219,7 @@ class GQCNNAnalyzer(object):
             for key in train_indices.keys():
                 new_train_indices[os.path.join(model_training_dataset_dir, key)] = train_indices[key]
             train_indices = new_train_indices
+
             new_val_indices = {}
             for key in val_indices.keys():
                 new_val_indices[os.path.join(model_training_dataset_dir, key)] = val_indices[key]
@@ -342,17 +343,17 @@ class GQCNNAnalyzer(object):
                                                       style=styles[i], label='Training')
             else:
                 train_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                      style=styles[i], label='Training' + model_tag)
+                                      style=styles[i], label='Training ' + model_tag)
             i += 1
         for model_name in self.models.keys():
             model_tag = self.models[model_name]['tag']
             val_class_result = self.val_class_results[model_tag]
             if model_tag is None:
                 val_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                                          style=styles[i], label='Validation')
+                                                          style=styles[i], label='Validation ')
             else:
                 val_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                          style=styles[i], label='Validation' + model_tag)
+                                          style=styles[i], label='Validation ' + model_tag)
             i += 1
         
         plt.title('Precision Recall Curves', fontsize=self.font_size)

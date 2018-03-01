@@ -12,3 +12,4 @@ models:
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
     vis_conv: 1
+
