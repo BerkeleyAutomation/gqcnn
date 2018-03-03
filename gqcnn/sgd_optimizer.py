@@ -564,12 +564,10 @@ class SGDOptimizer(object):
             random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
             num_summed = 0
             for i, k in enumerate(random_file_indices.tolist()):
-                print 'Reading file %d (%d of %d)' %(k, i+1, self.num_random_files)
                 im_filename = self.im_filenames[k]
                 read_start = time.time()
                 im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
                 read_stop = time.time()
-                print 'Read took %.3f sec' %(read_stop-read_start)
                 self.data_mean += np.sum(im_data[self.train_index_map[im_filename], :, :, :])
                 num_summed += im_data[self.train_index_map[im_filename], :, :, :].shape[0]
             self.data_mean = self.data_mean / (num_summed * im_data.shape[1] * im_data.shape[2])
