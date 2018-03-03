@@ -2,8 +2,7 @@
 mode: training
 
 # dataset 
-#dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v1/grasps/tensors
-dataset_dir: /mnt/data/jmahler/suction/datasets/dexnet_4/tensors
+dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v1/grasps/tensors
 output_dir: /nfs/diskstation/projects/dex-net/suction/models/
 model_dir: /nfs/diskstation/projects/dex-net/suction/models/GQ-Image-Wise
 
@@ -102,7 +101,7 @@ fc4_drop_rate: 0.5
 debug: 1
 debug_num_files: 10000000
 num_random_files: 1000
-seed: 58251
+seed: 599988
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -155,9 +154,9 @@ gqcnn_config:
     pc2:
       out_size: 0
     fc3:
-      out_size: 128
+      out_size: 256
     fc4:
-      out_size: 128
+      out_size: 256
     fc5:
       out_size: 2
 
