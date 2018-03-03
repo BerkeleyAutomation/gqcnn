@@ -276,7 +276,7 @@ if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network with TensorFlow')
     parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
-    parser.add_argument('--unique_name', type=bool, default=True,
+    parser.add_argument('--unique_name', type=bool, default=False,
                         help='add a unique name to dataset path which encodes the current date')
     args = parser.parse_args()
     config_filename = args.config_filename
