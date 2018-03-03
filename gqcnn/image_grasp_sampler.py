@@ -42,7 +42,7 @@ import scipy.stats as ss
 import sklearn.mixture
 
 from autolab_core import Point, RigidTransform
-from perception import BinaryImage, ColorImage, DepthImage, RgbdImage
+from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, GdImage
 
 from gqcnn import Grasp2D, SuctionPoint2D
 from gqcnn import Visualizer as vis
@@ -245,15 +245,15 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             depth_sample = min_depth
         return depth_sample
 
-    def _sample(self, rgbd_im, camera_intr, num_samples, segmask=None,
+    def _sample(self, image, camera_intr, num_samples, segmask=None,
                 visualize=False):
         """
         Sample a set of 2D grasp candidates from a depth image.
 
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
-            RGB-D image to sample from
+        image : :obj:`perception.RgbdImage` or 'perception.DepthImage' or 'perception.GdImage'
+            RGB-D or D image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
         num_samples : int
@@ -268,12 +268,19 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         :obj:`list` of :obj:`Grasp2D`
             list of 2D grasp candidates
         """
+        if isinstance(image, RgbdImage) or isinstance(image, GdImage):
+            depth_im = image.depth
+        elif isinstance(image, DepthImage):
+            depth_im = image
+        else:
+            raise ValueError("image type must be one of [RgbdImage, DepthImage, GdImage]")
+
         # sample antipodal pairs in image space
-        grasps = self._sample_antipodal_grasps(rgbd_im, camera_intr, num_samples,
+        grasps = self._sample_antipodal_grasps(depth_im, camera_intr, num_samples,
                                                segmask=segmask, visualize=visualize)
         return grasps
 
-    def _sample_antipodal_grasps(self, rgbd_im, camera_intr, num_samples,
+    def _sample_antipodal_grasps(self, depth_im, camera_intr, num_samples,
                                  segmask=None, visualize=False):
         """
         Sample a set of 2D grasp candidates from a depth image by finding depth
@@ -282,8 +289,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
-            RGB-D image to sample from
+        depth_im : :obj:'perception.DepthImage'
+            Depth image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
         num_samples : int
@@ -300,7 +307,6 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         """
         # compute edge pixels
         edge_start = time()
-        depth_im = rgbd_im.depth
         depth_im = depth_im.apply(snf.gaussian_filter,
                                   sigma=self._depth_grad_gaussian_sigma)
         depth_im_downsampled = depth_im.resize(self._rescale_factor)
@@ -488,15 +494,15 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         self._angle_dist_weight = self._config['angle_dist_weight']
         self._depth_gaussian_sigma = self._config['depth_gaussian_sigma']
  
-    def _sample(self, rgbd_im, camera_intr, num_samples, segmask=None,
+    def _sample(self, image, camera_intr, num_samples, segmask=None,
                 visualize=False):
         """
         Sample a set of 2D grasp candidates from a depth image.
 
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
-            RGB-D image to sample from
+        image : :obj:`perception.RgbdImage` or 'perception.DepthImage'
+            RGB-D or D image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
         num_samples : int
@@ -511,12 +517,19 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         :obj:`list` of :obj:`Grasp2D`
             list of 2D grasp candidates
         """
+        if isinstance(image, RgbdImage) or isinstance(image, GdImage):
+            depth_im = image.depth
+        elif isinstance(image, DepthImage):
+            depth_im = image
+        else:
+            raise ValueError("image type must be one of [RgbdImage, DepthImage, GdImage]")
+
         # sample antipodal pairs in image space
-        grasps = self._sample_suction_points(rgbd_im, camera_intr, num_samples,
+        grasps = self._sample_suction_points(depth_im, camera_intr, num_samples,
                                              segmask=segmask, visualize=visualize)
         return grasps
 
-    def _sample_suction_points(self, rgbd_im, camera_intr, num_samples,
+    def _sample_suction_points(self, depth_im, camera_intr, num_samples,
                                segmask=None, visualize=False):
         """
         Sample a set of 2D suction point candidates from a depth image by
@@ -525,8 +538,8 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
-            RGB-D image to sample from
+        depth_im : :obj:'perception.DepthImage'
+            Depth image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
         num_samples : int
@@ -543,7 +556,6 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         """
         # compute edge pixels
         filter_start = time()
-        depth_im = rgbd_im.depth
         depth_im_mask = depth_im.copy()
         if segmask is not None:
             depth_im_mask = depth_im.mask_binary(segmask)

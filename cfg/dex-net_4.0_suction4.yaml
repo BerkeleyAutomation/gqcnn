@@ -2,7 +2,8 @@
 mode: training
 
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v1/grasps/tensors
+#dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v1/grasps/tensors
+dataset_dir: /mnt/data/jmahler/suction/datasets/dexnet_4/tensors
 output_dir: /nfs/diskstation/projects/dex-net/suction/models/
 model_dir: /nfs/diskstation/projects/dex-net/suction/models/GQ-Image-Wise
 
@@ -30,7 +31,7 @@ eval_total_train_error: 0
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.0025
+base_lr: 0.01
 decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
@@ -101,7 +102,7 @@ fc4_drop_rate: 0.5
 debug: 1
 debug_num_files: 10000000
 num_random_files: 1000
-seed: 48291101
+seed: 441249
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -118,7 +119,7 @@ gqcnn_config:
   # architecture
   architecture:
     conv1_1:
-      filt_dim: 13
+      filt_dim: 9
       num_filt: 32
       pool_size: 1
       pool_stride: 1  
@@ -154,9 +155,9 @@ gqcnn_config:
     pc2:
       out_size: 0
     fc3:
-      out_size: 256
+      out_size: 128
     fc4:
-      out_size: 256
+      out_size: 128
     fc5:
       out_size: 2
 
