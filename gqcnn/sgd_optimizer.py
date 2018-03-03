@@ -905,6 +905,39 @@ class SGDOptimizer(object):
             pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
             pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
 
+    def _compute_indices_state_wise(self):
+        """ Compute train and validation indices based on an image-wise split"""
+
+        if self.split_filenames is None:
+            raise ValueError('No split filenames!')
+        
+        # get total number of training datapoints and set the decay_step
+        # get training and validation indices
+        # make a map of the train and test indices for each file
+        logging.info('Computing indices image-wise')
+        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_state_wise.pkl')
+        self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_state_wise.pkl')
+        if os.path.exists(train_index_map_filename):
+            self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
+            self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
+        else:
+            self.train_index_map = {}
+            self.val_index_map = {}
+            i = 0
+            for im_filename, split_filename in zip(self.im_filenames, self.split_filenames):
+                logging.info('Computing indices for file %d' %(i))
+                lower = i * self.images_per_file
+                upper = (i+1) * self.images_per_file
+                split_arr = np.load(os.path.join(self.data_dir, split_filename))['arr_0']
+                self.train_index_map[im_filename] = np.where(split_arr == 0)[0]
+                self.val_index_map[im_filename] = np.where(split_arr == 1)[0]
+                del split_arr
+                if i % 10 == 0:
+                    gc.collect()
+                i += 1
+            pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
+            pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
+            
     def _read_training_params(self):
         """ Read training parameters from configuration file """
 
@@ -1014,7 +1047,6 @@ class SGDOptimizer(object):
         logging.info('Reading filenames')
         all_filenames = os.listdir(self.data_dir)
         logging.info('data_dir = %s' %(self.data_dir))
-        logging.info('all_filnames = %s' %(all_filenames))
 
         logging.info("image_mode %s" %(self.image_mode))
         if self.image_mode== ImageMode.BINARY:
@@ -1044,22 +1076,21 @@ class SGDOptimizer(object):
         self.label_filenames = [f for f in all_filenames if f.startswith(self.target_metric_name) and f[len(self.target_metric_name)+6] == '.']
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
         self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
+        self.split_filenames = [f for f in all_filenames if f.startswith(ImageFileTemplates.splits_template) > -1]
 
-        if self.debug and self.debug_num_files < len(self.im_filenames):
-            self.im_filenames = self.im_filenames[:self.debug_num_files]
-            self.pose_filenames = self.pose_filenames[:self.debug_num_files]
-            self.label_filenames = self.label_filenames[:self.debug_num_files]
-            self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
-            self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
-        
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         
-        # check valid filenames
-
+        if self.debug and self.debug_num_files < len(self.im_filenames):
+            self.im_filenames = self.im_filenames[:self.debug_num_files]
+            self.pose_filenames = self.pose_filenames[:self.debug_num_files]
+            self.label_filenames = self.label_filenames[:self.debug_num_files]
+            self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
+            self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
+            self.split_filenames = self.stable_pose_filenames[:self.debug_num_files]        
 
         logging.info("target_metric_name: %s" %(self.target_metric_name))
         logging.info("len(im_filenames) {:d}".format(len(self.im_filenames)))
@@ -1072,6 +1103,8 @@ class SGDOptimizer(object):
             self.obj_id_filenames = None
         if len(self.stable_pose_filenames) == 0:
             self.stable_pose_filenames = None
+        if len(self.split_filenames) == 0:
+            self.split_filenames = None
 
         # subsample files
         self.num_files = min(len(self.im_filenames), len(self.label_filenames))
@@ -1085,6 +1118,8 @@ class SGDOptimizer(object):
             self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
         if self.stable_pose_filenames is not None:
             self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
+        if self.split_filenames is not None:
+            self.split_filenames = [self.split_filenames[k] for k in filename_indices]
 
         # create copy of image, pose, and label filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
         self.im_filenames_copy = self.im_filenames[:]
@@ -1179,9 +1214,10 @@ class SGDOptimizer(object):
             self._compute_indices_image_wise()
         elif self.data_split_mode == 'object_wise':
             self._compute_indices_object_wise()
-            self._compute_indices_object_wise()
         elif self.data_split_mode == 'stable_pose_wise':
             self._compute_indices_pose_wise()
+        if self.data_split_mode == 'state_wise':
+            self._compute_indices_state_wise()
         else:
             logging.error('Data Split Mode Not Supported')
 

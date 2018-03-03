@@ -23,7 +23,7 @@ show_filters: 0
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
-data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
+data_split_mode: state_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
 train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
@@ -31,7 +31,7 @@ eval_total_train_error: 0
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.001
+base_lr: 0.0025
 decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
@@ -102,7 +102,7 @@ fc4_drop_rate: 0.5
 debug: 1
 debug_num_files: 10000000
 num_random_files: 1000
-seed: 52240
+seed: 944209
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -119,7 +119,7 @@ gqcnn_config:
   # architecture
   architecture:
     conv1_1:
-      filt_dim: 9
+      filt_dim: 13
       num_filt: 32
       pool_size: 1
       pool_stride: 1  
@@ -127,7 +127,7 @@ gqcnn_config:
       norm: 0
       norm_type: local_response
     conv1_2:
-      filt_dim: 7
+      filt_dim: 3
       num_filt: 32
       pool_size: 2
       pool_stride: 2
@@ -135,7 +135,7 @@ gqcnn_config:
       norm: 0
       norm_type: local_response
     conv2_1:
-      filt_dim: 7
+      filt_dim: 3
       num_filt: 32
       pool_size: 1
       pool_stride: 1
@@ -143,7 +143,7 @@ gqcnn_config:
       norm: 0
       norm_type: local_response
     conv2_2:
-      filt_dim: 7
+      filt_dim: 3
       num_filt: 32
       pool_size: 2
       pool_stride: 2

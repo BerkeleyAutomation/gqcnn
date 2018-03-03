@@ -102,7 +102,7 @@ fc4_drop_rate: 0.5
 debug: 1
 debug_num_files: 10000000
 num_random_files: 1000
-seed: 58251
+seed: 41094111
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -137,8 +137,8 @@ gqcnn_config:
     conv2_1:
       filt_dim: 3
       num_filt: 32
-      pool_size: 1
-      pool_stride: 1
+      pool_size: 2
+      pool_stride: 2
       padding: VALID
       norm: 0
       norm_type: local_response
