@@ -282,8 +282,11 @@ class SGDOptimizer(object):
                 self._check_dead_queue()
 
                 # run optimization
+                step_start = time.time()
                 _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, train_poses = self.sess.run(
                         [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
+                step_stop = time.time()
+                logging.info('Step took %.3f sec' %(step_stop-step_start))
 
                 if self.training_mode == TrainingMode.REGRESSION:
                     logging.info('Max ' +  str(np.max(predictions)))
@@ -1194,12 +1197,16 @@ class SGDOptimizer(object):
                 file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
                 train_data_filename = self.im_filenames_copy[file_num]
 
+                read_start = time.time()
                 train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
                     'arr_0'].astype(np.float32)
                 self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
                 self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
+                read_stop = time.time()
+                logging.info('Reading data took %.3f sec' %(read_stop - read_start))
+                logging.info('File num: %d' %(file_num))
                 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
