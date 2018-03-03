@@ -333,7 +333,7 @@ class SGDOptimizer(object):
 
                 # evaluate validation error
                 # evaluate, even before training
-                if step % self.eval_frequency == 0:
+                if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
                         train_error = self._error_rate_in_batches()
                         logging.info('Training error: %.3f' %train_error)
@@ -906,7 +906,7 @@ class SGDOptimizer(object):
             pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
 
     def _compute_indices_state_wise(self):
-        """ Compute train and validation indices based on an image-wise split"""
+        """ Compute train and validation indices based on an state-wise split"""
 
         if self.split_filenames is None:
             raise ValueError('No split filenames!')
@@ -914,7 +914,7 @@ class SGDOptimizer(object):
         # get total number of training datapoints and set the decay_step
         # get training and validation indices
         # make a map of the train and test indices for each file
-        logging.info('Computing indices image-wise')
+        logging.info('Computing indices state-wise')
         train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_state_wise.pkl')
         self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_state_wise.pkl')
         if os.path.exists(train_index_map_filename):
@@ -937,6 +937,11 @@ class SGDOptimizer(object):
                 i += 1
             pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
             pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
+
+        self.num_train = 0
+        for im_filename, train_indices in self.train_index_map.iteritems():
+            self.num_train += train_indices.shape[0]
+        self.decay_step = self.decay_step_multiplier * self.num_train
             
     def _read_training_params(self):
         """ Read training parameters from configuration file """
@@ -1257,7 +1262,7 @@ class SGDOptimizer(object):
             while start_i < self.train_batch_size:
                 # compute num remaining
                 num_remaining = self.train_batch_size - num_queued
-
+                
                 # gen file index uniformly at random
                 file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
                 train_data_filename = self.im_filenames_copy[file_num]
@@ -1275,7 +1280,7 @@ class SGDOptimizer(object):
                 if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                     tp_tmp = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
-
+                    
                 # filter positives and negatives
                 if self.training_mode == TrainingMode.CLASSIFICATION and self.pos_weight != 0.0:
                     labels = 1 * (self.train_label_arr > self.metric_thresh)
@@ -1287,7 +1292,7 @@ class SGDOptimizer(object):
                         elif labels[index] == 1 and np.random.rand() < self.pos_accept_prob:
                             filtered_ind.append(index)
                     train_ind = np.array(filtered_ind)
-                    
+
                 # compute the number loaded
                 upper = min(num_remaining, train_ind.shape[
                             0], self.max_training_examples_per_load)
@@ -1295,7 +1300,7 @@ class SGDOptimizer(object):
                 num_loaded = ind.shape[0]
 
                 if num_loaded == 0:
-                    logging.warning('Loaded zero examples!!!!')
+                    logging.debug('Loaded zero examples!!!!')
                     continue
                 
                 # subsample data
