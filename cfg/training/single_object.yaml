@@ -1,37 +1,42 @@
 ### TRAINING CONFIGURATIONS ###
 mode: training
 
+gpu_list: [0] # only use the 1080Ti
+
+
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v1/grasps/tensors
-output_dir: /nfs/diskstation/projects/dex-net/suction/models/
-model_dir: /nfs/diskstation/projects/dex-net/suction/models/GQ-Image-Wise
+dataset_dir: /home/manuelli/spartan_grasp/data_volume/dexnet/sandbox/generated_datasets/20180228-214142_kit_sampling_based_single_object_1000_states/grasps/tensors
+output_dir: /home/manuelli/spartan_grasp/data_volume/dexnet/trained_models
+model_dir: /home/manuelli/spartan_grasp/data_volume/dexnet/models/GQ (from RSS 2017 paper)
 
 # general optimization parameters
-train_batch_size: 64
-val_batch_size: 16
-max_files_eval: 1000
 
-# epochs
-num_epochs: 25     # number of epochs to train for
-eval_frequency: 50000  # how often to get validation error 
-save_frequency: 50000  # how often to save output
-vis_frequency: 50000
+# how are train_batch_size and val_batch_size different?
+# We have to set the size of the network's first layer right, and that can't be changed once the
+# graph is built
+train_batch_size: 64 # can make this larger for a 1080Ti I think
+val_batch_size: 64 # why is this smaller?
+num_epochs: 20     # number of epochs to train for
+eval_frequency: 500  # how often to get validation error
+save_frequency: 500  # how often to save output
+vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
 
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
-data_split_mode: state_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
+data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
+# data_split_mode: object_wise
 train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
-eval_total_train_error: 0
+eval_total_train_error: 1
 
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.0025
-decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
+base_lr: 0.01
+decay_step_multiplier: 0.75   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -44,14 +49,19 @@ reinit_fc3: 0
 reinit_fc4: 0
 reinit_fc5: 0
 
+#image_mode: depth_tf_table
 image_mode: tf_depth_ims
 training_mode: classification
 preproc_mode: none
-input_data_mode: suction
+#input_data_mode: tf_image
+input_data_mode: parallel_jaw
 num_tensor_channels: 1
 
+num_random_files: 100
+
+#target_metric_name: robust_ferrari_canny
 target_metric_name: grasp_metrics
-metric_thresh: 0.4
+metric_thresh: 0.6
 
 # denoising / synthetic data params
 multiplicative_denoising: 0
@@ -92,71 +102,70 @@ background_rate: 0.25
 background_min_depth: 0.0
 background_max_depth: 0.65
 
-drop_fc3: 0
+drop_fc3: 1
 fc3_drop_rate: 0.5
 drop_fc4: 0
 fc4_drop_rate: 0.5
 
 # debugging params
 debug: 1
-debug_num_files: 10000000
-num_random_files: 1000
-seed: 48291101
+debug_num_files: 300
+seed: 117777
 
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 96
-  im_width: 96
+  im_height: 48
+  im_width: 48
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
-  input_data_mode: suction
+  input_data_mode: tf_image
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the SGDOptimizer's config file
-  batch_size: 16
+  batch_size: 64
 
   # architecture
   architecture:
     conv1_1:
-      filt_dim: 13
+      filt_dim: 5
       num_filt: 32
       pool_size: 1
       pool_stride: 1  
-      padding: VALID
       norm: 0
       norm_type: local_response
+      padding: VALID
     conv1_2:
       filt_dim: 3
       num_filt: 32
       pool_size: 2
       pool_stride: 2
-      padding: VALID
-      norm: 0
+      norm: 1
       norm_type: local_response
+      padding: VALID
     conv2_1:
       filt_dim: 3
       num_filt: 32
       pool_size: 1
-      pool_stride: 1
-      padding: VALID
+      pool_stride: 1  
       norm: 0
       norm_type: local_response
+      padding: VALID
     conv2_2:
       filt_dim: 3
-      num_filt: 32
-      pool_size: 2
-      pool_stride: 2
-      padding: VALID
-      norm: 0
+      num_filt: 64
+      pool_size: 1
+      pool_stride: 1
+      norm: 1
       norm_type: local_response
-    pc1:
-      out_size: 16
+      padding: VALID
+    pc1: # what do these layers do?
+      out_size: 4
     pc2:
       out_size: 0
     fc3:
-      out_size: 256
+      out_size: 1024
     fc4:
-      out_size: 256
+      out_size: 512
     fc5:
       out_size: 2
 

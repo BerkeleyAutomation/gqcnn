@@ -36,228 +36,228 @@ YAML Configuration File Parameters
 Training/Fine-Tuning Configuration
 ``````````````````````````````````
 dataset_dir : str
-	the location of the dataset to use for training ex. /path/to/your/dataset
+    the location of the dataset to use for training ex. /path/to/your/dataset
 output_dir : str
-	the location to save the trained model, which will be saved as model_XXXXX where XXXXX will
-	be a randomly generated string of characters. Note: if the debug flag is on this model name will stay the same so the same model directory
-	will continuosuly be over-written. If debug is off, a new name and thus directrory will be generated every time.
+    the location to save the trained model, which will be saved as model_XXXXX where XXXXX will
+    be a randomly generated string of characters. Note: if the debug flag is on this model name will stay the same so the same model directory
+    will continuosuly be over-written. If debug is off, a new name and thus directrory will be generated every time.
 model_dir : str
-	if the fine-tune flag is on this is the model that will be loaded for training ex. /path/to/pre-trained/model
+    if the fine-tune flag is on this is the model that will be loaded for training ex. /path/to/pre-trained/model
 
 train_batch_size : int
-	the number of datapoints to process during each iteration of training
+    the number of datapoints to process during each iteration of training
 val_batch_size : int
-	the number of datapoints to process during each iteration of validation
+    the number of datapoints to process during each iteration of validation
 num_epochs : int
-	the number of epoches to train for
+    the number of epoches to train for
 eval_frequency : int
-	the validation error will be calculated after this many iterations
+    the validation error will be calculated after this many iterations
 save_frequency : int
-	the model will be saved after this many iterations
+    the model will be saved after this many iterations
 vis_frequency : int
-	if the visualization flag is turned on visualization will occur after this many iterations
+    if the visualization flag is turned on visualization will occur after this many iterations
 log_frequency : int
-	training metrics will be logged after this many iterations
+    training metrics will be logged after this many iterations
 show_filters : int
-	flag (0 or 1) whether or not to show network filters during training
+    flag (0 or 1) whether or not to show network filters during training
 
 queue_capacity : int
-	total capacity of data prefetch queue
+    total capacity of data prefetch queue
 queue_sleep : float
-	how long to sleep between data prefetches
+    how long to sleep between data prefetches
 
 data_split_mode : str
-	how to split up the data into training and validation, options are 1) image wise-randomly shuffle and split images 2) stable_pose_wise-randomly shuffle all valid stable
-	poses of objects and then split so that all datapoints of a certain stable pose are entirely in either training or validation 3) object_wise-randomly shuffle all objects and split into training and validation
-	so that all datapoints of a certain object are entirely in training or validation
+    how to split up the data into training and validation, options are 1) image wise-randomly shuffle and split images 2) stable_pose_wise-randomly shuffle all valid stable
+    poses of objects and then split so that all datapoints of a certain stable pose are entirely in either training or validation 3) object_wise-randomly shuffle all objects and split into training and validation
+    so that all datapoints of a certain object are entirely in training or validation
 train_pct : float
-	percentage of datapoints to use for training
+    percentage of datapoints to use for training
 val_pct : float
-	percentage of datapoints to use for validation
+    percentage of datapoints to use for validation
 total_pct : float
-	percentage of total datapoints to use
+    percentage of total datapoints to use
 eval_total_train_error : int
-	flag (0 or 1) whether or not to evaluate the total training error and save it at the end of optimization
+    flag (0 or 1) whether or not to evaluate the total training error and save it at the end of optimization
 
 loss : str
-	the loss function to use, currently supported options are 1) l2-l2 loss 2) sparse-sparse softmax cross entropy with logits loss
+    the loss function to use, currently supported options are 1) l2-l2 loss 2) sparse-sparse softmax cross entropy with logits loss
 optimizer : str
-	the optimizer to use, currently supported options are 1) momentum 2) adam 3) rmsprop
+    the optimizer to use, currently supported options are 1) momentum 2) adam 3) rmsprop
 train_l2_regularizer : float
-	factor to multiple summed regularizers by before adding to loss:
-		loss = loss + train_l2_regularizer * regularizers
+    factor to multiple summed regularizers by before adding to loss:
+        loss = loss + train_l2_regularizer * regularizers
 base_lr : float
-	base learning rate
+    base learning rate
 decay_step_multiplier : float
-	number of times to go through entire training datapoints before stepping down decay rate
+    number of times to go through entire training datapoints before stepping down decay rate
 decay_rate : float
-	decay rate during optimization
+    decay rate during optimization
 momentum_rate : float
-	momentume rate if using momentum optimizer
+    momentume rate if using momentum optimizer
 max_training_examples_per_load : int
-	maximum number of training datapoints to use in each batch
+    maximum number of training datapoints to use in each batch
 
 fine_tune : int
-	flag (0 or 1) whether or not fine-tuning
+    flag (0 or 1) whether or not fine-tuning
 update_fc_only : int
-	flag (0 or 1) used during fine-tuning to indicate whether or not to only update the first fully-connected layer
+    flag (0 or 1) used during fine-tuning to indicate whether or not to only update the first fully-connected layer
 update_conv0_only : int
-	flag (0 or 1) used during fine-tuning to indicate whether or not to only update the first convolution layer  
+    flag (0 or 1) used during fine-tuning to indicate whether or not to only update the first convolution layer  
 reinit_pc1 : int
-	flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the first pose layer
+    flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the first pose layer
 reinit_fc3 : int
-	flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the third fully-connected layer
+    flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the third fully-connected layer
 reinit_fc4 : int
-	flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the fourth fully-connected layer
+    flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the fourth fully-connected layer
 reinit_fc5 : int
-	flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the fifth fully-connected layer
+    flag (0 or 1) used during fine-tuning to indicate whether or not to re-initialize the weights for the fifth fully-connected layer
 
 image_mode : str 
-	the type of the input image datapoints, please refer to the README for the dataset for the possible options
+    the type of the input image datapoints, please refer to the README for the dataset for the possible options
 training_mode : str
-	1) classification or 2) regression
+    1) classification or 2) regression
 preproc_mode : str
-	the data pre-processing mode for use during regression, options are: 1) normalized 2) none
+    the data pre-processing mode for use during regression, options are: 1) normalized 2) none
 input_data_mode : str
-	the format to use for the input pose data, please refer to the README for the dataset for the possible options 
+    the format to use for the input pose data, please refer to the README for the dataset for the possible options 
 num_tensor_channels : int
-	the number of image channels 
+    the number of image channels 
 num_random_files : int
-	the sub-sample size when calculating dataset metrics such as image_mean, pose_mean, image_std, pose_std
+    the sub-sample size when calculating dataset metrics such as image_mean, pose_mean, image_std, pose_std
 
 target_metric_name : str
-	the name of the target metric to use when training, please refer to the README for the dataset for the possible options
+    the name of the target metric to use when training, please refer to the README for the dataset for the possible options
 metric_thresh : float
-	the threshold to use when converting the grasp probability metric predicted by the network into a binary metric
+    the threshold to use when converting the grasp probability metric predicted by the network into a binary metric
 
 multiplicative_denoising : int
-	flag (0 or 1) whether or not to apply multiplicative denoising to the images
+    flag (0 or 1) whether or not to apply multiplicative denoising to the images
 gamma_shape : float
-	gamma shape to use for multiplicative_denoising
+    gamma shape to use for multiplicative_denoising
 
 symmetrize : int
-	flag (0 or 1) whether or not to symmetrize images by randomly rotating and reflecting
+    flag (0 or 1) whether or not to symmetrize images by randomly rotating and reflecting
 
 morphological : int
-	flag (0 or 1) whether or not to apply morphological filters to images
+    flag (0 or 1) whether or not to apply morphological filters to images
 morph_open_rate : float
-	open rate for morphological filter
+    open rate for morphological filter
 morph_poisson_mean : float
-	poisson mean to use for morphological filter
+    poisson mean to use for morphological filter
 
 image_dropout : int 
-	flag (0 or 1) whether or not to randomly dropout regions of the images for robustness
+    flag (0 or 1) whether or not to randomly dropout regions of the images for robustness
 image_dropout_rate : float
-	rate at which specific images are chosen to have regions dropped from them
+    rate at which specific images are chosen to have regions dropped from them
 dropout_poisson_mean : float
-	poisson mean to use when dropping regions from image
+    poisson mean to use when dropping regions from image
 dropout_radius_shape : float
-	shape of dropout radius
+    shape of dropout radius
 dropout_radius_scale : float
-	scale fo dropout radius
+    scale fo dropout radius
 
 gradient_dropout : int
-	flag (0 or 1) whether or not to drop out a region around the areas of the images with high gradient
+    flag (0 or 1) whether or not to drop out a region around the areas of the images with high gradient
 gradient_dropout_rate : float
-	rate at which specific images are chosen to have gradients dropped out
+    rate at which specific images are chosen to have gradients dropped out
 gradient_dropout_sigma : float
-	sigma value for gradient dropout
+    sigma value for gradient dropout
 gradient_dropout_shape : float
-	shape of gradient dropout filter
+    shape of gradient dropout filter
 gradient_dropout_scale : float
-	scale of gradient dropout filter
+    scale of gradient dropout filter
 
 gaussian_process_denoising : int
-	flag (0 or 1) whether or not to add correlated gaussian noise to images
+    flag (0 or 1) whether or not to add correlated gaussian noise to images
 gaussian_process_rate : float
-	rate at which specific images are chosen to have added correlated gaussian noise
+    rate at which specific images are chosen to have added correlated gaussian noise
 gaussian_process_scaling_factor : float
-	scaling factor to use for added correlated gaussian noise
+    scaling factor to use for added correlated gaussian noise
 gaussian_process_sigma : float
-	sigma to use for added correlated gaussian noise
+    sigma to use for added correlated gaussian noise
 
 border_distortion : int
-	flag (0 or 1) whether or not to randomly dropout regions of the image borders for robustness
+    flag (0 or 1) whether or not to randomly dropout regions of the image borders for robustness
 border_grad_sigma : float
-	sigma for gaussian gradient magnitude calculation
+    sigma for gaussian gradient magnitude calculation
 border_grad_thresh : float
-	threshold for finding high gradient pixels in the image
+    threshold for finding high gradient pixels in the image
 border_poisson_mean : float
-	poisson mean for calculating the number of dropout regions
+    poisson mean for calculating the number of dropout regions
 border_radius_shape : float
-	shape of radius of filter for border dropouts
+    shape of radius of filter for border dropouts
 border_radius_scale : float
-	scale of radius of filter for border dropouts
+    scale of radius of filter for border dropouts
 
 background_denoising : int
-	flag (0 or 1) whether or not to apply background denoising to images
+    flag (0 or 1) whether or not to apply background denoising to images
 background_rate : float
-	rate at which specific images are chosen to have background denoising applied
+    rate at which specific images are chosen to have background denoising applied
 background_min_depth : float
-	minimum depth in meters for background denoising
+    minimum depth in meters for background denoising
 background_max_depth : float
-	maximum depth in meters for background denoising
+    maximum depth in meters for background denoising
 
 debug : int
-	flag (0 or 1) whether or not to use debug mode, in debug mode the same model name is used for saving between multiple
-	optimizations and the model directory is thus overwritten. Also the number of datapoints used for training is limited by the size
-	of the following debug_num_file parameter
+    flag (0 or 1) whether or not to use debug mode, in debug mode the same model name is used for saving between multiple
+    optimizations and the model directory is thus overwritten. Also the number of datapoints used for training is limited by the size
+    of the following debug_num_file parameter
 debug_num_files : int
-	the max number of files from the dataset to use for training and validation
+    the max number of files from the dataset to use for training and validation
 
 gqcnn_config/im_height : int 
-	the height of the input image data in pixels
+    the height of the input image data in pixels
 gqcnn_config/im_width : int 
-	the width of the input image data in pixels
+    the width of the input image data in pixels
 gqcnn_config/im_channels : int
-	the number of channels in the input images
+    the number of channels in the input images
 gqcnn_config/input_data_mode : str
-	the type of the input image datapoints, please refer to the README for the dataset for the possible options, NOTE: if the network is being fine-tuned
-	then this parameter must match what was used for training as otherwise the pose tensor dimensions will not match
+    the type of the input image datapoints, please refer to the README for the dataset for the possible options, NOTE: if the network is being fine-tuned
+    then this parameter must match what was used for training as otherwise the pose tensor dimensions will not match
 gqcnn_config/batch_size : int
-	the batch size to use for prediction from this network, in training using the SGDOptimizer this will be overridden by the val_batch_size parameter
-	in the training config
+    the batch size to use for prediction from this network, in training using the SGDOptimizer this will be overridden by the val_batch_size parameter
+    in the training config
 gqcnn_config/architecture : dict
-	this section outlines the architecture of the GQ-CNN. Convolutional layers are denoted by the notation convX_Y where X is the group that the layer belongs to
-	and Y is the individual layer id. Ex. conv1_1 and conv1_2 are the first and second convolutional layers of the first group of convolutional layers. Layers that process pose 
-	data are denoted by pcY where Y is the layer id. Fully-connected layers are denoted by fcY where Y is the layer id. Underneath each layer are its vairous properties such as filter dimensions,
-	number of filters, pooling size, normalization type and output_size. Please see the actual yaml file for an example architecture definition.
+    this section outlines the architecture of the GQ-CNN. Convolutional layers are denoted by the notation convX_Y where X is the group that the layer belongs to
+    and Y is the individual layer id. Ex. conv1_1 and conv1_2 are the first and second convolutional layers of the first group of convolutional layers. Layers that process pose 
+    data are denoted by pcY where Y is the layer id. Fully-connected layers are denoted by fcY where Y is the layer id. Underneath each layer are its vairous properties such as filter dimensions,
+    number of filters, pooling size, normalization type and output_size. Please see the actual yaml file for an example architecture definition.
 
 radius : float
-	the network normalization radius
+    the network normalization radius
 alpha : float
-	the network normalization alpha
+    the network normalization alpha
 beta : float
-	the network normalization beta
+    the network normalization beta
 bias : float
-	the network normalization bias
+    the network normalization bias
 
 Analysis Configuration
 ``````````````````````
 model_dir : str 
-	the outer directory containing the models to be analyzed, ex. if the path to one of the models to be analyzed is 
-	/home/user/models/grasp_quality/model_XXXX then the model_dir is /home/user/models/grasp_quality/
+    the outer directory containing the models to be analyzed, ex. if the path to one of the models to be analyzed is 
+    /home/user/models/grasp_quality/model_XXXX then the model_dir is /home/user/models/grasp_quality/
 output_dir : str
-	the output directory to save the output figures and/or filters from analysis, ex. /home/users/analyses/gqcnn_training_performance
+    the output directory to save the output figures and/or filters from analysis, ex. /home/users/analyses/gqcnn_training_performance
 out_rate : int
-	the frequency with which to use dataset files for analyses, ex. if 1 then every single file is used, if 2 then every other file is used
+    the frequency with which to use dataset files for analyses, ex. if 1 then every single file is used, if 2 then every other file is used
 font_size : int
-	the font size to use in figures
+    the font size to use in figures
 dpi : int
-	the dpi to use when plotting figures
+    the dpi to use when plotting figures
 models : dict
-	a dictionary of models to analyze along with their analyzation parameters. The following documentation assumes we have
-	a sample moduled named model_XXXX and describes the various model parameters
+    a dictionary of models to analyze along with their analyzation parameters. The following documentation assumes we have
+    a sample moduled named model_XXXX and describes the various model parameters
 models/model_XXXX/tag : str
-	the tag to be prepended before the curve titles
+    the tag to be prepended before the curve titles
 models/model_XXXX/type : str
-	the type of model, options are: 1) gqcnn 2) rf 3) svm
+    the type of model, options are: 1) gqcnn 2) rf 3) svm
 models/model_XXXX/split_type : str
-	how the data was split into training and validation, options are 1) image wise-randomly shuffle and split images 2) stable_pose_wise-randomly shuffle all valid stable
-	poses of objects and then split so that all datapoints of a certain stable pose are entirely in either training or validation 3) object_wise-randomly shuffle all objects and split into training and validation
-	so that all datapoints of a certain object are entirely in training or validation. This will determine which sets of indices are read in from the model directory
+    how the data was split into training and validation, options are 1) image wise-randomly shuffle and split images 2) stable_pose_wise-randomly shuffle all valid stable
+    poses of objects and then split so that all datapoints of a certain stable pose are entirely in either training or validation 3) object_wise-randomly shuffle all objects and split into training and validation
+    so that all datapoints of a certain object are entirely in training or validation. This will determine which sets of indices are read in from the model directory
 models/model_XXXX/vis_conv : int
-	flag (0 or 1) whether or not to display and save convolution filters from the model directory	
+    flag (0 or 1) whether or not to display and save convolution filters from the model directory   
 """
 import argparse
 import logging
@@ -267,79 +267,106 @@ import os
 
 from autolab_core import YamlConfig
 from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
+from gqcnn import utils as gqcnn_utils
 
 if __name__ == '__main__':
-	# setup logger
-	logging.getLogger().setLevel(logging.INFO)
+    # setup logger
+    logging.getLogger().setLevel(logging.INFO)
 
-        # parse args
-        parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network with TensorFlow')
-        parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
-        args = parser.parse_args()
-        config_filename = args.config_filename
+    # parse args
+    parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network with TensorFlow')
+    parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
+    parser.add_argument('--unique_name', type=bool, default=False,
+                        help='add a unique name to dataset path which encodes the current date')
+    args = parser.parse_args()
+    config_filename = args.config_filename
 
-        if config_filename is None:
-                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                               '..',
-                                               'cfg/tools/training.yaml')
+    if config_filename is None:
+            config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                           '..',
+                                           'cfg/tools/training.yaml')
 
-        # turn relative paths absolute
-        if not os.path.isabs(config_filename):
-                config_filename = os.path.join(os.getcwd(), config_filename)
+    # turn relative paths absolute
+    if not os.path.isabs(config_filename):
+            config_filename = os.path.join(os.getcwd(), config_filename)
 
-        # open train config
-	train_config = YamlConfig(config_filename)
-        mode = train_config['mode']
-	gqcnn_config = train_config['gqcnn_config']
+    # open train config
+    train_config = YamlConfig(config_filename)
+    mode = train_config['mode']
+    gqcnn_config = train_config['gqcnn_config']
 
-	def get_elapsed_time(time_in_seconds):
-		""" Helper function to get elapsed time """
-		if time_in_seconds < 60:
-			return '%.1f seconds' % (time_in_seconds)
-		elif time_in_seconds < 3600:
-			return '%.1f minutes' % (time_in_seconds / 60)
-		else:
-			return '%.1f hours' % (time_in_seconds / 3600)
+    if args.unique_name:
+        unique_name = time.strftime("%Y%m%d-%H%M%S")
+        output_dir = os.path.join(train_config['output_dir'], unique_name)
+        train_config['output_dir'] = output_dir
+        logging.info("output_dir: %s" %(output_dir))
 
-	###Possible Use-Cases###
+        os.mkdir(output_dir)
 
-	# Training from Scratch
-        if mode == 'training':
-                start_time = time.time()
-                gqcnn = GQCNN(gqcnn_config)
-                sgdOptimizer = SGDOptimizer(gqcnn, train_config)
-                with gqcnn.get_tf_graph().as_default():
-                        sgdOptimizer.optimize()
-                logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
 
-	# Prediction
-        elif mode == 'prediction':
-                start_time = time.time()
-                model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
-                gqcnn = GQCNN.load(model_dir)
-                output = gqcnn.predict(images, poses)
-                pred_p_success = output[:,1]
-                gqcnn.close_session()
-                logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
+        # set the logger to make a file there
+        training_log_filename = os.path.join(output_dir, 'gqcnn_training.log')
+        formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+        hdlr = logging.FileHandler(training_log_filename)
+        hdlr.setFormatter(formatter)
+        logging.getLogger().addHandler(hdlr)
 
-	# Analysis
-        elif mode == 'analysis':
-                start_time = time.time()
-                analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
-                analyzer = GQCNNAnalyzer(analysis_config)
-                analyzer.analyze()
-                logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
 
-	# Fine-Tuning
-        elif mode == 'finetuning':
-                start_time = time.time()
-                model_dir = train_config['model_dir']
-                gqcnn = GQCNN.load(model_dir)
-                sgdOptimizer = SGDOptimizer(gqcnn, train_config)
-                with gqcnn._graph.as_default():
-                        sgdOptimizer.optimize()
-                logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
-        
-        # handle illegal modes
+
+
+    if 'gpu_list' in train_config:
+        gqcnn_utils.set_cuda_visible_devices(train_config['gpu_list'])
+
+    def get_elapsed_time(time_in_seconds):
+        """ Helper function to get elapsed time """
+        if time_in_seconds < 60:
+            return '%.1f seconds' % (time_in_seconds)
+        elif time_in_seconds < 3600:
+            return '%.1f minutes' % (time_in_seconds / 60)
         else:
-                raise ValueError('Mode %s not recognized!' %(mode))
+            return '%.1f hours' % (time_in_seconds / 3600)
+
+    ###Possible Use-Cases###
+
+
+
+    # Training from Scratch
+    if mode == 'training':
+            start_time = time.time()
+            gqcnn = GQCNN(gqcnn_config)
+            sgdOptimizer = SGDOptimizer(gqcnn, train_config)
+            with gqcnn.get_tf_graph().as_default():
+                    sgdOptimizer.optimize()
+            logging.info('Total Training Time:' + str(get_elapsed_time(time.time() - start_time))) 
+
+    # Prediction
+    elif mode == 'prediction':
+            start_time = time.time()
+            model_dir = '/home/user/Data/models/grasp_quality/model_ewlohgukns'
+            gqcnn = GQCNN.load(model_dir)
+            output = gqcnn.predict(images, poses)
+            pred_p_success = output[:,1]
+            gqcnn.close_session()
+            logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
+
+    # Analysis
+    elif mode == 'analysis':
+            start_time = time.time()
+            analysis_config = YamlConfig('cfg/tools/analyze_gqcnn_performance.yaml')
+            analyzer = GQCNNAnalyzer(analysis_config)
+            analyzer.analyze()
+            logging.info('Total Analysis Time:' + str(get_elapsed_time(time.time() - start_time)))
+
+    # Fine-Tuning
+    elif mode == 'finetuning':
+            start_time = time.time()
+            model_dir = train_config['model_dir']
+            gqcnn = GQCNN.load(model_dir)
+            sgdOptimizer = SGDOptimizer(gqcnn, train_config)
+            with gqcnn._graph.as_default():
+                    sgdOptimizer.optimize()
+            logging.info('Total Fine Tuning Time:' + str(get_elapsed_time(time.time() - start_time)))
+    
+    # handle illegal modes
+    else:
+            raise ValueError('Mode %s not recognized!' %(mode))

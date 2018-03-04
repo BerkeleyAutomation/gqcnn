@@ -2,8 +2,7 @@
 mode: training
 
 # dataset 
-#dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v1/grasps/tensors
-dataset_dir: /mnt/data/jmahler/suction/datasets/dexnet_4/tensors
+dataset_dir: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v1/grasps/tensors
 output_dir: /nfs/diskstation/projects/dex-net/suction/models/
 model_dir: /nfs/diskstation/projects/dex-net/suction/models/GQ-Image-Wise
 
@@ -23,7 +22,7 @@ show_filters: 0
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
-data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
+data_split_mode: state_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
 train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
@@ -31,7 +30,7 @@ eval_total_train_error: 0
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.001
+base_lr: 0.0025
 decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
@@ -102,7 +101,7 @@ fc4_drop_rate: 0.5
 debug: 1
 debug_num_files: 10000000
 num_random_files: 1000
-seed: 5224084
+seed: 599988
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -155,9 +154,9 @@ gqcnn_config:
     pc2:
       out_size: 0
     fc3:
-      out_size: 128
+      out_size: 256
     fc4:
-      out_size: 128
+      out_size: 256
     fc5:
       out_size: 2
 

@@ -665,6 +665,7 @@ class GQCNN(object):
 
         with self._graph.as_default():
             # setup tf input placeholders and build network
+            logging.info("batch size during initialize_network is %d" % (self._batch_size))
             self._input_im_node = tf.placeholder(
                 tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels))
             self._input_pose_node = tf.placeholder(

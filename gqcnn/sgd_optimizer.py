@@ -282,8 +282,11 @@ class SGDOptimizer(object):
                 self._check_dead_queue()
 
                 # run optimization
+                step_start = time.time()
                 _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, train_poses = self.sess.run(
                         [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
+                step_stop = time.time()
+                logging.info('Step took %.3f sec' %(step_stop-step_start))
 
                 if self.training_mode == TrainingMode.REGRESSION:
                     logging.info('Max ' +  str(np.max(predictions)))
@@ -332,6 +335,7 @@ class SGDOptimizer(object):
                     self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
                 # evaluate validation error
+                # evaluate, even before training
                 if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
                         train_error = self._error_rate_in_batches()
@@ -559,9 +563,11 @@ class SGDOptimizer(object):
             self.data_std = 0
             random_file_indices = np.random.choice(self.num_files, size=self.num_random_files, replace=False)
             num_summed = 0
-            for k in random_file_indices.tolist():
+            for i, k in enumerate(random_file_indices.tolist()):
                 im_filename = self.im_filenames[k]
+                read_start = time.time()
                 im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
+                read_stop = time.time()
                 self.data_mean += np.sum(im_data[self.train_index_map[im_filename], :, :, :])
                 num_summed += im_data[self.train_index_map[im_filename], :, :, :].shape[0]
             self.data_mean = self.data_mean / (num_summed * im_data.shape[1] * im_data.shape[2])
@@ -637,6 +643,9 @@ class SGDOptimizer(object):
             elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                 self.pose_mean = self.pose_mean[2:4]
                 self.pose_std = self.pose_std[2:4]
+            elif self.input_data_mode == InputDataMode.PARALLEL_JAW:
+                self.pose_mean = self.pose_mean[2:3]
+                self.pose_std = self.pose_std[2:3]
             elif self.input_data_mode == InputDataMode.RAW_IMAGE:
                 # u, v, depth, theta
                 self.pose_mean = self.pose_mean[:4]
@@ -720,14 +729,17 @@ class SGDOptimizer(object):
             self.metric_data = np.load(os.path.join(self.data_dir, metric_filename))['arr_0']
             indices = self.val_index_map[im_filename]
             val_metric_data = self.metric_data[indices]
+
             if all_metrics is None:
                 all_metrics = self.metric_data
             else:
                 all_metrics = np.r_[all_metrics, self.metric_data]
+
             if all_val_metrics is None:
                 all_val_metrics = val_metric_data
             else:
                 all_val_metrics = np.r_[all_val_metrics, val_metric_data]
+
         self.min_metric = np.min(all_metrics)
         self.max_metric = np.max(all_metrics)
         self.mean_metric = np.mean(all_metrics)
@@ -737,6 +749,11 @@ class SGDOptimizer(object):
         pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
         np.save(pct_pos_val_filename, np.array(pct_pos_val))
         logging.info('Percent positive in val set: ' + str(pct_pos_val))
+
+        pct_pos_random_filename = os.path.join(self.experiment_dir, 'pct_pos_random.npy')
+        pct_pos_random = float(np.sum(all_metrics > self.metric_thresh)) / all_metrics.shape[0]
+        np.save(pct_pos_random_filename, np.array(pct_pos_random))
+        logging.info('Percent positive in random file set: ' + str(pct_pos_random))
         
     def _compute_indices_image_wise(self):
         """ Compute train and validation indices based on an image-wise split"""
@@ -744,6 +761,9 @@ class SGDOptimizer(object):
         # get total number of training datapoints and set the decay_step
         num_datapoints = self.images_per_file * self.num_files
         self.num_train = int(self.train_pct * num_datapoints)
+
+        logging.info("num_datapoints (images_per_file * num_files): %d" %(num_datapoints))
+        logging.info("num train %d" %(self.num_train))
         self.decay_step = self.decay_step_multiplier * self.num_train
 
         # get training and validation indices
@@ -880,6 +900,8 @@ class SGDOptimizer(object):
                     else:
                         val_indices.append(i)
 
+
+                logging.info("num_train_indices: %d" )
                 self.train_index_map[im_filename] = np.asarray(train_indices, dtype=np.intc)
                 self.val_index_map[im_filename] = np.asarray(val_indices, dtype=np.intc)
                 train_indices = []
@@ -888,6 +910,44 @@ class SGDOptimizer(object):
             pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
             pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
 
+    def _compute_indices_state_wise(self):
+        """ Compute train and validation indices based on an state-wise split"""
+
+        if self.split_filenames is None:
+            raise ValueError('No split filenames!')
+        
+        # get total number of training datapoints and set the decay_step
+        # get training and validation indices
+        # make a map of the train and test indices for each file
+        logging.info('Computing indices state-wise')
+        train_index_map_filename = os.path.join(self.experiment_dir, 'train_indices_state_wise.pkl')
+        self.val_index_map_filename = os.path.join(self.experiment_dir, 'val_indices_state_wise.pkl')
+        if os.path.exists(train_index_map_filename):
+            self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
+            self.val_index_map = pkl.load(open(self.val_index_map_filename, 'r'))
+        else:
+            self.train_index_map = {}
+            self.val_index_map = {}
+            i = 0
+            for im_filename, split_filename in zip(self.im_filenames, self.split_filenames):
+                logging.info('Computing indices for file %d' %(i))
+                lower = i * self.images_per_file
+                upper = (i+1) * self.images_per_file
+                split_arr = np.load(os.path.join(self.data_dir, split_filename))['arr_0']
+                self.train_index_map[im_filename] = np.where(split_arr == 0)[0]
+                self.val_index_map[im_filename] = np.where(split_arr == 1)[0]
+                del split_arr
+                if i % 10 == 0:
+                    gc.collect()
+                i += 1
+            pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
+            pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
+
+        self.num_train = 0
+        for im_filename, train_indices in self.train_index_map.iteritems():
+            self.num_train += train_indices.shape[0]
+        self.decay_step = self.decay_step_multiplier * self.num_train
+            
     def _read_training_params(self):
         """ Read training parameters from configuration file """
 
@@ -904,6 +964,7 @@ class SGDOptimizer(object):
             self.max_files_eval = self.cfg['max_files_eval']
         
         # update the GQCNN's batch_size param to this one
+        logging.info("updating val_batch_size to %d" %(self.val_batch_size))
         self.gqcnn.update_batch_size(self.val_batch_size)
 
         self.num_epochs = self.cfg['num_epochs']
@@ -995,6 +1056,9 @@ class SGDOptimizer(object):
         # read in filenames of training data(poses, images, labels)
         logging.info('Reading filenames')
         all_filenames = os.listdir(self.data_dir)
+        logging.info('data_dir = %s' %(self.data_dir))
+
+        logging.info("image_mode %s" %(self.image_mode))
         if self.image_mode== ImageMode.BINARY:
             self.im_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.binary_im_tensor_template) > -1]
         elif self.image_mode== ImageMode.DEPTH:
@@ -1016,31 +1080,41 @@ class SGDOptimizer(object):
 
         self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
         if len(self.pose_filenames) == 0 :
-            self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.grasps_template) > -1]            
+            self.pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.grasps_template) > -1]
+
+
         self.label_filenames = [f for f in all_filenames if f.startswith(self.target_metric_name) and f[len(self.target_metric_name)+6] == '.']
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
         self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
+        self.split_filenames = [f for f in all_filenames if f.startswith(ImageFileTemplates.splits_template) > -1]
 
-        if self.debug and self.debug_num_files < len(self.im_filenames):
-            self.im_filenames = self.im_filenames[:self.debug_num_files]
-            self.pose_filenames = self.pose_filenames[:self.debug_num_files]
-            self.label_filenames = self.label_filenames[:self.debug_num_files]
-            self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
-            self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
-        
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         
-        # check valid filenames
+        if self.debug and self.debug_num_files < len(self.im_filenames):
+            self.im_filenames = self.im_filenames[:self.debug_num_files]
+            self.pose_filenames = self.pose_filenames[:self.debug_num_files]
+            self.label_filenames = self.label_filenames[:self.debug_num_files]
+            self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
+            self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
+            self.split_filenames = self.stable_pose_filenames[:self.debug_num_files]        
+
+        logging.info("target_metric_name: %s" %(self.target_metric_name))
+        logging.info("len(im_filenames) {:d}".format(len(self.im_filenames)))
+        logging.info("len(pose_filenames) {:d}".format(len(self.pose_filenames)))
+        logging.info("len(label_filenames) {:d}".format(len(self.label_filenames)))
+
         if len(self.im_filenames) == 0 or len(self.pose_filenames) == 0 or len(self.label_filenames) == 0:
             raise ValueError('One or more required training files in the dataset could not be found.')
         if len(self.obj_id_filenames) == 0:
             self.obj_id_filenames = None
         if len(self.stable_pose_filenames) == 0:
             self.stable_pose_filenames = None
+        if len(self.split_filenames) == 0:
+            self.split_filenames = None
 
         # subsample files
         self.num_files = min(len(self.im_filenames), len(self.label_filenames))
@@ -1054,6 +1128,8 @@ class SGDOptimizer(object):
             self.obj_id_filenames = [self.obj_id_filenames[k] for k in filename_indices]
         if self.stable_pose_filenames is not None:
             self.stable_pose_filenames = [self.stable_pose_filenames[k] for k in filename_indices]
+        if self.split_filenames is not None:
+            self.split_filenames = [self.split_filenames[k] for k in filename_indices]
 
         # create copy of image, pose, and label filenames because original cannot be accessed by load and enqueue op in the case that the error_rate_in_batches method is sorting the original
         self.im_filenames_copy = self.im_filenames[:]
@@ -1150,6 +1226,8 @@ class SGDOptimizer(object):
             self._compute_indices_object_wise()
         elif self.data_split_mode == 'stable_pose_wise':
             self._compute_indices_pose_wise()
+        if self.data_split_mode == 'state_wise':
+            self._compute_indices_state_wise()
         else:
             logging.error('Data Split Mode Not Supported')
 
@@ -1189,17 +1267,21 @@ class SGDOptimizer(object):
             while start_i < self.train_batch_size:
                 # compute num remaining
                 num_remaining = self.train_batch_size - num_queued
-
+                
                 # gen file index uniformly at random
                 file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
                 train_data_filename = self.im_filenames_copy[file_num]
 
+                read_start = time.time()
                 train_data_arr = np.load(os.path.join(self.data_dir, train_data_filename))[
                     'arr_0'].astype(np.float32)
                 self.train_poses_arr = np.load(os.path.join(self.data_dir, self.pose_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
                 self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
+                read_stop = time.time()
+                logging.info('Reading data took %.3f sec' %(read_stop - read_start))
+                logging.info('File num: %d' %(file_num))
                 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
@@ -1207,7 +1289,7 @@ class SGDOptimizer(object):
                 if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
                     tp_tmp = self._read_pose_data(self.train_poses_arr.copy(), self.input_data_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
-
+                    
                 # filter positives and negatives
                 if self.training_mode == TrainingMode.CLASSIFICATION and self.pos_weight != 0.0:
                     labels = 1 * (self.train_label_arr > self.metric_thresh)
@@ -1219,7 +1301,7 @@ class SGDOptimizer(object):
                         elif labels[index] == 1 and np.random.rand() < self.pos_accept_prob:
                             filtered_ind.append(index)
                     train_ind = np.array(filtered_ind)
-                    
+
                 # compute the number loaded
                 upper = min(num_remaining, train_ind.shape[
                             0], self.max_training_examples_per_load)
@@ -1227,7 +1309,7 @@ class SGDOptimizer(object):
                 num_loaded = ind.shape[0]
 
                 if num_loaded == 0:
-                    logging.warning('Loaded zero examples!!!!')
+                    logging.debug('Loaded zero examples!!!!')
                     continue
                 
                 # subsample data
@@ -1433,7 +1515,7 @@ class SGDOptimizer(object):
                 self.train_data_arr[i,:,:,0] = train_image
         return self.train_data_arr, self.train_poses_arr
 
-    def _error_rate_in_batches(self, num_files_eval=None):
+    def _error_rate_in_batches(self, num_files_eval=None, validation_set=True):
         """ Get all predictions for a dataset by running it in small batches
 
         Returns
@@ -1459,6 +1541,7 @@ class SGDOptimizer(object):
             # if no datapoints from this file are in validation then just continue
             if len(self.val_index_map[data_filename]) == 0:
                 continue
+
 
             data = data[self.val_index_map[data_filename],...]
             poses = self._read_pose_data(poses[self.val_index_map[data_filename],:], self.input_data_mode)
