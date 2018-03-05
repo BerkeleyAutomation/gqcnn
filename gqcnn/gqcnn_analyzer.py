@@ -82,7 +82,7 @@ class GQCNNAnalyzer(object):
         self.model_dir = self.cfg['model_dir']
         self.models = self.cfg['models']
 
-    def _run_prediction_single_model(self, output_dir, model_name='gqcnn', split_type='image_wise', model_tag="GQ-CNN", vis_conv=True, model_type = "gqcnn"):
+    def _run_prediction_single_model(self, model_output_dir, model_name='gqcnn', split_type='image_wise', model_tag="GQ-CNN", vis_conv=True, model_type = "gqcnn"):
         from dexnet.learning import BinaryClassificationResult
         logging.info('Analyzing model %s' %(model_name))
 
@@ -96,7 +96,6 @@ class GQCNNAnalyzer(object):
         split_type = self.models[model_name]['split_type']
 
         # create output dir
-        model_output_dir = os.path.join(output_dir, model_name)
         if not os.path.exists(model_output_dir):
             os.mkdir(model_output_dir)
 
@@ -192,7 +191,7 @@ class GQCNNAnalyzer(object):
         for im_filename, pose_filename, metric_filename in zip(im_filenames, pose_filenames, metric_filenames):
             if cur_file_num % self.cfg['out_rate'] == 0:
                 logging.info('Reading file %d of %d' %(cur_file_num+1, num_files))
-
+                
             # read data
             image_arr = np.load(im_filename)['arr_0']            
             pose_arr = np.load(pose_filename)['arr_0']
@@ -267,14 +266,15 @@ class GQCNNAnalyzer(object):
 
         for model_name, model_data in self.models.iteritems():
             logging.info('Analyzing model: %s' %(model_name))
-            train_result, val_result = self._run_prediction_single_model(output_dir,
+            model_output_dir = os.path.join(output_dir, model_name)
+            train_result, val_result = self._run_prediction_single_model(model_output_dir,
                                                                          model_name=model_name,
                                                                          split_type=model_data['split_type'],
                                                                          model_tag=model_data['tag'],
                                                                          vis_conv=model_data['vis_conv'],
                                                                          model_type=model_data['type'])
             BinaryClassificationResult.make_summary_table(train_result, val_result, plot=False,
-                                                          save_dir=output_dir, save=True)
+                                                          save_dir=model_output_dir, save=True)
 
             logging.info("Finished evaluating model: %s" %(model_name))
     
@@ -284,7 +284,9 @@ class GQCNNAnalyzer(object):
 
         colors = ['g', 'b', 'c', 'y', 'm', 'r']
         styles = ['-', '--', '-.', ':', '-'] 
-
+        num_colors = len(colors)
+        num_styles = len(styles)
+        
         # get stats, plot curves
         plt.clf()
         i = 0
@@ -292,8 +294,8 @@ class GQCNNAnalyzer(object):
             model_tag = self.models[model_name]['tag']
             train_class_result = self.train_class_results[model_tag]
             logging.info('Model %s training error rate: %.3f' %(model_name, train_class_result.error_rate))
-            train_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                                      style=styles[i], label=model_tag)
+            train_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
+                                                      style=styles[i%num_styles], label=model_tag)
             i += 1
         plt.title('Training Precision Recall Curve', fontsize=self.font_size)
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -305,8 +307,8 @@ class GQCNNAnalyzer(object):
         for model_name in self.models.keys():
             model_tag = self.models[model_name]['tag']
             train_class_result = self.train_class_results[model_tag]
-            train_class_result.roc_curve(plot=True, color=colors[i],
-                                         style=styles[i], label=model_tag)
+            train_class_result.roc_curve(plot=True, color=colors[i%num_colors],
+                                         style=styles[i%num_styles], label=model_tag)
             i += 1
         plt.title('Training ROC Curve', fontsize=self.font_size)
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -320,8 +322,8 @@ class GQCNNAnalyzer(object):
             model_tag = self.models[model_name]['tag']
             val_class_result = self.val_class_results[model_tag]
             logging.info('Model %s validation error rate: %.3f' %(model_name, val_class_result.error_rate))
-            val_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                                      style=styles[i], label=model_tag)
+            val_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
+                                                      style=styles[i%num_styles], label=model_tag)
             i += 1
         plt.title('Validation Precision Recall Curve', fontsize=self.font_size)
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -334,8 +336,8 @@ class GQCNNAnalyzer(object):
         for model_name in self.models.keys():
             model_tag = self.models[model_name]['tag']
             val_class_result = self.val_class_results[model_tag]
-            val_class_result.roc_curve(plot=True, color=colors[i],
-                                         style=styles[i], label=model_tag)
+            val_class_result.roc_curve(plot=True, color=colors[i%num_colors],
+                                         style=styles[i%num_styles], label=model_tag)
             i += 1
         plt.title('Validation ROC Curve', fontsize=self.font_size)
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -350,21 +352,21 @@ class GQCNNAnalyzer(object):
             model_tag = self.models[model_name]['tag']
             train_class_result = self.train_class_results[model_tag]
             if model_tag is None:
-                train_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                                      style=styles[i], label='Training')
+                train_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
+                                                      style=styles[i%num_styles], label='Training')
             else:
-                train_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                      style=styles[i], label='Training ' + model_tag)
+                train_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
+                                      style=styles[i%num_styles], label='Training ' + model_tag)
             i += 1
         for model_name in self.models.keys():
             model_tag = self.models[model_name]['tag']
             val_class_result = self.val_class_results[model_tag]
             if model_tag is None:
-                val_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                                          style=styles[i], label='Validation ')
+                val_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
+                                                          style=styles[i%num_styles], label='Validation ')
             else:
-                val_class_result.precision_recall_curve(plot=True, color=colors[i],
-                                          style=styles[i], label='Validation ' + model_tag)
+                val_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
+                                          style=styles[i%num_styles], label='Validation ' + model_tag)
             i += 1
         
         plt.title('Precision Recall Curves', fontsize=self.font_size)
@@ -381,21 +383,21 @@ class GQCNNAnalyzer(object):
             model_tag = self.models[model_name]['tag']
             train_class_result = self.train_class_results[model_tag]
             if model_tag is None:
-                train_class_result.roc_curve(plot=True, color=colors[i],
-                                         style=styles[i], label='Training')
+                train_class_result.roc_curve(plot=True, color=colors[i%num_colors],
+                                         style=styles[i%num_styles], label='Training')
             else:
-                train_class_result.roc_curve(plot=True, color=colors[i],
-                                         style=styles[i], label='Training' + model_tag)
+                train_class_result.roc_curve(plot=True, color=colors[i%num_colors],
+                                         style=styles[i%num_styles], label='Training' + model_tag)
             i += 1
         for model_name in self.models.keys():
             model_tag = self.models[model_name]['tag']
             val_class_result = self.val_class_results[model_tag]
             if model_tag is None:
-                val_class_result.roc_curve(plot=True, color=colors[i],
-                                         style=styles[i], label='Validation')
+                val_class_result.roc_curve(plot=True, color=colors[i%num_colors],
+                                         style=styles[i%num_styles], label='Validation')
             else:
-                val_class_result.roc_curve(plot=True, color=colors[i],
-                             style=styles[i], label='Validation' + model_tag)
+                val_class_result.roc_curve(plot=True, color=colors[i%num_colors],
+                             style=styles[i%num_styles], label='Validation' + model_tag)
             i += 1
 
         plt.title('ROC Curves', fontsize=self.font_size)
