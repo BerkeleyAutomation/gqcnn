@@ -155,11 +155,22 @@ class GQCNNAnalyzer(object):
             im_filenames = [f for f in filenames if f.find(ImageFileTemplates.tf_depth_ims_tensor_template) > -1]
         else:
             raise ValueError('Model image mode %s not recognized' %(model_image_mode))
-        pose_filenames = [f for f in filenames if f.find(ImageFileTemplates.hand_poses_template) > -1]
-        if len(pose_filenames) == 0:
-            pose_filenames = [f for f in filenames if f.find(ImageFileTemplates.grasps_template) > -1]
-        metric_filenames = [f for f in filenames if f.find(model_target_metric) > -1]
 
+        new_im_filenames = []
+        pose_filenames = []
+        metric_filenames = []
+        for im_filename in im_filenames:
+            im_num = int(im_filename[-9:-4])
+            pose_filename = '%s_%05d.npz' %(ImageFileTemplates.hand_poses_template, im_num)
+            if not os.path.exists(os.path.join(model_training_dataset_dir, pose_filename)):
+                pose_filename = '%s_%05d.npz' %(ImageFileTemplates.grasps_template, im_num)                
+            metric_filename = '%s_%05d.npz' %(model_target_metric, im_num)
+            if os.path.exists(os.path.join(model_training_dataset_dir, im_filename)) and os.path.exists(os.path.join(model_training_dataset_dir, pose_filename)) and os.path.exists(os.path.join(model_training_dataset_dir, metric_filename)):
+                new_im_filenames.append(im_filename)
+                pose_filenames.append(pose_filename)
+                metric_filenames.append(metric_filename)
+        im_filenames = new_im_filenames
+                
         # sort filenames for consistency
         im_filenames.sort(key = lambda x: int(x[-9:-4]))
         pose_filenames.sort(key = lambda x: int(x[-9:-4]))
