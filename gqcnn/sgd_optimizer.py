@@ -1086,21 +1086,22 @@ class SGDOptimizer(object):
         self.label_filenames = [f for f in all_filenames if f.startswith(self.target_metric_name) and f[len(self.target_metric_name)+6] == '.']
         self.obj_id_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.object_labels_template) > -1]
         self.stable_pose_filenames = [f for f in all_filenames if f.find(ImageFileTemplates.pose_labels_template) > -1]
-        self.split_filenames = [f for f in all_filenames if f.startswith(ImageFileTemplates.splits_template) > -1]
+        self.split_filenames = [f for f in all_filenames if f.startswith(ImageFileTemplates.splits_template)]
 
         self.im_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.pose_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.label_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.obj_id_filenames.sort(key = lambda x: int(x[-9:-4]))
         self.stable_pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-        
+        self.split_filenames.sort(key = lambda x: int(x[-9:-4]))            
+
         if self.debug and self.debug_num_files < len(self.im_filenames):
             self.im_filenames = self.im_filenames[:self.debug_num_files]
             self.pose_filenames = self.pose_filenames[:self.debug_num_files]
             self.label_filenames = self.label_filenames[:self.debug_num_files]
             self.obj_id_filenames = self.obj_id_filenames[:self.debug_num_files]
             self.stable_pose_filenames = self.stable_pose_filenames[:self.debug_num_files]
-            self.split_filenames = self.stable_pose_filenames[:self.debug_num_files]        
+            self.split_filenames = self.split_filenames[:self.debug_num_files]        
 
         logging.info("target_metric_name: %s" %(self.target_metric_name))
         logging.info("len(im_filenames) {:d}".format(len(self.im_filenames)))

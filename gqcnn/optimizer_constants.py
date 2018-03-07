@@ -46,7 +46,7 @@ class ImageFileTemplates:
     grasps_template = 'grasps'
     object_labels_template = 'object_labels'
     pose_labels_template = 'pose_labels'
-    splits_template = 'splits'
+    splits_template = 'split'
 
 # enum for image modalities
 class ImageMode:
