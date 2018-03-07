@@ -20,5 +20,5 @@ setup(name='gqcnn',
 	  author='Vishal Satish', 
 	  author_email='vsatish@berkeley.edu', 
 	  package_dir={'': '.'}, 
-	  packages=['gqcnn'], 
+	  packages=['gqcnn', 'gqcnn.model', 'gqcnn.model.tf', 'gqcnn.model.neon', 'gqcnn.training', 'gqcnn.training.tf', 'gqcnn.training.neon', 'gqcnn.utils'], 
 	  install_requires=requirements)
