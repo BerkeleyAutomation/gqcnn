@@ -6,7 +6,9 @@ import json
 from collections import OrderedDict
 import logging
 import os
+import math
 
+import cv2 as cv
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf 
@@ -23,9 +25,8 @@ def reduce_shape(shape):
 
 class GQCNNWeights(object):
     """ Struct helper for storing weights """
-    weights = {}
     def __init__(self):
-        pass
+        self.weights = {}
 
 class GQCNNTF(object):
     """ GQCNN network implemented in Tensorflow """
@@ -42,9 +43,11 @@ class GQCNNTF(object):
         self._weights = GQCNNWeights()
         self._graph = tf.Graph()
         self._parse_config(gqcnn_config, fully_conv_config)
+        self._rot = False
+        self._rot_conv_filts = False
 
     @staticmethod
-    def load(model_dir, fully_conv_config=None):
+    def load(model_dir, fully_conv_config=None, conv_filt_rot=0.0):
         """ Instantiates a GQCNN object using the model found in model_dir 
 
         Parameters
@@ -63,10 +66,11 @@ class GQCNNTF(object):
             train_config = json.load(data_file, object_pairs_hook=OrderedDict)
 
         gqcnn_config = train_config['gqcnn_config']
-
+        
         # create GQCNN object and initialize weights and network
         gqcnn = GQCNNTF(gqcnn_config, fully_conv_config=fully_conv_config)
-        gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
+        gqcnn._rot_conv_filts = False
+        gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'), conv_filt_rot=conv_filt_rot)
         training_mode = train_config['training_mode']
         if training_mode == TrainingMode.CLASSIFICATION:
             gqcnn.initialize_network(add_softmax=True)
@@ -74,8 +78,8 @@ class GQCNNTF(object):
             gqcnn.initialize_network()
         else:
             raise ValueError('Invalid training mode: {}'.format(training_mode))
+        gqcnn.rotate_conv_filters(conv_filt_rot=conv_filt_rot)
         gqcnn.init_mean_and_std(model_dir)
-
         return gqcnn
 
     def get_tf_graph(self):
@@ -124,7 +128,7 @@ class GQCNNTF(object):
             self._gripper_mean = parse_gripper_data(self._gripper_mean, self._input_gripper_mode)
             self._gripper_std = parse_gripper_data(self._gripper_std, self._input_gripper_mode)
 
-    def init_weights_file(self, ckpt_file):
+    def init_weights_file(self, ckpt_file, conv_filt_rot=0.0):
         """ Initialize network weights from the specified model 
 
         Parameters
@@ -138,6 +142,8 @@ class GQCNNTF(object):
         
             # create empty weight object
             self._weights = GQCNNWeights()
+
+            # read/generate weight/bias variable names
             ckpt_vars = tcf.list_variables(ckpt_file)
             full_var_names = []
             short_names = []
@@ -145,8 +151,43 @@ class GQCNNTF(object):
                 full_var_names.append(variable)
                 short_names.append(variable.split('/')[-1])
     
+            # load variables
             for full_var_name, short_name in zip(full_var_names, short_names):
                 self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
+
+    def rotate_conv_filters(self, conv_filt_rot):
+        with self._graph.as_default():
+            # rotate conv filters
+            self._rot_conv_filts = True if conv_filt_rot > 0.0 else False 
+            short_names = self._weights.weights.keys()
+            if self._rot_conv_filts:
+                self._conv_filt_rot = conv_filt_rot
+                self.open_session()
+                for var_name in short_names:
+                    if 'conv' in var_name and 'weights' in var_name and 'fully' not in var_name:
+#                    if var_name == 'conv1_1_weights' or var_name == 'conv1_2_weights':
+                        logging.info('Rotating weights for {}.'.format(var_name))
+                        conv_W = self._weights.weights[var_name]
+                        conv_W_np = self._sess.run(conv_W)
+                        conv_W_np_orig = np.copy(conv_W_np)
+                        rot_mat = cv.getRotationMatrix2D((float(conv_W_np.shape[1] - 1) / 2, float(conv_W_np.shape[0] - 1) / 2), conv_filt_rot, 1.0)
+                        for i in range(conv_W_np.shape[2]):
+                            for j in range(conv_W_np.shape[3]):
+#                                conv_W_np[:, :, i, j] = np.copy(np.rot90(conv_W_np[:, :, i, j], k=1))
+                                conv_W_np[:, :, i, j] = cv.warpAffine(conv_W_np[:, :, i, j], rot_mat, (conv_W_np.shape[1], conv_W_np.shape[0]), flags=cv.INTER_LINEAR, borderMode=cv.BORDER_REPLICATE)
+#                        import matplotlib.pyplot as plt
+#                        plt.figure()
+#                        for x in range(2):
+#                             plt.clf()
+#                             plt.subplot(121)
+#                             plt.imshow(conv_W_np_orig[:, :, 0, x], cmap='gray')
+#                             plt.subplot(122)
+#                             plt.imshow(conv_W_np[:, :, 0, x], cmap='gray')
+#                             plt.show()
+                        self._weights.weights[var_name] = tf.Variable(conv_W_np)
+                self.close_session()
+#                self._rot = True
+                self.initialize_network(add_softmax=True)
 
     def reinitialize_layers(self, reinit_fc3, reinit_fc4, reinit_fc5):
         """ Re-initializes final fully-connected layers for fine-tuning 
@@ -283,12 +324,13 @@ class GQCNNTF(object):
                 if self._gripper_dim > 0:
                     self._input_gripper_dim = tf.placeholder(train_gripper_node, (None, self._gripper_dim))
             self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), ())
+            self._input_distort_rot_ang_node = tf.placeholder_with_default(tf.constant(np.zeros((self._batch_size,)), dtype=tf.float32), (None,))
 
             # build network
             if self._gripper_dim > 0:
                 self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node, input_gripper_node=self._input_gripper_node)
             else:
-                self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
+                self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node, self._input_distort_rot_ang_node)
             
             # add softmax function to output of network if specified
             if add_softmax:
@@ -302,17 +344,19 @@ class GQCNNTF(object):
 
     def open_session(self):
         """ Open tensorflow session """
+        logging.info('Initializig TF Session.')
         with self._graph.as_default():
             init = tf.global_variables_initializer()
             self.tf_config = tf.ConfigProto()
-            # allow tf gpu_growth so tf does not allocate all GPUs every time
+            # allow tf gpu_growth so tf does not lock-up all GPU memory
             self.tf_config.gpu_options.allow_growth = True
-            self._sess = tf.Session(config=self.tf_config)
+            self._sess = tf.Session(graph=self._graph, config=self.tf_config)
             self._sess.run(init)
         return self._sess
 
     def close_session(self):
         """ Close tensorflow session """
+        logging.info('Closing TF Session.')
         with self._graph.as_default():
             self._sess.close()
             self._sess = None
@@ -625,7 +669,7 @@ class GQCNNTF(object):
                 i = end_ind
         return output_arr
     
-    def featurize(self, image_arr, pose_arr, feature_layer='conv2_2'):
+    def featurize(self, image_arr, pose_arr, feature_layer='conv1_1'):
         """ Featurize a set of images in batches """
 
         if feature_layer not in self._feature_tensors.keys():
@@ -659,9 +703,8 @@ class GQCNNTF(object):
                                               feed_dict={self._input_im_node: self._input_im_arr,
                                                          self._input_pose_node: self._input_pose_arr})
                 if output_arr is None:
-                    output_arr = gqcnn_output
-                else:
-                    output_arr = np.r_[output_arr, gqcnn_output]
+                    output_arr = np.zeros([num_images] + list(gqcnn_output.shape[1:]))
+                output_arr[cur_ind:end_ind, :] = gqcnn_output[:dim, :]
 
                 i = end_ind
             if close_sess:
@@ -703,7 +746,7 @@ class GQCNNTF(object):
 
         return transform_layer, output_height, output_width, input_channels
 
-    def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, pad='SAME'):
+    def _build_conv_layer(self, input_node, input_distort_rot_ang_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, pad='SAME'):
         logging.info('Building convolutional layer: {}'.format(name))       
         with tf.name_scope(name):
             # initialize weights
@@ -768,6 +811,13 @@ class GQCNNTF(object):
 #                if self._save_histograms:
 #                    tf.summary.histogram('layer_pool', pool, collections=["histogram"])     
 
+            if self._rot_conv_filts and name == 'conv2_2':
+                pool = tf.contrib.image.rotate(pool, -1 * self._conv_filt_rot * math.pi / 180.0)
+            
+#            if name == 'conv2_2':
+#                rot_pool = tf.contrib.image.rotate(pool, input_distort_rot_ang_node * math.pi / 180)
+#                pool = tf.contrib.image.rotate(rot_pool, -1 * input_distort_rot_ang_node * math.pi / 180)          
+                
             # add output to feature dict
             self._feature_tensors[name] = pool
 
@@ -792,10 +842,13 @@ class GQCNNTF(object):
     def _build_fully_conv_layer(self, input_node, filter_dim, fc_name, final_fc_layer=False):
         logging.info('Converting fc layer: {} to fully convolutional'.format(fc_name))
         
-        # create new set of weights
-        fcW = self._weights.weights['{}_weights'.format(fc_name)]
-        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] / (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name))
-        self._weights.weights['{}_fully_conv_weights'.format(fc_name)] = convW
+        if '{}_fully_conv_weights'.format(fc_name) in self._weights.weights.keys() and self._rot:
+            convW = self._weights.weights['{}_fully_conv_weights'.format(fc_name)]
+        else:
+            # create new set of weights
+            fcW = self._weights.weights['{}_weights'.format(fc_name)]
+            convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] / (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name))
+            self._weights.weights['{}_fully_conv_weights'.format(fc_name)] = convW
         convb = self._weights.weights['{}_bias'.format(fc_name)]
 
         # compute conv out(note that we use padding='VALID' here because we want and output size of 1x1xnum_filts for the original input size)
@@ -811,15 +864,21 @@ class GQCNNTF(object):
         if not final_fc_layer:
             convh = self._leaky_relu(convh)
 
+        # add output to feature_dict
+        self._feature_tensors[fc_name] = convh
+
         return convh
 
     def _build_fully_conv_merge_layer(self, input_node_im, input_node_pose, filter_dim, fc_name):
         logging.info('Converting fc merge layer: {} to fully convolutional'.format(fc_name))
 
         # create fully convolutional layer for image stream
-        fcW_im = self._weights.weights['{}_input_1_weights'.format(fc_name)]
-        convW = tf.Variable(tf.reshape(fcW_im, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW_im)[0] / (filter_dim * filter_dim)], tf.shape(fcW_im)[1:]], 0)), name='{}_im_fully_conv_weights'.format(fc_name))
-        self._weights.weights['{}_im_fully_conv_weights'.format(fc_name)] = convW
+        if '{}_im_fully_conv_weights'.format(fc_name) in self._weights.weights.keys() and self._rot:
+            convW = self._weights.weights['{}_im_fully_conv_weights'.format(fc_name)]
+        else: 
+            fcW_im = self._weights.weights['{}_input_1_weights'.format(fc_name)]
+            convW = tf.Variable(tf.reshape(fcW_im, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW_im)[0] / (filter_dim * filter_dim)], tf.shape(fcW_im)[1:]], 0)), name='{}_im_fully_conv_weights'.format(fc_name))
+            self._weights.weights['{}_im_fully_conv_weights'.format(fc_name)] = convW
         convh_im = tf.nn.conv2d(input_node_im, convW, strides=[1, 1, 1, 1], padding='VALID')
 
         # compute matmul for pose stream
@@ -1028,7 +1087,7 @@ class GQCNNTF(object):
         return output_node, num_filt  
 
 
-    def _build_im_stream(self, input_node, input_height, input_width, input_channels, drop_rate, layers):
+    def _build_im_stream(self, input_node, input_height, input_width, input_channels, drop_rate, input_distort_rot_ang_node, layers):
         logging.info('Building Image Stream')
         output_node = input_node
         prev_layer = "start"
@@ -1045,7 +1104,7 @@ class GQCNNTF(object):
                 first_residual = True
                 if prev_layer == 'fc':
                     raise ValueError('Cannot have conv layer after fc layer')
-                output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filt_dim'],
+                output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_distort_rot_ang_node, input_height, input_width, input_channels, layer_config['filt_dim'],
                     layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
                     norm=layer_config['norm'], pad=layer_config['pad'])
                 prev_layer = layer_type
@@ -1184,7 +1243,7 @@ class GQCNNTF(object):
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
         return output_node, fan_in
 
-    def _build_network(self, input_im_node, input_pose_node, input_drop_rate_node, input_gripper_node=None):
+    def _build_network(self, input_im_node, input_pose_node, input_drop_rate_node, input_distort_rot_ang_node, input_gripper_node=None):
         """ Builds neural network 
 
         Parameters
@@ -1204,7 +1263,7 @@ class GQCNNTF(object):
         """
         logging.info('Building Network')
         with tf.name_scope('im_stream'):
-            output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'])
+            output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, input_distort_rot_ang_node, self._architecture['im_stream'])
         with tf.name_scope('pose_stream'):
             output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'])
         if input_gripper_node is not None:

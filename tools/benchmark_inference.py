@@ -9,19 +9,19 @@ from gqcnn.model import get_gqcnn_model
 
 # define any enums
 NUM_SAMPLES = 1000
-MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_jrtubybmla'
+MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/grasp_quality/dev_vishal_models/mini_dexnet_02_07_18_neon'
 DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/mini_dexnet_all_trans_01_20_17'
 CONFIG_FILENAME = 'config.json'
 TEST_ITERATIONS = 10
-GPU = True
+GPU = False
 GPU_WARM_ITERATIONS = 10
 IM_FILENAME_TEMPLATE = 'depth_ims_tf_table'
 POSE_FILENAME_TEMPLATE = 'hand_poses'
 POSE_DIM = 1
-SAVE_PRED = 1
+SAVE_PRED = 0
 SAVE_DIR = '.'
 SAVE_FNAME = 'pred_tf'
-BACKEND = 'tf'
+BACKEND = 'neon'
 
 # define function to process pose data for depth value
 pose_preproc = lambda x: x[:, 2:3]

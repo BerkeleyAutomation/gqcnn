@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/mini_dexnet_all_trans_01_20_17/ 
+dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_2_fcn_mini
 output_dir: /home/vsatish/Data/dexnet/data/models/test_dump
 
 # general optimization parameters
@@ -29,6 +29,10 @@ index_dir: /home/vsatish/Data/dexnet/data/models/test_dump/model_mefzdpxpyy
 
 mask_and_inpaint: 0
 
+angular_bins: 0
+
+distort_rot_conv_feat: 1
+
 # backend for use with Neon
 backend: 'gpu'
 
@@ -48,7 +52,7 @@ decay_step_multiplier: .66   # number of times to go through training datapoints
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
-drop_rate: 0.0
+drop_rate: 0
 
 fine_tune: 0
 update_fc_only: 0
@@ -63,17 +67,16 @@ preproc_mode: none
 input_pose_mode: tf_image
 input_gripper_mode: none
 num_tensor_channels: 1
-pos_weight: 0.1
 
 num_random_files: 100
 
 target_metric_name: robust_ferrari_canny
-metric_thresh: 0.002
+metric_thresh: 0.1
 
 # denoising / synthetic data params
 denoise:
-  multiplicative_denoising: 
-    gamma_shape: 1000.00
+  # multiplicative_denoising: 
+  #   gamma_shape: 1000.00
 
   symmetrize: 
 
@@ -93,10 +96,10 @@ denoise:
   #   gradient_dropout_shape: 15
   #   gradient_dropout_scale: 0.001
 
-  gaussian_process_denoising: 
-    gaussian_process_rate: 0.5
-    gaussian_process_scaling_factor: 4.0
-    gaussian_process_sigma: 0.005
+  # gaussian_process_denoising: 
+  #   gaussian_process_rate: 0.5
+  #   gaussian_process_scaling_factor: 4.0
+  #   gaussian_process_sigma: 0.005
 
   # border_distortion: 
   #   border_distortion_rate: .5
@@ -114,7 +117,7 @@ denoise:
 
 # debugging params
 debug: 0
-debug_num_files: 1000000
+debug_num_files: 100
 
 # tensorflow summary params
 save_histograms: 0
@@ -122,8 +125,8 @@ save_histograms: 0
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 32
-  im_width: 32
+  im_height: 46
+  im_width: 46
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_pose_mode: tf_image
@@ -149,7 +152,7 @@ gqcnn_config:
         pool_size: 1
         pool_stride: 1  
         norm: 0
-        pad: SAME
+        pad: VALID
       conv1_2:
         type: conv
         filt_dim: 3
@@ -157,7 +160,7 @@ gqcnn_config:
         pool_size: 2
         pool_stride: 2
         norm: 1
-        pad: SAME
+        pad: VALID
       conv2_1:
         type: conv
         filt_dim: 3
@@ -165,15 +168,15 @@ gqcnn_config:
         pool_size: 1
         pool_stride: 1  
         norm: 0
-        pad: SAME
+        pad: VALID
       conv2_2:
         type: conv
-        filt_dim: 3
+        filt_dim: 2
         num_filt: 32
         pool_size: 1
         pool_stride: 1
         norm: 1
-        pad: SAME
+        pad: VALID
 #      res1_1:
 #        type: residual
 #        num_filt: 3
@@ -206,7 +209,7 @@ gqcnn_config:
     pose_stream:
       pc1:
         type: pc
-        out_size: 4
+        out_size: 16
 #    gripper_stream:
 #      gc1:
 #        type: gc

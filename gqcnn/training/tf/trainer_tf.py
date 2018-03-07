@@ -142,6 +142,7 @@ class GQCNNTrainerTF(object):
             self.train_net_output = self.gqcnn.output
         train_predictions = self.gqcnn.output
         drop_rate = self.gqcnn.input_drop_rate_node
+        
 
         # once weights have been initialized create tf Saver for weights
         self.saver = tf.train.Saver()
@@ -265,9 +266,14 @@ class GQCNNTrainerTF(object):
                     train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output], 
                     feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
                 else:
+                    rot_angs = np.zeros((self.train_batch_size,))
+                    if self._distort_rot_conv_feat:
+                        if np.random.uniform() > 0.5:
+#                            rot_angs = np.random.uniform(low=0.0, high=180.0, size=(self.train_batch_size,))
+                             rot_angs = np.random.normal(loc=45.0, scale=15.0, size=(self.train_batch_size,))
                     _, l, lr, predictions, batch_labels, net_output = self.sess.run([optimizer, loss, learning_rate,
                     train_predictions, self.train_labels_node, self.train_net_output], 
-                    feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
+                    feed_dict={drop_rate: self.drop_rate, self.gqcnn._input_distort_rot_ang_node: rot_angs}, options=GeneralConstants.timeout_option)
                 
 #                ex = np.exp(net_output - np.tile(np.max(net_output, axis=1)[:, np.newaxis], [1, 2]))
 #                softmax = ex / np.tile(np.sum(ex, axis=1)[:, np.newaxis], [1, 2])
@@ -483,6 +489,27 @@ class GQCNNTrainerTF(object):
             self.gqcnn.update_pose_mean(parse_pose_data(self.pose_mean, self.input_pose_mode))
             self.gqcnn.update_pose_std(parse_pose_data(self.pose_std, self.input_pose_mode))
 
+            if self.angular_bins > 0:
+                logging.info('Calculating bin statistics...')
+                bin_counts = np.zeros((self.angular_bins,))
+                for p_fname in self.pose_filenames:
+                    pose_arr = np.load(os.path.join(self.data_dir, p_fname))['arr_0']
+                    angles = pose_arr[:, 3]
+                    pi_2 = math.pi / 2
+                    pi_4 = math.pi / 4
+                    neg_ind = np.where(angles < 0)
+                    angles = np.abs(angles) % pi_2
+                    angles[neg_ind] *= -1
+                    g_90 = np.where(angles > pi_4)
+                    l_neg_90 = np.where(angles < (-1 * pi_4))
+                    angles[g_90] -= pi_2
+                    angles[l_neg_90] += pi_2
+                    angles += pi_4
+                    bin_width = pi_2 / self.angular_bins
+                    for i in range(angles.shape[0]):
+                        bin_counts[int(angles[i] // bin_width)] += 1
+                logging.info('Bin counts: {}'.format(bin_counts))
+
     def _setup_summaries(self):
         """ Sets up placeholders for summary values and creates summary writer """
         # we create placeholders for our python values because summary_scalar expects
@@ -630,6 +657,8 @@ class GQCNNTrainerTF(object):
         self.gqcnn.set_mask_and_inpaint(self.cfg['mask_and_inpaint'])
 
         self.angular_bins = self.cfg['angular_bins']
+
+        self._distort_rot_conv_feat = self.cfg['distort_rot_conv_feat']
 
     def _read_data_params(self):
         """ Read data parameters from configuration file """
@@ -888,8 +917,17 @@ class GQCNNTrainerTF(object):
                     if self.angular_bins > 0:
                         # form prediction mask to use when calculating loss
                         angles = train_poses_arr[:, 3]
-                        angles[np.where(angles > math.pi)] = angles[np.where(angles > math.pi)] - math.pi
-                        bin_width = math.pi / self.angular_bins
+                        pi_2 = math.pi / 2
+                        pi_4 = math.pi / 4
+                        neg_ind = np.where(angles < 0)
+                        angles = np.abs(angles) % pi_2
+                        angles[neg_ind] *= -1
+                        g_90 = np.where(angles > pi_4)
+                        l_neg_90 = np.where(angles < (-1 * pi_4))
+                        angles[g_90] -= pi_2
+                        angles[l_neg_90] += pi_2
+                        angles += pi_4
+                        bin_width = pi_2 / self.angular_bins
                         train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self.angular_bins*2), dtype=bool)
                         for i in range(angles.shape[0]):
                             train_pred_mask_arr[i, int((angles[i] // bin_width)*2)] = True
@@ -1007,8 +1045,17 @@ class GQCNNTrainerTF(object):
                 if self.angular_bins > 0:
                     # form prediction mask to use when calculating error_rate
                     angles = raw_poses[:, 3]
-                    angles[np.where(angles > math.pi)] = angles[np.where(angles > math.pi)] - math.pi
-                    bin_width = math.pi / self.angular_bins
+                    pi_2 = math.pi / 2
+                    pi_4 = math.pi / 4
+                    neg_ind = np.where(angles < 0)
+                    angles = np.abs(angles) % pi_2
+                    angles[neg_ind] *= -1
+                    g_90 = np.where(angles > pi_4)
+                    l_neg_90 = np.where(angles < (-1 * pi_4))
+                    angles[g_90] -= pi_2
+                    angles[l_neg_90] += pi_2
+                    angles += pi_4
+                    bin_width = pi_2 / self.angular_bins
                     pred_mask = np.zeros((labels.shape[0], self.angular_bins*2), dtype=bool)
                     for i in range(angles.shape[0]):
                         pred_mask[i, int((angles[i] // bin_width)*2)] = True
