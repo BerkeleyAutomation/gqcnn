@@ -7,9 +7,24 @@ num_bins: 100
 #model_dir: /path/to/your/gqcnn/models
 model_dir: /nfs/diskstation/projects/dex-net/collaborations/lucas/models/
 models:
-  model:
-    tag: GQ-CNN
+  model_bkbclzhxvf:
+    tag: GQ-CNN1
     type: gqcnn
     split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
     vis_conv: 1
+#  model_ljhjpkoyuh:
+#    tag: GQ-CNN2
+#    type: gqcnn
+#    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+#    vis_conv: 1
+#  model_ddejsloshh:
+#    tag: GQ-CNN3
+#    type: gqcnn
+#    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+#    vis_conv: 1
+#  model_bkbclzhxvf:
+#    tag: GQ-CNN4
+#    type: gqcnn
+#    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
+#    vis_conv: 1
 
