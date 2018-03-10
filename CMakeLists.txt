@@ -48,6 +48,8 @@ catkin_python_setup()
    FILES
    GQCNNGrasp.msg
    BoundingBox.msg
+   Action.msg
+   Observation.msg
  )
 
 ## Generate services in the 'srv' folder
