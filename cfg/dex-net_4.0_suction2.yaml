@@ -30,7 +30,7 @@ eval_total_train_error: 0
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.005
+base_lr: 0.0025
 decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate
 decay_rate: 0.95
 momentum_rate: 0.9
@@ -92,9 +92,9 @@ background_rate: 0.25
 background_min_depth: 0.0
 background_max_depth: 0.65
 
-drop_fc3: 0
+drop_fc3: 1
 fc3_drop_rate: 0.5
-drop_fc4: 0
+drop_fc4: 1
 fc4_drop_rate: 0.5
 
 # debugging params

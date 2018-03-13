@@ -2,7 +2,8 @@
 mode: training
 
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/phoxi_v13/grasps/tensors
+#dataset_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/phoxi_v13/grasps/tensors
+dataset_dir: /mnt/data/jmahler/parallel_jaws/datasets/dexnet_4/tensors
 output_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/
 model_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/GQ-Image-Wise
 
@@ -12,10 +13,10 @@ val_batch_size: 16
 max_files_eval: 1000
 
 # epochs
-num_epochs: 25     # number of epochs to train for
+num_epochs: 50     # number of epochs to train for
 eval_frequency: 50000  # how often to get validation error 
 save_frequency: 50000  # how often to save output
-vis_frequency: 50000
+vis_frequency: 500000000
 log_frequency: 1     # how often to log output
 show_filters: 0
 
@@ -94,15 +95,15 @@ background_rate: 0.25
 background_min_depth: 0.0
 background_max_depth: 0.65
 
-drop_fc3: 0
+drop_fc3: 1
 fc3_drop_rate: 0.5
-drop_fc4: 0
+drop_fc4: 1
 fc4_drop_rate: 0.5
 
 # debugging params
 debug: 1
 debug_num_files: 1000000000
-seed: 1490867
+seed: 52398
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -120,7 +121,7 @@ gqcnn_config:
   architecture:
     conv1_1:
       filt_dim: 5
-      num_filt: 16
+      num_filt: 8
       pool_size: 1
       pool_stride: 1  
       padding: VALID
@@ -128,7 +129,7 @@ gqcnn_config:
       norm_type: local_response
     conv1_2:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
       padding: VALID
@@ -136,7 +137,7 @@ gqcnn_config:
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 1
       pool_stride: 1
       padding: VALID
@@ -144,7 +145,7 @@ gqcnn_config:
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
       padding: VALID

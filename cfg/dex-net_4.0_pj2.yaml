@@ -2,7 +2,8 @@
 mode: training
 
 # dataset 
-dataset_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/phoxi_v13/grasps/tensors
+#dataset_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/phoxi_v13/grasps/tensors
+dataset_dir: /mnt/data/jmahler/parallel_jaws/datasets/dexnet_4/tensors
 output_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/
 model_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/GQ-Image-Wise
 
@@ -12,17 +13,17 @@ val_batch_size: 16
 max_files_eval: 1000
 
 # epochs
-num_epochs: 25     # number of epochs to train for
+num_epochs: 50     # number of epochs to train for
 eval_frequency: 50000  # how often to get validation error 
 save_frequency: 50000  # how often to save output
-vis_frequency: 50000
+vis_frequency: 500000000
 log_frequency: 1     # how often to log output
 show_filters: 0
 
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
-data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
+data_split_mode: state_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
 train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
 eval_total_train_error: 0
@@ -53,7 +54,7 @@ num_tensor_channels: 1
 num_random_files: 1000
 
 target_metric_name: grasp_metrics
-metric_thresh: 0.75
+metric_thresh: 0.5
 
 # denoising / synthetic data params
 multiplicative_denoising: 0
@@ -102,7 +103,7 @@ fc4_drop_rate: 0.5
 # debugging params
 debug: 1
 debug_num_files: 1000000000
-seed: 117799
+seed: 42094
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -120,7 +121,7 @@ gqcnn_config:
   architecture:
     conv1_1:
       filt_dim: 5
-      num_filt: 32
+      num_filt: 16
       pool_size: 1
       pool_stride: 1  
       padding: VALID
@@ -128,7 +129,7 @@ gqcnn_config:
       norm_type: local_response
     conv1_2:
       filt_dim: 3
-      num_filt: 32
+      num_filt: 16
       pool_size: 2
       pool_stride: 2
       padding: VALID
@@ -136,7 +137,7 @@ gqcnn_config:
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 32
+      num_filt: 16
       pool_size: 1
       pool_stride: 1
       padding: VALID
@@ -144,7 +145,7 @@ gqcnn_config:
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 32
+      num_filt: 16
       pool_size: 2
       pool_stride: 2
       padding: VALID
@@ -155,9 +156,9 @@ gqcnn_config:
     pc2:
       out_size: 0
     fc3:
-      out_size: 128
+      out_size: 16
     fc4:
-      out_size: 128
+      out_size: 16
     fc5:
       out_size: 2
 
