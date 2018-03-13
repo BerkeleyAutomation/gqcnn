@@ -204,6 +204,10 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         self._rescale_factor = 1.0 / self._downsample_rate
         self._max_rejection_samples = self._config['max_rejection_samples']
 
+        self._min_num_edge_pixels = 0
+        if 'min_num_edge_pixels' in self._config.keys():
+            self._min_num_edge_pixels = self._config['min_num_edge_pixels']
+        
         # distance thresholds for rejection sampling
         self._max_dist_from_center = self._config['max_dist_from_center']
         self._min_dist_from_boundary = self._config['min_dist_from_boundary']
@@ -309,13 +313,26 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         edge_start = time()
         depth_im = depth_im.apply(snf.gaussian_filter,
                                   sigma=self._depth_grad_gaussian_sigma)
-        depth_im_downsampled = depth_im.resize(self._rescale_factor)
+        scale_factor = self._rescale_factor
+        depth_im_downsampled = depth_im.resize(scale_factor)
         depth_im_threshed = depth_im_downsampled.threshold_gradients(self._depth_grad_thresh)
-        edge_pixels = self._downsample_rate * depth_im_threshed.zero_pixels()
+        edge_pixels = (1.0 / scale_factor) * depth_im_threshed.zero_pixels()
+        edge_pixels = edge_pixels.astype(np.uint16)
+
         depth_im_mask = depth_im.copy()
         if segmask is not None:
             edge_pixels = np.array([p for p in edge_pixels if np.any(segmask[p[0], p[1]] > 0)])
             depth_im_mask = depth_im.mask_binary(segmask)
+
+        # re-threshold edges if there are too few
+        if edge_pixels.shape[0] < self._min_num_edge_pixels:
+            depth_im_threshed = depth_im.threshold_gradients(self._depth_grad_thresh)
+            edge_pixels = depth_im_threshed.zero_pixels()            
+            depth_im_mask = depth_im.copy()
+            if segmask is not None:
+                edge_pixels = np.array([p for p in edge_pixels if np.any(segmask[p[0], p[1]] > 0)])
+                depth_im_mask = depth_im.mask_binary(segmask)
+
         num_pixels = edge_pixels.shape[0]
         logging.debug('Depth edge detection took %.3f sec' %(time() - edge_start))
         logging.debug('Found %d edge pixels' %(num_pixels))
@@ -335,7 +352,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         if visualize:
             vis.figure()
-            vis.subplot(1,2,1)            
+            vis.subplot(1,3,1)            
             vis.imshow(depth_im)
             if num_pixels > 0:
                 vis.scatter(edge_pixels[:,1], edge_pixels[:,0], s=10, c='b')
@@ -347,9 +364,13 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             plt.quiver(X, Y, U, V, units='x', scale=1, zorder=2, color='g')
             vis.title('Edge pixels and normals')
 
-            vis.subplot(1,2,2)
+            vis.subplot(1,3,2)
             vis.imshow(depth_im_threshed)
             vis.title('Edge map')
+
+            vis.subplot(1,3,3)
+            vis.imshow(segmask)
+            vis.title('Segmask')
             vis.show()
 
         # form set of valid candidate point pairs
