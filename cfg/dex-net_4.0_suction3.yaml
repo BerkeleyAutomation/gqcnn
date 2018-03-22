@@ -92,16 +92,16 @@ background_rate: 0.25
 background_min_depth: 0.0
 background_max_depth: 0.65
 
-drop_fc3: 0
+drop_fc3: 1
 fc3_drop_rate: 0.5
-drop_fc4: 0
+drop_fc4: 1
 fc4_drop_rate: 0.5
 
 # debugging params
 debug: 1
 debug_num_files: 10000000
 num_random_files: 1000
-seed: 145594
+seed: 99742
 
 ### GQCNN CONFIG ###
 gqcnn_config:
@@ -119,31 +119,31 @@ gqcnn_config:
   architecture:
     conv1_1:
       filt_dim: 9
-      num_filt: 64
+      num_filt: 32
       pool_size: 1
       pool_stride: 1  
       padding: VALID
       norm: 0
       norm_type: local_response
     conv1_2:
-      filt_dim: 3
-      num_filt: 64
+      filt_dim: 5
+      num_filt: 32
       pool_size: 2
       pool_stride: 2
       padding: VALID
       norm: 0
       norm_type: local_response
     conv2_1:
-      filt_dim: 3
-      num_filt: 64
+      filt_dim: 5
+      num_filt: 32
       pool_size: 1
       pool_stride: 1
       padding: VALID
       norm: 0
       norm_type: local_response
     conv2_2:
-      filt_dim: 3
-      num_filt: 64
+      filt_dim: 5
+      num_filt: 32
       pool_size: 2
       pool_stride: 2
       padding: VALID
