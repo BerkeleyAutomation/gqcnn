@@ -183,7 +183,7 @@ if __name__ == '__main__':
         vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
         vis.title('Planned grasp on color (Q=%.3f)' %(action.q_value))
         vis.subplot(1,2,2)
-        vis.imshow(rgbd_im.depth)
+        vis.imshow(rgbd_im.depth, vmin=0.6, vmax=0.9)
         vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
         vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
         vis.show()

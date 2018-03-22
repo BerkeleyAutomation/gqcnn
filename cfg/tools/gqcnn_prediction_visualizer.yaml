@@ -1,20 +1,28 @@
 # dataset params
-dataset_path: /nfs/diskstation/projects/dex-net/suction/datasets/dexnet_4/phoxi_v0/grasps
+dataset_path: /nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/phoxi_v13/grasps
 
 image_mode: tf_depth_ims
-data_format: suction
+data_format: parallel_jaw
 metric_name: grasp_metrics
 metric_thresh: 0.5
 gripper_width_m: 0.05
+
+camera:
+  focal: 275
+  cx: 24
+  cy: 24
+  height: 48
+  width: 48
 
 aux_fields:
   - grasp_metrics
   - collisions
   - lift_blocked
   - approach_contact_unstable
+  - split
 
 # gqcnn params
-model_dir: /nfs/diskstation/projects/dex-net/suction/models/model_wbxihjjfko
+model_dir: /nfs/diskstation/projects/dex-net/parallel_jaws/models/model_ubmubpmjwj
 
 # vis params
 datapoint_type: false_positive # which datapoints to visualize, possible values are true positive, false positive, true negative, false negative

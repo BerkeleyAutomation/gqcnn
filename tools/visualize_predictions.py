@@ -53,20 +53,36 @@ font_size : int
 samples_per_object : int
 	the number of predictions to display per object
 """
-
+import argparse
 import logging
+import os
+import sys
 
 from autolab_core import YamlConfig
 from gqcnn import GQCNNPredictionVisualizer
 
 if __name__ == '__main__':
-	# setup logger
-	logging.getLogger().setLevel(logging.INFO)
+    # setup logger
+    logging.getLogger().setLevel(logging.INFO)
 
-	# load a valid config
-	visualization_config = YamlConfig('cfg/tools/gqcnn_prediction_visualizer.yaml')
+    # parse args
+    parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network with TensorFlow')
+    parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
+    args = parser.parse_args()
+    config_filename = args.config_filename
 
-	logging.info('Beginning Visualization')
-	visualizer = GQCNNPredictionVisualizer(visualization_config['dataset_path'],
-                                               visualization_config)
-	visualizer.visualize()
+    if config_filename is None:
+        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                       '..',
+                                       'cfg/tools/gqcnn_prediction_visualizer.yaml')
+    # turn relative paths absolute
+    if not os.path.isabs(config_filename):
+        config_filename = os.path.join(os.getcwd(), config_filename)
+    
+    # load a valid config
+    visualization_config = YamlConfig(config_filename)
+
+    logging.info('Beginning Visualization')
+    visualizer = GQCNNPredictionVisualizer(visualization_config['dataset_path'],
+                                           visualization_config)
+    visualizer.visualize()

@@ -32,7 +32,7 @@ from random import shuffle
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig, Point
-from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
+from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode, CameraIntrinsics
 
 from gqcnn import Grasp2D, SuctionPoint2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
 from gqcnn import Visualizer as vis2d
@@ -58,7 +58,13 @@ class GQCNNPredictionVisualizer(object):
         
         # setup config
     	self.cfg = config
-
+        self.camera_intr = CameraIntrinsics('phoxi',
+                                            fx=self.cfg['camera']['focal'],
+                                            cx=self.cfg['camera']['cx'],
+                                            cy=self.cfg['camera']['cy'],
+                                            height=self.cfg['camera']['height'],
+                                            width=self.cfg['camera']['width'])
+        
     	# setup for visualization
     	self._setup()
 
@@ -84,6 +90,7 @@ class GQCNNPredictionVisualizer(object):
             label_tensor = 1 * (metric_tensor > self.metric_thresh)
             image_tensor = np.array([d[self.image_mode] for d in datapoints])
             grasp_poses_tensor = np.array([d[ImageFileTemplates.grasps_template] for d in datapoints])
+            split_tensor = np.array([d['split'] for d in datapoints])
             pose_tensor = self._read_pose_data(grasp_poses_tensor, self.input_data_mode)
 
             aux_tensors = {}
@@ -114,6 +121,10 @@ class GQCNNPredictionVisualizer(object):
                 if num_visualized >= self.samples_per_object:
                     break
 
+                # reject training datapoints
+                if split_tensor[ind] == 0:
+                    continue
+                
                 # don't visualize the datapoints that we don't want
                 if self.datapoint_type == 'true_positive':
                     if classification_result.labels[ind] == 0:
@@ -150,9 +161,9 @@ class GQCNNPredictionVisualizer(object):
                 elif self.display_image_type == RenderMode.GD:
                     image = GdImage(data)
 
-                grasp = Grasp2D(Point(image.center, 'img'), 0, grasp_poses_tensor[ind, 2], self.gripper_width_m)
+                grasp = Grasp2D(Point(image.center, 'img'), 0, grasp_poses_tensor[ind, 2], self.gripper_width_m, camera_intr=self.camera_intr)
                 if self.cfg['data_format'] == 'tf_image_suction' or self.cfg['data_format'] == 'suction':
-                    grasp = SuctionPoint2D(Point(image.center, 'img'), np.array([1,0,0]), grasp_poses_tensor[ind, 2])
+                    grasp = SuctionPoint2D(Point(image.center, 'img'), np.array([1,0,0]), grasp_poses_tensor[ind, 2], camera_intr=self.camera_intr)
 
                 for field in aux_tensors.keys():
                     logging.info('Field {}: {}'.format(field, aux_tensors[field][ind]))
@@ -162,7 +173,6 @@ class GQCNNPredictionVisualizer(object):
                 if self.display_image_type == RenderMode.RGBD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.color)
-                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                     vis2d.subplot(1,2,2)
                     vis2d.imshow(image.depth)
@@ -170,14 +180,12 @@ class GQCNNPredictionVisualizer(object):
                 elif self.display_image_type == RenderMode.GD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.gray)
-                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                     vis2d.subplot(1,2,2)
                     vis2d.imshow(image.depth)
                     vis2d.grasp(grasp)
                 else:
                     vis2d.imshow(image)
-                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                 vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(ind,
                                                                      classification_result.pred_probs[ind,1],
