@@ -293,6 +293,7 @@ class GQCNNTF(object):
         self._summary_writer = None
         self._mask_and_inpaint = False
         self._save_histograms = False
+        self._angular_bins = gqcnn_config['angular_bins']
 
         self._fully_conv = False
         if fully_conv_config:
@@ -584,8 +585,14 @@ class GQCNNTF(object):
         
     def add_softmax_to_output(self):
         """ Adds softmax to output of network """
-        logging.info('Building Softmax Layer')
-        self._output_tensor = tf.nn.softmax(self._output_tensor)
+        if self._angular_bins > 0:
+            logging.info('Building Pair-wise Softmax Layer')
+            binwise_split_output = tf.split(self._output_tensor, self._angular_bins, axis=-1)
+            binwise_split_output_soft = [tf.nn.softmax(s) for s in binwise_split_output]
+            self._output_tensor = tf.concat(binwise_split_output_soft, -1)
+        else:
+            logging.info('Building Softmax Layer')
+            self._output_tensor = tf.nn.softmax(self._output_tensor)
 
     def update_batch_size(self, batch_size):
         """ Updates the prediction batch size 
@@ -727,7 +734,7 @@ class GQCNNTF(object):
         else:
             transformW = tf.Variable(tf.zeros([input_height * input_width * input_channels, num_transform_params]), name='{}_weights'.format(name))
 
-            initial = np.array([[0.5, 0, 0], [0, 0.5, 0]])
+            initial = np.array([[1.0, 0, 0], [0, 1.0, 0]])
             initial = initial.astype('float32')
             initial = initial.flatten()
             transformb = tf.Variable(initial_value=initial, name='{}_bias'.format(name))
@@ -736,15 +743,25 @@ class GQCNNTF(object):
             self._weights.weights['{}_bias'.format(name)] = transformb
 
         # build localisation network
-        loc_network = tf.matmul(tf.zeros([input_node.get_shape().as_list()[0], input_height * input_width * input_channels]), transformW) + transformb
-            
+#        loc_network = tf.matmul(tf.zeros([64, input_height * input_width * input_channels]), transformW) + transformb
+        orig_input_channels = input_channels
+        loc_network, input_height, input_width, input_channels = self._build_conv_layer(input_node, self._input_distort_rot_ang_node, input_height, input_width, input_channels, 7, 7, 32, 1, 1, 1, 'loc_conv1')
+        loc_network, input_height, input_width, input_channels = self._build_conv_layer(loc_network, self._input_distort_rot_ang_node, input_height, input_width, input_channels, 5, 5, 32, 2, 2, 2, 'loc_conv2')
+        loc_fc_1_W = tf.Variable(tf.zeros([input_height * input_width * input_channels, 256]))
+        loc_fc_1_b = tf.Variable(tf.zeros([256]))
+        loc_network = tf.matmul(tf.reshape(loc_network, [-1, reduce_shape(loc_network.get_shape())]), loc_fc_1_W) + loc_fc_1_b
+        
+        loc_fc_2_W = tf.Variable(tf.zeros([256, 6]))
+        loc_fc_2_b = tf.Variable(np.array([[1.0, 0, 0], [0, 1.0, 0]]).astype('float32').flatten())
+        loc_network = tf.matmul(loc_network, loc_fc_2_W) + loc_fc_2_b
+
         # build transform layer
         transform_layer = transformer(input_node, loc_network, (output_width, output_height))
 
         # add output to feature dict
         self._feature_tensors[name] = transform_layer
 
-        return transform_layer, output_height, output_width, input_channels
+        return transform_layer, output_height, output_width, orig_input_channels
 
     def _build_conv_layer(self, input_node, input_distort_rot_ang_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, pad='SAME'):
         logging.info('Building convolutional layer: {}'.format(name))       
@@ -1044,7 +1061,7 @@ class GQCNNTF(object):
 
     def _build_batch_norm(self, input_node, ep, drop_rate):
         output_node = input_node
-        output_node = tf.layers.batch_normalization(output_node, training=drop_rate, epsilon=ep)
+        output_node = tf.layers.batch_normalization(output_node, training=tf.cast(drop_rate, dtype=tf.bool), epsilon=ep)
         return output_node
 
     def _build_residual_layer(self, input_node, input_channels, fan_in, num_filt, filt_h, filt_w, drop_rate, name, first=False):

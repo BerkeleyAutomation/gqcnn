@@ -53,8 +53,9 @@ class GQCNNTrainerTF(object):
             return tf.nn.l2_loss(tf.sub(self.train_net_output, self.train_labels_node))
         elif self.cfg['loss'] == 'cross_entropy':
             if self.angular_bins > 0:
+                log = tf.reshape(tf.dynamic_partition(self.train_net_output, self.train_pred_mask_node, 2)[1], (-1, 2))
                 return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node,
-                    logits=tf.reshape(tf.boolean_mask(self.train_net_output, self.train_pred_mask_node), (-1, 2))))
+                    logits=log))
             else:
                 return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, 
                     labels=self.train_labels_node, logits=self.train_net_output, name=None))
@@ -107,7 +108,7 @@ class GQCNNTrainerTF(object):
         """ Launches Tensorboard to visualize training """
         logging.info(
             "Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
-        os.system('tensorboard --logdir=' + self.summary_dir + " &>/dev/null &")
+        os.system('tensorboard --port=6007 --logdir=' + self.summary_dir + " &>/dev/null &")
 
     def _close_tensorboard(self):
         """ Closes Tensorboard """
@@ -152,13 +153,13 @@ class GQCNNTrainerTF(object):
         with tf.name_scope('loss'):
             loss = self._create_loss()
 
-        # part 2: regularization
-        layer_weights = self.weights.values()
-        with tf.name_scope('regularization'):
-            regularizers = tf.nn.l2_loss(layer_weights[0])
-            for w in layer_weights[1:]:
-                regularizers = regularizers + tf.nn.l2_loss(w)
-            loss += self.train_l2_regularizer * regularizers
+            # part 2: regularization
+            layer_weights = self.weights.values()
+            with tf.name_scope('regularization'):
+                regularizers = tf.nn.l2_loss(layer_weights[0])
+                for w in layer_weights[1:]:
+                    regularizers = regularizers + tf.nn.l2_loss(w)
+                loss += self.train_l2_regularizer * regularizers
 
         # setup learning rate
         batch = tf.Variable(0)
@@ -294,7 +295,7 @@ class GQCNNTrainerTF(object):
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
                         if self.angular_bins > 0:
-                            predictions = predictions[pred_mask].reshape((-1, 2))
+                            predictions = predictions[pred_mask.astype(bool)].reshape((-1, 2))
                         train_error = ClassificationResult([predictions], [batch_labels]).error_rate
                         logging.info('Minibatch error: %.3f%%' % train_error)
                     self.summary_writer.add_summary(self.sess.run(self.merged_log_summaries, feed_dict={
@@ -495,8 +496,8 @@ class GQCNNTrainerTF(object):
                 for p_fname in self.pose_filenames:
                     pose_arr = np.load(os.path.join(self.data_dir, p_fname))['arr_0']
                     angles = pose_arr[:, 3]
-                    pi_2 = math.pi / 2
-                    pi_4 = math.pi / 4
+                    pi_2 = math.pi 
+                    pi_4 = math.pi / 2
                     neg_ind = np.where(angles < 0)
                     angles = np.abs(angles) % pi_2
                     angles[neg_ind] *= -1
@@ -504,6 +505,7 @@ class GQCNNTrainerTF(object):
                     l_neg_90 = np.where(angles < (-1 * pi_4))
                     angles[g_90] -= pi_2
                     angles[l_neg_90] += pi_2
+                    angles *= -1 # hack to fix reverse angle convention
                     angles += pi_4
                     bin_width = pi_2 / self.angular_bins
                     for i in range(angles.shape[0]):
@@ -566,7 +568,7 @@ class GQCNNTrainerTF(object):
                 self.train_gripper_batch = tf.placeholder(
                     tf.float32, (self.train_batch_size, self.gripper_dim))
         if self.angular_bins > 0:
-            self.train_pred_mask_batch = tf.placeholder(tf.bool, (self.train_batch_size, self.angular_bins*2))
+            self.train_pred_mask_batch = tf.placeholder(tf.int32, (self.train_batch_size, self.angular_bins*2))
         # create data queue to fetch data from dataset in batches
         with tf.name_scope('data_queue'):
             if self.gripper_dim > 0:
@@ -578,7 +580,7 @@ class GQCNNTrainerTF(object):
                     train_label_dtype, (self.train_batch_size,))
                 self.input_im_node, self.input_pose_node, self.input_gripper_node, self.train_labels_node = self.q.dequeue()
             elif self.angular_bins > 0:
-                self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, train_label_dtype, tf.bool], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,), (self.train_batch_size, self.angular_bins*2)])
+                self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, train_label_dtype, tf.int32], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,), (self.train_batch_size, self.angular_bins*2)])
                 self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch, self.train_pred_mask_batch])
                 self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
                 self.input_im_node, self.input_pose_node, self.train_labels_node, self.train_pred_mask_node = self.q.dequeue()
@@ -843,8 +845,8 @@ class GQCNNTrainerTF(object):
                     train_gripper_arr = np.load(os.path.join(self.data_dir, self.gripper_param_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
                 if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
-                    train_gripper_depth_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_depth_mask_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
-                    train_gripper_seg_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_seg_mask_filenames_copy[file_num]))[ 'arr_0'].astype(np.float32)
+                    train_gripper_depth_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_depth_mask_filenames_copy[file_num]))['arr_0'].astype(np.float32)
+                    train_gripper_seg_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_seg_mask_filenames_copy[file_num]))['arr_0'].astype(np.float32)
                    
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
@@ -854,6 +856,14 @@ class GQCNNTrainerTF(object):
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
                 upper = min(num_remaining, train_ind.shape[
                             0], self.max_training_examples_per_load)
+#                POC_PCT = 0.1
+#                num_pos = int(upper * POC_PCT)
+#                pos_indices = train_ind[np.where(train_label_arr[train_ind] > self.metric_thresh)]
+#                np.random.shuffle(pos_indices)
+#                ind = pos_indices[:num_pos]
+#                neg_indices = train_ind[np.where(train_label_arr[train_ind] <= self.metric_thresh)]
+#                np.random.shuffle(neg_indices)
+#                ind = np.r_[ind, neg_indices[:upper - num_pos]]
                 ind = train_ind[:upper]
                 num_loaded = ind.shape[0]
                 end_i = start_i + num_loaded
@@ -898,6 +908,7 @@ class GQCNNTrainerTF(object):
                         self._num_distorted_train_images_saved += 1
 
                 train_data_arr[:, :, :, 0] = (train_data_arr[:, :, :, 0] - self.im_mean) / self.im_std
+                angles = train_poses_arr[:, 3]
                 train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
                 if self.gripper_dim > 0:
                     train_gripper_arr = (train_gripper_arr - self.gripper_mean) / self.gripper_std
@@ -914,11 +925,11 @@ class GQCNNTrainerTF(object):
                     # binary threshold labels
                     train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                     train_label_arr = train_label_arr.astype(self.numpy_dtype)
+#                    logging.info('Pct. Positive in Batch: {}'.format(float(np.where(train_label_arr == 1)[0].shape[0]) / self.train_batch_size))
                     if self.angular_bins > 0:
                         # form prediction mask to use when calculating loss
-                        angles = train_poses_arr[:, 3]
-                        pi_2 = math.pi / 2
-                        pi_4 = math.pi / 4
+                        pi_2 = math.pi
+                        pi_4 = math.pi / 2
                         neg_ind = np.where(angles < 0)
                         angles = np.abs(angles) % pi_2
                         angles[neg_ind] *= -1
@@ -926,12 +937,13 @@ class GQCNNTrainerTF(object):
                         l_neg_90 = np.where(angles < (-1 * pi_4))
                         angles[g_90] -= pi_2
                         angles[l_neg_90] += pi_2
+                        angles *= -1 # hack to fix reverse angle convention
                         angles += pi_4
                         bin_width = pi_2 / self.angular_bins
-                        train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self.angular_bins*2), dtype=bool)
+                        train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self.angular_bins*2))
                         for i in range(angles.shape[0]):
-                            train_pred_mask_arr[i, int((angles[i] // bin_width)*2)] = True
-                            train_pred_mask_arr[i, int((angles[i] // bin_width)*2 + 1)] = True
+                            train_pred_mask_arr[i, int((angles[i] // bin_width)*2)] = 1
+                            train_pred_mask_arr[i, int((angles[i] // bin_width)*2 + 1)] = 1               
 
                 # enqueue training data batch
                 train_data[start_i:end_i, :, :, 0] = train_data_arr[:, :, :, 0]
@@ -1045,8 +1057,8 @@ class GQCNNTrainerTF(object):
                 if self.angular_bins > 0:
                     # form prediction mask to use when calculating error_rate
                     angles = raw_poses[:, 3]
-                    pi_2 = math.pi / 2
-                    pi_4 = math.pi / 4
+                    pi_2 = math.pi
+                    pi_4 = math.pi / 2
                     neg_ind = np.where(angles < 0)
                     angles = np.abs(angles) % pi_2
                     angles[neg_ind] *= -1
@@ -1054,6 +1066,7 @@ class GQCNNTrainerTF(object):
                     l_neg_90 = np.where(angles < (-1 * pi_4))
                     angles[g_90] -= pi_2
                     angles[l_neg_90] += pi_2
+                    angles *= -1 # hack to fix reverse angle convention
                     angles += pi_4
                     bin_width = pi_2 / self.angular_bins
                     pred_mask = np.zeros((labels.shape[0], self.angular_bins*2), dtype=bool)
