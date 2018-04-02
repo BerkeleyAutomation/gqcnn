@@ -10,25 +10,17 @@ from perception import CameraIntrinsics, DepthImage
 from gqcnn.model import get_gqcnn_model
 from gqcnn import Visualizer as vis, Grasp2D
 
-MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_ljzryvduzl'
+MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_kdnutochkt'
 DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_2_fc_no_rot_02_13_18_mini'
 CAMERA_INTR_DIR =  '/nfs/diskstation/calib/phoxi/phoxi.intr'
 IM_FILE_TEMPLATE = 'depth_ims_tf_table'
 POSE_FILE_TEMPLATE = 'hand_poses'
 METRIC_FILE_TEMPLATE = 'robust_ferrari_canny'
-NUM_TEST_SAMPLES = 10
+NUM_TEST_SAMPLES = 20
 POSE_DIM = 1
 NUM_BINS = 16
+ONLY_POSITIVES = 1
 pose_parser = lambda p: p[2:3]
-
-CAM_NAME = 'phoxi_overhead'
-FX = 520
-FY = 520
-CX = 299.5
-CY = 299.5
-WIDTH = 600
-HEIGHT = 600
-
 GRIPPER_WIDTH = 0.05
 
 # restart and setup logger
@@ -65,7 +57,7 @@ while counter < NUM_TEST_SAMPLES:
     im = im_data[index, ...]
     pose = pose_data[index, ...]
     metric = metric_data[index]
-    if metric < 0.1:
+    if ONLY_POSITIVES and metric < 0.1:
         continue
     images[counter, ...] = im
     poses[counter, ...] = pose_parser(pose)
@@ -77,25 +69,40 @@ while counter < NUM_TEST_SAMPLES:
 logging.info('Loading Angular-GQCNN')
 ang_gqcnn = get_gqcnn_model().load(MODEL_DIR)
 
+# pair-wise softmax function
+def pairwise_softmax(tmp):
+    softmax = lambda x: np.exp(x) / np.sum(np.exp(x), axis=0)
+    out = None
+    for i in range(0, tmp.shape[0], 2):
+        if out is None:
+            out = softmax(tmp[i:i + 2])
+        else:
+            out = np.r_[out, softmax(tmp[i:i + 2])]     
+    return out
+
 # predict test images
 logging.info('Inferring')
 ang_gqcnn.open_session()
 angular_pred = ang_gqcnn.predict(images, poses)
 ang_gqcnn.close_session()
 
+# apply pair-wise softmax
+soft_pred = np.zeros_like(angular_pred)
+for i in range(angular_pred.shape[0]):
+    soft_pred[i] = pairwise_softmax(angular_pred[i])
+
 # generate grasps
 logging.info('Generating grasp visualizations')
 grasps = []
-bin_width = math.pi / 2 / NUM_BINS
+bin_width = math.pi / NUM_BINS
 center = Point(np.asarray([images.shape[1] / 2, images.shape[2] / 2]))
-#camera_intr = CameraIntrinsics(CAM_NAME, fx=FX, fy=FY, cx=CX, cy=CY, width=WIDTH, height=HEIGHT)
 camera_intr = CameraIntrinsics.load(CAMERA_INTR_DIR).resize(0.25)
 for i in range(NUM_TEST_SAMPLES):
     sample_grasps = []
     for j in range(NUM_BINS):
         bin_cent_ang = j * bin_width + bin_width / 2
-#        logging.info('Bin width: {}, Ang: {}'.format(bin_width, bin_cent_ang))
-        sample_grasps.append(Grasp2D(center, bin_cent_ang - math.pi / 4, poses[i, 0], width=GRIPPER_WIDTH, camera_intr=camera_intr))
+#        logging.info('Bin width: {}, Ang: {}, Shift ang: {}'.format(bin_width, bin_cent_ang, bin_cent_ang - math.pi / 4))
+        sample_grasps.append(Grasp2D(center, math.pi / 2 - bin_cent_ang, poses[i, 0], width=GRIPPER_WIDTH, camera_intr=camera_intr))
     sample_grasps.append(Grasp2D(center, ground_truth_angles[i], poses[i, 0], width=GRIPPER_WIDTH, camera_intr=camera_intr))
     grasps.append(sample_grasps)
 
