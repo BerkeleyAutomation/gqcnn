@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/phoxi_v13_46x46_03_01_18_mini
+dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_2_fcn_mini
 output_dir: /home/vsatish/Data/dexnet/data/models/test_dump
 
 # general optimization parameters
@@ -70,8 +70,8 @@ num_tensor_channels: 1
 
 num_random_files: 100
 
-target_metric_name: robust_wrench_resistance
-metric_thresh: 0.5
+target_metric_name: robust_ferrari_canny
+metric_thresh: 0.1
 
 # denoising / synthetic data params
 denoise:
