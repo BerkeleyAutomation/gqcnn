@@ -10,11 +10,36 @@ import sys
 import shutil
 import logging
 import random
+import json
 
 import numpy as np
 
 from autolab_core import utils
 from enums import DataFileTemplates, ImageMode, OutputDirTemplates
+
+class TimelineLogger(object):
+    """ Helper struct for accumulating multiple Tensorflow timeline chrome traces  """
+
+    def __init__(self, save_dir):
+        self._timeline = None
+        self._save_dir = save_dir
+
+    def update_timeline(self, trace):
+        # convert chrome trace to python dict
+        trace_dict = json.loads(trace)
+        if self._timeline is None:
+            # save the whole timeline on first update
+            self._timeline = trace_dict
+        else:
+            # update only time consumption
+            for event in trace_dict['traceEvents']:
+                # time consumption is denoted by 'ts' prefix
+                if 'ts' in event:
+                    self._timeline['traceEvents'].append(event)
+
+    def save(self, fname):
+        with open(os.path.join(self._save_dir, fname), 'w') as fstream:
+            json.dump(self._timeline, fstream)
 
 def copy_config(experiment_dir, cfg):
     """ Copy entire configuration dict and GQCNN architecture dict to JSON files in experiment_dir. Also copy

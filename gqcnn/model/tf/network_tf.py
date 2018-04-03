@@ -7,12 +7,15 @@ from collections import OrderedDict
 import logging
 import os
 import math
+import time
 
 import cv2 as cv
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.framework as tcf 
+import tensorflow.contrib.framework as tcf
+from tensorflow.python.client import timeline
 
+from gqcnn.utils.training_utils import TimelineLogger
 from gqcnn.utils.data_utils import parse_pose_data, parse_gripper_data
 from gqcnn.utils.enums import InputPoseMode, InputGripperMode, TrainingMode
 from spatial_transformer import transformer
@@ -353,6 +356,10 @@ class GQCNNTF(object):
             self.tf_config.gpu_options.allow_growth = True
             self._sess = tf.Session(graph=self._graph, config=self.tf_config)
             self._sess.run(init)
+            
+            # setup tf run options and metadata, used when profiling
+            self._run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            self._run_metadata = tf.RunMetadata()
         return self._sess
 
     def close_session(self):
@@ -585,14 +592,15 @@ class GQCNNTF(object):
         
     def add_softmax_to_output(self):
         """ Adds softmax to output of network """
-        if self._angular_bins > 0:
-            logging.info('Building Pair-wise Softmax Layer')
-            binwise_split_output = tf.split(self._output_tensor, self._angular_bins, axis=-1)
-            binwise_split_output_soft = [tf.nn.softmax(s) for s in binwise_split_output]
-            self._output_tensor = tf.concat(binwise_split_output_soft, -1)
-        else:
-            logging.info('Building Softmax Layer')
-            self._output_tensor = tf.nn.softmax(self._output_tensor)
+        with tf.name_scope('softmax'):
+            if self._angular_bins > 0:
+                logging.info('Building Pair-wise Softmax Layer')
+                binwise_split_output = tf.split(self._output_tensor, self._angular_bins, axis=-1)
+                binwise_split_output_soft = [tf.nn.softmax(s) for s in binwise_split_output]
+                self._output_tensor = tf.concat(binwise_split_output_soft, -1)
+            else:
+                logging.info('Building Softmax Layer')
+                self._output_tensor = tf.nn.softmax(self._output_tensor)
 
     def update_batch_size(self, batch_size):
         """ Updates the prediction batch size 
@@ -604,8 +612,8 @@ class GQCNNTF(object):
         """
         self._batch_size = batch_size
 
-    def predict(self, image_arr, pose_arr, gripper_arr=None, gripper_depth_mask=False):
-        """ Predict the probability of grasp success given a depth iamge, gripper pose, and
+    def predict(self, image_arr, pose_arr, gripper_arr=None, gripper_depth_mask=False, timeline_save_file=None, max_timeline_updates=100, verbose=False):
+        """ Predict the probability of grasp success given a depth image, gripper pose, and
             optionally gripper parameters 
 
         Parameters
@@ -617,8 +625,25 @@ class GQCNNTF(object):
         gripper_arr : :obj:`numpy ndarray`
             optional Tensor of gripper parameters, if None will not be used for prediction
         """
+        if verbose:
+            logging.info('Predicting...')
 
+        # setup TimelineLogger for run profiling if timeline_save_dir is not None
+        log_timeline = False
+        if timeline_save_file is not None:
+            if verbose:
+                logging.info('Profiling prediction using TimelineLogger')
+            log_timeline = True
+            timeline_save_dir = '/'.join(timeline_save_file.split('/')[:-1])
+            timeline_save_fname = timeline_save_file.split('/')[-1]
+            timeline_logger = TimelineLogger(timeline_save_dir)
+        
+        # get prediction start time
+        start_time = time.time()
+   
         # setup for prediction
+        reset_metadata_and_options = False
+        num_batches = math.ceil(image_arr.shape[0] / self._batch_size)
         num_images = image_arr.shape[0]
         num_poses = pose_arr.shape[0]
         if gripper_arr is not None:
@@ -636,8 +661,15 @@ class GQCNNTF(object):
             if self._sess is None:
                raise RuntimeError('No TF session open. Please call open_session() first.')
             i = 0
+            batch_idx = 0
             while i < num_images:
-                logging.debug('Predicting file %d' % (i))
+                if verbose:
+                    logging.info('Predicting batch {} of {}'.format(batch_idx, num_batches))
+                batch_idx += 1
+                if batch_idx > max_timeline_updates:
+                    self._run_metadata = None
+                    self._run_options = None
+                    reset_metadata_and_options = True
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
                 end_ind = cur_ind + dim
@@ -662,19 +694,49 @@ class GQCNNTF(object):
                     gqcnn_output = self._sess.run(self._output_tensor,
                                                       feed_dict={self._input_im_node: self._input_im_arr,
                                                                  self._input_pose_node: self._input_pose_arr,
-                                                                 self._input_gripper_node: self._input_gripper_arr})
+                                                                 self._input_gripper_node: self._input_gripper_arr},
+                                                      options=self._run_options,
+                                                      run_metadata=self._run_metadata)
                 else:
                     gqcnn_output = self._sess.run(self._output_tensor,
                                                       feed_dict={self._input_im_node: self._input_im_arr,
-                                                                 self._input_pose_node: self._input_pose_arr})
-                
+                                                                 self._input_pose_node: self._input_pose_arr},
+                                                      options=self._run_options,
+                                                      run_metadata=self._run_metadata)
+
+                # update timeline for profiling if needed
+                if log_timeline:
+                    if verbose:
+                        logging.info('Updating Timelinelogger')
+                    if batch_idx < max_timeline_updates:
+                        timeline_logger.update_timeline(timeline.Timeline(self._run_metadata.step_stats).generate_chrome_trace_format())
+                    else:
+                       if verbose:
+                           logging.info('Skipping timeline update because max timeline update cap reached')
                 # allocate output tensor if needed
                 if output_arr is None:
                     output_arr = np.zeros([num_images] + list(gqcnn_output.shape[1:]))
 
                 output_arr[cur_ind:end_ind, :] = gqcnn_output[:dim, :]
                 i = end_ind
-        return output_arr
+        
+        # get total prediction time
+        pred_time = time.time() - start_time        
+
+        # save timeline for profiling if needed
+        if log_timeline:
+            if verbose:
+                logging.info('Saving timeline')
+            timeline_logger.save(timeline_save_fname)
+
+        if reset_metadata_and_options:
+            self._run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            self._run_metadata = tf.RunMetadata()  
+
+        if log_timeline:
+            return output_arr, pred_time
+        else:
+            return output_arr
     
     def featurize(self, image_arr, pose_arr, feature_layer='conv1_1'):
         """ Featurize a set of images in batches """
