@@ -52,14 +52,18 @@ ANGLE_PARSER = lambda p: p[:, 3]
 NUM_ANGULAR_BINS = 16
 PI = math.pi
 PI_2 = math.pi / 2
-NUM_TEST_ITERATIONS = 1
-GPU_WARM_ITERATIONS = 1
+NUM_TEST_ITERATIONS = 2
+GPU_WARM_ITERATIONS = 2
 GRASP_SUCCESS_THRESH = 0.3
 
 ROT_IMAGES = 1
 TEST_NORMAL_GQCNN = 1
 TEST_FULLY_CONV_GQCNN = 1
 TEST_FULLY_CONV_ANG_GQCNN = 1
+
+NORMAL_TIMELINE_SAVE_DIR = '/home/vsatish/Data/dexnet/data/analyses/benchmarks/normal_gqcnn/timeline/'
+ANGULAR_TIMELINE_SAVE_DIR = '/home/vsatish/Data/dexnet/data/analyses/benchmarks/angular_gqcnn/timeline/'
+FULLY_CONV_TIMELINE_SAVE_DIR = '/home/vsatish/Data/dexnet/data/analyses/benchmarks/fully_conv_gqcnn/timeline/'
 
 # get test start time
 test_start_time = time.time()
@@ -199,17 +203,17 @@ if TEST_NORMAL_GQCNN and ROT_IMAGES:
     # warm-up GPU for inference
     logging.info('Warming Up GPU')
     for i in range(GPU_WARM_ITERATIONS):
-        start_time = time.time()
-        normal_gqcnn.predict(crop_images, crop_poses)
-        logging.info('Normal GQCNN Inference warm-up iteration {} took {} seconds'.format(i, time.time() - start_time))
+        timeline_file = os.path.join(NORMAL_TIMELINE_SAVE_DIR, 'warmup_timeline_iter_{}.json'.format(i))
+        _, pred_time = normal_gqcnn.predict(crop_images, crop_poses, timeline_save_file=timeline_file)
+        logging.info('Normal GQCNN Inference warm-up iteration {} took {} seconds'.format(i, pred_time))
     
     # infer
     logging.info('Inferring')
     normal_inference_times = np.zeros((NUM_TEST_ITERATIONS,)) 
     for i in range(NUM_TEST_ITERATIONS): 
-        start_time = time.time() 
-        normal_gqcnn_pred = normal_gqcnn.predict(crop_images, crop_poses)
-        normal_inference_times[i] = time.time() - start_time
+        timeline_file = os.path.join(NORMAL_TIMELINE_SAVE_DIR, 'inference_timeline_iter_{}.json'.format(i))
+        normal_gqcnn_pred, pred_time = normal_gqcnn.predict(crop_images, crop_poses, timeline_save_file=timeline_file)
+        normal_inference_times[i] = pred_time
         logging.info('Normal GQCNN Inference iteration {} took {} seconds'.format(i, normal_inference_times[i]))
     avg_normal_inference_time = np.mean(normal_inference_times)
     logging.info('Average Normal GQCNN Inference time was {} seconds'.format(avg_normal_inference_time))
@@ -242,17 +246,17 @@ if TEST_FULLY_CONV_GQCNN and ROT_IMAGES:
     # warm-up GPU for inference
     logging.info('Warming Up GPU')
     for i in range(GPU_WARM_ITERATIONS):
-        start_time = time.time()
-        fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses)
-        logging.info('Fully-Convolutional GQCNN Inference warm-up iteration {} took {} seconds'.format(i, time.time() - start_time))
+        timeline_file = os.path.join(FULLY_CONV_TIMELINE_SAVE_DIR, 'warmup_timeline_iter_{}.json'.format(i))
+        _, pred_time = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses, timeline_save_file=timeline_file)
+        logging.info('Fully-Convolutional GQCNN Inference warm-up iteration {} took {} seconds'.format(i, pred_time))
     
     # infer
     logging.info('Inferring')
     fully_conv_inference_times = np.zeros((NUM_TEST_ITERATIONS,))
     for i in range(NUM_TEST_ITERATIONS):
-        start_time = time.time()
-        fully_conv_gqcnn_pred = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses)
-        fully_conv_inference_times[i] = time.time() - start_time
+        timeline_file = os.path.join(FULLY_CONV_TIMELINE_SAVE_DIR, 'inference_timeline_iter_{}.json'.format(i))
+        fully_conv_gqcnn_pred, pred_time = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses, timeline_save_file=timeline_file)
+        fully_conv_inference_times[i] = pred_time
         logging.info('Fully-Convolutional GQCNN Inference iteration {} took {} seconds'.format(i, fully_conv_inference_times[i]))
     avg_fully_conv_inference_time = np.mean(fully_conv_inference_times)
     logging.info('Average Fully-Convolutional GQCNN Inference time was {} seconds'.format(avg_fully_conv_inference_time))
@@ -284,17 +288,17 @@ if TEST_FULLY_CONV_ANG_GQCNN:
     # warm-up GPU for inference
     logging.info('Warming Up GPU')
     for i in range(GPU_WARM_ITERATIONS):
-        start_time = time.time()
-        fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses)
-        logging.info('Fully-Convolutional Angular GQCNN Inference warm-up iteration {} took {} seconds'.format(i, time.time() - start_time))
+        timeline_file = os.path.join(ANGULAR_TIMELINE_SAVE_DIR, 'warmup_timeline_iter_{}.json'.format(i))
+        _, pred_time = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses, timeline_save_file=timeline_file)
+        logging.info('Fully-Convolutional Angular GQCNN Inference warm-up iteration {} took {} seconds'.format(i, pred_time))
     
     # infer
     logging.info('Inferring')
     fully_conv_ang_inference_times = np.zeros((NUM_TEST_ITERATIONS,))
     for i in range(NUM_TEST_ITERATIONS):
-        start_time = time.time()
-        fully_conv_ang_pred = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses)
-        fully_conv_ang_inference_times[i] = time.time() - start_time
+        timeline_file = os.path.join(ANGULAR_TIMELINE_SAVE_DIR, 'inference_timeline_iter_{}.json'.format(i))
+        fully_conv_ang_pred, pred_time = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses, timeline_save_file=timeline_file)
+        fully_conv_ang_inference_times[i] = pred_time
         logging.info('Fully-Convolutional Angular GQCNN Inference iteration {} took {} seconds'.format(i, fully_conv_ang_inference_times[i]))
     avg_fully_conv_ang_inference_time = np.mean(fully_conv_ang_inference_times)
     logging.info('Average Fully-Convolutional Angular GQCNN Inference Time was {} seconds'.format(avg_fully_conv_ang_inference_time))
