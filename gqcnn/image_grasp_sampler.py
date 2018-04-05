@@ -317,7 +317,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         depth_im_downsampled = depth_im.resize(scale_factor)
         depth_im_threshed = depth_im_downsampled.threshold_gradients(self._depth_grad_thresh)
         edge_pixels = (1.0 / scale_factor) * depth_im_threshed.zero_pixels()
-        edge_pixels = edge_pixels.astype(np.uint16)
+        edge_pixels = edge_pixels.astype(np.int16)
 
         depth_im_mask = depth_im.copy()
         if segmask is not None:
@@ -326,8 +326,10 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         # re-threshold edges if there are too few
         if edge_pixels.shape[0] < self._min_num_edge_pixels:
+            logging.info('Too few edge pixels!')
             depth_im_threshed = depth_im.threshold_gradients(self._depth_grad_thresh)
             edge_pixels = depth_im_threshed.zero_pixels()            
+            edge_pixels = edge_pixels.astype(np.int16)
             depth_im_mask = depth_im.copy()
             if segmask is not None:
                 edge_pixels = np.array([p for p in edge_pixels if np.any(segmask[p[0], p[1]] > 0)])
@@ -435,7 +437,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             grasp_center = (p1 + p2) / 2
             grasp_axis = p2 - p1
             grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
-            grasp_theta = 0
+            grasp_theta = np.pi / 2
             if grasp_axis[1] != 0:
                 grasp_theta = np.arctan(grasp_axis[0] / grasp_axis[1])
             grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
@@ -456,7 +458,18 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                                           grasp_theta,
                                           sample_depth,
                                           width=self._gripper_width,
-                                          camera_intr=camera_intr)
+                                          camera_intr=camera_intr,
+                                          contact_points=[p1, p2],
+                                          contact_normals=[n1, n2])
+
+                if visualize:
+                    vis.figure()
+                    vis.imshow(depth_im)
+                    vis.grasp(candidate_grasp)
+                    vis.scatter(p1[1], p1[0], c='b', s=25)
+                    vis.scatter(p2[1], p2[0], c='b', s=25)
+                    vis.show()
+                    
                 grasps.append(candidate_grasp)
         # return sampled grasps
         logging.debug('Loop took %.3f sec' %(time() - sample_start))

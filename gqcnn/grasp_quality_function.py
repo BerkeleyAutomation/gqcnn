@@ -91,10 +91,92 @@ class ZeroGraspQualityFunction(object):
             vector containing the real-valued grasp quality for each candidate
         """
         return 0.0
-    
+
+class ParallelJawQualityFunction(GraspQualityFunction):
+    """Abstract wrapper class for parallel jaw quality functions (only image based metrics for now). """
+    def __init__(self, config):
+        """Create a suction quality function. """
+        # read parameters
+        self._friction_coef = config['friction_coef']
+        self._max_friction_cone_angle = np.arctan(self._friction_coef)
+        
+    def friction_cone_angle(self, action):
+        """ Compute the angle between the axis and the boundaries of the friction cone. """
+        if action.contact_points is None or action.contact_normals is None:
+            raise ValueError('Cannot compute friction cone angle without precomputed contact points and normals')
+        dot_prod1 = min(max(action.contact_normals[0].dot(-action.axis), -1.0), 1.0)
+        angle1 = np.arccos(dot_prod1)
+        dot_prod2 = min(max(action.contact_normals[1].dot(action.axis), -1.0), 1.0)
+        angle2 = np.arccos(dot_prod2)
+        return max(angle1, angle2)
+        
+    def force_closure(self, action):
+        """ Determine if the grasp is in force closure. """
+        return (self.friction_cone_angle(action) < self._max_friction_cone_angle)
+
+class ComForceClosureParallelJawQualityFunction(ParallelJawQualityFunction):
+    """ Measures the distance to the estimated center of mass for antipodal parallel-jaw grasps. """
+    def __init__(self, config):
+        """Create a best-fit planarity suction metric. """
+        self._antipodality_pctile = config['antipodality_pctile']
+        ParallelJawQualityFunction.__init__(self, config)
+
+    def quality(self, state, actions, params=None): 
+        """Given a parallel-jaw grasp, compute the distance to the center of mass of the grasped object
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            An RgbdImageState instance that encapsulates rgbd_im, camera_intr, segmask, full_observed.
+        action: :obj:`Grasp2D`
+            A suction grasp in image space that encapsulates center, approach direction, depth, camera_intr.
+        params: dict
+            Stores params used in computing quality. 
+
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp
+        """
+        # compute antipodality
+        antipodality_q = [ParallelJawQualityFunction.friction_cone_angle(self, action) for action in actions]
+        
+        # compute object centroid
+        object_com = state.rgbd_im.center
+        if state.segmask is not None:
+            nonzero_px = state.segmask.nonzero_pixels()
+            object_com = np.mean(nonzero_px, axis=0)
+        
+        # compute negative SSE from the best fit plane for each grasp
+        antipodality_thresh = abs(np.percentile(antipodality_q, 100-self._antipodality_pctile))
+        qualities = []
+        max_q = max(state.rgbd_im.height, state.rgbd_im.width)
+        for i, action in enumerate(actions):
+            q = max_q
+            friction_cone_angle = antipodality_q[i]
+            force_closure = ParallelJawQualityFunction.force_closure(self, action)
+            if force_closure or friction_cone_angle < antipodality_thresh:
+                grasp_center = np.array([action.center.y, action.center.x])
+
+                if state.obj_segmask is not None:
+                    grasp_obj_id = state.obj_segmask[grasp_center[0],
+                                                     grasp_center[1]]
+                    obj_mask = state.obj_segmask.segment_mask(grasp_obj_id)
+                    nonzero_px = obj_mask.nonzero_pixels()
+                    object_com = np.mean(nonzero_px, axis=0)            
+
+                q = np.linalg.norm(grasp_center - object_com)
+
+                if state.obj_segmask is not None and grasp_obj_id == 0:
+                    q = max_q
+                    
+            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
+            qualities.append(q)
+
+        return np.array(qualities)
+            
 class SuctionQualityFunction(GraspQualityFunction):
     """Abstract wrapper class for suction quality functions (only image based metrics for now). """
-
     def __init__(self, config):
         """Create a suction quality function. """
         # read parameters
@@ -528,7 +610,73 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
             qualities.append(q)
 
         return np.array(qualities)
-        
+
+class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctionQualityFunction):
+    """A approach planarity suction metric that ranks sufficiently planar points by their distance to the object COM. """
+
+    def __init__(self, config):
+        """Create approach planarity suction metric. """
+        self._planarity_pctile = config['planarity_pctile']
+        self._planarity_abs_thresh = 0
+        if 'planarity_abs_thresh' in config.keys():
+            self._planarity_abs_thresh = np.exp(-config['planarity_abs_thresh'])
+
+        DiscApproachPlanaritySuctionQualityFunction.__init__(self, config)
+
+    def quality(self, state, actions, params=None): 
+        """Given a suction point, compute a score based on a best-fit 3D plane of the neighboring points.
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            An RgbdImageState instance that encapsulates rgbd_im, camera_intr, segmask, full_observed.
+        action: :obj:`SuctionPoint2D`
+            A suction grasp in image space that encapsulates center, approach direction, depth, camera_intr.
+        params: dict
+            Stores params used in computing suction quality.
+
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp
+        """
+        # compute planarity
+        sse_q = DiscApproachPlanaritySuctionQualityFunction.quality(self, state, actions, params=params)
+
+        if params['vis']['hist']:
+            plt.figure()
+            utils.histogram(sse_q, 100, (np.min(sse_q), np.max(sse_q)), normalized=False, plot=True)
+            plt.show()
+
+        # compute object centroid
+        object_com = state.rgbd_im.center
+        if state.segmask is not None:
+            nonzero_px = state.segmask.nonzero_pixels()
+            object_com = np.mean(nonzero_px, axis=0)
+
+        # threshold
+        planarity_thresh = abs(np.percentile(sse_q, 100-self._planarity_pctile))
+        qualities = []
+        max_q = max(state.rgbd_im.height, state.rgbd_im.width)
+        for k, action in enumerate(actions):
+            q = max_q
+            if sse_q[k] > planarity_thresh or sse_q[k] > self._planarity_abs_thresh:
+                grasp_center = np.array([action.center.y, action.center.x])
+
+                if state.obj_segmask is not None:
+                    grasp_obj_id = state.obj_segmask[grasp_center[0],
+                                                     grasp_center[1]]
+                    obj_mask = state.obj_segmask.segment_mask(grasp_obj_id)
+                    nonzero_px = obj_mask.nonzero_pixels()
+                    object_com = np.mean(nonzero_px, axis=0)            
+
+                q = np.linalg.norm(grasp_center - object_com)
+
+            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
+            qualities.append(q)
+
+        return np.array(qualities)
+    
 class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
     """A approach planarity suction metric. """
 
@@ -951,21 +1099,23 @@ class GraspQualityFunctionFactory(object):
     def quality_function(metric_type, config):
         if metric_type == 'zero':
             return ZeroGraspQualityFunction()
-        elif metric_type == 'best_fit_planarity':
+        elif metric_type == 'parallel_jaw_com_force_closure':
+            return ComForceClosureParallelJawQualityFunction(config)
+        elif metric_type == 'suction_best_fit_planarity':
             return BestFitPlanaritySuctionQualityFunction(config)
-        elif metric_type == 'approach_planarity':
+        elif metric_type == 'suction_approach_planarity':
             return ApproachPlanaritySuctionQualityFunction(config)
-        elif metric_type == 'com_approach_planarity':
+        elif metric_type == 'suction_com_approach_planarity':
             return ComApproachPlanaritySuctionQualityFunction(config)
-        elif metric_type == 'disc_approach_planarity':
+        elif metric_type == 'suction_disc_approach_planarity':
             return DiscApproachPlanaritySuctionQualityFunction(config)
-        elif metric_type == 'com_disc_approach_planarity':
+        elif metric_type == 'suction_com_disc_approach_planarity':
             return ComDiscApproachPlanaritySuctionQualityFunction(config)
-        elif metric_type == 'gaussian_curvature':
+        elif metric_type == 'suction_gaussian_curvature':
             return GaussianCurvatureSuctionQualityFunction(config)
-        elif metric_type == 'disc_curvature':
+        elif metric_type == 'suction_disc_curvature':
             return DiscCurvatureSuctionQualityFunction(config)
-        elif metric_type == 'com_disc_curvature':
+        elif metric_type == 'suction_com_disc_curvature':
             return ComDiscCurvatureSuctionQualityFunction(config)
         elif metric_type == 'gqcnn':
             return GQCnnQualityFunction(config)

@@ -44,8 +44,13 @@ class Grasp2D(object):
         distance between the jaws in meters
     camera_intr : :obj:`perception.CameraIntrinsics`
         frame of reference for camera that the grasp corresponds to
+    contact_points : list of :obj:`numpy.ndarray`
+        pair of contact points in image space
+    contact_normals : list of :obj:`numpy.ndarray`
+        pair of contact normals in image space
     """
-    def __init__(self, center, angle, depth, width=0.0, camera_intr=None):
+    def __init__(self, center, angle, depth, width=0.0, camera_intr=None,
+                 contact_points=None, contact_normals=None):
         self.center = center
         self.angle = angle
         self.depth = depth
@@ -55,7 +60,9 @@ class Grasp2D(object):
             self.camera_intr = CameraIntrinsics('primesense_overhead', fx=525, fy=525, cx=319.5, cy=239.5, width=640, height=480)
         else: 
             self.camera_intr = camera_intr
-
+        self.contact_points = contact_points
+        self.contact_normals = contact_normals
+            
     @property
     def axis(self):
         """ Returns the grasp axis. """
@@ -70,6 +77,7 @@ class Grasp2D(object):
     def frame(self):
         """ The name of the frame of reference for the grasp. """
         if self.camera_intr is None:
+
             raise ValueError('Must specify camera intrinsics')
         return self.camera_intr.frame
 

@@ -37,7 +37,7 @@ from sklearn.mixture import GaussianMixture
 
 import autolab_core.utils as utils
 from autolab_core import Point
-from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, CameraIntrinsics
+from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
 
 from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode, GraspQualityFunctionFactory, GQCnnQualityFunction, NoValidGraspsException
 from gqcnn import Visualizer as vis
@@ -55,15 +55,20 @@ class RgbdImageState(object):
     camera_intr : :obj:`perception.CameraIntrinsics`
         intrinsics of the RGB-D camera
     segmask : :obj:`perception.BinaryImage`
-        segmentation mask for the binary image
+        segmentation mask for the image
+    obj_segmask : :obj:`perception.SegmentationImage`
+        segmentation mask for the different objects in the image
     full_observed : :obj:`object`
         representation of the fully observed state
     """
-    def __init__(self, rgbd_im, camera_intr, segmask=None,
+    def __init__(self, rgbd_im, camera_intr,
+                 segmask=None,
+                 obj_segmask=None,
                  fully_observed=None):
         self.rgbd_im = rgbd_im
         self.camera_intr = camera_intr
         self.segmask = segmask
+        self.obj_segmask = obj_segmask
         self.fully_observed = fully_observed
 
     def save(self, save_dir):
@@ -73,12 +78,15 @@ class RgbdImageState(object):
         depth_image_filename = os.path.join(save_dir, 'depth.npy')
         camera_intr_filename = os.path.join(save_dir, 'camera.intr')
         segmask_filename = os.path.join(save_dir, 'segmask.npy')
+        obj_segmask_filename = os.path.join(save_dir, 'obj_segmask.npy')
         state_filename = os.path.join(save_dir, 'state.pkl')
         self.rgbd_im.color.save(color_image_filename)
         self.rgbd_im.depth.save(depth_image_filename)
         self.camera_intr.save(camera_intr_filename)
         if self.segmask is not None:
             self.segmask.save(segmask_filename)
+        if self.obj_segmask is not None:
+            self.obj_segmask.save(obj_segmask_filename)
         if self.fully_observed is not None:
             pkl.dump(self.fully_observed, open(state_filename, 'wb'))
 
@@ -90,6 +98,7 @@ class RgbdImageState(object):
         depth_image_filename = os.path.join(save_dir, 'depth.npy')
         camera_intr_filename = os.path.join(save_dir, 'camera.intr')
         segmask_filename = os.path.join(save_dir, 'segmask.npy')
+        obj_segmask_filename = os.path.join(save_dir, 'obj_segmask.npy')
         state_filename = os.path.join(save_dir, 'state.pkl')
         camera_intr = CameraIntrinsics.load(camera_intr_filename)
         color = ColorImage.open(color_image_filename, frame=camera_intr.frame)
@@ -97,12 +106,16 @@ class RgbdImageState(object):
         segmask = None
         if os.path.exists(segmask_filename):
             segmask = BinaryImage.open(segmask_filename, frame=camera_intr.frame)
+        obj_segmask = None
+        if os.path.exists(obj_segmask_filename):
+            obj_segmask = SegmentationImage.open(obj_segmask_filename, frame=camera_intr.frame)
         fully_observed = None    
         if os.path.exists(state_filename):
             fully_observed = pkl.load(open(state_filename, 'rb'))
         return RgbdImageState(RgbdImage.from_color_and_depth(color, depth),
                               camera_intr,
                               segmask=segmask,
+                              obj_segmask=obj_segmask,
                               fully_observed=fully_observed)
             
 class ParallelJawGrasp(object):
@@ -294,14 +307,17 @@ class RobustGraspingPolicy(GraspingPolicy):
     logging_dir : str, optional
         directory in which to save the sampled grasps and input images
     """
-    def __init__(self, config):
+    def __init__(self, config, filters=None):
         GraspingPolicy.__init__(self, config)
-
         self._parse_config()
+        self._filters = filters
 
     def _parse_config(self):
         """ Parses the parameters of the policy. """
         self._num_grasp_samples = self.config['sampling']['num_grasp_samples']
+        self._max_grasps_filter = 1
+        if 'max_grasps_filter' in self.config.keys():
+            self._max_grasps_filter = self.config['max_grasps_filter']
         self._gripper_width = np.inf
         if 'gripper_width' in self.config.keys():
             self._gripper_width = self.config['gripper_width']
@@ -313,10 +329,32 @@ class RobustGraspingPolicy(GraspingPolicy):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
         """
+        # sort grasps
         num_grasps = len(grasps)
         grasps_and_predictions = zip(np.arange(num_grasps), q_value)
         grasps_and_predictions.sort(key = lambda x : x[1], reverse=True)
-        return grasps_and_predictions[0][0]
+
+        # return top grasps
+        if self._filters is None:
+            return grasps_and_predictions[0][0]
+        
+        # filter grasps
+        logging.info('Filtering grasps')
+        i = 0
+        while i < self._max_grasps_filter and i < len(grasps_and_predictions):
+            index = grasps_and_predictions[i][0]
+            grasp = grasps[index]
+            valid = True
+            for filter_name, is_valid in self._filters.iteritems():
+                valid = is_valid(grasp) 
+                logging.info('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                if not valid:
+                    valid = False
+                    break
+            if valid:
+                return index
+            i += 1
+        raise NoValidGraspsException('No grasps satisfied filters')
 
     def action(self, state):
         """ Plans the grasp with the highest probability of success on
@@ -348,7 +386,10 @@ class RobustGraspingPolicy(GraspingPolicy):
                                             visualize=self.config['vis']['grasp_sampling'],
                                             seed=None)
         num_grasps = len(grasps)
-
+        if num_grasps == 0:
+            logging.warning('No valid grasps could be found')
+            raise NoValidGraspsException()
+        
         # save if specified
         if self._logging_dir is not None:
             if not os.path.exists(self._logging_dir):
@@ -421,7 +462,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     Parameters
     ----------
     filters : :obj:`dict` mapping names to functions
-        list of functions to apply to filter the final grasps
+        list of functions to apply to filter invalid grasps
 
     Notes
     -----
@@ -448,7 +489,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     """
     def __init__(self, config, filters=None):
         GraspingPolicy.__init__(self, config)
-        CrossEntropyRobustGraspingPolicy._parse_config(self)
+        self._parse_config()
         self._filters = filters
         
     def _parse_config(self):
@@ -693,7 +734,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                          grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
                          np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0) and \
                          grasp.approach_angle < self._max_approach_angle):
-                         grasps.append(grasp)
+                        grasps.append(grasp)
                     logging.debug('Bounds took %.5f sec' %(time()-bounds_start))
                     num_tries += 1
                     
