@@ -108,7 +108,7 @@ class GQCNNTrainerTF(object):
         """ Launches Tensorboard to visualize training """
         logging.info(
             "Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
-        os.system('tensorboard --port=6007 --logdir=' + self.summary_dir + " &>/dev/null &")
+        os.system('tensorboard --port={} --logdir={} &>/dev/null &'.format(self._tensorboard_port, self.summary_dir))
 
     def _close_tensorboard(self):
         """ Closes Tensorboard """
@@ -650,6 +650,8 @@ class GQCNNTrainerTF(object):
 
         self.save_histograms = self.cfg['save_histograms']
 
+        self._tensorboard_port = self.cfg['tensorboard_port']
+
         if self.train_pct < 0 or self.train_pct > 1:
             raise ValueError('Train percentage must be in range [0,1]')
 
@@ -1104,12 +1106,12 @@ class GQCNNTrainerTF(object):
 
             # get predictions
             if self.gripper_dim > 0:
-                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK), gripper_arr=gripper_params)
+                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK), gripper_arr=gripper_params, max_timeline_updates=0)
             elif self.angular_bins > 0:
-                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK))
+                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK), max_timeline_updates=0)
                 predictions = predictions[pred_mask].reshape((-1, 2))
             else:
-                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK))
+                predictions = self.gqcnn.predict(data, poses, gripper_depth_mask=(self.input_gripper_mode == InputGripperMode.DEPTH_MASK), max_timeline_updates=0)
             
             # save distorted validation images for debugging
             if self.cfg['save_distorted_val_images']:
