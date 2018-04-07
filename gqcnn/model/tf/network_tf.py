@@ -612,22 +612,7 @@ class GQCNNTF(object):
         """
         self._batch_size = batch_size
 
-    def predict(self, image_arr, pose_arr, gripper_arr=None, gripper_depth_mask=False, timeline_save_file=None, max_timeline_updates=100, verbose=False):
-        """ Predict the probability of grasp success given a depth image, gripper pose, and
-            optionally gripper parameters 
-
-        Parameters
-        ----------
-        image_arr : :obj:`numpy ndarray`
-            4D Tensor of depth images
-        pose_arr : :obj:`numpy ndarray`
-            Tensor of gripper poses
-        gripper_arr : :obj:`numpy ndarray`
-            optional Tensor of gripper parameters, if None will not be used for prediction
-        """
-        if verbose:
-            logging.info('Predicting...')
-
+    def _predict_optimized(self, image_arr, pose_arr, unique_im_map, timeline_save_file=None, max_timeline_updates=100, verbose=False):
         # setup TimelineLogger for run profiling if timeline_save_dir is not None
         log_timeline = False
         if timeline_save_file is not None:
@@ -639,8 +624,142 @@ class GQCNNTF(object):
             timeline_logger = TimelineLogger(timeline_save_dir)
         
         # get prediction start time
+        timeline_update_time = 0
         start_time = time.time()
-   
+
+        if verbose:
+            logging.info('Predicting...')
+
+        # generate unique image map
+        assert image_arr.shape[0] == unique_im_map.shape[0], 'Unique Image Map dim0 != image_arr dim0'
+        if verbose:
+            logging.info('Found unique image mapping, performing runtime optimizations')
+            logging.info('Generating index map...')
+        
+#        map_start_time = time.time()
+        arg_sorted_unique_im_map = np.argsort(unique_im_map)
+        sorted_unique_im_map = unique_im_map[arg_sorted_unique_im_map]
+        unique_vals, unique_start_ind = np.unique(sorted_unique_im_map, return_index=True)
+        unique_im_idx_map = np.split(arg_sorted_unique_im_map, unique_start_ind[1:])
+#        logging.info('Total map time: {}'.format(time.time() - map_start_time))        
+
+        if verbose:
+            logging.info('Found {} unique images'.format(unique_vals.shape[0]))
+
+        # setup for prediction
+        reset_metadata_and_options = False
+        num_images = image_arr.shape[0]
+        num_poses = pose_arr.shape[0]
+        output_arr = None
+        input_feat_arr = None
+        if num_images != num_poses:
+            raise ValueError('Must provide same number of images and poses')
+
+        # first predict outputs of final conv layer for unique images
+        unique_ims = image_arr[np.asarray([ind_group[0] for ind_group in unique_im_idx_map])]
+#        logging.info('Unique ims shape {}'.format(unique_ims.shape))
+#        feat_start_time = time.time()
+        unique_conv_feat_arr = self.featurize(unique_ims, feature_layer=self._final_conv_name)
+#        logging.info('Feat time: {}'.format(time.time() - feat_start_time))
+
+        # broadcast unique image final conv features for all images
+#        broad_start_time = time.time()
+        broad_ind = np.zeros((num_images,), dtype=np.int32)
+        for i, ind_group in enumerate(unique_im_idx_map):
+            for idx in ind_group:
+                broad_ind[idx] = i
+        conv_feat_arr = unique_conv_feat_arr[broad_ind]
+#        logging.info('Broad time: {}'.format(time.time() - broad_start_time))
+
+        # next predict using final conv layer features and depths
+        with self._graph.as_default():
+            if self._sess is None:
+               raise RuntimeError('No TF session open. Please call open_session() first.')
+            i = 0
+            batch_idx = 0
+            while i < num_images:
+                if verbose:
+                    logging.info('Predicting batch {} of {}'.format(batch_idx, num_batches))
+                batch_idx += 1
+                if batch_idx > max_timeline_updates:
+                    self._run_metadata = None
+                    self._run_options = None
+                    reset_metadata_and_options = True
+                dim = min(self._batch_size, num_images - i)
+                cur_ind = i
+                end_ind = cur_ind + dim
+
+                if input_feat_arr is None:
+#                    feat_arr_init_start_time = time.time()
+                    input_feat_arr = np.zeros((self._batch_size,) + conv_feat_arr.shape[1:])
+#                    logging.info('Feat arr init time: {}'.format(time.time() - feat_arr_init_start_time))
+                
+                input_feat_arr[:dim, ...] = conv_feat_arr[cur_ind:end_ind, ...]
+
+                self._input_pose_arr[:dim, :] = (
+                    pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
+
+                gqcnn_output = self._sess.run(self._output_tensor,
+                                                      feed_dict={self._final_conv_placeholder: input_feat_arr,
+                                                                 self._input_pose_node: self._input_pose_arr},
+                                                      options=self._run_options,
+                                                      run_metadata=self._run_metadata)
+
+                # update timeline for profiling if needed
+                if log_timeline:
+                    if verbose:
+                        logging.info('Updating Timelinelogger')
+                    if batch_idx < max_timeline_updates:
+                        start_timeline_update_time = time.time()
+                        timeline_logger.update_timeline(timeline.Timeline(self._run_metadata.step_stats).generate_chrome_trace_format())
+                        timeline_update_time += time.time() - start_timeline_update_time
+                    else:
+                       if verbose:
+                           logging.info('Skipping timeline update because max timeline update cap reached')
+
+                # allocate output tensor if needed
+                if output_arr is None:
+                    output_arr = np.zeros([num_images] + list(gqcnn_output.shape[1:]))
+
+                output_arr[cur_ind:end_ind, :] = gqcnn_output[:dim, :]
+                i = end_ind
+        
+        # get total prediction time
+        pred_time = time.time() - start_time - timeline_update_time
+
+        # save timeline for profiling if needed
+        if log_timeline:
+            if verbose:
+                logging.info('Saving timeline')
+            timeline_logger.save(timeline_save_fname)
+
+        if reset_metadata_and_options:
+            self._run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            self._run_metadata = tf.RunMetadata()  
+
+        if log_timeline:
+            return output_arr, pred_time
+        else:
+            return output_arr
+ 
+    def _predict(self, image_arr, pose_arr, gripper_arr=None, gripper_depth_mask=False, timeline_save_file=None, max_timeline_updates=100, verbose=False):
+         # setup TimelineLogger for run profiling if timeline_save_dir is not None
+        log_timeline = False
+        if timeline_save_file is not None:
+            if verbose:
+                logging.info('Profiling prediction using TimelineLogger')
+            log_timeline = True
+            timeline_save_dir = '/'.join(timeline_save_file.split('/')[:-1])
+            timeline_save_fname = timeline_save_file.split('/')[-1]
+            timeline_logger = TimelineLogger(timeline_save_dir)
+        
+        # get prediction start time
+        timeline_update_time = 0
+        start_time = time.time()
+
+        if verbose:
+            logging.info('Predicting...')
+
         # setup for prediction
         reset_metadata_and_options = False
         num_batches = math.ceil(image_arr.shape[0] / self._batch_size)
@@ -709,10 +828,13 @@ class GQCNNTF(object):
                     if verbose:
                         logging.info('Updating Timelinelogger')
                     if batch_idx < max_timeline_updates:
+                        start_timeline_update_time = time.time()
                         timeline_logger.update_timeline(timeline.Timeline(self._run_metadata.step_stats).generate_chrome_trace_format())
+                        timeline_update_time += time.time() - start_timeline_update_time
                     else:
                        if verbose:
                            logging.info('Skipping timeline update because max timeline update cap reached')
+
                 # allocate output tensor if needed
                 if output_arr is None:
                     output_arr = np.zeros([num_images] + list(gqcnn_output.shape[1:]))
@@ -721,7 +843,7 @@ class GQCNNTF(object):
                 i = end_ind
         
         # get total prediction time
-        pred_time = time.time() - start_time        
+        pred_time = time.time() - start_time - timeline_update_time
 
         # save timeline for profiling if needed
         if log_timeline:
@@ -737,21 +859,41 @@ class GQCNNTF(object):
             return output_arr, pred_time
         else:
             return output_arr
-    
-    def featurize(self, image_arr, pose_arr, feature_layer='conv1_1'):
+
+    def predict(self, image_arr, pose_arr, gripper_arr=None, gripper_depth_mask=False, timeline_save_file=None, max_timeline_updates=100, unique_im_map=None, verbose=False):
+        """ 
+        Predict the probability of grasp success given a depth image, gripper pose, and
+        optionally gripper parameters 
+
+        Parameters
+        ----------
+        image_arr : :obj:`numpy ndarray`
+            4D Tensor of depth images
+        pose_arr : :obj:`numpy ndarray`
+            Tensor of gripper poses
+        gripper_arr : :obj:`numpy ndarray`
+            optional Tensor of gripper parameters, if None will not be used for prediction
+        """
+        if unique_im_map is not None:
+            return self._predict_optimized(image_arr, pose_arr, unique_im_map, timeline_save_file=timeline_save_file, max_timeline_updates=max_timeline_updates, verbose=verbose)       
+        else:
+            return self._predict(image_arr, pose_arr, gripper_arr=gripper_arr, gripper_depth_mask=gripper_depth_mask, timeline_save_file=timeline_save_file, max_timeline_updates=max_timeline_updates, verbose=verbose)
+   
+    def featurize(self, image_arr, pose_arr=None, feature_layer='conv1_1'):
         """ Featurize a set of images in batches """
 
         if feature_layer not in self._feature_tensors.keys():
             raise ValueError('Feature layer %s not recognized' %(feature_layer))
         
-        # setup prediction
+        # setup for prediction
         num_images = image_arr.shape[0]
-        num_poses = pose_arr.shape[0]
+        if pose_arr is not None:
+            num_poses = pose_arr.shape[0]
+            if num_images != num_poses:
+                raise ValueError('Must provide same number of images and poses')
         output_arr = None
-        if num_images != num_poses:
-            raise ValueError('Must provide same number of images and poses')
 
-        # predict by filling in image array in batches
+        # predict in batches
         close_sess = False
         with self._graph.as_default():
             if self._sess is None:
@@ -765,12 +907,18 @@ class GQCNNTF(object):
                 end_ind = cur_ind + dim
                 self._input_im_arr[:dim, :, :, :] = (
                     image_arr[cur_ind:end_ind, :, :, :] - self._im_mean) / self._im_std
-                self._input_pose_arr[:dim, :] = (
-                    pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
+                if pose_arr is not None:
+                    self._input_pose_arr[:dim, :] = (
+                        pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
 
-                gqcnn_output = self._sess.run(self._feature_tensors[feature_layer],
+                if pose_arr is not None:
+                    gqcnn_output = self._sess.run(self._feature_tensors[feature_layer],
                                               feed_dict={self._input_im_node: self._input_im_arr,
                                                          self._input_pose_node: self._input_pose_arr})
+                else:
+                    gqcnn_output = self._sess.run(self._feature_tensors[feature_layer],
+                                              feed_dict={self._input_im_node: self._input_im_arr})
+
                 if output_arr is None:
                     output_arr = np.zeros([num_images] + list(gqcnn_output.shape[1:]))
                 output_arr[cur_ind:end_ind, :] = gqcnn_output[:dim, :]
@@ -825,7 +973,7 @@ class GQCNNTF(object):
 
         return transform_layer, output_height, output_width, orig_input_channels
 
-    def _build_conv_layer(self, input_node, input_distort_rot_ang_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, pad='SAME'):
+    def _build_conv_layer(self, input_node, input_distort_rot_ang_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, pad='SAME', last_conv=False):
         logging.info('Building convolutional layer: {}'.format(name))       
         with tf.name_scope(name):
             # initialize weights
@@ -899,6 +1047,12 @@ class GQCNNTF(object):
                 
             # add output to feature dict
             self._feature_tensors[name] = pool
+
+            if last_conv:
+                self._final_conv_name = name
+                logging.info('Building placeholder for final conv layer')
+                self._final_conv_placeholder = tf.placeholder_with_default(pool, pool.get_shape())
+                pool = self._final_conv_placeholder
 
             return pool, out_height, out_width, out_channels
 
@@ -1172,6 +1326,7 @@ class GQCNNTF(object):
         prev_layer = "start"
         first_residual = True
         filter_dim = self._train_im_width
+        layer_idx = 0
         for layer_name, layer_config in layers.iteritems():
             layer_type = layer_config['type']
             if layer_type == 'spatial_transformer':
@@ -1183,7 +1338,10 @@ class GQCNNTF(object):
                 first_residual = True
                 if prev_layer == 'fc':
                     raise ValueError('Cannot have conv layer after fc layer')
-                output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_distort_rot_ang_node, input_height, input_width, input_channels, layer_config['filt_dim'],
+                if layers[layers.keys()[layer_idx + 1]]['type'] != ['conv']:
+                    output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_distort_rot_ang_node, input_height, input_width, input_channels, layer_config['filt_dim'], layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, norm=layer_config['norm'], pad=layer_config['pad'], last_conv=True)
+                else:
+                    output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_distort_rot_ang_node, input_height, input_width, input_channels, layer_config['filt_dim'],
                     layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, 
                     norm=layer_config['norm'], pad=layer_config['pad'])
                 prev_layer = layer_type
@@ -1220,6 +1378,7 @@ class GQCNNTF(object):
                 prev_layer = layer_type
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
+            layer_idx += 1
 
         return output_node, fan_in
 
