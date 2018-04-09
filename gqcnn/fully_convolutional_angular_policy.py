@@ -21,16 +21,18 @@ class FullyConvolutionalAngularPolicy(object):
         # parse config
         self._cfg = cfg
         self._num_depth_bins = self._cfg['num_depth_bins']
-        self._top_k_grasps = self._cfg['top_k']
         self._width = self._cfg['width']
+
         self._gqcnn_dir = self._cfg['gqcnn_model']
         self._gqcnn_backend = self._cfg['gqcnn_backend']
         self._gqcnn_stride = self._cfg['gqcnn_stride']
         self._gqcnn_recep_h = self._cfg['gqcnn_recep_h']
         self._gqcnn_recep_w = self._cfg['gqcnn_recep_w']
         self._fully_conv_config = self._cfg['fully_conv_gqcnn_config']
+
         self._vis_config = self._cfg['vis']
-        self._vis_final_k = self._cfg['vis']['vis_final_k']
+        self._top_k_to_vis = self._vis_config['top_k']
+        self._vis_top_k = self._vis_config['vis_top_k']
                
         # initialize gqcnn
         self._gqcnn = get_gqcnn_model(backend=self._gqcnn_backend).load(self._gqcnn_dir, fully_conv_config=self._fully_conv_config)
@@ -44,9 +46,12 @@ class FullyConvolutionalAngularPolicy(object):
             pass
 
     def __call__(self, state):
-        return self.action(state)
+        return self._action(state)
 
     def action(self, state):
+        return self._action(state)
+
+    def _action(self, state):
         # extract raw depth data matrix
         rgbd_im = state.rgbd_im
         d_im = rgbd_im.depth
@@ -70,15 +75,18 @@ class FullyConvolutionalAngularPolicy(object):
             preds = self._gqcnn.predict(images, depths)
         success_ind = np.arange(1, preds.shape[-1], 2)
 
+        # if we want to visualize the top k, then extract those indices, else just get the top 1
+        top_k = self._top_k_to_vis if self._vis_top_k else 1
+
         # get indices of top k predictions
         preds_success_only = preds[:, :, :, success_ind]
         preds_success_only_flat = np.ravel(preds_success_only)
-        top_k_pred_ind_flat = np.argpartition(preds_success_only_flat, -1 * self._top_k_grasps)[-1 * self._top_k_grasps:]
-        top_k_pred_ind = np.zeros((self._top_k_grasps, len(preds.shape)), dtype=np.int32)
+        top_k_pred_ind_flat = np.argpartition(preds_success_only_flat, -1 * top_k)[-1 * top_k:]
+        top_k_pred_ind = np.zeros((top_k, len(preds.shape)), dtype=np.int32)
         im_width = preds_success_only.shape[2]
         im_height = preds_success_only.shape[1]
         num_angular_bins = preds_success_only.shape[3]
-        for k in range(self._top_k_grasps):
+        for k in range(top_k):
             top_k_pred_ind[k, 0] = top_k_pred_ind_flat[k] // (im_width * im_height * num_angular_bins) 
             top_k_pred_ind[k, 1] = (top_k_pred_ind_flat[k] - (top_k_pred_ind[k, 0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
             top_k_pred_ind[k, 2] = (top_k_pred_ind_flat[k] - (top_k_pred_ind[k, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[k, 1] * (im_width * num_angular_bins))) // num_angular_bins
@@ -87,7 +95,7 @@ class FullyConvolutionalAngularPolicy(object):
         # generate grasps
         grasps = []
         ang_bin_width = PI / preds_success_only.shape[-1]
-        for i in range(self._top_k_grasps):
+        for i in range(top_k):
             im_idx = top_k_pred_ind[i, 0]
             h_idx = top_k_pred_ind[i, 1]
             w_idx = top_k_pred_ind[i, 2]
@@ -100,12 +108,11 @@ class FullyConvolutionalAngularPolicy(object):
             grasps.append(pj_grasp)
 
         # visualize
-        if self._vis_final_k:
+        if self._vis_top_k:
             vis.figure((15, 15))
             vis.imshow(d_im)
-            for i in range(self._top_k_grasps):
+            for i in range(top_k):
                 vis.grasp(grasps[i].grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color=plt.cm.RdYlGn(grasps[i].q_value))
-            vis.show()
+            vis.show() 
 
-#        import IPython
-#        IPython.embed() 
+        return grasps[-1]
