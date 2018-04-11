@@ -31,7 +31,7 @@ from visualizer import Visualizer
 from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
 from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
-from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction, ParallelJawGrasp
+from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction, ParallelJawGrasp, SingleShotGraspingPolicy
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 
@@ -43,7 +43,7 @@ __all__ = ['GQCNN',
            'Grasp2D', 'SuctionPoint2D',
            'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'DepthImageSuctionPointSampler', 'ImageGraspSamplerFactory'
            'Visualizer',
-           'GraspAction', 'Policy', 'GraspingPolicy', 'UniformRandomGraspingPolicy', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy',
+           'GraspAction', 'Policy', 'GraspingPolicy', 'UniformRandomGraspingPolicy', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'SingleShotGraspingPolicy'
            'RgbdImageState',
            'NoValidGraspsException', 'NoAntipodalPairsFoundException',
            'GQCNNPredictionVisualizer',

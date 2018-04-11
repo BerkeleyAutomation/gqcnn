@@ -988,3 +988,70 @@ class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
         # return action
         return GraspAction(grasp, q_value, image)
 
+class SingleShotGraspingPolicy(Policy):
+    def __init__(self, config, *args, **kwargs):
+        if sys.version_info.major == 3:
+            super().__init__(*args, **kwargs)
+        else:
+            super(Policy, self).__init__(*args, **kwargs)
+        from keras.models import Model, load_model
+        from ssgd.train.loss import lambda_custom_loss, loss_fn
+        self.config = config
+        self.gripper_width = config['gripper_width']
+        self.model_dir = config['model_dir']
+        self.model_file = config['model_file']
+        self.image_mean = config['image_mean']
+        self.image_std =  config['image_std']
+        self.input_x = config['input_x']
+        self.input_y = config['input_y']
+        self.model = load_model(
+            os.path.join(self.model_dir, self.model_file),
+            custom_objects={
+                'lambda_custom_loss': lambda_custom_loss,
+                'loss_fn': loss_fn
+            })
+        self.intermediate_layer_model = Model(
+            inputs=self.model.inputs,
+            outputs=self.model.get_layer("y_pred").output)
+        output_shape = self.intermediate_layer_model.output.shape
+        self.dummy_input = np.zeros([1, output_shape[1], output_shape[2], output_shape[3]])
+
+    def action(self, state):
+        from ssgd.train.decode import decode_angle, decode_output
+        import keras.backend as K
+        # why are these 300x400?
+        depth_im = state.rgbd_im.depth
+        segmask = state.segmask
+        camera_intr = state.camera_intr
+        segmask = segmask.resize((self.input_x, self.input_y, 1))
+        depth_im = depth_im.resize((self.input_x, self.input_y, 1)).data
+        depth_im = (depth_im - self.image_mean) / self.image_std
+        X = [np.reshape(depth_im, [1, self.input_x, self.input_y, 1]), self.dummy_input]
+        intermediate_output = self.intermediate_layer_model.predict(X)
+        grasps = decode_output(intermediate_output, k=169, config=self.config) \
+            .eval(session=K.get_session())
+        grasps[..., -1] = (K.sigmoid(grasps[..., -2]) * K.sigmoid(grasps[..., -1])) \
+            .eval(session=K.get_session())
+
+        best_grasp = self._filter_segmask(grasps[0], segmask)
+
+        grasp_center = Point(best_grasp[:2], camera_intr.frame)
+        cos_twice_angle = best_grasp[2]
+        sin_twice_angle = best_grasp[3]
+        depth = best_grasp[4]
+        theta = decode_angle(x=cos_twice_angle, y=sin_twice_angle)
+        grasp = Grasp2D(grasp_center, theta, depth, width=self.gripper_width, camera_intr=camera_intr)
+        return GraspAction(grasp, best_grasp[-1], state.rgbd_im.depth)
+
+    def _filter_segmask(self, predicted_grasps, segmask):
+        highest_confidence = -float("inf")
+        best_grasp = None
+        for grasp in predicted_grasps:
+            x = int(grasp[0])
+            y = int(grasp[1])
+            if x >= 0 and x < self.input_x and y >= 0 and y < self.input_y:
+                valid = segmask[x, y, 0] != 0
+                if valid and grasp[-1] > highest_confidence:
+                    highest_confidence = grasp[-1]
+                    best_grasp = grasp
+        return best_grasp
