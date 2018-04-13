@@ -347,7 +347,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             valid = True
             for filter_name, is_valid in self._filters.iteritems():
                 valid = is_valid(grasp) 
-                logging.info('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                logging.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
                 if not valid:
                     valid = False
                     break
@@ -729,12 +729,23 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
                         
                     bounds_start = time()
+                    # check in bounds
                     if state.segmask is None or \
                         (grasp.center.y >= 0 and grasp.center.y < state.segmask.height and \
                          grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
                          np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0) and \
                          grasp.approach_angle < self._max_approach_angle):
-                        grasps.append(grasp)
+
+                        # check validity according to filters
+                        valid = True
+                        for filter_name, is_valid in self._filters.iteritems():
+                            valid = is_valid(grasp) 
+                            logging.info('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                            if not valid:
+                                valid = False
+                                break
+                        if valid:
+                            grasps.append(grasp)
                     logging.debug('Bounds took %.5f sec' %(time()-bounds_start))
                     num_tries += 1
                     
