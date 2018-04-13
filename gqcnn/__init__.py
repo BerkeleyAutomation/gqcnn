@@ -19,21 +19,20 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from .version import __version__
-from .optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
-from .train_stats_logger import TrainStatsLogger
-from .learning_analysis import ClassificationResult, RegressionResult, ConfusionMatrix
+from neural_networks import GQCNN
+from sgd_optimizer import SGDOptimizer
+from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
+from train_stats_logger import TrainStatsLogger
+from learning_analysis import ClassificationResult, RegressionResult, ConfusionMatrix
+from gqcnn_analyzer import GQCNNAnalyzer
 
-from .neural_networks import GQCNN
-from .sgd_optimizer import SGDOptimizer
-from .gqcnn_analyzer import GQCNNAnalyzer
-
-from .grasp import Grasp2D
-from .visualizer import Visualizer
-from .policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
-from .image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
-from .policy import Policy, GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, QFunctionAntipodalGraspingPolicy, EpsilonGreedyQFunctionAntipodalGraspingPolicy, RgbdImageState, ParallelJawGrasp
-from .gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
+from grasp import Grasp2D, SuctionPoint2D
+from visualizer import Visualizer
+from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
+from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
+from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
+from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction, ParallelJawGrasp
+from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 
            'SGDOptimizer',
@@ -41,10 +40,11 @@ __all__ = ['GQCNN',
            'ImageMode', 'TrainingMode', 'PreprocMode', 'InputDataMode',
            'TrainStatsLogger',
            'ClassificationResult', 'RegressionResult', 'ConfusionMatrix',
-           'Grasp2D',
-           'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'ImageGraspSamplerFactory'
-           'Visualizer', 'RobotGripper',
-           'ParallelJawGrasp', 'Policy', 'GraspingPolicy', 'AntipodalGraspingPolicy', 'CrossEntropyAntipodalGraspingPolicy',
+           'Grasp2D', 'SuctionPoint2D',
+           'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'DepthImageSuctionPointSampler', 'ImageGraspSamplerFactory'
+           'Visualizer',
+           'GraspAction', 'Policy', 'GraspingPolicy', 'UniformRandomGraspingPolicy', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy',
            'RgbdImageState',
            'NoValidGraspsException', 'NoAntipodalPairsFoundException',
-           'GQCNNPredictionVisualizer']
+           'GQCNNPredictionVisualizer',
+           'GraspQualityFunction', 'SuctionQualityFunction', 'BestFitPlanaritySuctionQualityFunction', 'ApproachPlanaritySuctionQualityFunction', 'GQCnnQualityFunction', 'GraspQualityFunctionFactory']

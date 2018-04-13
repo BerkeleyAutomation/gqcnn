@@ -29,6 +29,7 @@ import numpy as np
 
 from autolab_core import Box, Contour
 from perception import BinaryImage, ColorImage, DepthImage, GrayscaleImage, RgbdImage, GdImage, SegmentationImage
+from gqcnn import Grasp2D, SuctionPoint2D
 
 class Visualizer:
     @staticmethod
@@ -52,9 +53,18 @@ class Visualizer:
         return plt.figure(figsize=size, *args, **kwargs)
     
     @staticmethod
-    def show(*args, **kwargs):
-        """ Show the current figure """
-        plt.show(*args, **kwargs)
+    def show(filename=None, *args, **kwargs):
+        """ Show the current figure.
+
+        Parameters
+        ----------
+        filename : :obj:`str`
+            filename to save the image to, for auto-saving
+        """
+        if filename is None:
+            plt.show(*args, **kwargs)
+        else:
+            plt.savefig(filename, *args, **kwargs)
 
     @staticmethod
     def clf(*args, **kwargs):
@@ -165,11 +175,11 @@ class Visualizer:
         plt.plot(bottom[:,0], bottom[:,1], linewidth=line_width, color=color, linestyle=style)
 
     @staticmethod
-    def grasp(grasp, color='r', arrow_len=4, arrow_head_len = 2, arrow_head_width = 3,
-              arrow_width = 1, jaw_len=3, jaw_width = 3.0,
-              grasp_center_size=7.5, grasp_center_thickness=2.5,
+    def grasp(grasp, width=None, color='r', arrow_len=4, arrow_head_len = 2, arrow_head_width = 3,
+              arrow_width = 1, jaw_len=3, jaw_width = 1.0,
+              grasp_center_size=1, grasp_center_thickness=2.5,
               grasp_center_style='+', grasp_axis_width=1,
-              grasp_axis_style='--', line_width=8.0, show_center=True, show_axis=False, scale=1.0):
+              grasp_axis_style='--', line_width=1.0, show_center=True, show_axis=False, scale=1.0):
         """
         Plots a 2D grasp with arrow and jaw style using matplotlib
         
@@ -177,6 +187,8 @@ class Visualizer:
         ----------
         grasp : :obj:`Grasp2D`
             2D grasp to plot
+        width : float
+            width, in pixels, of the grasp (overrides Grasp2D.width_px)
         color : :obj:`str`
             color of plotted grasp
         arrow_len : float
@@ -204,14 +216,27 @@ class Visualizer:
         show_axis : bool
             whether or not to plot the grasp axis
         """
+        # set vars for suction
+        skip_jaws = False
+        if isinstance(grasp, SuctionPoint2D):
+            grasp_center_style = '.'
+            grasp_center_size = 25
+            plt.scatter(grasp.center.x, grasp.center.y, c=color, marker=grasp_center_style, s=scale*grasp_center_size)
+            return
+
         # plot grasp center
         if show_center:
             plt.plot(grasp.center.x, grasp.center.y, c=color, marker=grasp_center_style, mew=scale*grasp_center_thickness, ms=scale*grasp_center_size)
+        if skip_jaws:
+            return
         
         # compute axis and jaw locations
         axis = grasp.axis
-        g1 = grasp.center.data - (float(grasp.width_px) / 2) * axis
-        g2 = grasp.center.data + (float(grasp.width_px) / 2) * axis
+        width_px = width
+        if width_px is None and isinstance(grasp, Grasp2D):
+            width_px = grasp.width_px
+        g1 = grasp.center.data - (float(width_px) / 2) * axis
+        g2 = grasp.center.data + (float(width_px) / 2) * axis
         g1p = g1 - scale * arrow_len * axis # start location of grasp jaw 1
         g2p = g2 + scale * arrow_len * axis # start location of grasp jaw 2
 

@@ -1,4 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
+mode: analysis
+
 # dataset 
 dataset_dir: /path/to/your/dataset
 output_dir: /path/to/output/trained/models
@@ -7,7 +9,7 @@ model_dir: /path/to/your/pretrained/gqcnn/model
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
-num_epochs: 25     # number of epochs to train for
+num_epochs: 2.5     # number of epochs to train for
 eval_frequency: 1000  # how often to get validation error 
 save_frequency: 1000  # how often to save output
 vis_frequency: 1000
@@ -89,7 +91,7 @@ background_rate: 0.25
 background_min_depth: 0.0
 background_max_depth: 0.65
 
-drop_fc3: 0
+drop_fc3: 1
 fc3_drop_rate: 0.5
 drop_fc4: 0
 fc4_drop_rate: 0.5

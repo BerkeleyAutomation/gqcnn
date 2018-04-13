@@ -13,17 +13,17 @@ A policy for robust grasping with GQCNN's
 
 .. autoclass:: gqcnn.GraspingPolicy
 
-AntipodalGraspingPolicy
+RobustGraspingPolicy
 ~~~~~~~~~~~~~~~~~~~~~~~
-A policy for robust grasping with GQCNN's using sampling of
-antipodal grasp candidates from an image space and ranking using a 
+A policy for robust grasping with GQCNNs using sampling of
+grasp candidates from an image space and ranking using a 
 GQCNN instance. 
 
 .. autoclass:: gqcnn.AntipodalGraspingPolicy
 
-CrossEntropyAntipodalGraspingPolicy
+CrossEntropRobustGraspingPolicy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-A policy for robust grasping with GQCNN's using antipodal point sampling and 
+A policy for robust grasping with GQCNN's using image-based grasp sampling and 
 a cross-entropy method.
 
 .. autoclass:: gqcnn.CrossEntropyAntipodalGraspingPolicy

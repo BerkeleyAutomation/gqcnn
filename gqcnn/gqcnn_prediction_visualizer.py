@@ -32,9 +32,9 @@ from random import shuffle
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig, Point
-from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
+from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode, CameraIntrinsics
 
-from . import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
+from . import Grasp2D, SuctionPoint2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
 from . import Visualizer as vis2d
 
 import IPython
@@ -42,16 +42,29 @@ import IPython
 class GQCNNPredictionVisualizer(object):
     """ Class to visualize predictions of GQCNN on a specified dataset. Visualizes TP, TN, FP, FN. """
 
-    def __init__(self, config):
+    def __init__(self, dataset_path, config):
         """
         Parameters
         ----------
+        dataset_path : str
+            path to a tensor dataset containing test datapoints
         config : dict
             dictionary of configuration parameters
         """
+        # open dataset
+        self.dataset_path = dataset_path
+        from dexnet.learning import TensorDataset
+        self.dataset = TensorDataset.open(self.dataset_path)
+        
         # setup config
     	self.cfg = config
-
+        self.camera_intr = CameraIntrinsics('phoxi',
+                                            fx=self.cfg['camera']['focal'],
+                                            cx=self.cfg['camera']['cx'],
+                                            cy=self.cfg['camera']['cy'],
+                                            height=self.cfg['camera']['height'],
+                                            width=self.cfg['camera']['width'])
+        
     	# setup for visualization
     	self._setup()
 
@@ -61,21 +74,29 @@ class GQCNNPredictionVisualizer(object):
         logging.info('Visualizing ' + self.datapoint_type)
 
         # iterate through shuffled file indices
-        for i in self.indices:
-            im_filename = self.im_filenames[i]
-            pose_filename = self.pose_filenames[i]
-            label_filename = self.label_filenames[i]
+        for i in self.tensor_indices:
+            logging.info('Loading Tensor: {}'.format(i))
 
-            logging.info('Loading Image File: ' + im_filename + ' Pose File: ' + pose_filename + ' Label File: ' + label_filename)
+            # read tensor indices
+            datapoint_indices = self.dataset.datapoint_indices_for_tensor(i)
 
+            # read datapoints
+            datapoints = []
+            for j in datapoint_indices:
+                datapoints.append(self.dataset.datapoint(j))
+            
             # load tensors from files
-            metric_tensor = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
+            metric_tensor = np.array([d[self.target_metric_name] for d in datapoints])
             label_tensor = 1 * (metric_tensor > self.metric_thresh)
-            image_tensor = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
-            hand_poses_tensor = np.load(os.path.join(self.data_dir, pose_filename))['arr_0']
+            image_tensor = np.array([d[self.image_mode] for d in datapoints])
+            grasp_poses_tensor = np.array([d[ImageFileTemplates.grasps_template] for d in datapoints])
+            split_tensor = np.array([d['split'] for d in datapoints])
+            pose_tensor = self._read_pose_data(grasp_poses_tensor, self.input_data_mode)
 
-            pose_tensor = self._read_pose_data(hand_poses_tensor, self.input_data_mode)
-
+            aux_tensors = {}
+            for field in self.cfg['aux_fields']:
+                aux_tensors[field] = np.array([d[field] for d in datapoints])
+            
             # score with neural network
             pred_p_success_tensor = self._gqcnn.predict(image_tensor, pose_tensor)
 
@@ -88,7 +109,6 @@ class GQCNNPredictionVisualizer(object):
             logging.info('Recall on files: %.3f' %(classification_result.recall))
             mispred_ind = classification_result.mispredicted_indices()
             correct_ind = classification_result.correct_indices()
-            # IPython.embed()
 
             if self.datapoint_type == 'true_positive' or self.datapoint_type == 'true_negative':
                 vis_ind = correct_ind
@@ -102,6 +122,10 @@ class GQCNNPredictionVisualizer(object):
                     break
                 num_visualized += 1
 
+                # reject training datapoints
+                if split_tensor[ind] == 0:
+                    continue
+                
                 # don't visualize the datapoints that we don't want
                 if self.datapoint_type == 'true_positive':
                     if classification_result.labels[ind] == 0:
@@ -110,15 +134,20 @@ class GQCNNPredictionVisualizer(object):
                     if classification_result.labels[ind] == 1:
                         continue
                 elif self.datapoint_type == 'false_positive':
-                    if classification_result.labels[ind] == 0:
-                        continue
-                elif self.datapoint_type == 'false_negative':
                     if classification_result.labels[ind] == 1:
                         continue
+                elif self.datapoint_type == 'false_negative':
+                    if classification_result.labels[ind] == 0:
+                        continue
+                num_visualized += 1
 
-                logging.info('Datapoint %d of files for %s' %(ind, im_filename))
-                logging.info('Depth: %.3f' %(hand_poses_tensor[ind, 2]))
-
+                logging.info('Datapoint %d of tensor %d' %(ind, i))
+                logging.info('Depth: %.3f' %(grasp_poses_tensor[ind, 2]))
+                if self.cfg['data_format'] == 'tf_image_suction':
+                    logging.info('Angle: %.3f' %(np.rad2deg(grasp_poses_tensor[ind, 3])))
+                if self.cfg['data_format'] == 'suction':
+                    logging.info('Angle: %.3f' %(np.rad2deg(grasp_poses_tensor[ind, 4])))
+                    
                 data = image_tensor[ind,...]
                 if self.display_image_type == RenderMode.SEGMASK:
                     image = BinaryImage(data)
@@ -133,13 +162,18 @@ class GQCNNPredictionVisualizer(object):
                 elif self.display_image_type == RenderMode.GD:
                     image = GdImage(data)
 
-                vis2d.figure()
+                grasp = Grasp2D(Point(image.center, 'img'), 0, grasp_poses_tensor[ind, 2], self.gripper_width_m, camera_intr=self.camera_intr)
+                if self.cfg['data_format'] == 'tf_image_suction' or self.cfg['data_format'] == 'suction':
+                    grasp = SuctionPoint2D(Point(image.center, 'img'), np.array([1,0,0]), grasp_poses_tensor[ind, 2], camera_intr=self.camera_intr)
 
+                for field in aux_tensors.keys():
+                    logging.info('Field {}: {}'.format(field, aux_tensors[field][ind]))
+                    
+                vis2d.figure()
+                
                 if self.display_image_type == RenderMode.RGBD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.color)
-                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
-                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                     vis2d.subplot(1,2,2)
                     vis2d.imshow(image.depth)
@@ -147,16 +181,12 @@ class GQCNNPredictionVisualizer(object):
                 elif self.display_image_type == RenderMode.GD:
                     vis2d.subplot(1,2,1)
                     vis2d.imshow(image.gray)
-                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
-                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                     vis2d.subplot(1,2,2)
                     vis2d.imshow(image.depth)
                     vis2d.grasp(grasp)
                 else:
                     vis2d.imshow(image)
-                    grasp = Grasp2D(Point(image.center, 'img'), 0, hand_poses_tensor[ind, 2], self.gripper_width_m)
-                    grasp.camera_intr = grasp.camera_intr.resize(1.0 / 3.0)
                     vis2d.grasp(grasp)
                 vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(ind,
                                                                      classification_result.pred_probs[ind,1],
@@ -178,9 +208,6 @@ class GQCNNPredictionVisualizer(object):
 
     	#### read config params ###
 
-    	# dataset directory
-    	self.data_dir = self.cfg['dataset_dir']
-
     	# visualization params
         self.display_image_type = self.cfg['display_image_type']
         self.font_size = self.cfg['font_size']
@@ -193,9 +220,6 @@ class GQCNNPredictionVisualizer(object):
         self.target_metric_name = self.cfg['metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
         self.gripper_width_m = self.cfg['gripper_width_m']
-
-        # setup data filenames
-        self._setup_data_filenames()
 
         # setup shuffled file indices
         self._compute_indices()
@@ -247,8 +271,8 @@ class GQCNNPredictionVisualizer(object):
     def _compute_indices(self):
         """ Generate random file index so visualization starts from a 
             different random file everytime """
-        self.indices = np.arange(len(self.im_filenames))
-        np.random.shuffle(self.indices)
+        self.tensor_indices = np.arange(self.dataset.num_tensors)
+        np.random.shuffle(self.tensor_indices)
 
     def _read_pose_data(self, pose_arr, input_data_mode):
         """ Read the pose data and slice it according to the specified input_data_mode
@@ -274,12 +298,11 @@ class GQCNNPredictionVisualizer(object):
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
+        elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            return pose_arr[:,2:4]
         elif input_data_mode == InputDataMode.RAW_IMAGE:
             return pose_arr[:,:4]
         elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
             return pose_arr[:,:6]
-        elif input_data_mode == InputDataMode.REGRASPING:
-            # depth, approach angle, and delta angle for reorientation
-            return np.c_[pose_arr[:,2:3], pose_arr[:,4:5], pose_arr[:,6:7]]
         else:
             raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))

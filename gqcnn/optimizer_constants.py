@@ -27,9 +27,10 @@ import tensorflow as tf
 
 # other constants
 class GeneralConstants:
-    SEED = 95417238
+    SEED = 3472134
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
-
+    JSON_INDENT = 2
+    
 # enum for templates for file reading
 class ImageFileTemplates:
     binary_im_tensor_template = 'binary_ims_raw'
@@ -37,12 +38,15 @@ class ImageFileTemplates:
     binary_im_tf_tensor_template = 'binary_ims_tf'
     color_im_tf_tensor_template = 'color_ims_tf'
     gray_im_tf_tensor_template = 'gray_ims_tf'
-    depth_im_tf_tensor_template = 'depth_ims_tf'
+    depth_im_tf_tensor_template = 'tf_depth_ims'
     depth_im_tf_table_tensor_template = 'depth_ims_tf_table'
+    tf_depth_ims_tensor_template = 'tf_depth_ims'
     table_mask_template = 'table_mask'
     hand_poses_template = 'hand_poses'
+    grasps_template = 'grasps'
     object_labels_template = 'object_labels'
     pose_labels_template = 'pose_labels'
+    splits_template = 'split'
 
 # enum for image modalities
 class ImageMode:
@@ -53,7 +57,8 @@ class ImageMode:
     GRAY_TF = 'gray_tf'
     DEPTH_TF = 'depth_tf'
     DEPTH_TF_TABLE = 'depth_tf_table'
-
+    TF_DEPTH_IMS = 'tf_depth_ims'
+    
 # enum for training modes
 class TrainingMode:
     CLASSIFICATION = 'classification'
@@ -66,7 +71,10 @@ class PreprocMode:
 
 # enum for input data formats
 class InputDataMode:
+    PARALLEL_JAW = 'parallel_jaw'
+    SUCTION = 'suction'
     TF_IMAGE = 'tf_image'
     TF_IMAGE_PERSPECTIVE = 'tf_image_with_perspective'
+    TF_IMAGE_SUCTION = 'tf_image_suction'
     RAW_IMAGE = 'raw_image'
     RAW_IMAGE_PERSPECTIVE = 'raw_image_with_perspective'
