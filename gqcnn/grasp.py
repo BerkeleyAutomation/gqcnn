@@ -60,9 +60,7 @@ class Grasp2D(object):
             self.camera_intr = CameraIntrinsics('primesense_overhead', fx=525, fy=525, cx=319.5, cy=239.5, width=640, height=480)
         else: 
             self.camera_intr = camera_intr
-        self.contact_points = contact_points
-        self.contact_normals = contact_normals
-            
+
     @property
     def axis(self):
         """ Returns the grasp axis. """
@@ -77,7 +75,6 @@ class Grasp2D(object):
     def frame(self):
         """ The name of the frame of reference for the grasp. """
         if self.camera_intr is None:
-
             raise ValueError('Must specify camera intrinsics')
         return self.camera_intr.frame
 
