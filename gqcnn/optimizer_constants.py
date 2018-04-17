@@ -30,24 +30,9 @@ class GeneralConstants:
     SEED = 3472134
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
     JSON_INDENT = 2
+    QUEUE_CAPACITY = 100
+    QUEUE_SLEEP = 0.001
     
-# enum for templates for file reading
-class ImageFileTemplates:
-    binary_im_tensor_template = 'binary_ims_raw'
-    depth_im_tensor_template = 'depth_ims_raw'
-    binary_im_tf_tensor_template = 'binary_ims_tf'
-    color_im_tf_tensor_template = 'color_ims_tf'
-    gray_im_tf_tensor_template = 'gray_ims_tf'
-    depth_im_tf_tensor_template = 'tf_depth_ims'
-    depth_im_tf_table_tensor_template = 'depth_ims_tf_table'
-    tf_depth_ims_tensor_template = 'tf_depth_ims'
-    table_mask_template = 'table_mask'
-    hand_poses_template = 'hand_poses'
-    grasps_template = 'grasps'
-    object_labels_template = 'object_labels'
-    pose_labels_template = 'pose_labels'
-    splits_template = 'split'
-
 # enum for image modalities
 class ImageMode:
     BINARY = 'binary'
@@ -62,19 +47,11 @@ class ImageMode:
 # enum for training modes
 class TrainingMode:
     CLASSIFICATION = 'classification'
-    REGRESSION = 'regression'
-
-# enum for preproc
-class PreprocMode:
-    NORMALIZATION = 'normalized'
-    NONE = 'none'
+    REGRESSION = 'regression' # has not been shown to work, for experimentation only!
 
 # enum for input data formats
-class InputDataMode:
+class GripperMode:
     PARALLEL_JAW = 'parallel_jaw'
     SUCTION = 'suction'
-    TF_IMAGE = 'tf_image'
-    TF_IMAGE_PERSPECTIVE = 'tf_image_with_perspective'
-    TF_IMAGE_SUCTION = 'tf_image_suction'
-    RAW_IMAGE = 'raw_image'
-    RAW_IMAGE_PERSPECTIVE = 'raw_image_with_perspective'
+    LEGACY_PARALLEL_JAW = 'legacy_parallel_jaw'
+    LEGACY_SUCTION = 'legacy_suction'

@@ -31,11 +31,12 @@ import sys
 from random import shuffle
 
 import autolab_core.utils as utils
-from autolab_core import YamlConfig, Point
+from autolab_core import BinaryClassificationResult, Point, YamlConfig
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode, CameraIntrinsics
 
-from . import Grasp2D, SuctionPoint2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
+from . import Grasp2D, SuctionPoint2D, GQCNN, GripperMode, ImageMode
 from . import Visualizer as vis2d
+from .utils import *
 
 import IPython
 
@@ -91,7 +92,8 @@ class GQCNNPredictionVisualizer(object):
             image_tensor = np.array([d[self.image_mode] for d in datapoints])
             grasp_poses_tensor = np.array([d[ImageFileTemplates.grasps_template] for d in datapoints])
             split_tensor = np.array([d['split'] for d in datapoints])
-            pose_tensor = self._read_pose_data(grasp_poses_tensor, self.input_data_mode)
+            pose_tensor = read_pose_data(grasp_poses_tensor,
+                                         self.gripper_mode)
 
             aux_tensors = {}
             for field in self.cfg['aux_fields']:
@@ -101,8 +103,8 @@ class GQCNNPredictionVisualizer(object):
             pred_p_success_tensor = self._gqcnn.predict(image_tensor, pose_tensor)
 
             # compute results
-            classification_result = ClassificationResult([pred_p_success_tensor],
-                                                         [label_tensor])
+            classification_result = BinaryClassificationResult(pred_p_success_tensor,
+                                                               label_tensor)
 
             logging.info('Error rate on files: %.3f' %(classification_result.error_rate))
             logging.info('Precision on files: %.3f' %(classification_result.precision))
@@ -216,7 +218,7 @@ class GQCNNPredictionVisualizer(object):
         # analysis params
         self.datapoint_type = self.cfg['datapoint_type']
         self.image_mode = self.cfg['image_mode']
-        self.input_data_mode = self.cfg['data_format']
+        self.gripper_mode = self.cfg['gripper_mode']
         self.target_metric_name = self.cfg['metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
         self.gripper_width_m = self.cfg['gripper_width_m']
@@ -274,35 +276,3 @@ class GQCNNPredictionVisualizer(object):
         self.tensor_indices = np.arange(self.dataset.num_tensors)
         np.random.shuffle(self.tensor_indices)
 
-    def _read_pose_data(self, pose_arr, input_data_mode):
-        """ Read the pose data and slice it according to the specified input_data_mode
-
-        Parameters
-        ----------
-        pose_arr: :obj:`ndArray`
-            full pose data array read in from file
-        input_data_mode: :obj:`InputDataMode`
-            enum for input data mode, see optimizer_constants.py for all
-            possible input data modes 
-
-        Returns
-        -------
-        :obj:`ndArray`
-            sliced pose_data corresponding to input data mode
-        """
-        if input_data_mode == InputDataMode.PARALLEL_JAW:
-            return pose_arr[:,2:3]
-        elif input_data_mode == InputDataMode.SUCTION:
-            return np.c_[pose_arr[:,2], pose_arr[:,4]]
-        elif input_data_mode == InputDataMode.TF_IMAGE:
-            return pose_arr[:,2:3]
-        elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-            return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-        elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-            return pose_arr[:,2:4]
-        elif input_data_mode == InputDataMode.RAW_IMAGE:
-            return pose_arr[:,:4]
-        elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
-            return pose_arr[:,:6]
-        else:
-            raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))

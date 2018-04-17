@@ -35,10 +35,10 @@ import scipy.ndimage.filters as snf
 
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
-from gqcnn import Grasp2D, SuctionPoint2D, GQCNN, InputDataMode
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
 
-from gqcnn import Visualizer as vis
+from . import Grasp2D, SuctionPoint2D, GQCNN, GripperMode
+from . import Visualizer as vis
 
 # constant for display
 FIGSIZE = 16
@@ -876,7 +876,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         gqcnn_im_width = self.gqcnn.im_width
         gqcnn_num_channels = self.gqcnn.num_channels
         gqcnn_pose_dim = self.gqcnn.pose_dim
-        input_data_mode = self.gqcnn.input_data_mode
+        gripper_mode = self.gqcnn.gripper_mode
         num_grasps = len(grasps)
         depth_im = state.rgbd_im.depth
 
@@ -894,18 +894,16 @@ class GQCnnQualityFunction(GraspQualityFunction):
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
             image_tensor[i,...] = im_tf.raw_data
             
-            if input_data_mode == InputDataMode.PARALLEL_JAW:
+            if gripper_mode == GripperMode.PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
-            elif input_data_mode == InputDataMode.SUCTION:
+            elif gripper_mode == GripperMode.SUCTION:
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
-            elif input_data_mode == InputDataMode.TF_IMAGE:
+            elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
-            elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.center.x, grasp.center.y])
-            elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            elif gripper_mode == GripperMode.LEGACY_SUCTION:
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
             else:
-                raise ValueError('Input data mode %s not supported' %(input_data_mode))
+                raise ValueError('Gripper mode %s not supported' %(gripper_mode))
         logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
         return image_tensor, pose_tensor
 
@@ -968,7 +966,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
         self._im_width = config['im_width']
         self._num_channels = config['num_channels']
         self._pose_dim = config['pose_dim']
-        self._input_data_mode = config['input_data_mode']
+        self._gripper_mode = config['gripper_mode']
 
         # init config
         model = ConvNetModel()
@@ -1011,7 +1009,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
         gqcnn_im_width = self._im_width
         gqcnn_num_channels = self._num_channels
         gqcnn_pose_dim = self._pose_dim
-        input_data_mode = self._input_data_mode
+        gripper_mode = self._gripper_mode
         num_grasps = len(grasps)
         depth_im = state.rgbd_im.depth
 
@@ -1033,14 +1031,16 @@ class NoMagicQualityFunction(GraspQualityFunction):
             im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8), 0)
             image_tensor[i,:,:,0] = im_decoded
             
-            if input_data_mode == InputDataMode.TF_IMAGE:
+            if gripper_mode == GripperMode.PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
-            elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.center.x, grasp.center.y])
-            elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            elif gripper_mode == GripperMode.SUCTION:
+                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
+            elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
+                pose_tensor[i] = grasp.depth
+            elif gripper_mode == GripperMode.LEGACY_SUCTION:
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
             else:
-                raise ValueError('Input data mode %s not supported' %(input_data_mode))
+                raise ValueError('Gripper mode %s not supported' %(gripper_mode))
         logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
         return image_tensor.astype(np.uint8), pose_tensor
 

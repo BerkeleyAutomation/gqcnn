@@ -36,7 +36,8 @@ import sys
 import tensorflow as tf
 
 from autolab_core import YamlConfig
-from . import InputDataMode, TrainingMode
+from .optimizer_constants import GripperMode, TrainingMode
+from .utils import *
 
 def reduce_shape(shape):
     """ Get shape of a layer for flattening """
@@ -44,20 +45,16 @@ def reduce_shape(shape):
     f = lambda x, y: 1 if y is None else x * y
     return reduce(f, shape, 1)
 
-
 class GQCnnWeights(object):
     """ Struct helper for storing weights """
-
     def __init__(self):
         pass
-
 
 class GQCnnDenoisingWeights(object):
     """ Struct helper for storing weights """
 
     def __init__(self):
         pass
-
 
 class GQCNN(object):
     """ Wrapper for grasp quality CNN """
@@ -94,8 +91,12 @@ class GQCNN(object):
         with open(config_file) as data_file:    
             train_config = json.load(data_file)
 
-        gqcnn_config = train_config['gqcnn_config']
-
+        try:
+            gqcnn_config = train_config['gqcnn']
+        except:
+            logging.warning('Failed to read GQ-CNN params. Attempting legacy read')
+            gqcnn_config = train_config['gqcnn_config']            
+            
         # create GQCNN object and initialize weights and network
         gqcnn = GQCNN(gqcnn_config)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
@@ -106,7 +107,7 @@ class GQCNN(object):
             gqcnn.initialize_network()
         else:
             raise ValueError('Invalid training mode: {}'.format(training_mode))
-        gqcnn.init_mean_and_std(model_dir)
+        gqcnn.load_mean_and_std(model_dir)
 
         return gqcnn
 
@@ -114,8 +115,9 @@ class GQCNN(object):
     def feature_tensors(self):
         """ Dictionary containing the tensors for intermediate GQ-CNN layers. """
         return self._feature_tensors
-    
-    def get_tf_graph(self):
+
+    @property
+    def tf_graph(self):
         """ Returns the graph for this tf session 
 
         Returns
@@ -125,7 +127,8 @@ class GQCNN(object):
         """
         return self._graph
 
-    def get_weights(self):
+    @property
+    def weights(self):
         """ Returns the weights for this network 
 
         Returns
@@ -135,7 +138,254 @@ class GQCNN(object):
         """
         return self._weights
 
-    def init_mean_and_std(self, model_dir):
+    @property
+    def batch_size(self):
+        return self._batch_size
+
+    @property
+    def im_height(self):
+        return self._im_height
+
+    @property
+    def im_width(self):
+        return self._im_width
+
+    @property
+    def im_mean(self):
+        return self._im_mean
+
+    @property
+    def im_std(self):
+        return self._im_std
+
+    @property
+    def pose_mean(self):
+        return self._pose_mean
+
+    @property
+    def pose_std(self):
+        return self._pose_std
+
+    @property
+    def num_channels(self):
+        return self._num_channels
+
+    @property
+    def pose_dim(self):
+        return self._pose_dim
+
+    @property
+    def gripper_mode(self):
+        return self._gripper_mode
+
+    @property
+    def input_im_node(self):
+        return self._input_im_node
+
+    @property
+    def input_pose_node(self):
+        return self._input_pose_node
+
+    @property
+    def output(self):
+        return self._output_tensor
+
+    @property
+    def weights(self):
+        return self._weights
+
+    @property
+    def graph(self):
+        return self._graph
+
+    def set_im_mean(self, im_mean):
+        """ Updates image mean to be used for normalization when predicting 
+        
+        Parameters
+        ----------
+        im_mean : float
+            image mean to be used
+        """
+        self._im_mean = im_mean
+
+    @property
+    def im_mean(self):
+        """ Get the current image mean to be used for normalization when predicting
+
+        Returns
+        -------
+        : float
+            image mean
+        """
+        return self.im_mean
+
+    def set_im_std(self, im_std):
+        """ Updates image standard deviation to be used for normalization when predicting 
+        
+        Parameters
+        ----------
+        im_std : float
+            image standard deviation to be used
+        """
+        self._im_std = im_std
+
+    @property
+    def im_std(self):
+        """ Get the current image standard deviation to be used for normalization when predicting
+
+        Returns
+        -------
+        : float
+            image standard deviation
+        """
+        return self.im_std
+
+    def set_pose_mean(self, pose_mean):
+        """ Updates pose mean to be used for normalization when predicting 
+        
+        Parameters
+        ----------
+        pose_mean :obj:`tensorflow Tensor`
+            pose mean to be used
+        """
+        self._pose_mean = pose_mean
+
+    @property
+    def pose_mean(self):
+        """ Get the current pose mean to be used for normalization when predicting
+
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            pose mean
+        """
+        return self._pose_mean
+
+    def set_pose_std(self, pose_std):
+        """ Updates pose standard deviation to be used for normalization when predicting 
+        
+        Parameters
+        ----------
+        pose_std :obj:`tensorflow Tensor`
+            pose standard deviation to be used
+        """
+        self._pose_std = pose_std
+
+    @property
+    def pose_std(self):
+        """ Get the current pose standard deviation to be used for normalization when predicting
+
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            pose standard deviation
+        """
+        return self._pose_std
+        
+    def add_softmax_to_predict(self):
+        """ Adds softmax to output tensor of prediction network """
+        self._output_tensor = tf.nn.softmax(self._output_tensor)
+
+    def add_sigmoid_to_predict(self):
+        """ Adds sigmoid to output tensor of prediction network """
+        self._output_tensor = tf.nn.sigmoid(self._output_tensor)
+
+    def set_batch_size(self, batch_size):
+        """ Updates the prediction batch size 
+
+        Parameters
+        ----------
+        batch_size : float
+            batch size to be used for prediction
+        """
+        self._batch_size = batch_size
+
+    @property
+    def filters(self):
+        """ Returns the set of conv1_1 filters 
+
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            filters(weights) from conv1_1 of the network
+        """
+
+        close_sess = False
+        if self._sess is None:
+            close_sess = True
+            self.open_session()
+
+        filters = self._sess.run(self._weights.conv1_1W)
+
+        if close_sess:
+            self.close_session()
+        return filters
+
+    def _parse_config(self, config):
+        """ Parses configuration file for this GQCNN 
+
+        Parameters
+        ----------
+        config : dict
+            python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
+            im_height, im_width, ... 
+        """
+
+        # load tensor params
+        self._batch_size = config['batch_size']
+        self._im_height = config['im_height']
+        self._im_width = config['im_width']
+        self._num_channels = config['im_channels']
+        self._gripper_mode = config['gripper_mode']
+
+        # setup correct pose dimensions
+        self._pose_dim = pose_dim(self._gripper_mode)
+
+        # load architecture
+        self._architecture = config['architecture']
+        self._use_conv2 = False
+        if 'conv2_1' in self._architecture.keys():
+            self._use_conv2 = True
+        self._use_conv3 = False
+        if 'conv3_1' in self._architecture.keys():
+            self._use_conv3 = True
+        self._use_pc2 = False
+        if 'pc2' in self._architecture.keys() and self._architecture['pc2']['out_size'] > 0:
+            self._use_pc2 = True
+
+        # get in and out sizes of fully-connected layer for possible re-initialization
+        self.pc2_out_size = 0
+        if self._use_pc2:
+            self.pc2_out_size = self._architecture['pc2']['out_size']
+        self.pc1_in_size = self._pose_dim
+        self.pc1_out_size = self._architecture['pc1']['out_size']
+        self.fc3_in_size = self._architecture['pc1']['out_size']
+        if self._use_pc2:        
+            self.fc3_in_size = self._architecture['pc2']['out_size']
+        self.fc3_out_size = self._architecture['fc3']['out_size']
+        self.fc4_in_size = self._architecture['fc3']['out_size']
+        self.fc4_out_size = self._architecture['fc4']['out_size'] 
+        self.fc5_in_size = self._architecture['fc4']['out_size']
+        self.fc5_out_size = self._architecture['fc5']['out_size']
+
+        if self.pc2_out_size == 0:
+            self.fc4_pose_in_size = self.pc1_out_size
+        else:
+            self.fc4_pose_in_size = self.pc2_out_size
+
+        # load normalization constants
+        self.normalization_radius = config['radius']
+        self.normalization_alpha = config['alpha']
+        self.normalization_beta = config['beta']
+        self.normalization_bias = config['bias']
+
+        # initialize means and standard deviation to be 0 and 1, respectively
+        self._im_mean = 0
+        self._im_std = 1
+        self._pose_mean = np.zeros(self._pose_dim)
+        self._pose_std = np.ones(self._pose_dim)    
+    
+    def load_mean_and_std(self, model_dir):
         """ Initializes the mean and std to use for data normalization during prediction 
 
         Parameters
@@ -149,58 +399,6 @@ class GQCNN(object):
         self._im_std = np.load(os.path.join(model_dir, 'std.npy'))
         self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
         self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
-
-        # slice out the variables we want based on the input pose_dim, which
-        # is dependent on the input data mode used to train the model
-        if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] == 7:
-            if self._input_data_mode == InputDataMode.TF_IMAGE:
-                # depth
-                if isinstance(self.pose_mean, numbers.Number) \
-                   or len(self.pose_mean.shape) == 0 \
-                   or self.pose_mean.shape[0] == 1:
-                    self._pose_mean = self.pose_mean
-                else:
-                    self._pose_mean = self._pose_mean[2]
-                    self._pose_std = self._pose_std[2]
-            elif self._input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-                # depth, cx, cy
-                self._pose_mean = np.concatenate([self._pose_mean[2:3], self._pose_mean[4:6]])
-                self._pose_std = np.concatenate([self._pose_std[2:3], self._pose_std[4:6]])
-            elif self._input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-                # depth, phi
-                self._pose_mean = self._pose_mean[2:4]
-                self._pose_std = self._pose_std[2:4]
-            elif self._input_data_mode == InputDataMode.RAW_IMAGE:
-                # u, v, depth, theta
-                self._pose_mean = self._pose_mean[:4]
-                self._pose_std = self._pose_std[:4]
-            elif self._input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
-                # u, v, depth, theta, cx, cy
-                self._pose_mean = self._pose_mean[:6]
-                self._pose_std = self._pose_std[:6]
-
-        elif len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] == 4 and self._input_data_mode == InputDataMode.TF_IMAGE:
-            # depth
-            if isinstance(self.pose_mean, numbers.Number) \
-               or len(self.pose_mean.shape) == 0 \
-               or self.pose_mean.shape[0] == 1:
-                self._pose_mean = self.pose_mean
-            else:
-                self._pose_mean = self._pose_mean[2]
-                self._pose_std = self._pose_std[2]
-        elif len(self._pose_mean.shape) > 0 and (self._pose_mean.shape[0] == 5 or self._pose_mean.shape[0] == 6):
-            if self._input_data_mode == InputDataMode.PARALLEL_JAW:
-                # depth
-                if isinstance(self.pose_mean, numbers.Number) \
-                   or len(self.pose_mean.shape) == 0 \
-                   or self.pose_mean.shape[0] == 1:
-                    self._pose_mean = self.pose_mean
-                else:
-                    self._pose_mean = self._pose_mean[2]
-                    self._pose_std = self._pose_std[2]
-            elif self._input_data_mode == InputDataMode.SUCTION:
-                self._pose_mean = np.r_[self._pose_mean[2], self._pose_mean[4]]
-                self._pose_std = np.r_[self._pose_std[2], self._pose_std[4]]
                 
     def init_weights_file(self, model_filename):
         """ Initialize network weights from the specified model 
@@ -572,88 +770,6 @@ class GQCNN(object):
             self._weights.pc2W = pc2W
             self._weights.pc2b = pc2b
 
-    def _parse_config(self, config):
-        """ Parses configuration file for this GQCNN 
-
-        Parameters
-        ----------
-        config : dict
-            python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
-            im_height, im_width, ... 
-        """
-
-        # load tensor params
-        self._batch_size = config['batch_size']
-        self._im_height = config['im_height']
-        self._im_width = config['im_width']
-        self._num_channels = config['im_channels']
-        self._input_data_mode = config['input_data_mode']
-
-        # setup correct pose dimensions 
-        if self._input_data_mode == InputDataMode.PARALLEL_JAW:
-            self._pose_dim = 1
-        elif self._input_data_mode == InputDataMode.SUCTION:
-            self._pose_dim = 2
-        elif self._input_data_mode == InputDataMode.TF_IMAGE:
-            # depth
-            self._pose_dim = 1
-        elif self._input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-            # depth, cx, cy
-            self._pose_dim = 3
-        elif self._input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-            # depth, phi
-            self._pose_dim = 2
-        elif self._input_data_mode == InputDataMode.RAW_IMAGE:
-            # u, v, depth, theta
-            self._pose_dim = 4
-        elif self._input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
-            # u, v, depth, theta, cx, cy
-            self._pose_dim = 6
-
-        # load architecture
-        self._architecture = config['architecture']
-        self._use_conv2 = False
-        if 'conv2_1' in self._architecture.keys():
-            self._use_conv2 = True
-        self._use_conv3 = False
-        if 'conv3_1' in self._architecture.keys():
-            self._use_conv3 = True
-        self._use_pc2 = False
-        if 'pc2' in self._architecture.keys() and self._architecture['pc2']['out_size'] > 0:
-            self._use_pc2 = True
-
-        # get in and out sizes of fully-connected layer for possible re-initialization
-        self.pc2_out_size = 0
-        if self._use_pc2:
-            self.pc2_out_size = self._architecture['pc2']['out_size']
-        self.pc1_in_size = self._pose_dim
-        self.pc1_out_size = self._architecture['pc1']['out_size']
-        self.fc3_in_size = self._architecture['pc1']['out_size']
-        if self._use_pc2:        
-            self.fc3_in_size = self._architecture['pc2']['out_size']
-        self.fc3_out_size = self._architecture['fc3']['out_size']
-        self.fc4_in_size = self._architecture['fc3']['out_size']
-        self.fc4_out_size = self._architecture['fc4']['out_size'] 
-        self.fc5_in_size = self._architecture['fc4']['out_size']
-        self.fc5_out_size = self._architecture['fc5']['out_size']
-
-        if self.pc2_out_size == 0:
-            self.fc4_pose_in_size = self.pc1_out_size
-        else:
-            self.fc4_pose_in_size = self.pc2_out_size
-
-        # load normalization constants
-        self.normalization_radius = config['radius']
-        self.normalization_alpha = config['alpha']
-        self.normalization_beta = config['beta']
-        self.normalization_bias = config['bias']
-
-        # initialize means and standard deviation to be 0 and 1, respectively
-        self._im_mean = 0
-        self._im_std = 1
-        self._pose_mean = np.zeros(self._pose_dim)
-        self._pose_std = np.ones(self._pose_dim)
-
     def initialize_network(self, add_softmax=True, add_sigmoid=False):
         """ Set up input nodes and builds network.
 
@@ -700,164 +816,6 @@ class GQCNN(object):
         with self._graph.as_default():
             self._sess.close()
             self._sess = None
-
-    @property
-    def batch_size(self):
-        return self._batch_size
-
-    @property
-    def im_height(self):
-        return self._im_height
-
-    @property
-    def im_width(self):
-        return self._im_width
-
-    @property
-    def im_mean(self):
-        return self._im_mean
-
-    @property
-    def im_std(self):
-        return self._im_std
-
-    @property
-    def pose_mean(self):
-        return self._pose_mean
-
-    @property
-    def pose_std(self):
-        return self._pose_std
-
-    @property
-    def num_channels(self):
-        return self._num_channels
-
-    @property
-    def pose_dim(self):
-        return self._pose_dim
-
-    @property
-    def input_data_mode(self):
-        return self._input_data_mode
-
-    @property
-    def input_im_node(self):
-        return self._input_im_node
-
-    @property
-    def input_pose_node(self):
-        return self._input_pose_node
-
-    @property
-    def output(self):
-        return self._output_tensor
-
-    @property
-    def weights(self):
-        return self._weights
-
-    @property
-    def graph(self):
-        return self._graph
-
-    def update_im_mean(self, im_mean):
-        """ Updates image mean to be used for normalization when predicting 
-        
-        Parameters
-        ----------
-        im_mean : float
-            image mean to be used
-        """
-        self._im_mean = im_mean
-    
-    def get_im_mean(self):
-        """ Get the current image mean to be used for normalization when predicting
-
-        Returns
-        -------
-        : float
-            image mean
-        """
-        return self.im_mean
-
-    def update_im_std(self, im_std):
-        """ Updates image standard deviation to be used for normalization when predicting 
-        
-        Parameters
-        ----------
-        im_std : float
-            image standard deviation to be used
-        """
-        self._im_std = im_std
-
-    def get_im_std(self):
-        """ Get the current image standard deviation to be used for normalization when predicting
-
-        Returns
-        -------
-        : float
-            image standard deviation
-        """
-        return self.im_std
-
-    def update_pose_mean(self, pose_mean):
-        """ Updates pose mean to be used for normalization when predicting 
-        
-        Parameters
-        ----------
-        pose_mean :obj:`tensorflow Tensor`
-            pose mean to be used
-        """
-        self._pose_mean = pose_mean
-
-    def get_pose_mean(self):
-        """ Get the current pose mean to be used for normalization when predicting
-
-        Returns
-        -------
-        :obj:`tensorflow Tensor`
-            pose mean
-        """
-        return self._pose_mean
-
-    def update_pose_std(self, pose_std):
-        """ Updates pose standard deviation to be used for normalization when predicting 
-        
-        Parameters
-        ----------
-        pose_std :obj:`tensorflow Tensor`
-            pose standard deviation to be used
-        """
-        self._pose_std = pose_std
-
-    def get_pose_std(self):
-        """ Get the current pose standard deviation to be used for normalization when predicting
-
-        Returns
-        -------
-        :obj:`tensorflow Tensor`
-            pose standard deviation
-        """
-        return self._pose_std
-        
-    def add_softmax_to_predict(self):
-        """ Adds softmax to output tensor of prediction network """
-        self._output_tensor = tf.nn.softmax(self._output_tensor)
-
-    def add_sigmoid_to_predict(self):
-        """ Adds sigmoid to output tensor of prediction network """
-        self._output_tensor = tf.nn.sigmoid(self._output_tensor)
-
-    def update_batch_size(self, batch_size):
-        """ Updates the prediction batch size 
-
-        Parameters
-        ----------
-        batch_size : float
-            batch size to be used for prediction
-        """
-        self._batch_size = batch_size
 
     def predict(self, image_arr, pose_arr):
         """ Predict a set of images in batches 
@@ -965,27 +923,6 @@ class GQCNN(object):
             if close_sess:
                 self.close_session()
         return output_arr
-
-    @property
-    def filters(self):
-        """ Returns the set of conv1_1 filters 
-
-        Returns
-        -------
-        :obj:`tensorflow Tensor`
-            filters(weights) from conv1_1 of the network
-        """
-
-        close_sess = False
-        if self._sess is None:
-            close_sess = True
-            self.open_session()
-
-        filters = self._sess.run(self._weights.conv1_1W)
-
-        if close_sess:
-            self.close_session()
-        return filters
 
     def _build_network(self, input_im_node, input_pose_node,  drop_fc3=False, drop_fc4=False, fc3_drop_rate=0, fc4_drop_rate=0):
         """ Builds neural network 

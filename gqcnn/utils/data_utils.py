@@ -26,7 +26,7 @@ Author: Lucas Manuelli
 
 import os
 
-from . import InputDataMode
+from ..optimizer_constants import GripperMode
 
 def set_cuda_visible_devices(gpu_list):
     """
@@ -46,59 +46,67 @@ def set_cuda_visible_devices(gpu_list):
     print "setting CUDA_VISIBLE_DEVICES = ", cuda_visible_devices
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_visible_devices
 
-def pose_dim(self, pose_arr, input_data_mode):
+def pose_dim(gripper_mode):
     """ Returns the dimensions of the pose vector for the given
-    input data mode.
+    gripper mode.
     
     Parameters
     ----------
-    input_data_mode: :obj:`InputDataMode`
-        enum for input data mode, see optimizer_constants.py for all
-        possible input data modes 
+    gripper_mode: :obj:`GripperMode`
+        enum for gripper mode, see optimizer_constants.py for all
+        possible gripper modes 
 
     Returns
     -------
-    :obj:`ndArray`
-        sliced pose_data corresponding to input data mode
+    :obj:`numpy.ndarray`
+        sliced pose_data corresponding to gripper mode
     """
-    if input_data_mode == InputDataMode.PARALLEL_JAW:
+    if gripper_mode == GripperMode.PARALLEL_JAW:
         return 1
-    elif input_data_mode == InputDataMode.SUCTION:
+    elif gripper_mode == GripperMode.SUCTION:
         return 2
-    elif input_data_mode == InputDataMode.TF_IMAGE:
+    elif gripper_mode == GripperMode.TF_IMAGE:
         return 1
-    elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-        return 3
-    elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+    elif gripper_mode == GripperMode.TF_IMAGE_SUCTION:
         return 2
     else:
-        raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))
+        raise ValueError('Gripper mode %s not supported.' %(gripper_mode))
     
-def read_pose_data(self, pose_arr, input_data_mode):
-    """ Read the pose data and slice it according to the specified input_data_mode
+def read_pose_data(pose_arr, gripper_mode):
+    """ Read the pose data and slice it according to the specified gripper_mode
     
     Parameters
     ----------
-    pose_arr: :obj:`ndArray`
+    pose_arr: :obj:`numpy.ndarray`
         full pose data array read in from file
-    input_data_mode: :obj:`InputDataMode`
-        enum for input data mode, see optimizer_constants.py for all
-        possible input data modes 
+    gripper_mode: :obj:`GripperMode`
+        enum for gripper mode, see optimizer_constants.py for all
+        possible gripper modes 
 
     Returns
     -------
-    :obj:`ndArray`
+    :obj:`numpy.ndarray`
         sliced pose_data corresponding to input data mode
     """
-    if input_data_mode == InputDataMode.PARALLEL_JAW:
-        return pose_arr[:,2:3]
-    elif input_data_mode == InputDataMode.SUCTION:
-        return np.c_[pose_arr[:,2], pose_arr[:,4]]
-    elif input_data_mode == InputDataMode.TF_IMAGE:
-        return pose_arr[:,2:3]
-    elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-        return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-    elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-        return pose_arr[:,2:4]
+    if gripper_mode == GripperMode.PARALLEL_JAW:
+        if pose_arr.ndim == 1:
+            return pose_arr[2:3]
+        else:
+            return pose_arr[:,2:3]
+    elif gripper_mode == GripperMode.SUCTION:
+        if pose_arr.ndim == 1:
+            return np.c_[pose_arr[2], pose_arr[4]]
+        else:
+            return np.c_[pose_arr[:,2], pose_arr[:,4]]
+    elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
+        if pose_arr.ndim == 1:
+            return pose_arr[2:3]
+        else:
+            return pose_arr[:,2:3]
+    elif gripper_mode == GripperMode.LEGACY_SUCTION:
+        if pose_arr.ndim == 1:
+            return pose_arr[2:4]
+        else:
+            return pose_arr[:,2:4]
     else:
-        raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))
+        raise ValueError('Gripper mode %s not supported.' %(gripper_mode))

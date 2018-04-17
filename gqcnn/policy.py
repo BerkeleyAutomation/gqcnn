@@ -39,7 +39,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
 
-from . import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, InputDataMode, GraspQualityFunctionFactory, GQCnnQualityFunction, NoValidGraspsException
+from . import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, GripperMode, GraspQualityFunctionFactory, GQCnnQualityFunction, NoValidGraspsException
 from . import Visualizer as vis
 
 FIGSIZE = 16

@@ -56,23 +56,32 @@ import IPython
 
 from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset
 
-from .optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
+from .optimizer_constants import ImageMode, TrainingMode, GripperMode, GeneralConstants
 from .train_stats_logger import TrainStatsLogger
 from .utils import pose_dim, read_pose_data
 
 class SGDOptimizer(object):
     """ Optimizer for gqcnn object """
 
-    def __init__(self, gqcnn, config):
+    def __init__(self, gqcnn,
+                 dataset_dir,
+                 output_dir,
+                 config):
         """
         Parameters
         ----------
         gqcnn : :obj:`GQCNN`
             grasp quality neural network to optimize
+        dataset_dir : str
+            path to the training / validation dataset
+        output_dir : str
+            path to save the model output
         config : dict
             dictionary of configuration parameters
         """
         self.gqcnn = gqcnn
+        self.dataset_dir = dataset_dir
+        self.output_dir = output_dir
         self.cfg = config
         self.tensorboard_has_launched = False
 
@@ -84,7 +93,6 @@ class SGDOptimizer(object):
         :obj:`tensorflow Tensor`
             loss
         """
-        # TODO: Add Poisson Loss
         if self.cfg['loss'] == 'l2':
             return (1.0 / self.train_batch_size) * tf.nn.l2_loss(tf.subtract(tf.nn.sigmoid(self.train_net_output), self.train_labels_node))
         elif self.cfg['loss'] == 'sparse':
@@ -184,7 +192,7 @@ class SGDOptimizer(object):
 
             # form loss
             # part 1: error
-            if self.training_mode == TrainingMode.CLASSIFICATION or self.preproc_mode == PreprocMode.NORMALIZATION:
+            if self.training_mode == TrainingMode.CLASSIFICATION:
                 if self.cfg['loss'] == 'weighted_cross_entropy':
                     train_predictions = tf.nn.sigmoid(self.train_net_output)
                 else:
@@ -262,7 +270,7 @@ class SGDOptimizer(object):
 
         # now that everything in our graph is set up we write the graph to the summary event so 
         # it can be visualized in tensorboard
-        self.summary_writer.add_graph(self.gqcnn.get_tf_graph())
+        self.summary_writer.add_graph(self.gqcnn.tf_graph)
 
         # begin optimization loop
         try:
@@ -289,7 +297,7 @@ class SGDOptimizer(object):
                         [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
                 step_stop = time.time()
                 logging.info('Step took %.3f sec' %(step_stop-step_start))
-
+                
                 if self.training_mode == TrainingMode.REGRESSION:
                     logging.info('Max ' +  str(np.max(predictions)))
                     logging.info('Min ' + str(np.min(predictions)))
@@ -324,12 +332,9 @@ class SGDOptimizer(object):
                     logging.info('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
-                        if self.cfg['loss'] == 'weighted_cross_entropy':
-                            print predictions[0], batch_labels[0]
-                            batch_labels = 1 * (batch_labels > self.metric_thresh)
-                            batch_labels = batch_labels.astype(np.uint8)
                         train_error = BinaryClassificationResult(predictions, batch_labels).error_rate
-                        logging.info('Minibatch error: %.3f%%' %train_error)
+                    logging.info('Minibatch error: %.3f%%' %(train_error))
+                        
                     self.summary_writer.add_summary(self.sess.run(self.merged_log_summaries, feed_dict={self.minibatch_error_placeholder: train_error, self.minibatch_loss_placeholder: l, self.learning_rate_placeholder: lr}), step)
                     sys.stdout.flush()
 
@@ -337,7 +342,6 @@ class SGDOptimizer(object):
                     self.train_stats_logger.update(train_eval_iter=step, train_loss=l, train_error=train_error, total_train_error=None, val_eval_iter=None, val_error=None, learning_rate=lr)
 
                 # evaluate validation error
-                # evaluate, even before training
                 if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
                         train_error = self._error_rate_in_batches()
@@ -377,14 +381,13 @@ class SGDOptimizer(object):
                     self.saver.save(self.sess, os.path.join(self.model_dir, 'model_%05d.ckpt' %(step)))
                     self.saver.save(self.sess, os.path.join(self.model_dir, 'model.ckpt'))
 
-
                 # launch tensorboard only after the first iteration
                 if not self.tensorboard_has_launched:
                     self.tensorboard_has_launched = True
                     self._launch_tensorboard()
 
             # get final logs
-            val_error = self._error_rate_in_batches(num_files_eval=-1)
+            val_error = self._error_rate_in_batches()
             logging.info('Final validation error: %.1f%%' %val_error)
             sys.stdout.flush()
 
@@ -436,77 +439,81 @@ class SGDOptimizer(object):
 
     def _compute_data_metrics(self):
         """ Calculate image mean, image std, pose mean, pose std, normalization params """
-
+        # subsample tensors (for faster runtime)
+        random_file_indices = np.random.choice(self.num_tensors,
+                                               size=self.num_random_files,
+                                               replace=False)
+        
         # compute image stats
-        logging.info('Computing image mean')
-        mean_filename = os.path.join(self.model_dir, 'mean.npy')
-        std_filename = os.path.join(self.model_dir, 'std.npy')
+        im_mean_filename = os.path.join(self.model_dir, 'mean.npy')
+        im_std_filename = os.path.join(self.model_dir, 'std.npy')
         if self.cfg['fine_tune']:
-            self.data_mean = self.gqcnn.im_mean
-            self.data_std = self.gqcnn.im_std
-        elif os.path.exists(mean_filename) and os.path.exists(std_filename):
-            self.data_mean = np.load(mean_filename)
-            self.data_std = np.load(std_filename)
+            self.im_mean = self.gqcnn.im_mean
+            self.im_std = self.gqcnn.im_std
+        elif os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
+            self.im_mean = np.load(im_mean_filename)
+            self.im_std = np.load(im_std_filename)
         else:
-            self.data_mean = 0
-            self.data_std = 0
+            self.im_mean = 0
+            self.im_std = 0
 
-            # subsample tensors (for faster runtime)
-            random_file_indices = np.random.choice(self.num_files,
-                                                   size=self.num_random_files,
-                                                   replace=False)
             # compute mean
+            logging.info('Computing image mean')
             num_summed = 0
-            for i in random_file_indices:
+            for k, i in enumerate(random_file_indices):
+                if k % self.preproc_log_frequency == 0:
+                    logging.info('Adding file %d of %d to image mean estimate' %(k+1, random_file_indices.shape[0]))
                 im_data = self.dataset.tensor(self.im_field_name, i).data
                 train_indices = self.train_index_map[i]
-                self.data_mean += np.sum(im_data[train_indices, ...])
+                self.im_mean += np.sum(im_data[train_indices, ...])
                 num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
-            self.data_mean = self.data_mean / num_summed
+            self.im_mean = self.im_mean / num_summed
 
             # compute std
-            for i in random_file_indices:
+            logging.info('Computing image std')
+            for k, i in enumerate(random_file_indices):
+                if k % self.preproc_log_frequency == 0:
+                    logging.info('Adding file %d of %d to image std estimate' %(k+1, random_file_indices.shape[0]))
                 im_data = self.dataset.tensor(self.im_field_name, i).data
                 train_indices = self.train_index_map[i]
-                self.data_std += np.sum((im_data[train_indices, ...] - self.data_mean)**2)
-            self.data_std = np.sqrt(self.data_std / num_summed)
+                self.im_std += np.sum((im_data[train_indices, ...] - self.im_mean)**2)
+            self.im_std = np.sqrt(self.im_std / num_summed)
 
             # save
-            np.save(mean_filename, self.data_mean)
-            np.save(std_filename, self.data_std)
+            np.save(im_mean_filename, self.im_mean)
+            np.save(im_std_filename, self.im_std)
 
             # update gqcnn
-            self.gqcnn.update_im_mean(self.data_mean)
-            self.gqcnn.update_im_std(self.data_std)
+            self.gqcnn.set_im_mean(self.im_mean)
+            self.gqcnn.set_im_std(self.im_std)
             
         # compute pose stats
-        logging.info('Computing pose mean')
-        self.pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
-        self.pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
+        pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
+        pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
         if self.cfg['fine_tune']:
             self.pose_mean = self.gqcnn.pose_mean
             self.pose_std = self.gqcnn.pose_std
-        elif os.path.exists(self.pose_mean_filename) and os.path.exists(self.pose_std_filename):
-            self.pose_mean = np.load(self.pose_mean_filename)
-            self.pose_std = np.load(self.pose_std_filename)
+        elif os.path.exists(pose_mean_filename) and os.path.exists(pose_std_filename):
+            self.pose_mean = np.load(pose_mean_filename)
+            self.pose_std = np.load(pose_std_filename)
         else:
-            self.pose_mean = np.zeros(self.pose_shape)
-            self.pose_std = np.zeros(self.pose_shape)
-            # subsample tensors (for faster runtime)
-            random_file_indices = np.random.choice(self.num_files,
-                                                   size=self.num_random_files,
-                                                   replace=False)
+            self.pose_mean = np.zeros(self.raw_pose_shape)
+            self.pose_std = np.zeros(self.raw_pose_shape)
+
             # compute mean
             num_summed = 0
-            for i in random_file_indices:
+            logging.info('Computing pose mean')
+            for k, i in enumerate(random_file_indices):
+                if k % self.preproc_log_frequency == 0:
+                    logging.info('Adding file %d of %d to pose mean estimate' %(k+1, random_file_indices.shape[0]))
                 pose_data = self.dataset.tensor(self.pose_field_name, i).data
                 train_indices = self.train_index_map[i]
-                if self.input_data_mode == InputDataMode.SUCTION:
+                if self.gripper_mode == GripperMode.SUCTION:
                     rand_indices = np.random.choice(pose_data.shape[0],
                                                     size=pose_data.shape[0]/2,
                                                     replace=False)
                     pose_data[rand_indices, 4] = -pose_data[rand_indices, 4]
-                elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
                     rand_indices = np.random.choice(pose_data.shape[0],
                                                     size=pose_data.shape[0]/2,
                                                     replace=False)
@@ -518,15 +525,18 @@ class SGDOptimizer(object):
             self.pose_mean = self.pose_mean / num_summed
 
             # compute std
-            for i in random_file_indices:
+            logging.info('Computing pose std')
+            for k, i in enumerate(random_file_indices):
+                if k % self.preproc_log_frequency == 0:
+                    logging.info('Adding file %d of %d to pose std estimate' %(k+1, random_file_indices.shape[0]))
                 pose_data = self.dataset.tensor(self.pose_field_name, i).data
                 train_indices = self.train_index_map[i]
-                if self.input_data_mode == InputDataMode.SUCTION:
+                if self.gripper_mode == GripperMode.SUCTION:
                     rand_indices = np.random.choice(pose_data.shape[0],
                                                     size=pose_data.shape[0]/2,
                                                     replace=False)
                     pose_data[rand_indices, 4] = -pose_data[rand_indices, 4]
-                elif self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
                     rand_indices = np.random.choice(pose_data.shape[0],
                                                     size=pose_data.shape[0]/2,
                                                     replace=False)
@@ -538,14 +548,14 @@ class SGDOptimizer(object):
             self.pose_std[self.pose_std==0] = 1.0
 
             # save
-            self.pose_mean = read_pose_data(self.pose_mean, self.input_data_mode)
-            self.pose_std = read_pose_data(self.pose_std, self.input_data_mode)
-            np.save(self.pose_mean_filename, self.pose_mean)
-            np.save(self.pose_std_filename, self.pose_std)
+            self.pose_mean = read_pose_data(self.pose_mean, self.gripper_mode)
+            self.pose_std = read_pose_data(self.pose_std, self.gripper_mode)
+            np.save(pose_mean_filename, self.pose_mean)
+            np.save(pose_std_filename, self.pose_std)
 
             # update gqcnn
-            self.gqcnn.update_pose_mean(self.pose_mean)
-            self.gqcnn.update_pose_std(self.pose_std)
+            self.gqcnn.set_pose_mean(self.pose_mean)
+            self.gqcnn.set_pose_std(self.pose_std)
 
         # check for invalid values
         if np.any(np.isnan(self.pose_mean)) or np.any(np.isnan(self.pose_std)):
@@ -559,55 +569,57 @@ class SGDOptimizer(object):
             out_std_filename = os.path.join(self.model_dir, 'std.npy')
             out_pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
             out_pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
-            np.save(out_mean_filename, self.data_mean)
-            np.save(out_std_filename, self.data_std)
+            np.save(out_mean_filename, self.im_mean)
+            np.save(out_std_filename, self.im_std)
             np.save(out_pose_mean_filename, self.pose_mean)
             np.save(out_pose_std_filename, self.pose_std)
             
         # compute normalization parameters of the network
-        logging.info('Computing metric stats')
-        all_train_metrics = None
-        all_val_metrics = None
-
-        # subsample tensors (for faster runtime)
-        random_file_indices = np.random.choice(self.num_files,
-                                               size=self.num_random_files,
-                                               replace=False)
-
-        # read metrics
-        for i in random_file_indices:
-            metric_data = self.dataset.tensor(self.label_field_name, i).data
-            train_indices = self.train_index_map[i]
-            val_indices = self.val_index_map[i]
-            train_metric_data = metric_data[train_indices]
-            val_metric_data = metric_data[val_indices]
-
-            if all_train_metrics is None:
-                all_train_metrics = train_metric_data
-            else:
-                all_train_metrics = np.r_[all_train_metrics, train_metric_data]
-
-            if all_val_metrics is None:
-                all_val_metrics = val_metric_data
-            else:
-                all_val_metrics = np.r_[all_val_metrics, val_metric_data]
-
-        # compute train stats
-        self.min_metric = np.min(all_train_metrics)
-        self.max_metric = np.max(all_train_metrics)
-        self.mean_metric = np.mean(all_train_metrics)
-        self.median_metric = np.median(all_train_metrics)
-
-        # save metrics
         pct_pos_train_filename = os.path.join(self.model_dir, 'pct_pos_train.npy')
-        pct_pos_train = float(np.sum(all_train_metrics > self.metric_thresh)) / all_metrics.shape[0]
-        np.save(pct_pos_train_filename, np.array(pct_pos_train))
-        logging.info('Percent positive in random file set: ' + str(pct_pos_random))
-
         pct_pos_val_filename = os.path.join(self.model_dir, 'pct_pos_val.npy')
-        pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
-        np.save(pct_pos_val_filename, np.array(pct_pos_val))
-        logging.info('Percent positive in val set: ' + str(pct_pos_val))
+        if os.path.exists(pct_pos_train_filename) and os.path.exists(pct_pos_val_filename):
+            pct_pos_train = np.load(pct_pos_train_filename)
+            pct_pos_val = np.load(pct_pos_val_filename)
+        else:
+            logging.info('Computing metric stats')
+            all_train_metrics = None
+            all_val_metrics = None
+    
+            # read metrics
+            for k, i in enumerate(random_file_indices):
+                if k % self.preproc_log_frequency == 0:
+                    logging.info('Adding file %d of %d to metric stat estimates' %(k+1, random_file_indices.shape[0]))
+                metric_data = self.dataset.tensor(self.label_field_name, i).data
+                train_indices = self.train_index_map[i]
+                val_indices = self.val_index_map[i]
+                train_metric_data = metric_data[train_indices]
+                val_metric_data = metric_data[val_indices]
+                
+                if all_train_metrics is None:
+                    all_train_metrics = train_metric_data
+                else:
+                    all_train_metrics = np.r_[all_train_metrics, train_metric_data]
+
+                if all_val_metrics is None:
+                    all_val_metrics = val_metric_data
+                else:
+                    all_val_metrics = np.r_[all_val_metrics, val_metric_data]
+
+            # compute train stats
+            self.min_metric = np.min(all_train_metrics)
+            self.max_metric = np.max(all_train_metrics)
+            self.mean_metric = np.mean(all_train_metrics)
+            self.median_metric = np.median(all_train_metrics)
+
+            # save metrics
+            pct_pos_train = float(np.sum(all_train_metrics > self.metric_thresh)) / all_train_metrics.shape[0]
+            np.save(pct_pos_train_filename, np.array(pct_pos_train))
+
+            pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
+            np.save(pct_pos_val_filename, np.array(pct_pos_val))
+
+        logging.info('Percent positive in train: ' + str(pct_pos_train))
+        logging.info('Percent positive in val: ' + str(pct_pos_val))
         
     def _compute_indices_image_wise(self):
         """ Compute train and validation indices based on an image-wise train-val split"""
@@ -619,7 +631,7 @@ class SGDOptimizer(object):
         logging.info('Computing indices image-wise')
         train_index_map_filename = os.path.join(self.model_dir, 'train_indices_image_wise.pkl')
         val_index_map_filename = os.path.join(self.model_dir, 'val_indices_image_wise.pkl')
-        if os.path.exists(train_index_map_filename):
+        if os.path.exists(train_index_map_filename) and os.path.exists(val_index_map_filename):
             self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
             self.val_index_map = pkl.load(open(val_index_map_filename, 'r'))
         else:
@@ -638,13 +650,13 @@ class SGDOptimizer(object):
                 datapoint_indices = self.dataset.datapoint_indices_for_tensor(i)
                 lower = np.min(datapoint_indices)
                 upper = np.max(datapoint_indices)                
-                self.train_index_map[im_filename] = train_indices[(train_indices >= lower) & (train_indices < upper)] - lower
-                self.val_index_map[im_filename] = val_indices[(val_indices >= lower) & (val_indices < upper)] - lower
+                self.train_index_map[i] = train_indices[(train_indices >= lower) & (train_indices < upper)] - lower
+                self.val_index_map[i] = val_indices[(val_indices >= lower) & (val_indices < upper)] - lower
                 if i % 10 == 0:
                     gc.collect()
                 i += 1
             pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
-            pkl.dump(self.val_index_map, open(self.val_index_map_filename, 'w'))
+            pkl.dump(self.val_index_map, open(val_index_map_filename, 'w'))
 
     def _compute_indices_object_wise(self):
         """ Compute train and validation indices based on an object-wise train-val split"""
@@ -677,15 +689,9 @@ class SGDOptimizer(object):
 
     def _setup_output_dirs(self):
         """ Setup output directories """
-
-        # setup general output directory
-        output_dir = self.cfg['output_dir']
-        if not os.path.exists(output_dir):
-            os.mkdir(output_dir)
-
         # create a directory for the model
         model_id = utils.gen_experiment_id()
-        self.model_dir = os.path.join(output_dir, 'model_%s' %(model_id))
+        self.model_dir = os.path.join(self.output_dir, 'model_%s' %(model_id))
         if not os.path.exists(self.model_dir):
             os.mkdir(self.model_dir)
 
@@ -722,7 +728,7 @@ class SGDOptimizer(object):
         # setup logging
         self.log_filename = os.path.join(self.model_dir, 'training.log')
         formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-        hdlr = logging.FileHandler(self._log_filename)
+        hdlr = logging.FileHandler(self.log_filename)
         hdlr.setFormatter(formatter)
         logging.getLogger().addHandler(hdlr)
             
@@ -733,19 +739,18 @@ class SGDOptimizer(object):
 
         # save architecture
         out_architecture_filename = os.path.join(self.model_dir, 'architecture.json')
-        json.dump(self.cfg['gqcnn_config']['architecture'],
+        json.dump(self.cfg['gqcnn']['architecture'],
                   open(out_architecture_filename, 'w'),
                   indent=GeneralConstants.JSON_INDENT)
         
     def _read_training_params(self):
         """ Read training parameters from configuration file """
-
-        self.dataset_dir = self.cfg['dataset_dir']
-        self.image_mode = self.cfg['image_mode']
+        # splits
         self.data_split_mode = self.cfg['data_split_mode']
         self.train_pct = self.cfg['train_pct']
         self.total_pct = self.cfg['total_pct']
 
+        # training sizes
         self.train_batch_size = self.cfg['train_batch_size']
         self.val_batch_size = self.cfg['val_batch_size']
         self.max_files_eval = None
@@ -754,17 +759,16 @@ class SGDOptimizer(object):
         
         # update the GQCNN's batch_size param to this one
         logging.info("updating val_batch_size to %d" %(self.val_batch_size))
-        self.gqcnn.update_batch_size(self.val_batch_size)
+        self.gqcnn.set_batch_size(self.val_batch_size)
 
+        # logging
         self.num_epochs = self.cfg['num_epochs']
         self.eval_frequency = self.cfg['eval_frequency']
         self.save_frequency = self.cfg['save_frequency']
-        self.log_frequency = self.cfg['log_frequency']
         self.vis_frequency = self.cfg['vis_frequency']
+        self.log_frequency = self.cfg['log_frequency']
 
-        self.queue_capacity = self.cfg['queue_capacity']
-        self.queue_sleep = self.cfg['queue_sleep']
-
+        # optimization
         self.train_l2_regularizer = self.cfg['train_l2_regularizer']
         self.base_lr = self.cfg['base_lr']
         self.decay_step_multiplier = self.cfg['decay_step_multiplier']
@@ -772,11 +776,16 @@ class SGDOptimizer(object):
         self.momentum_rate = self.cfg['momentum_rate']
         self.max_training_examples_per_load = self.cfg['max_training_examples_per_load']
 
+        # metrics
         self.target_metric_name = self.cfg['target_metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
         self.training_mode = self.cfg['training_mode']
-        self.preproc_mode = self.cfg['preproc_mode']
 
+        # preproc
+        self.preproc_log_frequency = self.cfg['preproc_log_frequency']
+        self.num_random_files = self.cfg['num_random_files']
+
+        # re-weighting positives / negatives
         self.pos_weight = 0.0
         if 'pos_weight' in self.cfg.keys():
             self.pos_weight = self.cfg['pos_weight']
@@ -787,10 +796,6 @@ class SGDOptimizer(object):
             else:
                 self.pos_accept_prob = self.pos_weight
                 
-        self.neg_reject_rate = 0.0
-        if 'neg_reject_rate' in self.cfg.keys():
-            self.neg_reject_rate = self.cfg['neg_reject_rate']
-            
         if self.train_pct < 0 or self.train_pct > 1:
             raise ValueError('Train percentage must be in range [0,1]')
 
@@ -800,10 +805,11 @@ class SGDOptimizer(object):
         
     def _setup_denoising_and_synthetic(self):
         """ Setup denoising and synthetic data parameters """
-
+        # multiplicative denoising
         if self.cfg['multiplicative_denoising']:
             self.gamma_shape = self.cfg['gamma_shape']
             self.gamma_scale = 1.0 / self.gamma_shape
+        # gaussian process noise    
         if self.cfg['gaussian_process_denoising']:
             self.gp_rescale_factor = self.cfg['gaussian_process_scaling_factor']
             self.gp_sample_height = int(self.im_height / self.gp_rescale_factor)
@@ -816,9 +822,10 @@ class SGDOptimizer(object):
         # read in filenames of training data(poses, images, labels)
         self.dataset = TensorDataset.open(self.dataset_dir)
         self.num_datapoints = self.dataset.num_datapoints
-        self.num_files = self.dataset.num_tensors
+        self.num_tensors = self.dataset.num_tensors
         self.datapoints_per_file = self.dataset.datapoints_per_file
-
+        self.num_random_files = min(self.num_tensors, self.num_random_files)
+        
     def _compute_data_params(self):
         """ Compute parameters of the dataset """
         # image params
@@ -829,16 +836,14 @@ class SGDOptimizer(object):
         self.im_center = np.array([float(self.im_height-1)/2, float(self.im_width-1)/2])
 
         # poses
-        self.pose_field_name = 'grasps'
-        if not self.pose_field_name in self.dataset.field_names:
-            self.pose_field_name = 'hand_poses'
-        self.input_data_mode = self.cfg['input_data_mode']
-        self.pose_dim = pose_dim(self.input_data_mode)
-
+        self.pose_field_name = self.cfg['pose_field_name']
+        self.gripper_mode = self.gqcnn.gripper_mode
+        self.pose_dim = pose_dim(self.gripper_mode)
+        self.raw_pose_shape = self.dataset.config['fields'][self.pose_field_name]['height']
+        
         # outputs
         self.label_field_name = self.target_metric_name
         self.num_categories = 2
-        self.num_random_files = min(self.num_files, self.cfg['num_random_files'])
 
         # compute the number of train and val examples
         self.num_train = 0
@@ -847,6 +852,11 @@ class SGDOptimizer(object):
             self.num_train += train_indices.shape[0]
         for val_indices in self.train_index_map.values():
             self.num_val += val_indices.shape[0]
+
+        # set params based on the number of training examples (convert epochs to steps)
+        self.eval_frequency = self.eval_frequency * self.num_train
+        self.save_frequency = self.save_frequency * self.num_train
+        self.vis_frequency = self.vis_frequency * self.num_train
         self.decay_step = self.decay_step_multiplier * self.num_train
         
     def _setup_tensorflow(self):
@@ -854,7 +864,7 @@ class SGDOptimizer(object):
 
         # setup nodes
         with tf.name_scope('train_data_node'):
-            self.train_data_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels))
+            self.train_data_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.im_channels))
         with tf.name_scope('train_pose_node'):
             self.train_poses_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.pose_dim))
         if self.training_mode == TrainingMode.REGRESSION:
@@ -873,7 +883,7 @@ class SGDOptimizer(object):
 
         # create queue
         with tf.name_scope('data_queue'):
-            self.q = tf.FIFOQueue(self.queue_capacity, [tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,)])
+            self.q = tf.FIFOQueue(GeneralConstants.QUEUE_CAPACITY, [tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.im_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,)])
             self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch])
             self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
             self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
@@ -882,7 +892,7 @@ class SGDOptimizer(object):
         if self.cfg['fine_tune']:
             # check that the gqcnn has weights, re-initialize if not
             try:
-                self.weights = self.gqcnn.get_weights()
+                self.weights = self.gqcnn.weights
             except:
                 self.gqcnn.init_weights_gaussian()                
 
@@ -896,7 +906,7 @@ class SGDOptimizer(object):
             self.gqcnn.init_weights_gaussian()
 
         # get weights
-        self.weights = self.gqcnn.get_weights()
+        self.weights = self.gqcnn.weights
 
         # open a tf session for the gqcnn object and store it also as the optimizer session
         self.saver = tf.train.Saver()
@@ -964,9 +974,6 @@ class SGDOptimizer(object):
         # setup image and pose data files
         self._open_dataset()
 
-        # read data parameters from config file
-        self._read_data_params()
-
         # compute train/test indices based on how the data is to be split
         if self.data_split_mode == 'image_wise':
             self._compute_indices_image_wise()
@@ -975,6 +982,9 @@ class SGDOptimizer(object):
         else:
             logging.error('Data split mode %s not supported!' %(self.data_split_mode))
 
+        # compute data parameters
+        self._compute_data_params()
+            
         # compute means, std's, and normalization metrics
         self._compute_data_metrics()
 
@@ -983,36 +993,37 @@ class SGDOptimizer(object):
 
         # setup summaries for visualizing metrics in tensorboard
         self._setup_summaries()
-  
+        
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images for training """
         # init buffers
         train_images = np.zeros(
-            [self.train_batch_size, self.im_height, self.im_width, self.num_tensor_channels]).astype(np.float32)
+            [self.train_batch_size, self.im_height, self.im_width, self.im_channels]).astype(np.float32)
         train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
         label_data = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
 
         while not self.term_event.is_set():
             # sleep between reads
-            time.sleep(self.cfg['queue_sleep'])
+            time.sleep(GeneralConstants.QUEUE_SLEEP)
 
             # loop through data
             num_queued = 0
             start_i = 0
             end_i = 0
             file_num = 0
-
+            queue_start = time.time()
+            
             while start_i < self.train_batch_size:
                 # compute num remaining
                 num_remaining = self.train_batch_size - num_queued
                 
                 # gen file index uniformly at random
-                file_num = np.random.choice(self.num_files, size=1)[0]
+                file_num = np.random.choice(self.num_tensors, size=1)[0]
 
                 read_start = time.time()
                 train_images_tensor = self.dataset.tensor(self.im_field_name, file_num)
-                train_poses_tensor = self.dataset.tensor(self.poses_field_name, file_num)
-                train_labels_tensor = self.dataset.tensor(self.labels_field_name, file_num)
+                train_poses_tensor = self.dataset.tensor(self.pose_field_name, file_num)
+                train_labels_tensor = self.dataset.tensor(self.label_field_name, file_num)
                 read_stop = time.time()
                 logging.debug('Reading data took %.3f sec' %(read_stop - read_start))
                 logging.debug('File num: %d' %(file_num))
@@ -1020,8 +1031,8 @@ class SGDOptimizer(object):
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[file_num]
                 np.random.shuffle(train_ind)
-                if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-                    tp_tmp = read_pose_data(train_poses_tensor.data, self.input_data_mode)
+                if self.gripper_mode == GripperMode.LEGACY_SUCTION:
+                    tp_tmp = read_pose_data(train_poses_tensor.data, self.gripper_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
                     
                 # filter positives and negatives
@@ -1051,25 +1062,28 @@ class SGDOptimizer(object):
                 num_images = train_images_arr.shape[0]
 
                 # resize images
-                rescale_factor = float(self.im_height) / train_data_arr.shape[1]
-                train_data_arr = np.zeros([train_data_arr.shape[0],
-                                           self.im_height,
-                                           self.im_width,
-                                           self.im_channels]).astype(np.float32)
-                for i in range(self.num_images):
-                    for c in range(train_images_arr.shape[3]):
-                        train_images_arr[i,:,:,c] = sm.imresize(train_images_arr[i,:,:,c],
-                                                                rescale_factor,
-                                                                interp='bicubic', mode='F')
+                rescale_factor = float(self.im_height) / train_images_arr.shape[1]
+                if rescale_factor != 1.0:
+                    resized_train_images_arr = np.zeros([num_images,
+                                                         self.im_height,
+                                                         self.im_width,
+                                                         self.im_channels]).astype(np.float32)
+                    for i in range(num_images):
+                        for c in range(train_images_arr.shape[3]):
+                            resized_train_images_arr[i,:,:,c] = sm.imresize(train_images_arr[i,:,:,c],
+                                                                            rescale_factor,
+                                                                            interp='bicubic', mode='F')
+                    train_images_arr = resized_train_images_arr
                 
                 # add noises to images
                 train_images_arr, train_poses_arr = self._distort(train_images_arr, train_poses_arr)
 
                 # slice poses
-                train_poses_arr = read_pose_data(train_poses_arr, self.input_data_mode)
+                train_poses_arr = read_pose_data(train_poses_arr,
+                                                 self.gripper_mode)
 
                 # standardize inputs and outpus
-                train_images_arr = (train_images_arr - self.data_mean) / self.data_std
+                train_images_arr = (train_images_arr - self.im_mean) / self.im_std
                 train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
                 train_label_arr = train_label_arr.astype(self.numpy_dtype)
 
@@ -1082,9 +1096,9 @@ class SGDOptimizer(object):
                 train_poses[start_i:end_i,:] = train_poses_arr.copy()
                 label_data[start_i:end_i] = train_label_arr.copy()
 
-                del self.train_data_arr
-                del self.train_poses_arr
-                del self.train_label_arr
+                del train_images_arr
+                del train_poses_arr
+                del train_label_arr
 		
                 # update start index
                 start_i = end_i
@@ -1096,6 +1110,8 @@ class SGDOptimizer(object):
                     self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_images,
                                                               self.train_poses_batch: train_poses,
                                                               self.train_labels_batch: label_data})
+                    queue_stop = time.time()
+                    logging.info('Queue batch took %.3f sec' %(queue_stop - queue_start))
                 except:
                     pass
         del train_images
@@ -1107,51 +1123,18 @@ class SGDOptimizer(object):
 
     def _distort(self, image_arr, pose_arr):
         """ Adds noise to a batch of images """
+        # read params
+        num_images = image_arr.shape[0]
+        
         # denoising and synthetic data generation
         if self.cfg['multiplicative_denoising']:
             mult_samples = ss.gamma.rvs(self.gamma_shape, scale=self.gamma_scale, size=num_loaded)
             mult_samples = mult_samples[:,np.newaxis,np.newaxis,np.newaxis]
             image_arr = image_arr * np.tile(mult_samples, [1, self.im_height, self.im_width, self.im_channels])
 
-        # randomly dropout regions of the image for robustness
-        if self.cfg['image_dropout']:
-            for i in range(self.num_images):
-                if np.random.rand() < self.cfg['image_dropout_rate']:
-                    train_image = image_arr[i,:,:,0]
-                    nonzero_px = np.where(train_image > 0)
-                    nonzero_px = np.c_[nonzero_px[0], nonzero_px[1]]
-                    num_nonzero = nonzero_px.shape[0]
-                    num_dropout_regions = ss.poisson.rvs(self.cfg['dropout_poisson_mean']) 
-                    
-                    # sample ellipses
-                    dropout_centers = np.random.choice(num_nonzero, size=num_dropout_regions)
-                    x_radii = ss.gamma.rvs(self.cfg['dropout_radius_shape'], scale=self.cfg['dropout_radius_scale'], size=num_dropout_regions)
-                    y_radii = ss.gamma.rvs(self.cfg['dropout_radius_shape'], scale=self.cfg['dropout_radius_scale'], size=num_dropout_regions)
-
-                    # set interior pixels to zero
-                    for j in range(num_dropout_regions):
-                        ind = dropout_centers[j]
-                        dropout_center = nonzero_px[ind, :]
-                        x_radius = x_radii[j]
-                        y_radius = y_radii[j]
-                        dropout_px_y, dropout_px_x = sd.ellipse(dropout_center[0], dropout_center[1], y_radius, x_radius, shape=train_image.shape)
-                        train_image[dropout_px_y, dropout_px_x] = 0.0
-                    image_arr[i,:,:,0] = train_image
-
-        # dropout a region around the areas of the image with high gradient
-        if self.cfg['gradient_dropout']:
-            for i in range(self.num_images):
-                if np.random.rand() < self.cfg['gradient_dropout_rate']:
-                    train_image = image_arr[i,:,:,0]
-                    grad_mag = sf.gaussian_gradient_magnitude(train_image, sigma=self.cfg['gradient_dropout_sigma'])
-                    thresh = ss.gamma.rvs(self.cfg['gradient_dropout_shape'], self.cfg['gradient_dropout_scale'], size=1)
-                    high_gradient_px = np.where(grad_mag > thresh)
-                    train_image[high_gradient_px[0], high_gradient_px[1]] = 0.0
-                image_arr[i,:,:,0] = train_image
-
         # add correlated Gaussian noise
         if self.cfg['gaussian_process_denoising']:
-            for i in range(self.num_images):
+            for i in range(num_images):
                 if np.random.rand() < self.cfg['gaussian_process_rate']:
                     train_image = image_arr[i,:,:,0]
                     gp_noise = ss.norm.rvs(scale=self.gp_sigma, size=self.gp_num_pix).reshape(self.gp_sample_height, self.gp_sample_width)
@@ -1159,63 +1142,9 @@ class SGDOptimizer(object):
                     train_image[train_image > 0] += gp_noise[train_image > 0]
                     image_arr[i,:,:,0] = train_image
 
-        # run open and close filters to 
-        if self.cfg['morphological']:
-            for i in range(self.num_images):
-                train_image = image_arr[i,:,:,0]
-                sample = np.random.rand()
-                morph_filter_dim = ss.poisson.rvs(self.cfg['morph_poisson_mean'])                         
-                if sample < self.cfg['morph_open_rate']:
-                    train_image = snm.grey_opening(train_image, size=morph_filter_dim)
-                else:
-                    closed_train_image = snm.grey_closing(train_image, size=morph_filter_dim)
-                    
-                    # set new closed pixels to the minimum depth, mimicing the table
-                    new_nonzero_px = np.where((train_image == 0) & (closed_train_image > 0))
-                    closed_train_image[new_nonzero_px[0], new_nonzero_px[1]] = np.min(train_image[train_image>0])
-                    train_image = closed_train_image.copy()
-
-                image_arr[i,:,:,0] = train_image                        
-
-        # randomly dropout borders of the image for robustness
-        if self.cfg['border_distortion']:
-            for i in range(self.num_images):
-                train_image = image_arr[i,:,:,0]
-                grad_mag = sf.gaussian_gradient_magnitude(train_image, sigma=self.cfg['border_grad_sigma'])
-                high_gradient_px = np.where(grad_mag > self.cfg['border_grad_thresh'])
-                high_gradient_px = np.c_[high_gradient_px[0], high_gradient_px[1]]
-                num_nonzero = high_gradient_px.shape[0]
-                num_dropout_regions = ss.poisson.rvs(self.cfg['border_poisson_mean']) 
-
-                # sample ellipses
-                dropout_centers = np.random.choice(num_nonzero, size=num_dropout_regions)
-                x_radii = ss.gamma.rvs(self.cfg['border_radius_shape'], scale=self.cfg['border_radius_scale'], size=num_dropout_regions)
-                y_radii = ss.gamma.rvs(self.cfg['border_radius_shape'], scale=self.cfg['border_radius_scale'], size=num_dropout_regions)
-
-                # set interior pixels to zero or one
-                for j in range(num_dropout_regions):
-                    ind = dropout_centers[j]
-                    dropout_center = high_gradient_px[ind, :]
-                    x_radius = x_radii[j]
-                    y_radius = y_radii[j]
-                    dropout_px_y, dropout_px_x = sd.ellipse(dropout_center[0], dropout_center[1], y_radius, x_radius, shape=train_image.shape)
-                    if np.random.rand() < 0.5:
-                        train_image[dropout_px_y, dropout_px_x] = 0.0
-                    else:
-                        train_image[dropout_px_y, dropout_px_x] = train_image[dropout_center[0], dropout_center[1]]
-
-                image_arr[i,:,:,0] = train_image
-
-        # randomly replace background pixels with constant depth
-        if self.cfg['background_denoising']:
-            for i in range(self.num_images):
-                train_image = image_arr[i,:,:,0]                
-                if np.random.rand() < self.cfg['background_rate']:
-                    train_image[train_image > 0] = self.cfg['background_min_depth'] + (self.cfg['background_max_depth'] - self.cfg['background_min_depth']) * np.random.rand()
-
         # symmetrize images
         if self.cfg['symmetrize']:
-            for i in range(self.num_images):
+            for i in range(num_images):
                 train_image = image_arr[i,:,:,0]
                 # rotate with 50% probability
                 if np.random.rand() < 0.5:
@@ -1223,9 +1152,9 @@ class SGDOptimizer(object):
                     rot_map = cv2.getRotationMatrix2D(tuple(self.im_center), theta, 1)
                     train_image = cv2.warpAffine(train_image, rot_map, (self.im_height, self.im_width), flags=cv2.INTER_NEAREST)
 
-                    if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                    if self.gripper_mode == GripperMode.LEGACY_SUCTION:
                         pose_arr[:,3] = -pose_arr[:,3]
-                    elif self.input_data_mode == InputDataMode.SUCTION:
+                    elif self.gripper_mode == GripperMode.SUCTION:
                         pose_arr[:,4] = -pose_arr[:,4]
                 # reflect left right with 50% probability
                 if np.random.rand() < 0.5:
@@ -1234,9 +1163,9 @@ class SGDOptimizer(object):
                 if np.random.rand() < 0.5:
                     train_image = np.flipud(train_image)
 
-                    if self.input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+                    if self.gripper_mode == GripperMode.LEGACY_SUCTION:
                         pose_arr[:,3] = -pose_arr[:,3]
-                    elif self.input_data_mode == InputDataMode.SUCTION:
+                    elif self.gripper_mode == GripperMode.SUCTION:
                         pose_arr[:,4] = -pose_arr[:,4]
                 image_arr[i,:,:,0] = train_image
         return image_arr, pose_arr
@@ -1250,7 +1179,7 @@ class SGDOptimizer(object):
             validation error
         """
         error_rates = []
-        file_indices = np.arange(self.num_files)
+        file_indices = np.arange(self.num_tensors)
         if num_files_eval is None:
             num_files_eval = self.max_files_eval
         np.random.shuffle(file_indices)
@@ -1258,7 +1187,6 @@ class SGDOptimizer(object):
             file_indices = file_indices[:num_files_eval]
         
         for i in file_indices:
-
             # load next file
             images = self.dataset.tensor(self.im_field_name, i).data
             poses = self.dataset.tensor(self.pose_field_name, i).data
@@ -1271,13 +1199,10 @@ class SGDOptimizer(object):
 
             images = images[val_indices,...]
             poses = read_pose_data(poses[val_indices,:],
-                                   self.input_data_mode)
+                                   self.gripper_mode)
             labels = labels[val_indices]
 
-            if self.training_mode == TrainingMode.REGRESSION:
-                if self.preproc_mode == PreprocMode.NORMALIZATION:
-                    labels = (labels - self.min_metric) / (self.max_metric - self.min_metric)
-            elif self.training_mode == TrainingMode.CLASSIFICATION:
+            if self.training_mode == TrainingMode.CLASSIFICATION:
                 labels = 1 * (labels > self.metric_thresh)
                 labels = labels.astype(np.uint8)
                     

@@ -38,8 +38,11 @@ import sys
 import time
 
 import autolab_core.utils as utils
-from . import GQCNN, BinaryClassificationResult
-from .optimizer_constants import InputDataMode, ImageMode, ImageFileTemplates
+from autolab_core import BinaryClassificationResult
+
+from . import GQCNN
+from .optimizer_constants import GripperMode, ImageMode
+from .utils import *
 
 class GQCNNAnalyzer(object):
     """ Analyzes GQCNN models """
@@ -134,7 +137,7 @@ class GQCNNAnalyzer(object):
         model_image_mode = model_config['image_mode']
         model_target_metric = model_config['target_metric_name']
         model_metric_thresh = model_config['metric_thresh']
-        model_input_data_mode = model_config['input_data_mode']
+        model_gripper_mode = model_config['gripper_mode']
 
         # read in training, val indices
         train_indices = pkl.load(open(train_indices_filename, 'r'))
@@ -198,22 +201,7 @@ class GQCNNAnalyzer(object):
             num_datapoints = image_arr.shape[0]
 
             # slice correct part of pose_arr corresponding to input_data_mode used for training model
-            if model_input_data_mode == InputDataMode.PARALLEL_JAW:
-                pose_arr = pose_arr[:,2:3]
-            elif model_input_data_mode == InputDataMode.SUCTION:
-                pose_arr = np.c_[pose_arr[:,2], pose_arr[:,4]]
-            elif model_input_data_mode == InputDataMode.TF_IMAGE:
-                pose_arr = pose_arr[:,2:3]
-            elif model_input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
-                pose_arr = np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
-            elif model_input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
-                pose_arr = pose_arr[:,2:4]
-            elif model_input_data_mode == InputDataMode.RAW_IMAGE:
-                pose_arr = pose_arr[:,:4]
-            elif model_input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
-                pose_arr = pose_arr[:,:6]
-            else:
-                raise ValueError('Input data mode %s not supported' %(model_input_data_mode))
+            pose_arr = read_pose_data(pose_arr, model_gripper_mode)
                     
             # predict
             pred_start = time.time()
@@ -400,11 +388,7 @@ class GQCNNAnalyzer(object):
         plt.title('ROC Curves', fontsize=self.font_size)
         handles, labels = plt.gca().get_legend_handles_labels()
         plt.legend(handles, labels, loc='best')
-<<<<<<< HEAD
         figname = os.path.join(self.output_dir, 'ROC.pdf')
-        plt.savefig(figname, dpi=self.dpi)
-=======
-        figname = os.path.join(output_dir, 'ROC.png')
         plt.savefig(figname, dpi=self.dpi)
 
         # plot histogram of prediction errors
@@ -479,5 +463,3 @@ class GQCNNAnalyzer(object):
                 plt.ylabel('Count', fontsize=self.font_size)
                 figname = os.path.join(model_output_dir, '%s_neg_val_errors_histogram.png' %(model_name))
                 plt.savefig(figname, dpi=self.dpi)
-                
->>>>>>> dev_jeff
