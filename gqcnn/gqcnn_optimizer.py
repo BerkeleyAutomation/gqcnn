@@ -363,8 +363,7 @@ class GQCNNOptimizer(object):
 
                     # save everything!
                     self.train_stats_logger.log()
-
-                    IPython.embed()
+                    
                     """
                     from visualization import Visualizer2D as vis2d
                     d = utils.sqrt_ceil(train_images.shape[0])
@@ -836,6 +835,7 @@ class GQCNNOptimizer(object):
         self.dataset = TensorDataset.open(self.dataset_dir)
         self.num_datapoints = self.dataset.num_datapoints
         self.num_tensors = self.dataset.num_tensors
+        self.num_tensors = 1
         self.datapoints_per_file = self.dataset.datapoints_per_file
         self.num_random_files = min(self.num_tensors, self.num_random_files)
         
@@ -867,9 +867,9 @@ class GQCNNOptimizer(object):
             self.num_val += val_indices.shape[0]
 
         # set params based on the number of training examples (convert epochs to steps)
-        self.eval_frequency = self.eval_frequency * (self.num_train / self.train_batch_size)
-        self.save_frequency = self.save_frequency * (self.num_train / self.train_batch_size)
-        self.vis_frequency = self.vis_frequency * (self.num_train / self.train_batch_size)
+        self.eval_frequency = int(self.eval_frequency * (self.num_train / self.train_batch_size))
+        self.save_frequency = int(self.save_frequency * (self.num_train / self.train_batch_size))
+        self.vis_frequency = int(self.vis_frequency * (self.num_train / self.train_batch_size))
         self.decay_step = self.decay_step_multiplier * self.num_train
 
     def _setup_tensorflow(self):
@@ -1009,12 +1009,6 @@ class GQCNNOptimizer(object):
 
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images for training """
-        # init buffers
-        train_images = np.zeros(
-            [self.train_batch_size, self.im_height, self.im_width, self.im_channels]).astype(np.float32)
-        train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
-        train_labels = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
-
         while not self.term_event.is_set():
             # sleep between reads
             time.sleep(GeneralConstants.QUEUE_SLEEP)
@@ -1025,6 +1019,12 @@ class GQCNNOptimizer(object):
             end_i = 0
             file_num = 0
             queue_start = time.time()
+
+            # init buffers
+            train_images = np.zeros(
+                [self.train_batch_size, self.im_height, self.im_width, self.im_channels]).astype(np.float32)
+            train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
+            train_labels = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
             
             while start_i < self.train_batch_size:
                 # compute num remaining
@@ -1039,7 +1039,7 @@ class GQCNNOptimizer(object):
                 train_labels_tensor = self.dataset.tensor(self.label_field_name, file_num)
                 read_stop = time.time()
                 logging.debug('Reading data took %.3f sec' %(read_stop - read_start))
-                logging.debug('File num: %d' %(file_num))
+                logging.info('File num: %d' %(file_num))
                 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[file_num]
@@ -1130,7 +1130,7 @@ class GQCNNOptimizer(object):
                     pass
         del train_images
         del train_poses
-        del label_data
+        del train_labels
         self.dead_event.set()
         logging.info('Queue Thread Exiting')
         self.queue_thread_exited = True
@@ -1199,7 +1199,7 @@ class GQCNNOptimizer(object):
         np.random.shuffle(file_indices)
         if self.max_files_eval is not None and num_files_eval > 0:
             file_indices = file_indices[:num_files_eval]
-        
+
         for i in file_indices:
             # load next file
             images = self.dataset.tensor(self.im_field_name, i).data
@@ -1210,7 +1210,7 @@ class GQCNNOptimizer(object):
             if validation_set:
                 indices =  self.val_index_map[i]
             else:
-                indices =  self.train_index_map[i]                
+                indices =  self.train_index_map[i]                    
             if len(indices) == 0:
                 continue
 
