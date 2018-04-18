@@ -41,28 +41,38 @@ if __name__ == '__main__':
 
     # parse args
     parser = argparse.ArgumentParser(description='Analyze a Grasp Quality Convolutional Neural Network with TensorFlow')
-    parser.add_argument('--output_dir', type=str, default='./', help='path to save the analysis')
+    parser.add_argument('model_dir', type=str, default=None, help='path to the model to analyze')
+    parser.add_argument('--output_dir', type=str, default=None, help='path to save the analysis')
+    parser.add_argument('--dataset_dir', type=str, default=None, help='path to the dataset to analyze performance on')
     parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
     args = parser.parse_args()
+    model_dir = args.model_dir
+    dataset_dir = args.dataset_dir
     output_dir = args.output_dir
     config_filename = args.config_filename
 
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-
+    # set defaults
+    if output_dir is None:
+        output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                  '../analysis')
     if config_filename is None:
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                        '..',
                                        'cfg/tools/analyze_gqcnn_performance.yaml')
 
     # turn relative paths absolute
+    if not os.path.isabs(output_dir):
+        output_dir = os.path.join(os.getcwd(), output_dir)
     if not os.path.isabs(config_filename):
         config_filename = os.path.join(os.getcwd(), config_filename)
 
+    # make the output dir
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+        
     # read config
     config = YamlConfig(config_filename)
         
     # run the analyzer
-    logging.info('Starting analysis')
     analyzer = GQCNNAnalyzer(config)
     analyzer.analyze(output_dir)

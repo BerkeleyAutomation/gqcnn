@@ -20,11 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Script with examples for: 
-1) Training Grasp Quality Neural Networks(GQ-CNN's) using Stochastic Gradient Descent 
-2) Predicting probability of grasp success from images in batches using a pre-trained GQ-CNN model
-3) Fine-tuning a GQ-CNN model
-4) Analyzing a GQC-NN model
+Script for training a Grasp Quality Neural Network (GQ-CNN) from scratch.
 
 Author
 ------
@@ -38,7 +34,7 @@ import os
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig
-from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
+from gqcnn import GQCNN, GQCNNOptimizer, GQCNNAnalyzer
 from gqcnn import utils as gqcnn_utils
 
 if __name__ == '__main__':
@@ -100,10 +96,10 @@ if __name__ == '__main__':
     # train the network
     start_time = time.time()
     gqcnn = GQCNN(gqcnn_params)
-    sgdOptimizer = SGDOptimizer(gqcnn,
-                                dataset_dir,
-                                output_dir,
-                                train_config)
+    optimizer = GQCNNOptimizer(gqcnn,
+                               dataset_dir,
+                               output_dir,
+                               train_config)
     with gqcnn.tf_graph.as_default():
-        sgdOptimizer.optimize()
+        optimizer.optimize()
     logging.info('Total Training Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 

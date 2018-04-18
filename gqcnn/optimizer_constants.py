@@ -30,7 +30,7 @@ class GeneralConstants:
     SEED = 3472134
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
     JSON_INDENT = 2
-    QUEUE_CAPACITY = 100
+    QUEUE_CAPACITY = 1000
     QUEUE_SLEEP = 0.001
     
 # enum for image modalities

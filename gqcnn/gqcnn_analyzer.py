@@ -81,8 +81,6 @@ class GQCNNAnalyzer(object):
         self.font_size = self.cfg['font_size']
         self.dpi = self.cfg['dpi']
         self.vis_histograms = self.cfg['vis_histograms']
-        self.model_dir = self.cfg['model_dir']
-        self.models = self.cfg['models']
 
     def _run_prediction_single_model(self, model_output_dir, model_name='gqcnn', split_type='image_wise', model_tag="GQ-CNN", vis_conv=True, model_type = "gqcnn"):
         logging.info('Analyzing model %s' %(model_name))
@@ -97,8 +95,6 @@ class GQCNNAnalyzer(object):
         split_type = self.models[model_name]['split_type']
 
         # create output dir
-        if not os.path.exists(model_output_dir):
-            os.mkdir(model_output_dir)
 
         # load
         logging.info('Loading model %s' %(model_name))
@@ -242,22 +238,34 @@ class GQCNNAnalyzer(object):
 
         return train_class_result, val_class_result
 
-    def _run_predictions(self, output_dir):
+    def _run_predictions(self, model_dir, output_dir):
         """ Run predictions to use for plotting """
+        # allocate buffers
         logging.info('Running Predictions')
         self.train_class_results = {}
         self.val_class_results = {}
         self.results = {}
 
+        # parse the models
+        # TODO
+        
+        # loop through models
         for model_name, model_data in self.models.iteritems():
+            # setup the output dir
             logging.info('Analyzing model: %s' %(model_name))
             model_output_dir = os.path.join(output_dir, model_name)
+            if not os.path.exists(model_output_dir):
+                os.mkdir(model_output_dir)
+
+            # analyze each model individually
             train_result, val_result = self._run_prediction_single_model(model_output_dir,
                                                                          model_name=model_name,
                                                                          split_type=model_data['split_type'],
                                                                          model_tag=model_data['tag'],
                                                                          vis_conv=model_data['vis_conv'],
                                                                          model_type=model_data['type'])
+
+            # save a summary table
             BinaryClassificationResult.make_summary_table(train_result, val_result, plot=False,
                                                           save_dir=model_output_dir, save=True)
 
@@ -267,6 +275,7 @@ class GQCNNAnalyzer(object):
         """ Plot analysis curves """
         logging.info('Beginning Plotting')
 
+        # set params
         colors = ['g', 'b', 'c', 'y', 'm', 'r']
         styles = ['-', '--', '-.', ':', '-'] 
         num_colors = len(colors)

@@ -23,7 +23,7 @@ from optimizer_constants import ImageMode, TrainingMode, GripperMode, GeneralCon
 from train_stats_logger import TrainStatsLogger
 
 from neural_networks import GQCNN
-from sgd_optimizer import SGDOptimizer
+from gqcnn_optimizer import GQCNNOptimizer
 from gqcnn_analyzer import GQCNNAnalyzer
 
 from grasp import Grasp2D, SuctionPoint2D
@@ -35,7 +35,7 @@ from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGr
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
 __all__ = ['GQCNN', 
-           'SGDOptimizer',
+           'GQCNNOptimizer',
            'GQCNNAnalyzer',
            'ImageMode', 'TrainingMode', 'GripperMode',
            'TrainStatsLogger',
