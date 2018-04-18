@@ -59,7 +59,7 @@ metric_thresh: 0.75
 multiplicative_denoising: 0
 gamma_shape: 1000.00
 
-symmetrize: 1
+symmetrize: 0
 
 morphological: 0
 morph_open_rate: 0.25
