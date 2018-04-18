@@ -363,19 +363,9 @@ class GQCNNOptimizer(object):
 
                     # save everything!
                     self.train_stats_logger.log()
-                    
-                    """
-                    from visualization import Visualizer2D as vis2d
-                    d = utils.sqrt_ceil(train_images.shape[0])
-                    plt.figure()
-                    for i in range(train_images.shape[0]):
-                        plt.subplot(d,d,i+1)
-                        plt.imshow(train_images[i,:,:,0], cmap=plt.cm.gray_r)
-                    plt.show()
-                    """
 
                 # save filters
-                if False: #step % self.vis_frequency == 0:
+                if step % self.vis_frequency == 0:
                     # conv1_1
                     num_filt = conv1_1W.shape[3]
                     d = int(np.ceil(np.sqrt(num_filt)))
@@ -835,7 +825,6 @@ class GQCNNOptimizer(object):
         self.dataset = TensorDataset.open(self.dataset_dir)
         self.num_datapoints = self.dataset.num_datapoints
         self.num_tensors = self.dataset.num_tensors
-        #self.num_tensors = 1
         self.datapoints_per_file = self.dataset.datapoints_per_file
         self.num_random_files = min(self.num_tensors, self.num_random_files)
         
@@ -1009,6 +998,9 @@ class GQCNNOptimizer(object):
 
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images for training """
+        # open dataset
+        dataset = TensorDataset.open(self.dataset_dir)
+
         while not self.term_event.is_set():
             # sleep between reads
             time.sleep(GeneralConstants.QUEUE_SLEEP)
@@ -1034,12 +1026,12 @@ class GQCNNOptimizer(object):
                 file_num = np.random.choice(self.num_tensors, size=1)[0]
 
                 read_start = time.time()
-                train_images_tensor = self.dataset.tensor(self.im_field_name, file_num)
-                train_poses_tensor = self.dataset.tensor(self.pose_field_name, file_num)
-                train_labels_tensor = self.dataset.tensor(self.label_field_name, file_num)
+                train_images_tensor = dataset.tensor(self.im_field_name, file_num)
+                train_poses_tensor = dataset.tensor(self.pose_field_name, file_num)
+                train_labels_tensor = dataset.tensor(self.label_field_name, file_num)
                 read_stop = time.time()
                 logging.debug('Reading data took %.3f sec' %(read_stop - read_start))
-                logging.info('File num: %d' %(file_num))
+                logging.debug('File num: %d' %(file_num))
                 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[file_num]
@@ -1089,7 +1081,7 @@ class GQCNNOptimizer(object):
                     train_images_arr = resized_train_images_arr
                 
                 # add noises to images
-                #train_images_arr, train_poses_arr = self._distort(train_images_arr, train_poses_arr)
+                train_images_arr, train_poses_arr = self._distort(train_images_arr, train_poses_arr)
 
                 # slice poses
                 train_poses_arr = read_pose_data(train_poses_arr,
@@ -1193,6 +1185,8 @@ class GQCNNOptimizer(object):
             validation error
         """
         error_rates = []
+
+        # subsample files
         file_indices = np.arange(self.num_tensors)
         if num_files_eval is None:
             num_files_eval = self.max_files_eval

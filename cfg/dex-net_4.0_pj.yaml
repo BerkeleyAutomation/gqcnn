@@ -3,11 +3,11 @@ train_batch_size: 64
 val_batch_size: 16
 
 # logging params
-num_epochs: 20       # number of epochs to train for
-eval_frequency: 50    # how often to get validation error (in epochs)
-save_frequency: 20    # how often to save output (in epochs)
-vis_frequency: 10000 # how often to visualize filters (in epochs)
-log_frequency: 1     # how often to log output (in steps)
+num_epochs: 50        # number of epochs to train for
+eval_frequency: 10    # how often to get validation error (in epochs)
+save_frequency: 10    # how often to save output (in epochs)
+vis_frequency: 10000  # how often to visualize filters (in epochs)
+log_frequency: 1      # how often to log output (in steps)
 
 # train / val split params 
 data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
@@ -67,7 +67,7 @@ fc4_drop_rate: 0.5
 # debugging params
 debug: 1
 debug_num_files: 1000000000
-seed: 2489
+seed: 1124894
 
 ### GQCNN CONFIG ###
 gqcnn:
