@@ -217,7 +217,7 @@ class GQCNN(object):
         : float
             image mean
         """
-        return self.im_mean
+        return self._im_mean
 
     def set_im_std(self, im_std):
         """ Updates image standard deviation to be used for normalization when predicting 
@@ -238,7 +238,7 @@ class GQCNN(object):
         : float
             image standard deviation
         """
-        return self.im_std
+        return self._im_std
 
     def set_pose_mean(self, pose_mean):
         """ Updates pose mean to be used for normalization when predicting 

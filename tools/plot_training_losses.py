@@ -44,7 +44,7 @@ TRAIN_ERRORS_FILENAME = 'train_errors.npy'
 VAL_ERRORS_FILENAME = 'val_errors.npy'
 TRAIN_ITERS_FILENAME = 'train_eval_iters.npy'
 VAL_ITERS_FILENAME = 'val_eval_iters.npy'
-WINDOW = 1000
+WINDOW = 10
 
 if __name__ == '__main__':
     result_dir = sys.argv[1]
