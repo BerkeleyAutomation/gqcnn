@@ -13,7 +13,7 @@ max_files_eval: 1000
 
 # epochs
 num_epochs: 50     # number of epochs to train for
-eval_frequency: 1418  # how often to get validation error 
+eval_frequency: 560  # how often to get validation error 
 save_frequency: 2000  # how often to save output
 vis_frequency: 500000000
 log_frequency: 1     # how often to log output
