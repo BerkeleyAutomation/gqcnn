@@ -58,6 +58,8 @@ from learning_analysis import ClassificationResult, RegressionResult
 from optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
 from train_stats_logger import TrainStatsLogger
 
+NUM_FILES_DEBUG = 230
+
 class SGDOptimizer(object):
     """ Optimizer for gqcnn object """
 
@@ -356,8 +358,8 @@ class SGDOptimizer(object):
                     # save everything!
                     self.train_stats_logger.log()
 
-                    import IPython
-                    IPython.embed()
+                    #import IPython
+                    #IPython.embed()
                     
                 # save filters
                 if step % self.vis_frequency == 0:
@@ -1273,7 +1275,8 @@ class SGDOptimizer(object):
                 num_remaining = self.train_batch_size - num_queued
                 
                 # gen file index uniformly at random
-                file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
+                #file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
+                file_num = np.random.choice(NUM_FILES_DEBUG, size=1)[0]
                 train_data_filename = self.im_filenames_copy[file_num]
 
                 read_start = time.time()
@@ -1285,7 +1288,7 @@ class SGDOptimizer(object):
                                           'arr_0'].astype(np.float32)
                 read_stop = time.time()
                 logging.debug('Reading data took %.3f sec' %(read_stop - read_start))
-                logging.debug('File num: %d' %(file_num))
+                logging.info('File num: %d' %(file_num))
                 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
@@ -1529,11 +1532,12 @@ class SGDOptimizer(object):
         """
         error_rates = []
         all_filenames = zip(self.im_filenames, self.pose_filenames, self.label_filenames)
-        random.shuffle(all_filenames)
-        if num_files_eval is None:
-            num_files_eval = self.max_files_eval
-        if self.max_files_eval is not None and num_files_eval > 0:
-            all_filenames = all_filenames[:num_files_eval]
+        #random.shuffle(all_filenames)
+        #if num_files_eval is None:
+        #    num_files_eval = self.max_files_eval
+        #if self.max_files_eval is not None and num_files_eval > 0:
+        #    all_filenames = all_filenames[:num_files_eval]
+        all_filenames = all_filenames[:NUM_FILES_DEBUG]
         
         for data_filename, pose_filename, label_filename in all_filenames:
 

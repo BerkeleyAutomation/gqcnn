@@ -12,7 +12,7 @@ val_batch_size: 16
 max_files_eval: 1000
 
 # epochs
-num_epochs: 50     # number of epochs to train for
+num_epochs: 10     # number of epochs to train for
 eval_frequency: 560  # how often to get validation error 
 save_frequency: 2000  # how often to save output
 vis_frequency: 500000000
