@@ -1019,23 +1019,44 @@ class SingleShotGraspingPolicy(Policy):
     def action(self, state):
         from ssgd.train.decode import decode_angle, decode_output
         import keras.backend as K
-        # why are these 300x400?
+        from dexnet.visualization import DexNetVisualizer2D as vis2d
         depth_im = state.rgbd_im.depth
         segmask = state.segmask
         camera_intr = state.camera_intr
-        segmask = segmask.resize((self.input_x, self.input_y, 1))
-        depth_im = depth_im.resize((self.input_x, self.input_y, 1)).data
+
+        depth_im = depth_im.data
         depth_im = (depth_im - self.image_mean) / self.image_std
         X = [np.reshape(depth_im, [1, self.input_x, self.input_y, 1]), self.dummy_input]
         intermediate_output = self.intermediate_layer_model.predict(X)
-        grasps = decode_output(intermediate_output, k=169, config=self.config) \
-            .eval(session=K.get_session())
-        grasps[..., -1] = (K.sigmoid(grasps[..., -2]) * K.sigmoid(grasps[..., -1])) \
-            .eval(session=K.get_session())
+        top_grasps = decode_output(intermediate_output, k=100, config=self.config)[0]
+        best_grasp, valid_grasps = self._filter_segmask(top_grasps, segmask)
 
-        best_grasp = self._filter_segmask(grasps[0], segmask)
+        if self.config['vis_all_grasps']:
+            vis2d.imshow(DepthImage(depth_im))
+            for grasp in top_grasps:
+                color = plt.cm.RdYlGn(grasp[-1])
+                grasp_center = Point(np.array([grasp[1], grasp[0]]), camera_intr.frame)
+                cos_twice_angle = grasp[2]
+                sin_twice_angle = grasp[3]
+                depth = grasp[4]
+                theta = decode_angle(x=cos_twice_angle, y=sin_twice_angle)
+                grasp = Grasp2D(grasp_center, theta, depth, width=self.gripper_width, camera_intr=camera_intr)
+                vis2d.grasp(grasp, color=color, show_axis=True, use_gqcnn=True)
+            vis2d.show()
+        if self.config['vis_top_grasps']:
+            vis2d.imshow(DepthImage(depth_im))
+            for grasp in valid_grasps:
+                color = plt.cm.RdYlGn(grasp[-1])
+                grasp_center = Point(np.array([grasp[1], grasp[0]]), camera_intr.frame)
+                cos_twice_angle = grasp[2]
+                sin_twice_angle = grasp[3]
+                depth = grasp[4]
+                theta = decode_angle(x=cos_twice_angle, y=sin_twice_angle)
+                grasp = Grasp2D(grasp_center, theta, depth, width=self.gripper_width, camera_intr=camera_intr)
+                vis2d.grasp(grasp, color=color, show_axis=True, use_gqcnn=True)
+            vis2d.show()
 
-        grasp_center = Point(best_grasp[:2], camera_intr.frame)
+        grasp_center = Point(np.array([best_grasp[1], best_grasp[0]]), camera_intr.frame)
         cos_twice_angle = best_grasp[2]
         sin_twice_angle = best_grasp[3]
         depth = best_grasp[4]
@@ -1046,12 +1067,13 @@ class SingleShotGraspingPolicy(Policy):
     def _filter_segmask(self, predicted_grasps, segmask):
         highest_confidence = -float("inf")
         best_grasp = None
+        grasps = []
         for grasp in predicted_grasps:
             x = int(grasp[0])
             y = int(grasp[1])
-            if x >= 0 and x < self.input_x and y >= 0 and y < self.input_y:
-                valid = segmask[x, y, 0] != 0
-                if valid and grasp[-1] > highest_confidence:
-                    highest_confidence = grasp[-1]
-                    best_grasp = grasp
-        return best_grasp
+            valid = segmask[x, y, 0] != 0
+            if valid and grasp[-1] > highest_confidence:
+                grasps.append(grasp)
+                highest_confidence = grasp[-1]
+                best_grasp = grasp
+        return best_grasp, np.array(grasps)
