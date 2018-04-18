@@ -4,8 +4,8 @@ val_batch_size: 16
 
 # logging params
 num_epochs: 50       # number of epochs to train for
-eval_frequency: 1    # how often to get validation error (in epochs)
-save_frequency: 1    # how often to save output (in epochs)
+eval_frequency: 5    # how often to get validation error (in epochs)
+save_frequency: 5    # how often to save output (in epochs)
 vis_frequency: 10000 # how often to visualize filters (in epochs)
 log_frequency: 1     # how often to log output (in steps)
 
@@ -21,7 +21,7 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_step_multiplier: 2.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -67,7 +67,7 @@ fc4_drop_rate: 0.5
 # debugging params
 debug: 1
 debug_num_files: 1000000000
-seed: 5289
+seed: 5209
 
 ### GQCNN CONFIG ###
 gqcnn:
