@@ -338,7 +338,7 @@ class SGDOptimizer(object):
                 # evaluate, even before training
                 if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
-                        train_error = self._error_rate_in_batches()
+                        train_error = self._error_rate_in_batches(validation_set=False)
                         logging.info('Training error: %.3f' %train_error)
 
                         # update the TrainStatsLogger and save
@@ -356,6 +356,9 @@ class SGDOptimizer(object):
                     # save everything!
                     self.train_stats_logger.log()
 
+                    import IPython
+                    IPython.embed()
+                    
                 # save filters
                 if step % self.vis_frequency == 0:
                     # conv1_1
@@ -1540,13 +1543,16 @@ class SGDOptimizer(object):
             labels = np.load(os.path.join(self.data_dir, label_filename))['arr_0']
 
             # if no datapoints from this file are in validation then just continue
-            if len(self.val_index_map[data_filename]) == 0:
+            if validation_set:
+                indices = self.val_index_map[data_filename]
+            else:
+                indices = self.train_index_map[data_filename]                
+            if len(indices) == 0:
                 continue
 
-
-            data = data[self.val_index_map[data_filename],...]
-            poses = self._read_pose_data(poses[self.val_index_map[data_filename],:], self.input_data_mode)
-            labels = labels[self.val_index_map[data_filename],...]
+            data = data[indices,...]
+            poses = self._read_pose_data(poses[indices,:], self.input_data_mode)
+            labels = labels[indices,...]
 
             if self.training_mode == TrainingMode.REGRESSION:
                 if self.preproc_mode == PreprocMode.NORMALIZATION:
