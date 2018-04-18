@@ -1275,8 +1275,8 @@ class SGDOptimizer(object):
                 num_remaining = self.train_batch_size - num_queued
                 
                 # gen file index uniformly at random
-                #file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
-                file_num = np.random.choice(NUM_FILES_DEBUG, size=1)[0]
+                file_num = np.random.choice(len(self.im_filenames_copy), size=1)[0]
+                #file_num = np.random.choice(NUM_FILES_DEBUG, size=1)[0]
                 train_data_filename = self.im_filenames_copy[file_num]
 
                 read_start = time.time()
@@ -1532,12 +1532,12 @@ class SGDOptimizer(object):
         """
         error_rates = []
         all_filenames = zip(self.im_filenames, self.pose_filenames, self.label_filenames)
-        #random.shuffle(all_filenames)
-        #if num_files_eval is None:
-        #    num_files_eval = self.max_files_eval
-        #if self.max_files_eval is not None and num_files_eval > 0:
-        #    all_filenames = all_filenames[:num_files_eval]
-        all_filenames = all_filenames[:NUM_FILES_DEBUG]
+        random.shuffle(all_filenames)
+        if num_files_eval is None:
+            num_files_eval = self.max_files_eval
+        if self.max_files_eval is not None and num_files_eval > 0:
+            all_filenames = all_filenames[:num_files_eval]
+        #all_filenames = all_filenames[:NUM_FILES_DEBUG]
         
         for data_filename, pose_filename, label_filename in all_filenames:
 
