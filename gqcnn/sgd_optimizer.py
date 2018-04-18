@@ -1227,10 +1227,10 @@ class SGDOptimizer(object):
             self._compute_indices_object_wise()
         elif self.data_split_mode == 'stable_pose_wise':
             self._compute_indices_pose_wise()
-        if self.data_split_mode == 'state_wise':
+        elif self.data_split_mode == 'state_wise':
             self._compute_indices_state_wise()
         else:
-            logging.error('Data Split Mode Not Supported')
+            logging.error('Data Split Mode %s Not Supported' %(self.data_split_mode))
 
         # compute means, std's, and normalization metrics
         self._compute_data_metrics()
@@ -1281,8 +1281,8 @@ class SGDOptimizer(object):
                 self.train_label_arr = np.load(os.path.join(self.data_dir, self.label_filenames_copy[file_num]))[
                                           'arr_0'].astype(np.float32)
                 read_stop = time.time()
-                logging.info('Reading data took %.3f sec' %(read_stop - read_start))
-                logging.info('File num: %d' %(file_num))
+                logging.debug('Reading data took %.3f sec' %(read_stop - read_start))
+                logging.debug('File num: %d' %(file_num))
                 
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
