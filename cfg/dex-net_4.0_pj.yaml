@@ -4,7 +4,7 @@ val_batch_size: 16
 
 # logging params
 num_epochs: 10       # number of epochs to train for
-eval_frequency: 5    # how often to get validation error (in epochs)
+eval_frequency: 2    # how often to get validation error (in epochs)
 save_frequency: 5    # how often to save output (in epochs)
 vis_frequency: 10000 # how often to visualize filters (in epochs)
 log_frequency: 1     # how often to log output (in steps)
