@@ -3,9 +3,9 @@ train_batch_size: 64
 val_batch_size: 16
 
 # logging params
-num_epochs: 10       # number of epochs to train for
-eval_frequency: 1    # how often to get validation error (in epochs)
-save_frequency: 5    # how often to save output (in epochs)
+num_epochs: 20       # number of epochs to train for
+eval_frequency: 50    # how often to get validation error (in epochs)
+save_frequency: 20    # how often to save output (in epochs)
 vis_frequency: 10000 # how often to visualize filters (in epochs)
 log_frequency: 1     # how often to log output (in steps)
 
@@ -67,7 +67,7 @@ fc4_drop_rate: 0.5
 # debugging params
 debug: 1
 debug_num_files: 1000000000
-seed: 4285209
+seed: 2489
 
 ### GQCNN CONFIG ###
 gqcnn:

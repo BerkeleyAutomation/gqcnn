@@ -835,7 +835,7 @@ class GQCNNOptimizer(object):
         self.dataset = TensorDataset.open(self.dataset_dir)
         self.num_datapoints = self.dataset.num_datapoints
         self.num_tensors = self.dataset.num_tensors
-        self.num_tensors = 1
+        #self.num_tensors = 1
         self.datapoints_per_file = self.dataset.datapoints_per_file
         self.num_random_files = min(self.num_tensors, self.num_random_files)
         
@@ -1089,7 +1089,7 @@ class GQCNNOptimizer(object):
                     train_images_arr = resized_train_images_arr
                 
                 # add noises to images
-                train_images_arr, train_poses_arr = self._distort(train_images_arr, train_poses_arr)
+                #train_images_arr, train_poses_arr = self._distort(train_images_arr, train_poses_arr)
 
                 # slice poses
                 train_poses_arr = read_pose_data(train_poses_arr,
