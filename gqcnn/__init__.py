@@ -23,8 +23,6 @@ from optimizer_constants import ImageMode, TrainingMode, GripperMode, GeneralCon
 from train_stats_logger import TrainStatsLogger
 
 from neural_networks import GQCNN
-from gqcnn_optimizer import GQCNNOptimizer
-from gqcnn_analyzer import GQCNNAnalyzer
 
 from grasp import Grasp2D, SuctionPoint2D
 from visualizer import Visualizer
@@ -33,6 +31,9 @@ from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundExcep
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
 from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction, ParallelJawGrasp
 from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
+
+from gqcnn_optimizer import GQCNNOptimizer
+from gqcnn_analyzer import GQCNNAnalyzer
 
 __all__ = ['GQCNN', 
            'GQCNNOptimizer',

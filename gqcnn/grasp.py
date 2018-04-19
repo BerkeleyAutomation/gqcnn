@@ -62,7 +62,13 @@ class Grasp2D(object):
             self.camera_intr = camera_intr
         self.contact_points = contact_points
         self.contact_normals = contact_normals
-            
+
+        frame = 'image'
+        if camera_intr is not None:
+            frame = camera_intr.frame
+        if isinstance(center, np.ndarray):
+            self.center = Point(center, frame=frame)
+        
     @property
     def axis(self):
         """ Returns the grasp axis. """
@@ -235,6 +241,14 @@ class SuctionPoint2D(object):
     def __init__(self, center, axis, depth, camera_intr=None):
         self.center = center
         self.axis = axis
+
+        frame = 'image'
+        if camera_intr is not None:
+            frame = camera_intr.frame
+        if isinstance(center, np.ndarray):
+            self.center = Point(center, frame=frame)
+        if isinstance(axis, list):
+            self.axis = np.array(axis)
         if np.abs(np.linalg.norm(self.axis) - 1.0) > 1e-3:
             raise ValueError('Illegal axis. Must be norm 1.')
 

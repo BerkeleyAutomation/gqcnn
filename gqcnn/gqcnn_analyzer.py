@@ -38,10 +38,12 @@ import sys
 import time
 
 import autolab_core.utils as utils
-from autolab_core import BinaryClassificationResult, TensorDataset
+from autolab_core import BinaryClassificationResult, Point, TensorDataset
 from autolab_core.constants import *
+from perception import DepthImage
+from visualization import Visualizer2D as vis2d
 
-from . import GQCNN
+from . import GQCNN, Grasp2D, SuctionPoint2D
 from .optimizer_constants import GripperMode, ImageMode
 from .utils import *
 
@@ -69,6 +71,7 @@ class GQCNNAnalyzer(object):
         self.font_size = self.cfg['font_size']
         self.dpi = self.cfg['dpi']
         self.num_bins = self.cfg['num_bins']
+        self.num_vis = self.cfg['num_vis']
         
     def analyze(self, model_dir,
                 output_dir,
@@ -112,6 +115,25 @@ class GQCNNAnalyzer(object):
         self._plot(model_output_dir, train_result, val_result)
 
         return train_result, val_result
+
+    def _plot_grasp(self, datapoint, image_field_name, pose_field_name, gripper_mode):
+        """ Plots a single grasp represented as a datapoint. """
+        image = DepthImage(datapoint[image_field_name][:,:,0])
+        depth = datapoint[pose_field_name][2]
+        width = 0
+        if gripper_mode == GripperMode.PARALLEL_JAW or \
+           gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
+            grasp = Grasp2D(center=image.center,
+                            angle=0,
+                            depth=depth,
+                            width=0.0)
+            width = datapoint[pose_field_name][-1]
+        else:
+            grasp = SuctionPoint2D(center=image.center,
+                                   axis=[1,0,0],
+                                   depth=depth)                
+        vis2d.imshow(image)
+        vis2d.grasp(grasp, width=width)
         
     def _run_prediction_single_model(self, model_dir,
                                      model_output_dir,
@@ -153,14 +175,13 @@ class GQCNNAnalyzer(object):
         conv1_filters = gqcnn.filters
         num_filt = conv1_filters.shape[3]
         d = utils.sqrt_ceil(num_filt)
-        plt.clf()
+        vis2d.clf()
         for k in range(num_filt):
             filt = conv1_filters[:,:,0,k]
-            plt.subplot(d,d,k+1)
-            plt.imshow(filt, cmap=plt.cm.gray, interpolation='none')
-            plt.axis('off')
+            vis2d.subplot(d,d,k+1)
+            vis2d.imshow(DepthImage(filt))
             figname = os.path.join(model_output_dir, 'conv1_filters.pdf')
-        plt.savefig(figname, dpi=self.dpi)
+        vis2d.savefig(figname, dpi=self.dpi)
         
         # aggregate training and validation true labels and predicted probabilities
         all_predictions = []
@@ -202,6 +223,152 @@ class GQCNNAnalyzer(object):
         train_result.save(os.path.join(model_output_dir, 'train_result.cres'))
         val_result.save(os.path.join(model_output_dir, 'val_result.cres'))
 
+        # save images
+        vis2d.figure()
+        example_dir = os.path.join(model_output_dir, 'examples')
+        if not os.path.exists(example_dir):
+            os.mkdir(example_dir)
+
+        # train
+        logging.info('Saving training examples')
+        train_example_dir = os.path.join(example_dir, 'train')
+        if not os.path.exists(train_example_dir):
+            os.mkdir(train_example_dir)
+            
+        # train TP
+        true_positive_indices = train_result.true_positive_indices
+        np.random.shuffle(true_positive_indices)
+        true_positive_indices = true_positive_indices[:self.num_vis]
+        for i, j in enumerate(true_positive_indices):
+            k = train_indices[j]
+            datapoint = dataset.datapoint(k, field_names=[image_field_name,
+                                                          pose_field_name])
+            vis2d.clf()
+            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+                                                                 train_result.pred_probs[j],
+                                                                 train_result.labels[j]),
+                        fontsize=self.font_size)
+            vis2d.savefig(os.path.join(train_example_dir, 'true_positive_%03d.png' %(i)))
+
+        # train FP
+        false_positive_indices = train_result.false_positive_indices
+        np.random.shuffle(false_positive_indices)
+        false_positive_indices = false_positive_indices[:self.num_vis]
+        for i, j in enumerate(false_positive_indices):
+            k = train_indices[j]
+            datapoint = dataset.datapoint(k, field_names=[image_field_name,
+                                                          pose_field_name])
+            vis2d.clf()
+            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+                                                                 train_result.pred_probs[j],
+                                                                 train_result.labels[j]),
+                        fontsize=self.font_size)
+            vis2d.savefig(os.path.join(train_example_dir, 'false_positive_%03d.png' %(i)))
+
+        # train TN
+        true_negative_indices = train_result.true_negative_indices
+        np.random.shuffle(true_negative_indices)
+        true_negative_indices = true_negative_indices[:self.num_vis]
+        for i, j in enumerate(true_negative_indices):
+            k = train_indices[j]
+            datapoint = dataset.datapoint(k, field_names=[image_field_name,
+                                                          pose_field_name])
+            vis2d.clf()
+            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+                                                                 train_result.pred_probs[j],
+                                                                 train_result.labels[j]),
+                        fontsize=self.font_size)
+            vis2d.savefig(os.path.join(train_example_dir, 'true_negative_%03d.png' %(i)))
+
+        # train TP
+        false_negative_indices = train_result.false_negative_indices
+        np.random.shuffle(false_negative_indices)
+        false_negative_indices = false_negative_indices[:self.num_vis]
+        for i, j in enumerate(false_negative_indices):
+            k = train_indices[j]
+            datapoint = dataset.datapoint(k, field_names=[image_field_name,
+                                                          pose_field_name])
+            vis2d.clf()
+            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+                                                                 train_result.pred_probs[j],
+                                                                 train_result.labels[j]),
+                        fontsize=self.font_size)
+            vis2d.savefig(os.path.join(train_example_dir, 'false_negative_%03d.png' %(i)))
+
+        # val
+        logging.info('Saving validation examples')
+        val_example_dir = os.path.join(example_dir, 'val')
+        if not os.path.exists(val_example_dir):
+            os.mkdir(val_example_dir)
+
+        # val TP
+        true_positive_indices = val_result.true_positive_indices
+        np.random.shuffle(true_positive_indices)
+        true_positive_indices = true_positive_indices[:self.num_vis]
+        for i, j in enumerate(true_positive_indices):
+            k = val_indices[j]
+            datapoint = dataset.datapoint(k, field_names=[image_field_name,
+                                                          pose_field_name])
+            vis2d.clf()
+            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+                                                                 val_result.pred_probs[j],
+                                                                 val_result.labels[j]),
+                        fontsize=self.font_size)
+            vis2d.savefig(os.path.join(val_example_dir, 'true_positive_%03d.png' %(i)))
+
+        # val FP
+        false_positive_indices = val_result.false_positive_indices
+        np.random.shuffle(false_positive_indices)
+        false_positive_indices = false_positive_indices[:self.num_vis]
+        for i, j in enumerate(false_positive_indices):
+            k = val_indices[j]
+            datapoint = dataset.datapoint(k, field_names=[image_field_name,
+                                                          pose_field_name])
+            vis2d.clf()
+            vis2d.imshow(DepthImage(datapoint[image_field_name][:,:,0]))
+            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+                                                                 val_result.pred_probs[j],
+                                                                 val_result.labels[j]),
+                        fontsize=self.font_size)
+            vis2d.savefig(os.path.join(val_example_dir, 'false_positive_%03d.png' %(i)))
+
+        # val TN
+        true_negative_indices = val_result.true_negative_indices
+        np.random.shuffle(true_negative_indices)
+        true_negative_indices = true_negative_indices[:self.num_vis]
+        for i, j in enumerate(true_negative_indices):
+            k = val_indices[j]
+            datapoint = dataset.datapoint(k, field_names=[image_field_name,
+                                                          pose_field_name])
+            vis2d.clf()
+            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+                                                                 val_result.pred_probs[j],
+                                                                 val_result.labels[j]),
+                        fontsize=self.font_size)
+            vis2d.savefig(os.path.join(val_example_dir, 'true_negative_%03d.png' %(i)))
+
+        # val TP
+        false_negative_indices = val_result.false_negative_indices
+        np.random.shuffle(false_negative_indices)
+        false_negative_indices = false_negative_indices[:self.num_vis]
+        for i, j in enumerate(false_negative_indices):
+            k = val_indices[j]
+            datapoint = dataset.datapoint(k, field_names=[image_field_name,
+                                                          pose_field_name])
+            vis2d.clf()
+            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+                                                                 val_result.pred_probs[j],
+                                                                 val_result.labels[j]),
+                        fontsize=self.font_size)
+            vis2d.savefig(os.path.join(val_example_dir, 'false_negative_%03d.png' %(i)))
+            
         # save summary stats
         train_summary_stats = {
             'error_rate': train_result.error_rate,
@@ -236,11 +403,11 @@ class GQCNNAnalyzer(object):
         styles = ['-', '--', '-.', ':', '-'] 
         num_colors = len(colors)
         num_styles = len(styles)
-        
+
         # get stats, plot curves
         logging.info('Model %s training error rate: %.3f' %(model_name, train_result.error_rate))
         logging.info('Model %s validation error rate: %.3f' %(model_name, val_result.error_rate))
-        plt.clf()
+        vis2d.clf()
         train_result.precision_recall_curve(plot=True,
                                             color=colors[0],
                                             style=styles[0],
@@ -249,13 +416,13 @@ class GQCNNAnalyzer(object):
                                           color=colors[1],
                                           style=styles[1],
                                           label='VAL')
-        plt.title('Precision Recall Curves', fontsize=self.font_size)
-        handles, labels = plt.gca().get_legend_handles_labels()
-        plt.legend(handles, labels, loc='best')
+        vis2d.title('Precision Recall Curves', fontsize=self.font_size)
+        handles, labels = vis2d.gca().get_legend_handles_labels()
+        vis2d.legend(handles, labels, loc='best')
         figname = os.path.join(model_output_dir, 'precision_recall.png')
-        plt.savefig(figname, dpi=self.dpi)
+        vis2d.savefig(figname, dpi=self.dpi)
 
-        plt.clf()
+        vis2d.clf()
         train_result.roc_curve(plot=True,
                                color=colors[0],
                                style=styles[0],
@@ -264,11 +431,11 @@ class GQCNNAnalyzer(object):
                              color=colors[1],
                              style=styles[1],
                              label='VAL')
-        plt.title('Reciever Operating Characteristic', fontsize=self.font_size)
-        handles, labels = plt.gca().get_legend_handles_labels()
-        plt.legend(handles, labels, loc='best')
+        vis2d.title('Reciever Operating Characteristic', fontsize=self.font_size)
+        handles, labels = vis2d.gca().get_legend_handles_labels()
+        vis2d.legend(handles, labels, loc='best')
         figname = os.path.join(model_output_dir, 'roc.png')
-        plt.savefig(figname, dpi=self.dpi)
+        vis2d.savefig(figname, dpi=self.dpi)
         
         # plot histogram of prediction errors
         num_bins = min(self.num_bins, train_result.num_datapoints)
@@ -276,32 +443,32 @@ class GQCNNAnalyzer(object):
         # train positives
         pos_ind = np.where(train_result.labels == 1)[0]
         diffs = np.abs(train_result.labels[pos_ind] - train_result.pred_probs[pos_ind])
-        plt.figure()
+        vis2d.figure()
         utils.histogram(diffs,
                         num_bins,
                         bounds=(0,1),
                         normalized=False,
                         plot=True)
-        plt.title('Error on Positive Training Examples', fontsize=self.font_size)
-        plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
-        plt.ylabel('Count', fontsize=self.font_size)
+        vis2d.title('Error on Positive Training Examples', fontsize=self.font_size)
+        vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
+        vis2d.ylabel('Count', fontsize=self.font_size)
         figname = os.path.join(model_output_dir, '%s_pos_train_errors_histogram.png' %(model_name))
-        plt.savefig(figname, dpi=self.dpi)
+        vis2d.savefig(figname, dpi=self.dpi)
 
         # train negatives
         neg_ind = np.where(train_result.labels == 0)[0]
         diffs = np.abs(train_result.labels[neg_ind] - train_result.pred_probs[neg_ind])
-        plt.figure()
+        vis2d.figure()
         utils.histogram(diffs,
                         num_bins,
                         bounds=(0,1),
                         normalized=False,
                         plot=True)
-        plt.title('Error on Negative Training Examples', fontsize=self.font_size)
-        plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
-        plt.ylabel('Count', fontsize=self.font_size)
+        vis2d.title('Error on Negative Training Examples', fontsize=self.font_size)
+        vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
+        vis2d.ylabel('Count', fontsize=self.font_size)
         figname = os.path.join(model_output_dir, '%s_neg_train_errors_histogram.png' %(model_name))
-        plt.savefig(figname, dpi=self.dpi)
+        vis2d.savefig(figname, dpi=self.dpi)
 
         # histogram of validation errors
         num_bins = min(self.num_bins, val_result.num_datapoints)
@@ -309,29 +476,29 @@ class GQCNNAnalyzer(object):
         # val positives
         pos_ind = np.where(val_result.labels == 1)[0]
         diffs = np.abs(val_result.labels[pos_ind] - val_result.pred_probs[pos_ind])
-        plt.figure()
+        vis2d.figure()
         utils.histogram(diffs,
                         num_bins,
                         bounds=(0,1),
                         normalized=False,
                         plot=True)
-        plt.title('Error on Positive Validation Examples', fontsize=self.font_size)
-        plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
-        plt.ylabel('Count', fontsize=self.font_size)
+        vis2d.title('Error on Positive Validation Examples', fontsize=self.font_size)
+        vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
+        vis2d.ylabel('Count', fontsize=self.font_size)
         figname = os.path.join(model_output_dir, '%s_pos_val_errors_histogram.png' %(model_name))
-        plt.savefig(figname, dpi=self.dpi)
+        vis2d.savefig(figname, dpi=self.dpi)
 
         # val negatives
         neg_ind = np.where(val_result.labels == 0)[0]
         diffs = np.abs(val_result.labels[neg_ind] - val_result.pred_probs[neg_ind])
-        plt.figure()
+        vis2d.figure()
         utils.histogram(diffs,
                         num_bins,
                         bounds=(0,1),
                         normalized=False,
                         plot=True)
-        plt.title('Error on Negative Validation Examples', fontsize=self.font_size)
-        plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
-        plt.ylabel('Count', fontsize=self.font_size)
+        vis2d.title('Error on Negative Validation Examples', fontsize=self.font_size)
+        vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
+        vis2d.ylabel('Count', fontsize=self.font_size)
         figname = os.path.join(model_output_dir, '%s_neg_val_errors_histogram.png' %(model_name))
-        plt.savefig(figname, dpi=self.dpi)
+        vis2d.savefig(figname, dpi=self.dpi)

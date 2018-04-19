@@ -2,4 +2,4 @@ log_rate: 10
 font_size: 15
 dpi: 100
 num_bins: 100
-
+num_vis: 10
