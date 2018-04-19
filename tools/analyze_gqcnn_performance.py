@@ -33,7 +33,7 @@ import time
 import os
 
 from autolab_core import YamlConfig
-from gqcnn import GQCNN, SGDOptimizer, GQCNNAnalyzer
+from gqcnn import GQCNNAnalyzer
 
 if __name__ == '__main__':
     # setup logger
@@ -43,12 +43,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Analyze a Grasp Quality Convolutional Neural Network with TensorFlow')
     parser.add_argument('model_dir', type=str, default=None, help='path to the model to analyze')
     parser.add_argument('--output_dir', type=str, default=None, help='path to save the analysis')
-    parser.add_argument('--dataset_dir', type=str, default=None, help='path to the dataset to analyze performance on')
+    parser.add_argument('--dataset_config_filename', type=str, default=None, help='path to a configuration file for testing on a custom dataset')
     parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
     args = parser.parse_args()
     model_dir = args.model_dir
-    dataset_dir = args.dataset_dir
     output_dir = args.output_dir
+    dataset_config_filename = args.dataset_config_filename
     config_filename = args.config_filename
 
     # set defaults
@@ -65,6 +65,8 @@ if __name__ == '__main__':
         output_dir = os.path.join(os.getcwd(), output_dir)
     if not os.path.isabs(config_filename):
         config_filename = os.path.join(os.getcwd(), config_filename)
+    if dataset_config_filename is not None and not os.path.isabs(dataset_config_filename):
+        config_filename = os.path.join(os.getcwd(), dataset_config_filename)
 
     # make the output dir
     if not os.path.exists(output_dir):
@@ -72,7 +74,11 @@ if __name__ == '__main__':
         
     # read config
     config = YamlConfig(config_filename)
-        
+
+    dataset_config = None
+    if dataset_config_filename is not None:
+        dataset_config = YamlConfig(dataset_config_filename)
+    
     # run the analyzer
     analyzer = GQCNNAnalyzer(config)
-    analyzer.analyze(output_dir)
+    analyzer.analyze(model_dir, output_dir, dataset_config)

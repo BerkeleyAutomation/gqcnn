@@ -67,7 +67,7 @@ fc4_drop_rate: 0.5
 # debugging params
 debug: 1
 debug_num_files: 1000000000
-seed: 1124894
+seed: 24098
 
 ### GQCNN CONFIG ###
 gqcnn:

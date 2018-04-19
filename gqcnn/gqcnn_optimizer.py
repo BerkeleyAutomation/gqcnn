@@ -89,10 +89,15 @@ class GQCNNOptimizer(object):
         self.cfg = config
         self.tensorboard_has_launched = False
 
+        # check default split
         if split_name is None:
             logging.warning('Using default image-wise split')
             self.split_name = 'image_wise'
         
+        # update cfg for saving
+        self.cfg['dataset_dir'] = self.dataset_dir
+        self.cfg['split_name'] = self.split_name
+            
     def _create_loss(self):
         """ Creates a loss based on config file
 
@@ -472,7 +477,7 @@ class GQCNNOptimizer(object):
             for k, i in enumerate(random_file_indices):
                 if k % self.preproc_log_frequency == 0:
                     logging.info('Adding file %d of %d to image mean estimate' %(k+1, random_file_indices.shape[0]))
-                im_data = self.dataset.tensor(self.im_field_name, i).data
+                im_data = self.dataset.tensor(self.im_field_name, i).arr
                 train_indices = self.train_index_map[i]
                 self.im_mean += np.sum(im_data[train_indices, ...])
                 num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
@@ -483,7 +488,7 @@ class GQCNNOptimizer(object):
             for k, i in enumerate(random_file_indices):
                 if k % self.preproc_log_frequency == 0:
                     logging.info('Adding file %d of %d to image std estimate' %(k+1, random_file_indices.shape[0]))
-                im_data = self.dataset.tensor(self.im_field_name, i).data
+                im_data = self.dataset.tensor(self.im_field_name, i).arr
                 train_indices = self.train_index_map[i]
                 self.im_std += np.sum((im_data[train_indices, ...] - self.im_mean)**2)
             self.im_std = np.sqrt(self.im_std / num_summed)
@@ -515,7 +520,7 @@ class GQCNNOptimizer(object):
             for k, i in enumerate(random_file_indices):
                 if k % self.preproc_log_frequency == 0:
                     logging.info('Adding file %d of %d to pose mean estimate' %(k+1, random_file_indices.shape[0]))
-                pose_data = self.dataset.tensor(self.pose_field_name, i).data
+                pose_data = self.dataset.tensor(self.pose_field_name, i).arr
                 train_indices = self.train_index_map[i]
                 if self.gripper_mode == GripperMode.SUCTION:
                     rand_indices = np.random.choice(pose_data.shape[0],
@@ -538,7 +543,7 @@ class GQCNNOptimizer(object):
             for k, i in enumerate(random_file_indices):
                 if k % self.preproc_log_frequency == 0:
                     logging.info('Adding file %d of %d to pose std estimate' %(k+1, random_file_indices.shape[0]))
-                pose_data = self.dataset.tensor(self.pose_field_name, i).data
+                pose_data = self.dataset.tensor(self.pose_field_name, i).arr
                 train_indices = self.train_index_map[i]
                 if self.gripper_mode == GripperMode.SUCTION:
                     rand_indices = np.random.choice(pose_data.shape[0],
@@ -598,7 +603,7 @@ class GQCNNOptimizer(object):
             for k, i in enumerate(random_file_indices):
                 if k % self.preproc_log_frequency == 0:
                     logging.info('Adding file %d of %d to metric stat estimates' %(k+1, random_file_indices.shape[0]))
-                metric_data = self.dataset.tensor(self.label_field_name, i).data
+                metric_data = self.dataset.tensor(self.label_field_name, i).arr
                 train_indices = self.train_index_map[i]
                 val_indices = self.val_index_map[i]
                 train_metric_data = metric_data[train_indices]
@@ -1010,7 +1015,7 @@ class GQCNNOptimizer(object):
                     
                 # filter positives and negatives
                 if self.training_mode == TrainingMode.CLASSIFICATION and self.pos_weight != 0.0:
-                    labels = 1 * (train_labels_tensor.data > self.metric_thresh)
+                    labels = 1 * (train_labels_tensor.arr > self.metric_thresh)
                     np.random.shuffle(train_ind)
                     filtered_ind = []
                     for index in train_ind:
@@ -1029,9 +1034,9 @@ class GQCNNOptimizer(object):
                     continue
                 
                 # subsample data
-                train_images_arr = train_images_tensor.data[ind, ...]
-                train_poses_arr = train_poses_tensor.data[ind, ...]
-                train_label_arr = train_labels_tensor[ind]
+                train_images_arr = train_images_tensor.arr[ind, ...]
+                train_poses_arr = train_poses_tensor.arr[ind, ...]
+                train_label_arr = train_labels_tensor.arr[ind]
                 num_images = train_images_arr.shape[0]
 
                 # resize images
@@ -1164,9 +1169,9 @@ class GQCNNOptimizer(object):
 
         for i in file_indices:
             # load next file
-            images = self.dataset.tensor(self.im_field_name, i).data
-            poses = self.dataset.tensor(self.pose_field_name, i).data
-            labels = self.dataset.tensor(self.label_field_name, i).data
+            images = self.dataset.tensor(self.im_field_name, i).arr
+            poses = self.dataset.tensor(self.pose_field_name, i).arr
+            labels = self.dataset.tensor(self.label_field_name, i).arr
 
             # if no datapoints from this file are in validation then just continue
             if validation_set:

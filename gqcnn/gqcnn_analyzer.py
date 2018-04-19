@@ -38,7 +38,8 @@ import sys
 import time
 
 import autolab_core.utils as utils
-from autolab_core import BinaryClassificationResult
+from autolab_core import BinaryClassificationResult, TensorDataset
+from autolab_core.constants import *
 
 from . import GQCNN
 from .optimizer_constants import GripperMode, ImageMode
@@ -59,222 +60,177 @@ class GQCNNAnalyzer(object):
             dictionary of configuration parameters
         """
         self.cfg = config
+        self._parse_config()
 
-    def analyze(self, output_dir):
-        """ Analyzes a GQCNN model """
-        # setup for analysis
-        self._setup()
-
-        # run predictions
-        self._run_predictions(output_dir)
-
-        # finally plot curves
-        self._plot(output_dir)
-
-    def _setup(self):
-        """ Setup for analysis """
-        # setup logger
-        logging.getLogger().setLevel(logging.INFO)
-        logging.info('Setting up for analysis')
-
-        # read config
+    def _parse_config(self):
+        """ Read params from the config file """
+        # plotting params
+        self.log_rate = self.cfg['log_rate']
         self.font_size = self.cfg['font_size']
         self.dpi = self.cfg['dpi']
-        self.vis_histograms = self.cfg['vis_histograms']
+        self.num_bins = self.cfg['num_bins']
+        
+    def analyze(self, model_dir,
+                output_dir,
+                dataset_config=None):
+        """ Analyzes a GQCNN model.
 
-    def _run_prediction_single_model(self, model_output_dir, model_name='gqcnn', split_type='image_wise', model_tag="GQ-CNN", vis_conv=True, model_type = "gqcnn"):
+        Parameters
+        ----------
+        model_dir : str
+            path to the model
+        output_dir : str
+            path to save the analysis
+        dataset_config : dict
+            dictionary of parameters for the dataset to test on
+
+        Returns
+        -------
+        :obj:`autolab_core.BinaryClassificationResult`
+            result on training data
+        :obj:`autolab_core.BinaryClassificationResult`
+            result on validation data
+        """
+        # determine model output dir
+        model_name = ''
+        model_root = model_dir
+        while model_name == '' and model_root != '':
+            model_root, model_name = os.path.split(model_root)
+
+        model_output_dir = os.path.join(output_dir, model_name)
+        if not os.path.exists(model_output_dir):
+            os.mkdir(model_output_dir)
+
         logging.info('Analyzing model %s' %(model_name))
+            
+        # run predictions
+        train_result, val_result = self._run_prediction_single_model(model_dir,
+                                                                     model_output_dir,
+                                                                     dataset_config)
 
+        # finally plot curves
+        self._plot(model_output_dir, train_result, val_result)
+
+        return train_result, val_result
+        
+    def _run_prediction_single_model(self, model_dir,
+                                     model_output_dir,
+                                     dataset_config):
+        """ Analyze the performance of a single model. """
         # read in model config
-        model_subdir = os.path.join(self.model_dir, model_name)
-        model_config_filename = os.path.join(model_subdir, 'config.json')
+        model_config_filename = os.path.join(model_dir, 'config.json')
         with open(model_config_filename) as data_file:
             model_config = json.load(data_file)
-        model_type = self.models[model_name]['type']
-        model_tag = self.models[model_name]['tag']
-        split_type = self.models[model_name]['split_type']
 
-        # create output dir
-
-        # load
-        logging.info('Loading model %s' %(model_name))
-        model = GQCNN.load(model_subdir)
-        # load indices based on dataset-split-type
-        if split_type == 'image_wise':
-            train_indices_filename = os.path.join(model_subdir, 'train_indices_image_wise.pkl')
-            val_indices_filename = os.path.join(model_subdir, 'val_indices_image_wise.pkl')
-        elif split_type == 'object_wise':
-            train_indices_filename = os.path.join(model_subdir, 'train_indices_object_wise.pkl')
-            val_indices_filename = os.path.join(model_subdir, 'val_indices_object_wise.pkl')
-        elif split_type == 'stable_pose_wise':
-            train_indices_filename = os.path.join(model_subdir, 'train_indices_stable_pose_wise.pkl')
-            val_indices_filename = os.path.join(model_subdir, 'val_indices_stable_pose_wise.pkl')
- 
-        model.open_session()
+        # load model
+        logging.info('Loading model %s' %(model_dir))
+        gqcnn = GQCNN.load(model_dir)
+        gqcnn.open_session()
+        gripper_mode = gqcnn.gripper_mode
         
-        # visualize filters
-        if self.models[model_name]['vis_conv']:
-            conv1_filters = model.filters
-            num_filt = conv1_filters.shape[3]
-            d = int(np.ceil(np.sqrt(num_filt)))
-                
-            plt.clf()
-            for k in range(num_filt):
-                filt = conv1_filters[:,:,0,k]
-                filt = sm.imresize(filt, 5.0, interp='nearest', mode='F')
-                plt.subplot(d,d,k+1)
-                plt.imshow(filt, cmap=plt.cm.gray, interpolation='nearest')
-                plt.axis('off')
-                figname = os.path.join(model_output_dir, 'conv1_filters.pdf')
-                plt.savefig(figname, dpi=self.dpi)
-
-        # read in training params
-        model_training_dataset_dir = model_config['dataset_dir']
-        model_image_mode = model_config['image_mode']
-        model_target_metric = model_config['target_metric_name']
-        model_metric_thresh = model_config['metric_thresh']
-        model_gripper_mode = model_config['gripper_mode']
-
-        # read in training, val indices
-        train_indices = pkl.load(open(train_indices_filename, 'r'))
-        val_indices = pkl.load(open(val_indices_filename, 'r'))
-
-        # get filenames
-        filenames = os.listdir(model_training_dataset_dir)
-        if model_image_mode == ImageMode.BINARY_TF:
-            im_filenames = [f for f in filenames if f.find(ImageFileTemplates.binary_im_tf_tensor_template) > -1]
-        elif model_image_mode == ImageMode.DEPTH_TF:
-            im_filenames = [f for f in filenames if f.find(ImageFileTemplates.depth_im_tf_tensor_template) > -1]
-        elif model_image_mode == ImageMode.DEPTH_TF_TABLE:
-            im_filenames = [f for f in filenames if f.find(ImageFileTemplates.depth_im_tf_table_tensor_template) > -1]
-        elif model_image_mode == ImageMode.TF_DEPTH_IMS:
-            im_filenames = [f for f in filenames if f.find(ImageFileTemplates.tf_depth_ims_tensor_template) > -1]
+        # read params from the config
+        if dataset_config is None:
+            dataset_dir = model_config['dataset_dir']
+            split_name = model_config['split_name']
+            image_field_name = model_config['image_field_name']
+            pose_field_name = model_config['pose_field_name']
+            metric_name = model_config['target_metric_name']
+            metric_thresh = model_config['metric_thresh']
         else:
-            raise ValueError('Model image mode %s not recognized' %(model_image_mode))
-
-        new_im_filenames = []
-        pose_filenames = []
-        metric_filenames = []
-        for im_filename in im_filenames:
-            im_num = int(im_filename[-9:-4])
-            pose_filename = '%s_%05d.npz' %(ImageFileTemplates.hand_poses_template, im_num)
-            if not os.path.exists(os.path.join(model_training_dataset_dir, pose_filename)):
-                pose_filename = '%s_%05d.npz' %(ImageFileTemplates.grasps_template, im_num)                
-            metric_filename = '%s_%05d.npz' %(model_target_metric, im_num)
-            if os.path.exists(os.path.join(model_training_dataset_dir, im_filename)) and os.path.exists(os.path.join(model_training_dataset_dir, pose_filename)) and os.path.exists(os.path.join(model_training_dataset_dir, metric_filename)):
-                new_im_filenames.append(im_filename)
-                pose_filenames.append(pose_filename)
-                metric_filenames.append(metric_filename)
-        im_filenames = new_im_filenames
-                
-        # sort filenames for consistency
-        im_filenames.sort(key = lambda x: int(x[-9:-4]))
-        pose_filenames.sort(key = lambda x: int(x[-9:-4]))
-        metric_filenames.sort(key = lambda x: int(x[-9:-4]))
-
-        im_filenames = [os.path.join(model_training_dataset_dir, f) for f in im_filenames]
-        pose_filenames = [os.path.join(model_training_dataset_dir, f) for f in pose_filenames]
-        metric_filenames = [os.path.join(model_training_dataset_dir, f) for f in metric_filenames]
+            dataset_dir = dataset_config['dataset_dir']
+            split_name = dataset_config['split_name']
+            image_field_name = dataset_config['image_field_name']
+            pose_field_name = dataset_config['pose_field_name']
+            metric_name = dataset_config['target_metric_name']
+            metric_thresh = dataset_config['metric_thresh']
+            gripper_mode = dataset_config['gripper_mode']
             
-        num_files = len(im_filenames)
-        cur_file_num = 0
-        evaluation_time = 0
-
-        # aggregate training and validation true labels and predicted probabilities
-        train_preds = []
-        train_labels = []
-        val_preds = []
-        val_labels = []
-        for im_filename, pose_filename, metric_filename in zip(im_filenames, pose_filenames, metric_filenames):
-            if cur_file_num % self.cfg['out_rate'] == 0:
-                logging.info('Reading file %d of %d' %(cur_file_num+1, num_files))
-                
-            # read data
-            image_arr = np.load(im_filename)['arr_0']            
-            pose_arr = np.load(pose_filename)['arr_0']
-            metric_arr = np.load(metric_filename)['arr_0']
-            labels_arr = 1 * (metric_arr > model_metric_thresh)
-            num_datapoints = image_arr.shape[0]
-
-            # slice correct part of pose_arr corresponding to input_data_mode used for training model
-            pose_arr = read_pose_data(pose_arr, model_gripper_mode)
-                    
-            # predict
-            pred_start = time.time()
-            pred_arr = model.predict(image_arr, pose_arr)
-            pred_stop = time.time()
-            evaluation_time += pred_stop - pred_start
-
-            # break into training / val
-            index_im_filename = im_filename
-            new_train_indices = {}
-            for key in train_indices.keys():
-                new_train_indices[os.path.join(model_training_dataset_dir, key)] = train_indices[key]
-            train_indices = new_train_indices
-
-            new_val_indices = {}
-            for key in val_indices.keys():
-                new_val_indices[os.path.join(model_training_dataset_dir, key)] = val_indices[key]
-            val_indices = new_val_indices
-
-            train_preds.extend(pred_arr[train_indices[index_im_filename]].tolist())
-            train_labels.extend(labels_arr[train_indices[index_im_filename]].tolist())
-            val_preds.extend(pred_arr[val_indices[index_im_filename]].tolist())
-            val_labels.extend(labels_arr[val_indices[index_im_filename]].tolist())
-                
-            cur_file_num += 1
-            
-        # aggregate results
-        train_class_result = BinaryClassificationResult(np.array(train_preds)[:,1], np.array(train_labels))
-        val_class_result = BinaryClassificationResult(np.array(val_preds)[:,1], np.array(val_labels))
-
-        self.train_class_results[model_tag] = train_class_result
-        self.val_class_results[model_tag] = val_class_result
-
-        train_class_result.save(os.path.join(model_output_dir, 'train_class_result.cres'))
-        val_class_result.save(os.path.join(model_output_dir, 'val_class_result.cres'))
-
-        model.close_session()
-
-        return train_class_result, val_class_result
-
-    def _run_predictions(self, model_dir, output_dir):
-        """ Run predictions to use for plotting """
-        # allocate buffers
-        logging.info('Running Predictions')
-        self.train_class_results = {}
-        self.val_class_results = {}
-        self.results = {}
-
-        # parse the models
-        # TODO
+        logging.info('Loading dataset %s' %(dataset_dir))
+        dataset = TensorDataset.open(dataset_dir)
+        train_indices, val_indices, _ = dataset.split(split_name)
         
-        # loop through models
-        for model_name, model_data in self.models.iteritems():
-            # setup the output dir
-            logging.info('Analyzing model: %s' %(model_name))
-            model_output_dir = os.path.join(output_dir, model_name)
-            if not os.path.exists(model_output_dir):
-                os.mkdir(model_output_dir)
+        # visualize conv filters
+        conv1_filters = gqcnn.filters
+        num_filt = conv1_filters.shape[3]
+        d = utils.sqrt_ceil(num_filt)
+        plt.clf()
+        for k in range(num_filt):
+            filt = conv1_filters[:,:,0,k]
+            plt.subplot(d,d,k+1)
+            plt.imshow(filt, cmap=plt.cm.gray, interpolation='none')
+            plt.axis('off')
+            figname = os.path.join(model_output_dir, 'conv1_filters.pdf')
+        plt.savefig(figname, dpi=self.dpi)
+        
+        # aggregate training and validation true labels and predicted probabilities
+        all_predictions = []
+        all_labels = []
+        for i in range(dataset.num_tensors):
+            # log progress
+            if i % self.log_rate == 0:
+                logging.info('Predicting tensor %d of %d' %(i+1, dataset.num_tensors))
 
-            # analyze each model individually
-            train_result, val_result = self._run_prediction_single_model(model_output_dir,
-                                                                         model_name=model_name,
-                                                                         split_type=model_data['split_type'],
-                                                                         model_tag=model_data['tag'],
-                                                                         vis_conv=model_data['vis_conv'],
-                                                                         model_type=model_data['type'])
+            # read in data
+            image_arr = dataset.tensor(image_field_name, i).arr
+            pose_arr = read_pose_data(dataset.tensor(pose_field_name, i).arr,
+                                      gripper_mode)
+            metric_arr = dataset.tensor(metric_name, i).arr
+            label_arr = 1 * (metric_arr > metric_thresh)
+            label_arr = label_arr.astype(np.uint8)
 
-            # save a summary table
-            BinaryClassificationResult.make_summary_table(train_result, val_result, plot=False,
-                                                          save_dir=model_output_dir, save=True)
+            # predict with GQ-CNN
+            predictions = gqcnn.predict(image_arr, pose_arr)
+            
+            # aggregate
+            all_predictions.extend(predictions[:,1].tolist())
+            all_labels.extend(label_arr.tolist())
+            
+        # close session
+        gqcnn.close_session()            
 
-            logging.info("Finished evaluating model: %s" %(model_name))
-    
-    def _plot(self, output_dir):
+        # create arrays
+        all_predictions = np.array(all_predictions)
+        all_labels = np.array(all_labels)
+        train_predictions = all_predictions[train_indices]
+        val_predictions = all_predictions[val_indices]
+        train_labels = all_labels[train_indices]
+        val_labels = all_labels[val_indices]
+        
+        # aggregate results
+        train_result = BinaryClassificationResult(train_predictions, train_labels)
+        val_result = BinaryClassificationResult(val_predictions, val_labels)
+        train_result.save(os.path.join(model_output_dir, 'train_result.cres'))
+        val_result.save(os.path.join(model_output_dir, 'val_result.cres'))
+
+        # save summary stats
+        train_summary_stats = {
+            'error_rate': train_result.error_rate,
+            'ap_score': train_result.ap_score,
+            'auc_score': train_result.auc_score
+        }
+        train_stats_filename = os.path.join(model_output_dir, 'train_stats.json')
+        json.dump(train_summary_stats, open(train_stats_filename, 'w'),
+                  indent=JSON_INDENT,
+                  sort_keys=True)
+
+        val_summary_stats = {
+            'error_rate': val_result.error_rate,
+            'ap_score': val_result.ap_score,
+            'auc_score': val_result.auc_score
+        }
+        val_stats_filename = os.path.join(model_output_dir, 'val_stats.json')
+        json.dump(val_summary_stats, open(val_stats_filename, 'w'),
+                  indent=JSON_INDENT,
+                  sort_keys=True)        
+        
+        return train_result, val_result
+
+    def _plot(self, model_output_dir, train_result, val_result):
         """ Plot analysis curves """
-        logging.info('Beginning Plotting')
+        logging.info('Plotting')
 
+        _, model_name = os.path.split(model_output_dir)
+        
         # set params
         colors = ['g', 'b', 'c', 'y', 'm', 'r']
         styles = ['-', '--', '-.', ':', '-'] 
@@ -282,193 +238,100 @@ class GQCNNAnalyzer(object):
         num_styles = len(styles)
         
         # get stats, plot curves
+        logging.info('Model %s training error rate: %.3f' %(model_name, train_result.error_rate))
+        logging.info('Model %s validation error rate: %.3f' %(model_name, val_result.error_rate))
         plt.clf()
-        i = 0
-        for model_name in self.models.keys():
-            model_tag = self.models[model_name]['tag']
-            train_class_result = self.train_class_results[model_tag]
-            logging.info('Model %s training error rate: %.3f' %(model_name, train_class_result.error_rate))
-            train_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
-                                                      style=styles[i%num_styles], label=model_tag)
-            i += 1
-        plt.title('Training Precision Recall Curve', fontsize=self.font_size)
-        handles, labels = plt.gca().get_legend_handles_labels()
-        plt.legend(handles, labels, loc='best')
-        figname = os.path.join(output_dir, 'train_precision_recall.png')
-        plt.savefig(figname, dpi=self.dpi)
-        plt.clf()
-        i = 0
-        for model_name in self.models.keys():
-            model_tag = self.models[model_name]['tag']
-            train_class_result = self.train_class_results[model_tag]
-            train_class_result.roc_curve(plot=True, color=colors[i%num_colors],
-                                         style=styles[i%num_styles], label=model_tag)
-            i += 1
-        plt.title('Training ROC Curve', fontsize=self.font_size)
-        handles, labels = plt.gca().get_legend_handles_labels()
-        plt.legend(handles, labels, loc='best')
-        figname = os.path.join(output_dir, 'train_roc.png')
-        plt.savefig(figname, dpi=self.dpi)
-
-        plt.clf()
-        i = 0
-        for model_name in self.models.keys():
-            model_tag = self.models[model_name]['tag']
-            val_class_result = self.val_class_results[model_tag]
-            logging.info('Model %s validation error rate: %.3f' %(model_name, val_class_result.error_rate))
-            val_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
-                                                      style=styles[i%num_styles], label=model_tag)
-            i += 1
-        plt.title('Validation Precision Recall Curve', fontsize=self.font_size)
-        handles, labels = plt.gca().get_legend_handles_labels()
-        plt.legend(handles, labels, loc='best')
-        figname = os.path.join(output_dir, 'val_precision_recall.png')
-        plt.savefig(figname, dpi=self.dpi)
-
-        plt.clf()
-        i = 0
-        for model_name in self.models.keys():
-            model_tag = self.models[model_name]['tag']
-            val_class_result = self.val_class_results[model_tag]
-            val_class_result.roc_curve(plot=True, color=colors[i%num_colors],
-                                         style=styles[i%num_styles], label=model_tag)
-            i += 1
-        plt.title('Validation ROC Curve', fontsize=self.font_size)
-        handles, labels = plt.gca().get_legend_handles_labels()
-        plt.legend(handles, labels, loc='best')
-        figname = os.path.join(output_dir, 'val_roc.png')
-        plt.savefig(figname, dpi=self.dpi)
-
-        # combined training and validation precision-recall curves plot
-        plt.clf()
-        i = 0
-        for model_name in self.models.keys():
-            model_tag = self.models[model_name]['tag']
-            train_class_result = self.train_class_results[model_tag]
-            if model_tag is None:
-                train_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
-                                                      style=styles[i%num_styles], label='Training')
-            else:
-                train_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
-                                      style=styles[i%num_styles], label='Training ' + model_tag)
-            i += 1
-        for model_name in self.models.keys():
-            model_tag = self.models[model_name]['tag']
-            val_class_result = self.val_class_results[model_tag]
-            if model_tag is None:
-                val_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
-                                                          style=styles[i%num_styles], label='Validation ')
-            else:
-                val_class_result.precision_recall_curve(plot=True, color=colors[i%num_colors],
-                                          style=styles[i%num_styles], label='Validation ' + model_tag)
-            i += 1
-        
+        train_result.precision_recall_curve(plot=True,
+                                            color=colors[0],
+                                            style=styles[0],
+                                            label='TRAIN')
+        val_result.precision_recall_curve(plot=True,
+                                          color=colors[1],
+                                          style=styles[1],
+                                          label='VAL')
         plt.title('Precision Recall Curves', fontsize=self.font_size)
         handles, labels = plt.gca().get_legend_handles_labels()
         plt.legend(handles, labels, loc='best')
-        figname = os.path.join(output_dir, 'precision_recall.png')
+        figname = os.path.join(model_output_dir, 'precision_recall.png')
         plt.savefig(figname, dpi=self.dpi)
 
-
-        # combined training and validation roc curves plot
         plt.clf()
-        i = 0
-        for model_name in self.models.keys():
-            model_tag = self.models[model_name]['tag']
-            train_class_result = self.train_class_results[model_tag]
-            if model_tag is None:
-                train_class_result.roc_curve(plot=True, color=colors[i%num_colors],
-                                         style=styles[i%num_styles], label='Training')
-            else:
-                train_class_result.roc_curve(plot=True, color=colors[i%num_colors],
-                                         style=styles[i%num_styles], label='Training' + model_tag)
-            i += 1
-        for model_name in self.models.keys():
-            model_tag = self.models[model_name]['tag']
-            val_class_result = self.val_class_results[model_tag]
-            if model_tag is None:
-                val_class_result.roc_curve(plot=True, color=colors[i%num_colors],
-                                         style=styles[i%num_styles], label='Validation')
-            else:
-                val_class_result.roc_curve(plot=True, color=colors[i%num_colors],
-                             style=styles[i%num_styles], label='Validation' + model_tag)
-            i += 1
-
-        plt.title('ROC Curves', fontsize=self.font_size)
+        train_result.roc_curve(plot=True,
+                               color=colors[0],
+                               style=styles[0],
+                               label='TRAIN')
+        val_result.roc_curve(plot=True,
+                             color=colors[1],
+                             style=styles[1],
+                             label='VAL')
+        plt.title('Reciever Operating Characteristic', fontsize=self.font_size)
         handles, labels = plt.gca().get_legend_handles_labels()
         plt.legend(handles, labels, loc='best')
-        figname = os.path.join(self.output_dir, 'ROC.pdf')
+        figname = os.path.join(model_output_dir, 'roc.png')
+        plt.savefig(figname, dpi=self.dpi)
+        
+        # plot histogram of prediction errors
+        num_bins = min(self.num_bins, train_result.num_datapoints)
+                
+        # train positives
+        pos_ind = np.where(train_result.labels == 1)[0]
+        diffs = np.abs(train_result.labels[pos_ind] - train_result.pred_probs[pos_ind])
+        plt.figure()
+        utils.histogram(diffs,
+                        num_bins,
+                        bounds=(0,1),
+                        normalized=False,
+                        plot=True)
+        plt.title('Error on Positive Training Examples', fontsize=self.font_size)
+        plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
+        plt.ylabel('Count', fontsize=self.font_size)
+        figname = os.path.join(model_output_dir, '%s_pos_train_errors_histogram.png' %(model_name))
         plt.savefig(figname, dpi=self.dpi)
 
-        # plot histogram of prediction errors
-        if self.vis_histograms:
-            for model_name in self.models.keys():
-                model_output_dir = os.path.join(output_dir, model_name)
-                train_result = self.train_class_results[model_tag]
-                val_result = self.val_class_results[model_tag]
+        # train negatives
+        neg_ind = np.where(train_result.labels == 0)[0]
+        diffs = np.abs(train_result.labels[neg_ind] - train_result.pred_probs[neg_ind])
+        plt.figure()
+        utils.histogram(diffs,
+                        num_bins,
+                        bounds=(0,1),
+                        normalized=False,
+                        plot=True)
+        plt.title('Error on Negative Training Examples', fontsize=self.font_size)
+        plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
+        plt.ylabel('Count', fontsize=self.font_size)
+        figname = os.path.join(model_output_dir, '%s_neg_train_errors_histogram.png' %(model_name))
+        plt.savefig(figname, dpi=self.dpi)
 
-                # histogram of training errors
-                num_bins = min(self.cfg['num_bins'], train_result.num_datapoints)
-                
-                # train positives
-                pos_ind = np.where(train_result.labels == 1)[0]
-                diffs = np.abs(train_result.labels[pos_ind] - train_result.pred_probs[pos_ind])
-                plt.figure()
-                utils.histogram(diffs,
-                                num_bins,
-                                bounds=(0,1),
-                                normalized=False,
-                                plot=True)
-                plt.title('Error on Positive Training Examples', fontsize=self.font_size)
-                plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
-                plt.ylabel('Count', fontsize=self.font_size)
-                figname = os.path.join(model_output_dir, '%s_pos_train_errors_histogram.png' %(model_name))
-                plt.savefig(figname, dpi=self.dpi)
+        # histogram of validation errors
+        num_bins = min(self.num_bins, val_result.num_datapoints)
 
-                # train negatives
-                neg_ind = np.where(train_result.labels == 0)[0]
-                diffs = np.abs(train_result.labels[neg_ind] - train_result.pred_probs[neg_ind])
-                plt.figure()
-                utils.histogram(diffs,
-                                num_bins,
-                                bounds=(0,1),
-                                normalized=False,
-                                plot=True)
-                plt.title('Error on Negative Training Examples', fontsize=self.font_size)
-                plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
-                plt.ylabel('Count', fontsize=self.font_size)
-                figname = os.path.join(model_output_dir, '%s_neg_train_errors_histogram.png' %(model_name))
-                plt.savefig(figname, dpi=self.dpi)
+        # val positives
+        pos_ind = np.where(val_result.labels == 1)[0]
+        diffs = np.abs(val_result.labels[pos_ind] - val_result.pred_probs[pos_ind])
+        plt.figure()
+        utils.histogram(diffs,
+                        num_bins,
+                        bounds=(0,1),
+                        normalized=False,
+                        plot=True)
+        plt.title('Error on Positive Validation Examples', fontsize=self.font_size)
+        plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
+        plt.ylabel('Count', fontsize=self.font_size)
+        figname = os.path.join(model_output_dir, '%s_pos_val_errors_histogram.png' %(model_name))
+        plt.savefig(figname, dpi=self.dpi)
 
-                # histogram of training errors
-                num_bins = min(self.cfg['num_bins'], val_result.num_datapoints)
-
-                # train positives
-                pos_ind = np.where(val_result.labels == 1)[0]
-                diffs = np.abs(val_result.labels[pos_ind] - val_result.pred_probs[pos_ind])
-                plt.figure()
-                utils.histogram(diffs,
-                                num_bins,
-                                bounds=(0,1),
-                                normalized=False,
-                                plot=True)
-                plt.title('Error on Positive Validation Examples', fontsize=self.font_size)
-                plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
-                plt.ylabel('Count', fontsize=self.font_size)
-                figname = os.path.join(model_output_dir, '%s_pos_val_errors_histogram.png' %(model_name))
-                plt.savefig(figname, dpi=self.dpi)
-
-                # train negatives
-                neg_ind = np.where(val_result.labels == 0)[0]
-                diffs = np.abs(val_result.labels[neg_ind] - val_result.pred_probs[neg_ind])
-                plt.figure()
-                utils.histogram(diffs,
-                                num_bins,
-                                bounds=(0,1),
-                                normalized=False,
-                                plot=True)
-                plt.title('Error on Negative Validation Examples', fontsize=self.font_size)
-                plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
-                plt.ylabel('Count', fontsize=self.font_size)
-                figname = os.path.join(model_output_dir, '%s_neg_val_errors_histogram.png' %(model_name))
-                plt.savefig(figname, dpi=self.dpi)
+        # val negatives
+        neg_ind = np.where(val_result.labels == 0)[0]
+        diffs = np.abs(val_result.labels[neg_ind] - val_result.pred_probs[neg_ind])
+        plt.figure()
+        utils.histogram(diffs,
+                        num_bins,
+                        bounds=(0,1),
+                        normalized=False,
+                        plot=True)
+        plt.title('Error on Negative Validation Examples', fontsize=self.font_size)
+        plt.xlabel('Abs Prediction Error', fontsize=self.font_size)
+        plt.ylabel('Count', fontsize=self.font_size)
+        figname = os.path.join(model_output_dir, '%s_neg_val_errors_histogram.png' %(model_name))
+        plt.savefig(figname, dpi=self.dpi)
