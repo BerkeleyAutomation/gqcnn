@@ -45,6 +45,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network from scratch with TensorFlow')
     parser.add_argument('dataset_dir', type=str, default=None,
                         help='path to the dataset to use for training and validation')
+    parser.add_argument('--split_name', type=str, default=None,
+                        help='name of the split to train on')
     parser.add_argument('--output_dir', type=str, default=None,
                         help='path to store the model')
     parser.add_argument('--config_filename', type=str, default=None,
@@ -53,6 +55,7 @@ if __name__ == '__main__':
                         help='add a unique name to dataset path which encodes the current date')
     args = parser.parse_args()
     dataset_dir = args.dataset_dir
+    split_name = args.split_name
     output_dir = args.output_dir
     config_filename = args.config_filename
 
@@ -98,6 +101,7 @@ if __name__ == '__main__':
     gqcnn = GQCNN(gqcnn_params)
     optimizer = GQCNNOptimizer(gqcnn,
                                dataset_dir,
+                               split_name,
                                output_dir,
                                train_config)
     with gqcnn.tf_graph.as_default():

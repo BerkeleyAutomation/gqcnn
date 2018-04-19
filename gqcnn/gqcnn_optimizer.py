@@ -24,6 +24,7 @@ Optimizer class for training a gqcnn(Grasp Quality Neural Network) object.
 Author: Vishal Satish and Jeff Mahler
 """
 import argparse
+import collections
 import copy
 import cv2
 import gc
@@ -48,13 +49,11 @@ import urllib
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import yaml
-from autolab_core import YamlConfig
-import autolab_core.utils as utils
-import collections
 
 import IPython
 
-from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset
+from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset, YamlConfig
+from autolab_core.constants import *
 import autolab_core.utils as utils
 
 from .optimizer_constants import ImageMode, TrainingMode, GripperMode, GeneralConstants
@@ -66,6 +65,7 @@ class GQCNNOptimizer(object):
 
     def __init__(self, gqcnn,
                  dataset_dir,
+                 split_name,
                  output_dir,
                  config):
         """
@@ -75,6 +75,8 @@ class GQCNNOptimizer(object):
             grasp quality neural network to optimize
         dataset_dir : str
             path to the training / validation dataset
+        split_name : str
+            name of the split to train on
         output_dir : str
             path to save the model output
         config : dict
@@ -82,10 +84,15 @@ class GQCNNOptimizer(object):
         """
         self.gqcnn = gqcnn
         self.dataset_dir = dataset_dir
+        self.split_name = split_name
         self.output_dir = output_dir
         self.cfg = config
         self.tensorboard_has_launched = False
 
+        if split_name is None:
+            logging.warning('Using default image-wise split')
+            self.split_name = 'image_wise'
+        
     def _create_loss(self):
         """ Creates a loss based on config file
 
@@ -623,72 +630,36 @@ class GQCNNOptimizer(object):
         logging.info('Percent positive in train: ' + str(pct_pos_train))
         logging.info('Percent positive in val: ' + str(pct_pos_val))
         
-    def _compute_indices_image_wise(self):
-        """ Compute train and validation indices based on an image-wise train-val split"""
+    def _compute_split_indices(self):
+        """ Compute train and validation indices for each tensor to speed data accesses"""
+        # read indices
+        train_indices, val_indices, _ = self.dataset.split(self.split_name)
 
-        # get total number of training datapoints and set the decay_step
-        self.num_train = int(self.train_pct * self.dataset.num_datapoints)
+        # loop through tensors, assigning indices to each file
+        self.train_index_map = {}
+        for i in train_indices:
+            tensor_index = self.dataset.tensor_index(i)
+            if tensor_index not in self.train_index_map.keys():
+                self.train_index_map[tensor_index] = []
+            datapoint_indices = self.dataset.datapoint_indices_for_tensor(tensor_index)
+            lowest = np.min(datapoint_indices)
+            self.train_index_map[tensor_index].append(i - lowest)
 
-        # make a map of the train and test indices for each file
-        logging.info('Computing indices image-wise')
-        train_index_map_filename = os.path.join(self.model_dir, 'train_indices_image_wise.pkl')
-        val_index_map_filename = os.path.join(self.model_dir, 'val_indices_image_wise.pkl')
-        if os.path.exists(train_index_map_filename) and os.path.exists(val_index_map_filename):
-            self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
-            self.val_index_map = pkl.load(open(val_index_map_filename, 'r'))
-        else:
-            # get training and validation indices
-            all_indices = np.arange(self.dataset.num_datapoints)
-            np.random.shuffle(all_indices)
-            train_indices = np.sort(all_indices[:self.num_train])
-            val_indices = np.sort(all_indices[self.num_train:])
+        for i, indices in self.train_index_map.iteritems():
+            self.train_index_map[i] = np.array(indices)
+            
+        self.val_index_map = {}
+        for i in val_indices:
+            tensor_index = self.dataset.tensor_index(i)
+            if tensor_index not in self.val_index_map.keys():
+                self.val_index_map[tensor_index] = []
+            datapoint_indices = self.dataset.datapoint_indices_for_tensor(tensor_index)
+            lowest = np.min(datapoint_indices)
+            self.val_index_map[tensor_index].append(i - lowest)
 
-            # create a mapping from tensors to indices
-            self.train_index_map = {}
-            self.val_index_map = {}
-            i = 0
-            for i in range(self.num_tensors):
-                logging.info('Computing indices for file %d' %(i))
-                datapoint_indices = self.dataset.datapoint_indices_for_tensor(i)
-                lower = np.min(datapoint_indices)
-                upper = np.max(datapoint_indices)                
-                self.train_index_map[i] = train_indices[(train_indices >= lower) & (train_indices < upper)] - lower
-                self.val_index_map[i] = val_indices[(val_indices >= lower) & (val_indices < upper)] - lower
-                if i % 10 == 0:
-                    gc.collect()
-                i += 1
-            pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
-            pkl.dump(self.val_index_map, open(val_index_map_filename, 'w'))
-
-    def _compute_indices_object_wise(self):
-        """ Compute train and validation indices based on an object-wise train-val split"""
-        # check that object-wise splits are possible
-        if 'split' not in self.dataset.field_names:
-            raise ValueError('Object splits not available. Must be pre-computed for the dataset.')
-
-        # make a map of the train and test indices for each file
-        logging.info('Computing indices object-wise')
-        train_index_map_filename = os.path.join(self.model_dir, 'train_indices_object_wise.pkl')
-        val_index_map_filename = os.path.join(self.model_dir, 'val_indices_object_wise.pkl')
-        if os.path.exists(train_index_map_filename) and os.path.exists(val_index_map_filename):
-            self.train_index_map = pkl.load(open(train_index_map_filename, 'r'))
-            self.val_index_map = pkl.load(open(val_index_map_filename, 'r'))
-        else:
-            self.train_index_map = {}
-            self.val_index_map = {}
-            for i in range(self.dataset.num_tensors):
-                logging.info('Computing indices for file %d' %(i))
-                self.train_index_map[i] = np.zeros(0)
-                self.val_index_map[i] = np.zeros(0)
-                split_arr = self.dataset.tensor('split', i)
-                self.train_index_map[i] = np.where(split_arr == TRAIN_ID)[0]
-                self.val_index_map[i] = np.where(split_arr == TEST_ID)[0]
-                del split_arr
-                if i % 10 == 0:
-                    gc.collect()
-            pkl.dump(self.train_index_map, open(train_index_map_filename, 'w'))
-            pkl.dump(self.val_index_map, open(val_index_map_filename, 'w'))
-
+        for i, indices in self.val_index_map.iteritems():
+            self.val_index_map[i] = np.array(indices)
+            
     def _setup_output_dirs(self):
         """ Setup output directories """
         # create a directory for the model
@@ -827,6 +798,11 @@ class GQCNNOptimizer(object):
         self.num_tensors = self.dataset.num_tensors
         self.datapoints_per_file = self.dataset.datapoints_per_file
         self.num_random_files = min(self.num_tensors, self.num_random_files)
+
+        # read split
+        if not self.dataset.has_split(self.split_name):
+            self.dataset.make_split(self.split_name)
+        self._compute_split_indices()
         
     def _compute_data_params(self):
         """ Compute parameters of the dataset """
@@ -975,14 +951,6 @@ class GQCNNOptimizer(object):
 
         # setup image and pose data files
         self._open_dataset()
-
-        # compute train/test indices based on how the data is to be split
-        if self.data_split_mode == 'image_wise':
-            self._compute_indices_image_wise()
-        elif self.data_split_mode == 'object_wise':
-            self._compute_indices_object_wise()
-        else:
-            logging.error('Data split mode %s not supported!' %(self.data_split_mode))
 
         # compute data parameters
         self._compute_data_params()
@@ -1202,9 +1170,9 @@ class GQCNNOptimizer(object):
 
             # if no datapoints from this file are in validation then just continue
             if validation_set:
-                indices =  self.val_index_map[i]
+                indices = self.val_index_map[i]
             else:
-                indices =  self.train_index_map[i]                    
+                indices = self.train_index_map[i]                    
             if len(indices) == 0:
                 continue
 
