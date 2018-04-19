@@ -38,7 +38,6 @@ from autolab_core import Point, PointCloud, RigidTransform
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
 
 from . import Grasp2D, SuctionPoint2D, GQCNN, GripperMode
-from . import Visualizer as vis
 
 # constant for display
 FIGSIZE = 16
@@ -260,7 +259,8 @@ class BestFitPlanaritySuctionQualityFunction(SuctionQualityFunction):
             w = self._best_fit_plane(A, b) # vector w w/ a bias term represents a best-fit plane.
 
             if params is not None and params['vis']['plane']:
-                from visualization import Visualizer3D as vis
+                from visualization import Visualizer2D as vis2d
+                from visualization import Visualizer3D as vis3d
                 mid_i = A.shape[0] / 2
                 pred_z = A.dot(w)
                 p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
@@ -275,13 +275,12 @@ class BestFitPlanaritySuctionQualityFunction(SuctionQualityFunction):
                                                from_frame='patch',
                                                to_frame='world')
                 
-                vis.figure()
-                vis.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
-                vis.table(T_table_world, dim=0.01)
-                vis.show()
+                vis3d.figure()
+                vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
+                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
+                vis3d.table(T_table_world, dim=0.01)
+                vis3d.show()
                 
-                from gqcnn import Visualizer as vis2d
                 vis2d.figure()
                 vis2d.imshow(state.rgbd_im.depth)
                 vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
@@ -340,7 +339,8 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
             w = self._action_to_plane(point_cloud_image, action) # vector w w/ a bias term represents a best-fit plane.
 
             if params is not None and params['vis']['plane']:
-                from visualization import Visualizer3D as vis
+                from visualization import Visualizer2D as vis2d
+                from visualization import Visualizer3D as vis3d
                 mid_i = A.shape[0] / 2
                 pred_z = A.dot(w)
                 p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
@@ -359,15 +359,14 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                                                from_frame='patch',
                                                to_frame='world')
                 
-                vis.figure()
-                vis.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
-                vis.points(c, scale=0.005, color=(1,1,0))
-                vis.points(d, scale=0.005, color=(1,1,0))
-                vis.table(T_table_world, dim=0.01)
-                vis.show()
+                vis3d.figure()
+                vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
+                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
+                vis3d.points(c, scale=0.005, color=(1,1,0))
+                vis3d.points(d, scale=0.005, color=(1,1,0))
+                vis3d.table(T_table_world, dim=0.01)
+                vis3d.show()
                 
-                from gqcnn import Visualizer as vis2d
                 vis2d.figure()
                 vis2d.imshow(state.rgbd_im.depth)
                 vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
@@ -463,7 +462,8 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
             sse = self._sum_of_squared_residuals(w, A, b)
 
             if params is not None and params['vis']['plane']:
-                from visualization import Visualizer3D as vis
+                from visualization import Visualizer2D as vis2d
+                from visualization import Visualizer3D as vis3d
                 mid_i = A.shape[0] / 2
                 pred_z = A.dot(w)
                 p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
@@ -482,15 +482,14 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                                                from_frame='patch',
                                                to_frame='world')
                 
-                vis.figure()
-                vis.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
-                vis.points(c, scale=0.005, color=(1,1,0))
-                vis.points(d, scale=0.005, color=(1,1,0))
-                vis.table(T_table_world, dim=0.01)
-                vis.show()
+                vis3d.figure()
+                vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
+                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
+                vis3d.points(c, scale=0.005, color=(1,1,0))
+                vis3d.points(d, scale=0.005, color=(1,1,0))
+                vis3d.table(T_table_world, dim=0.01)
+                vis3d.show()
                 
-                from gqcnn import Visualizer as vis2d
                 vis2d.figure()
                 vis2d.imshow(state.rgbd_im.depth)
                 vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
@@ -934,13 +933,14 @@ class GQCnnQualityFunction(GraspQualityFunction):
             d = utils.sqrt_ceil(k)
 
             # display grasp transformed images
-            vis.figure(size=(FIGSIZE,FIGSIZE))
+            from visualization import Visualizer2D as vis2d
+            vis2d.figure(size=(FIGSIZE,FIGSIZE))
             for i, image_tf in enumerate(image_tensor[:k,...]):
                 depth = pose_tensor[i][0]
-                vis.subplot(d,d,i+1)
-                vis.imshow(DepthImage(image_tf))
-                vis.title('Image %d: d=%.3f' %(i, depth))
-            vis.show()
+                vis2d.subplot(d,d,i+1)
+                vis2d.imshow(DepthImage(image_tf))
+                vis2d.title('Image %d: d=%.3f' %(i, depth))
+            vis2d.show()
 
         # predict grasps
         predict_start = time()
@@ -1069,13 +1069,14 @@ class NoMagicQualityFunction(GraspQualityFunction):
             d = utils.sqrt_ceil(k)
 
             # display grasp transformed images
-            vis.figure(size=(FIGSIZE,FIGSIZE))
+            from visualization import Visualizer2D as vis2d
+            vis2d.figure(size=(FIGSIZE,FIGSIZE))
             for i, image_tf in enumerate(image_tensor[:k,...]):
                 depth = pose_tensor[i][0]
-                vis.subplot(d,d,i+1)
-                vis.imshow(GrayscaleImage(image_tf))
-                vis.title('Image %d: d=%.3f' %(i, depth))
-            vis.show()
+                vis2d.subplot(d,d,i+1)
+                vis2d.imshow(GrayscaleImage(image_tf))
+                vis2d.title('Image %d: d=%.3f' %(i, depth))
+            vis2d.show()
 
         # predict grasps
         num_actions = len(actions)

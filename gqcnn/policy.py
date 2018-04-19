@@ -38,9 +38,9 @@ from sklearn.mixture import GaussianMixture
 import autolab_core.utils as utils
 from autolab_core import Point
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
+from visualization import Visualizer2D as vis
 
 from . import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GQCNN, GripperMode, GraspQualityFunctionFactory, GQCnnQualityFunction, NoValidGraspsException
-from . import Visualizer as vis
 
 FIGSIZE = 16
 SEED = 5234709

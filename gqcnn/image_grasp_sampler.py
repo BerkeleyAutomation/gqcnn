@@ -43,9 +43,9 @@ import sklearn.mixture
 
 from autolab_core import Point, RigidTransform
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, GdImage
+from visualization import Visualizer2D as vis
 
 from . import Grasp2D, SuctionPoint2D
-from . import Visualizer as vis
 
 from . import NoAntipodalPairsFoundException
 

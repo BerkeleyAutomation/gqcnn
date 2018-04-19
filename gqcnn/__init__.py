@@ -25,15 +25,14 @@ from train_stats_logger import TrainStatsLogger
 from neural_networks import GQCNN
 
 from grasp import Grasp2D, SuctionPoint2D
-from visualizer import Visualizer
-from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
+
 from policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
+from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
 from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction, ParallelJawGrasp
-from gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
 
-from gqcnn_optimizer import GQCNNOptimizer
-from gqcnn_analyzer import GQCNNAnalyzer
+from optimizer import GQCNNOptimizer
+from analyzer import GQCNNAnalyzer
 
 __all__ = ['GQCNN', 
            'GQCNNOptimizer',
@@ -42,10 +41,8 @@ __all__ = ['GQCNN',
            'TrainStatsLogger',
            'ClassificationResult', 'RegressionResult', 'ConfusionMatrix',
            'Grasp2D', 'SuctionPoint2D',
-           'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'DepthImageSuctionPointSampler', 'ImageGraspSamplerFactory'
            'Visualizer',
            'GraspAction', 'Policy', 'GraspingPolicy', 'UniformRandomGraspingPolicy', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy',
            'RgbdImageState',
            'NoValidGraspsException', 'NoAntipodalPairsFoundException',
-           'GQCNNPredictionVisualizer',
            'GraspQualityFunction', 'SuctionQualityFunction', 'BestFitPlanaritySuctionQualityFunction', 'ApproachPlanaritySuctionQualityFunction', 'GQCnnQualityFunction', 'GraspQualityFunctionFactory']
