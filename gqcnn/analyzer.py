@@ -47,6 +47,15 @@ from . import GQCNN, Grasp2D, SuctionPoint2D
 from .optimizer_constants import GripperMode, ImageMode
 from .utils import *
 
+PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
+TRAIN_LOSS_FILENAME = 'train_losses.npy'
+TRAIN_ERRORS_FILENAME = 'train_errors.npy'
+VAL_ERRORS_FILENAME = 'val_errors.npy'
+TRAIN_ITERS_FILENAME = 'train_eval_iters.npy'
+VAL_ITERS_FILENAME = 'val_eval_iters.npy'
+WINDOW = 100
+MAX_LOSS = 5.0
+
 class GQCNNAnalyzer(object):
     """ Analyzes GQCNN models """
 
@@ -69,6 +78,7 @@ class GQCNNAnalyzer(object):
         # plotting params
         self.log_rate = self.cfg['log_rate']
         self.font_size = self.cfg['font_size']
+        self.line_width = self.cfg['line_width']
         self.dpi = self.cfg['dpi']
         self.num_bins = self.cfg['num_bins']
         self.num_vis = self.cfg['num_vis']
@@ -112,7 +122,10 @@ class GQCNNAnalyzer(object):
                                                                      dataset_config)
 
         # finally plot curves
-        self._plot(model_output_dir, train_result, val_result)
+        self._plot(model_dir,
+                   model_output_dir,
+                   train_result,
+                   val_result)
 
         return train_result, val_result
 
@@ -330,7 +343,7 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            vis2d.imshow(DepthImage(datapoint[image_field_name][:,:,0]))
+            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),
@@ -392,7 +405,7 @@ class GQCNNAnalyzer(object):
         
         return train_result, val_result
 
-    def _plot(self, model_output_dir, train_result, val_result):
+    def _plot(self, model_dir, model_output_dir, train_result, val_result):
         """ Plot analysis curves """
         logging.info('Plotting')
 
@@ -407,12 +420,16 @@ class GQCNNAnalyzer(object):
         # get stats, plot curves
         logging.info('Model %s training error rate: %.3f' %(model_name, train_result.error_rate))
         logging.info('Model %s validation error rate: %.3f' %(model_name, val_result.error_rate))
+
+        # PR, ROC
         vis2d.clf()
         train_result.precision_recall_curve(plot=True,
+                                            line_width=self.line_width,
                                             color=colors[0],
                                             style=styles[0],
                                             label='TRAIN')
         val_result.precision_recall_curve(plot=True,
+                                          line_width=self.line_width,
                                           color=colors[1],
                                           style=styles[1],
                                           label='VAL')
@@ -424,10 +441,12 @@ class GQCNNAnalyzer(object):
 
         vis2d.clf()
         train_result.roc_curve(plot=True,
+                               line_width=self.line_width,
                                color=colors[0],
                                style=styles[0],
                                label='TRAIN')
         val_result.roc_curve(plot=True,
+                             line_width=self.line_width,
                              color=colors[1],
                              style=styles[1],
                              label='VAL')
@@ -452,7 +471,7 @@ class GQCNNAnalyzer(object):
         vis2d.title('Error on Positive Training Examples', fontsize=self.font_size)
         vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
         vis2d.ylabel('Count', fontsize=self.font_size)
-        figname = os.path.join(model_output_dir, '%s_pos_train_errors_histogram.png' %(model_name))
+        figname = os.path.join(model_output_dir, 'pos_train_errors_histogram.png')
         vis2d.savefig(figname, dpi=self.dpi)
 
         # train negatives
@@ -467,7 +486,7 @@ class GQCNNAnalyzer(object):
         vis2d.title('Error on Negative Training Examples', fontsize=self.font_size)
         vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
         vis2d.ylabel('Count', fontsize=self.font_size)
-        figname = os.path.join(model_output_dir, '%s_neg_train_errors_histogram.png' %(model_name))
+        figname = os.path.join(model_output_dir, 'neg_train_errors_histogram.png')
         vis2d.savefig(figname, dpi=self.dpi)
 
         # histogram of validation errors
@@ -485,7 +504,7 @@ class GQCNNAnalyzer(object):
         vis2d.title('Error on Positive Validation Examples', fontsize=self.font_size)
         vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
         vis2d.ylabel('Count', fontsize=self.font_size)
-        figname = os.path.join(model_output_dir, '%s_pos_val_errors_histogram.png' %(model_name))
+        figname = os.path.join(model_output_dir, 'pos_val_errors_histogram.png')
         vis2d.savefig(figname, dpi=self.dpi)
 
         # val negatives
@@ -500,5 +519,81 @@ class GQCNNAnalyzer(object):
         vis2d.title('Error on Negative Validation Examples', fontsize=self.font_size)
         vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
         vis2d.ylabel('Count', fontsize=self.font_size)
-        figname = os.path.join(model_output_dir, '%s_neg_val_errors_histogram.png' %(model_name))
+        figname = os.path.join(model_output_dir, 'neg_val_errors_histogram.png')
         vis2d.savefig(figname, dpi=self.dpi)
+
+        # losses
+        try:
+            train_errors_filename = os.path.join(model_dir, TRAIN_ERRORS_FILENAME)
+            val_errors_filename = os.path.join(model_dir, VAL_ERRORS_FILENAME)
+            train_iters_filename = os.path.join(model_dir, TRAIN_ITERS_FILENAME)
+            val_iters_filename = os.path.join(model_dir, VAL_ITERS_FILENAME)
+            pct_pos_val_filename = os.path.join(model_dir, PCT_POS_VAL_FILENAME)
+            train_losses_filename = os.path.join(model_dir, TRAIN_LOSS_FILENAME)
+
+            raw_train_errors = np.load(train_errors_filename)
+            val_errors = np.load(val_errors_filename)
+            raw_train_iters = np.load(train_iters_filename)
+            val_iters = np.load(val_iters_filename)
+            pct_pos_val = float(val_errors[0])
+            if os.path.exists(pct_pos_val_filename):
+                pct_pos_val = 100.0 * np.load(pct_pos_val_filename)
+            raw_train_losses = np.load(train_losses_filename)
+
+            val_errors = np.r_[pct_pos_val, val_errors]
+            val_iters = np.r_[0, val_iters]
+    
+            # window the training error
+            i = 0
+            train_errors = []
+            train_losses = []
+            train_iters = []
+            while i < raw_train_errors.shape[0]:
+                train_errors.append(np.mean(raw_train_errors[i:i+WINDOW]))
+                train_losses.append(np.mean(raw_train_losses[i:i+WINDOW]))
+                train_iters.append(i)
+                i += WINDOW
+            train_errors = np.array(train_errors)
+            train_losses = np.array(train_losses)
+            train_iters = np.array(train_iters)
+        
+            init_val_error = val_errors[0]
+            norm_train_errors = train_errors / init_val_error
+            norm_val_errors = val_errors / init_val_error
+            norm_final_val_error = val_errors[-1] / val_errors[0]
+            if pct_pos_val > 0:
+                norm_final_val_error = val_errors[-1] / pct_pos_val        
+    
+            vis2d.clf()
+            vis2d.plot(train_iters, train_errors, linewidth=self.line_width, color='b')
+            vis2d.plot(val_iters, val_errors, linewidth=self.line_width, color='g')
+            vis2d.ylim(0, 100)
+            vis2d.legend(('TRAIN (Minibatch)', 'VAL'), fontsize=self.font_size, loc='best')
+            vis2d.xlabel('Iteration', fontsize=self.font_size)
+            vis2d.ylabel('Error Rate', fontsize=self.font_size)
+            vis2d.title('Error Rate vs Training Iteration', fontsize=self.font_size)
+            figname = os.path.join(model_output_dir, 'training_error_rates.png')
+            vis2d.savefig(figname, dpi=self.dpi)
+            
+            vis2d.clf()
+            vis2d.plot(train_iters, norm_train_errors, linewidth=4, color='b')
+            vis2d.plot(val_iters, norm_val_errors, linewidth=4, color='g')
+            vis2d.ylim(0, 2.0)
+            vis2d.legend(('TRAIN (Minibatch)', 'VAL'), fontsize=self.font_size, loc='best')
+            vis2d.xlabel('Iteration', fontsize=self.font_size)
+            vis2d.ylabel('Normalized Error Rate', fontsize=self.font_size)
+            vis2d.title('Normalized Error Rate vs Training Iteration', fontsize=self.font_size)
+            figname = os.path.join(model_output_dir, 'training_norm_error_rates.png')
+            vis2d.savefig(figname, dpi=self.dpi)
+
+            train_losses[train_losses > MAX_LOSS] = MAX_LOSS # CAP LOSSES
+            vis2d.clf()
+            vis2d.plot(train_iters, train_losses, linewidth=self.line_width, color='b')
+            vis2d.ylim(0, 2.0)
+            vis2d.xlabel('Iteration', fontsize=self.font_size)
+            vis2d.ylabel('Loss', fontsize=self.font_size)
+            vis2d.title('Training Loss vs Iteration', fontsize=self.font_size)
+            figname = os.path.join(model_output_dir, 'training_losses.png')
+            vis2d.savefig(figname, dpi=self.dpi)
+        except:
+            logging.error('Failed to plot training curves!')

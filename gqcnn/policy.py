@@ -281,7 +281,7 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
         GraspingPolicy.__init__(self, config)
         self._num_grasp_samples = 1
 
-    def action(self, state):
+    def _action(self, state):
         """ Plans the grasp with the highest probability of success on
         the given RGB-D image.
 

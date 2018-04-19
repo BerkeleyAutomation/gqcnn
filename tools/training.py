@@ -49,6 +49,8 @@ if __name__ == '__main__':
                         help='name of the split to train on')
     parser.add_argument('--output_dir', type=str, default=None,
                         help='path to store the model')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='random seed for training')
     parser.add_argument('--config_filename', type=str, default=None,
                         help='path to the configuration file to use')
     parser.add_argument('--unique_name', type=bool, default=False,
@@ -57,6 +59,7 @@ if __name__ == '__main__':
     dataset_dir = args.dataset_dir
     split_name = args.split_name
     output_dir = args.output_dir
+    seed = args.seed
     config_filename = args.config_filename
 
     # set default output dir
@@ -83,6 +86,7 @@ if __name__ == '__main__':
         
     # open train config
     train_config = YamlConfig(config_filename)
+    train_config['seed'] = seed
     gqcnn_params = train_config['gqcnn']
 
     # create a unique output folder based on the date and time

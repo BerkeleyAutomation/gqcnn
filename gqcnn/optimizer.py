@@ -479,8 +479,9 @@ class GQCNNOptimizer(object):
                     logging.info('Adding file %d of %d to image mean estimate' %(k+1, random_file_indices.shape[0]))
                 im_data = self.dataset.tensor(self.im_field_name, i).arr
                 train_indices = self.train_index_map[i]
-                self.im_mean += np.sum(im_data[train_indices, ...])
-                num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
+                if train_indices.shape[0] > 0:
+                    self.im_mean += np.sum(im_data[train_indices, ...])
+                    num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
             self.im_mean = self.im_mean / num_summed
 
             # compute std
@@ -490,7 +491,8 @@ class GQCNNOptimizer(object):
                     logging.info('Adding file %d of %d to image std estimate' %(k+1, random_file_indices.shape[0]))
                 im_data = self.dataset.tensor(self.im_field_name, i).arr
                 train_indices = self.train_index_map[i]
-                self.im_std += np.sum((im_data[train_indices, ...] - self.im_mean)**2)
+                if train_indices.shape[0] > 0:
+                    self.im_std += np.sum((im_data[train_indices, ...] - self.im_mean)**2)
             self.im_std = np.sqrt(self.im_std / num_summed)
 
             # save
@@ -532,10 +534,11 @@ class GQCNNOptimizer(object):
                                                     size=pose_data.shape[0]/2,
                                                     replace=False)
                     pose_data[rand_indices, 3] = -pose_data[rand_indices, 3]
-                pose_data = pose_data[train_indices,:]
-                pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
-                self.pose_mean += np.sum(pose_data, axis=0)
-                num_summed += pose_data.shape[0]
+                if train_indices.shape[0] > 0:
+                    pose_data = pose_data[train_indices,:]
+                    pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
+                    self.pose_mean += np.sum(pose_data, axis=0)
+                    num_summed += pose_data.shape[0]
             self.pose_mean = self.pose_mean / num_summed
 
             # compute std
@@ -555,9 +558,10 @@ class GQCNNOptimizer(object):
                                                     size=pose_data.shape[0]/2,
                                                     replace=False)
                     pose_data[rand_indices, 3] = -pose_data[rand_indices, 3]
-                pose_data = pose_data[train_indices,:]
-                pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
-                self.pose_std += np.sum((pose_data - self.pose_mean)**2, axis=0)
+                if train_indices.shape[0] > 0:
+                    pose_data = pose_data[train_indices,:]
+                    pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
+                    self.pose_std += np.sum((pose_data - self.pose_mean)**2, axis=0)
             self.pose_std = np.sqrt(self.pose_std / num_summed)
             self.pose_std[self.pose_std==0] = 1.0
 
@@ -606,18 +610,20 @@ class GQCNNOptimizer(object):
                 metric_data = self.dataset.tensor(self.label_field_name, i).arr
                 train_indices = self.train_index_map[i]
                 val_indices = self.val_index_map[i]
-                train_metric_data = metric_data[train_indices]
-                val_metric_data = metric_data[val_indices]
-                
-                if all_train_metrics is None:
-                    all_train_metrics = train_metric_data
-                else:
-                    all_train_metrics = np.r_[all_train_metrics, train_metric_data]
 
-                if all_val_metrics is None:
-                    all_val_metrics = val_metric_data
-                else:
-                    all_val_metrics = np.r_[all_val_metrics, val_metric_data]
+                if train_indices.shape[0] > 0:
+                    train_metric_data = metric_data[train_indices]
+                    if all_train_metrics is None:
+                        all_train_metrics = train_metric_data
+                    else:
+                        all_train_metrics = np.r_[all_train_metrics, train_metric_data]
+
+                if val_indices.shape[0] > 0:
+                    val_metric_data = metric_data[val_indices]
+                    if all_val_metrics is None:
+                        all_val_metrics = val_metric_data
+                    else:
+                        all_val_metrics = np.r_[all_val_metrics, val_metric_data]
 
             # compute train stats
             self.min_metric = np.min(all_train_metrics)
@@ -642,10 +648,11 @@ class GQCNNOptimizer(object):
 
         # loop through tensors, assigning indices to each file
         self.train_index_map = {}
+        for i in range(self.dataset.num_tensors):
+            self.train_index_map[i] = []
+            
         for i in train_indices:
             tensor_index = self.dataset.tensor_index(i)
-            if tensor_index not in self.train_index_map.keys():
-                self.train_index_map[tensor_index] = []
             datapoint_indices = self.dataset.datapoint_indices_for_tensor(tensor_index)
             lowest = np.min(datapoint_indices)
             self.train_index_map[tensor_index].append(i - lowest)
@@ -654,6 +661,9 @@ class GQCNNOptimizer(object):
             self.train_index_map[i] = np.array(indices)
             
         self.val_index_map = {}
+        for i in range(self.dataset.num_tensors):
+            self.val_index_map[i] = []
+            
         for i in val_indices:
             tensor_index = self.dataset.tensor_index(i)
             if tensor_index not in self.val_index_map.keys():
@@ -724,7 +734,6 @@ class GQCNNOptimizer(object):
     def _read_training_params(self):
         """ Read training parameters from configuration file """
         # splits
-        self.data_split_mode = self.cfg['data_split_mode']
         self.train_pct = self.cfg['train_pct']
         self.total_pct = self.cfg['total_pct']
 
