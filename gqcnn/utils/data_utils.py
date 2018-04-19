@@ -65,9 +65,9 @@ def pose_dim(gripper_mode):
         return 1
     elif gripper_mode == GripperMode.SUCTION:
         return 2
-    elif gripper_mode == GripperMode.TF_IMAGE:
+    elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
         return 1
-    elif gripper_mode == GripperMode.TF_IMAGE_SUCTION:
+    elif gripper_mode == GripperMode.LEGACY_SUCTION:
         return 2
     else:
         raise ValueError('Gripper mode %s not supported.' %(gripper_mode))

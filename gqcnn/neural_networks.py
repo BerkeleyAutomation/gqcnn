@@ -336,8 +336,16 @@ class GQCNN(object):
         self._im_height = config['im_height']
         self._im_width = config['im_width']
         self._num_channels = config['im_channels']
-        self._gripper_mode = config['gripper_mode']
-
+        try:
+            self._gripper_mode = config['gripper_mode']
+        except:
+            logging.warning('Could not read gripper mode. Attempting legacy conversion')
+            self._input_data_mode = config['input_data_mode']
+            if self._input_data_mode == 'tf_image':
+                self._gripper_mode = GripperMode.LEGACY_PARALLEL_JAW
+            elif self._input_data_mode == 'tf_image_suction':
+                self._gripper_mode = GripperMode.LEGACY_SUCTION                
+            
         # setup correct pose dimensions
         self._pose_dim = pose_dim(self._gripper_mode)
 
@@ -404,7 +412,12 @@ class GQCNN(object):
         self._im_std = np.load(os.path.join(model_dir, 'std.npy'))
         self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
         self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
-                
+
+        # fix legacy
+        if self._pose_mean.shape[0] != self._pose_dim:
+            self._pose_mean = read_pose_data(self._pose_mean, self._gripper_mode)
+            self._pose_std = read_pose_data(self._pose_std, self._gripper_mode)
+        
     def init_weights_file(self, model_filename):
         """ Initialize network weights from the specified model 
 
