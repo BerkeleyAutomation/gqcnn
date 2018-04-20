@@ -586,7 +586,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             valid = True
             for filter_name, is_valid in self._filters.iteritems():
                 valid = is_valid(grasp) 
-                logging.info('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                logging.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
                 if not valid:
                     valid = False
                     break
@@ -736,7 +736,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 logging.info('GMM sampling took %.3f sec' %(time()-sample_start))
 
                 # convert features to grasps and store if in segmask
-                for grasp_vec in grasp_vecs:
+                for k, grasp_vec in enumerate(grasp_vecs):
                     feature_start = time()
                     if grasp_type == 'parallel_jaw':
                         # form grasp object
@@ -773,7 +773,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                         if self._filters is not None:
                             for filter_name, is_valid in self._filters.iteritems():
                                 valid = is_valid(grasp) 
-                                logging.info('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                                logging.debug('Grasp {} filter {} valid: {}'.format(k, filter_name, valid))
                                 if not valid:
                                     valid = False
                                     break
