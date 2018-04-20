@@ -20,7 +20,7 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -84,7 +84,7 @@ gqcnn:
   # architecture
   architecture:
     conv1_1:
-      filt_dim: 7
+      filt_dim: 5
       num_filt: 16
       pool_size: 1
       pool_stride: 1  
@@ -120,9 +120,9 @@ gqcnn:
     pc2:
       out_size: 0
     fc3:
-      out_size: 128
+      out_size: 64
     fc4:
-      out_size: 128
+      out_size: 64
     fc5:
       out_size: 2
 
