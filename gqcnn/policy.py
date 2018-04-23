@@ -204,6 +204,11 @@ class GraspingPolicy(Policy):
         if 'gripper_width' in config.keys():
             self._gripper_width = config['gripper_width']
 
+        # set the logging dir
+        self._logging_dir = None
+        if 'logging_dir' in self.config.keys():
+            self._logging_dir = self.config['logging_dir']
+            
         # init grasp sampler
         self._sampling_config = config['sampling']
         self._sampling_config['gripper_width'] = self._gripper_width
@@ -353,9 +358,6 @@ class RobustGraspingPolicy(GraspingPolicy):
         self._gripper_width = np.inf
         if 'gripper_width' in self.config.keys():
             self._gripper_width = self.config['gripper_width']
-        self._logging_dir = None
-        if 'logging_dir' in self.config.keys():
-            self._logging_dir = self.config['logging_dir']
 
     def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
