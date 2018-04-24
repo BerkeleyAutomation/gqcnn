@@ -10,10 +10,12 @@ import signal
 import time
 import threading
 import math
+import subprocess
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
+import matplotlib.pyplot as plt
 
 from gqcnn.utils.learning_analysis import ClassificationResult, RegressionResult
 from gqcnn.utils.train_stats_logger import TrainStatsLogger
@@ -106,15 +108,15 @@ class GQCNNTrainerTF(object):
 
     def _launch_tensorboard(self):
         """ Launches Tensorboard to visualize training """
+        FNULL = open(os.devnull, 'w')
         logging.info(
-            "Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
-        os.system('tensorboard --port={} --logdir={} &>/dev/null &'.format(self._tensorboard_port, self.summary_dir))
+            "Launching Tensorboard, Please navigate to localhost:{} in your favorite web browser to view summaries".format(self._tensorboard_port))
+        self._tensorboard_proc = subprocess.Popen([os.path.join(self._tensorboard_bin_loc, 'tensorboard'), '--port', str(self._tensorboard_port),'--logdir', self.summary_dir], stdout=FNULL)
 
     def _close_tensorboard(self):
         """ Closes Tensorboard """
         logging.info('Closing Tensorboard')
-        tensorboard_pid = os.popen('pgrep tensorboard').read()
-        os.system('kill ' + tensorboard_pid)
+        self._tensorboard_proc.terminate()
 
     def train(self):
         """ Perform Optimization  """
@@ -232,7 +234,7 @@ class GQCNNTrainerTF(object):
 
             # forcefully exit the script
             exit(0)
-
+     
         signal.signal(signal.SIGINT, handler)
 
         # now that everything in our graph is set up we write the graph to the summary event so
@@ -263,8 +265,8 @@ class GQCNNTrainerTF(object):
 
                 # fprop + bprop
                 if self.angular_bins > 0:
-                    _, l, lr, predictions, batch_labels, pred_mask, net_output = self.sess.run([optimizer, loss, learning_rate,
-                    train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output], 
+                    _, l, lr, predictions, batch_labels, pred_mask, net_output, input_im, input_pose, labels = self.sess.run([optimizer, loss, learning_rate,
+                    train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_labels_node], 
                     feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
                 else:
                     rot_angs = np.zeros((self.train_batch_size,))
@@ -283,6 +285,19 @@ class GQCNNTrainerTF(object):
 #                logging.debug('Min: ' + str(np.min(softmax[:, 1])))
                 logging.debug('Pred nonzero: ' + str(np.sum(np.argmax(predictions, axis=1))))
                 logging.debug('True nonzero: ' + str(np.sum(batch_labels)))
+                
+#                NUM_IMS = 2
+#                for i in range(NUM_IMS):
+#                    if input_pose[i, 0] < 1.0:
+#                        logging.info('Visualizing image {} of {}'.format(i, NUM_IMS))
+#                        logging.info('Depth: {}'.format(orig_pose[i, 0]))
+#                        logging.info('Label: {}'.format(labels[i]))
+#                        plt.figure()
+#                        plt.subplot(121)
+#                        plt.imshow(orig_im[i, ..., 0], cmap=plt.cm.gray)
+#                        plt.subplot(122)
+#                        plt.imshow(sub_im_depth[i, ..., 1], cmap=plt.cm.gray)
+#                        plt.show()
 
                 # log output
                 if step % self.log_frequency == 0:
@@ -478,17 +493,50 @@ class GQCNNTrainerTF(object):
             else:
                 self.im_mean, self.im_std, self.pose_mean, self.pose_std, _, _, _, _ = compute_data_metrics(
                     self.experiment_dir, self.data_dir, self.im_height, self.im_width, self.pose_shape, self.input_pose_mode, self.train_index_map, 
-                    self.im_filenames, self.pose_filenames, num_random_files=self.num_random_files)
+                    self.im_filenames, self.pose_filenames, num_random_files=self.num_random_files)  
+
+                num_files = len(self.im_filenames)
+
+                # compute (image - depth) mean and std
+                logging.info('Computing (image - depth) metrics')
+                im_depth_mean = 0 
+                im_depth_var = 0 
+                random_file_indices = np.random.choice(num_files, size=self.num_random_files, replace=False)
+                num_summed = 0 
+                for k in random_file_indices.tolist():
+                    im_filename = self.im_filenames[k]
+                    pose_filename = self.pose_filenames[k]
+                    im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
+                    pose_data_depth = np.load(os.path.join(self.data_dir, pose_filename))['arr_0'][:, 2:3]
+                    sub_data = im_data - np.tile(np.reshape(pose_data_depth, (-1, 1, 1, 1)), (1, im_data.shape[1], im_data.shape[2], 1))
+                    im_depth_mean += np.sum(sub_data[self.train_index_map[im_filename], ...])
+                    num_summed += im_data[self.train_index_map[im_filename], ...].shape[0]
+                im_depth_mean = im_depth_mean / (num_summed * self.im_height * self.im_width)
+
+                for k in random_file_indices.tolist():
+                    im_filename = self.im_filenames[k]
+                    pose_filename = self.pose_filenames[k]
+                    im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
+                    pose_data_depth = np.load(os.path.join(self.data_dir, pose_filename))['arr_0'][:, 2:3]
+                    sub_data = im_data - np.tile(np.reshape(pose_data_depth, (-1, 1, 1, 1)), (1, im_data.shape[1], im_data.shape[2], 1))
+                    im_depth_var += np.sum((sub_data[self.train_index_map[im_filename], ...] - im_depth_mean)**2)
+                im_depth_std = np.sqrt(im_depth_var / (num_summed * self.im_height * self.im_width))
 
             np.save(im_mean_fname, self.im_mean)
             np.save(im_std_fname, self.im_std)
             np.save(pose_mean_fname, self.pose_mean)
             np.save(pose_std_fname, self.pose_std)
+ 
+            np.save(self.exp_path_gen('im_depth_sub_mean.npy'), im_depth_mean)
+            np.save(self.exp_path_gen('im_depth_sub_std.npy'), im_depth_std)
 
             self.gqcnn.update_im_mean(self.im_mean)
             self.gqcnn.update_im_std(self.im_std)
             self.gqcnn.update_pose_mean(parse_pose_data(self.pose_mean, self.input_pose_mode))
             self.gqcnn.update_pose_std(parse_pose_data(self.pose_std, self.input_pose_mode))
+
+            self.gqcnn.im_depth_sub_mean = im_depth_mean
+            self.gqcnn.im_depth_sub_std = im_depth_std
 
             if self.angular_bins > 0:
                 logging.info('Calculating bin statistics...')
@@ -651,6 +699,7 @@ class GQCNNTrainerTF(object):
         self.save_histograms = self.cfg['save_histograms']
 
         self._tensorboard_port = self.cfg['tensorboard_port']
+        self._tensorboard_bin_loc = self.cfg['tensorboard_bin_loc']
 
         if self.train_pct < 0 or self.train_pct > 1:
             raise ValueError('Train percentage must be in range [0,1]')
@@ -663,6 +712,8 @@ class GQCNNTrainerTF(object):
         self.angular_bins = self.cfg['angular_bins']
 
         self._distort_rot_conv_feat = self.cfg['distort_rot_conv_feat']
+
+        self._norm_inputs = self.cfg['normalize_inputs']
 
     def _read_data_params(self):
         """ Read data parameters from configuration file """
@@ -909,9 +960,12 @@ class GQCNNTrainerTF(object):
                         np.savez_compressed(os.path.join(output_dir, 'distorted_image_{}'.format(self._num_distorted_train_images_saved)), train_data_arr[0, :, :, 0])
                         self._num_distorted_train_images_saved += 1
 
-                train_data_arr[:, :, :, 0] = (train_data_arr[:, :, :, 0] - self.im_mean) / self.im_std
+                if self._norm_inputs:
+                    train_data_arr[:, :, :, 0] = (train_data_arr[:, :, :, 0] - self.im_mean) / self.im_std
                 angles = train_poses_arr[:, 3]
-                train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
+                if self._norm_inputs:
+                    train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
+
                 if self.gripper_dim > 0:
                     train_gripper_arr = (train_gripper_arr - self.gripper_mean) / self.gripper_std
                 if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:

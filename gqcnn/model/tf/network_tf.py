@@ -74,6 +74,7 @@ class GQCNNTF(object):
         gqcnn = GQCNNTF(gqcnn_config, fully_conv_config=fully_conv_config)
         gqcnn._rot_conv_filts = False
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'), conv_filt_rot=conv_filt_rot)
+        gqcnn.init_mean_and_std(model_dir)
         training_mode = train_config['training_mode']
         if training_mode == TrainingMode.CLASSIFICATION:
             gqcnn.initialize_network(add_softmax=True)
@@ -82,7 +83,7 @@ class GQCNNTF(object):
         else:
             raise ValueError('Invalid training mode: {}'.format(training_mode))
         gqcnn.rotate_conv_filters(conv_filt_rot=conv_filt_rot)
-        gqcnn.init_mean_and_std(model_dir)
+#        gqcnn.init_mean_and_std(model_dir)
         return gqcnn
 
     def get_tf_graph(self):
@@ -130,6 +131,10 @@ class GQCNNTF(object):
         if self._gripper_dim > 0:
             self._gripper_mean = parse_gripper_data(self._gripper_mean, self._input_gripper_mode)
             self._gripper_std = parse_gripper_data(self._gripper_std, self._input_gripper_mode)
+      
+        if self._sub_im_depth:
+            self.im_depth_sub_mean = np.load(os.path.join(model_dir, 'im_depth_sub_mean.npy'))
+            self.im_depth_sub_std = np.load(os.path.join(model_dir, 'im_depth_sub_std.npy')) 
 
     def init_weights_file(self, ckpt_file, conv_filt_rot=0.0):
         """ Initialize network weights from the specified model 
@@ -297,6 +302,13 @@ class GQCNNTF(object):
         self._mask_and_inpaint = False
         self._save_histograms = False
         self._angular_bins = gqcnn_config['angular_bins']
+
+        self._sub_im_depth = False
+        if 'sub_im_depth' in gqcnn_config.keys():
+            self._sub_im_depth = gqcnn_config['sub_im_depth']
+        self._norm_inputs = True
+        if 'normalize_inputs' in gqcnn_config.keys():
+            self._norm_inputs = gqcnn_config['normalize_inputs']
 
         self._fully_conv = False
         if fully_conv_config:
@@ -792,12 +804,16 @@ class GQCNNTF(object):
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
                 end_ind = cur_ind + dim
-
-                self._input_im_arr[:dim, ...] = (
-                    image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std 
                 
-                self._input_pose_arr[:dim, :] = (
-                    pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
+                if self._norm_inputs:
+                    self._input_im_arr[:dim, ...] = (
+                        image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std 
+                
+                    self._input_pose_arr[:dim, :] = (
+                        pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
+                else:
+                    self._input_im_arr[:dim, ...] = image_arr[cur_ind:end_ind, ...]
+                    self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind, :] 
 
                 if gripper_arr is not None:
                     self._input_gripper_arr[:dim, :] = (
@@ -1114,15 +1130,18 @@ class GQCNNTF(object):
             self._weights.weights['{}_im_fully_conv_weights'.format(fc_name)] = convW
         convh_im = tf.nn.conv2d(input_node_im, convW, strides=[1, 1, 1, 1], padding='VALID')
 
-        # compute matmul for pose stream
-        fcW_pose = self._weights.weights['{}_input_2_weights'.format(fc_name)]
-        pose_out = tf.matmul(input_node_pose, fcW_pose)
+        if not self._sub_im_depth:
+            # compute matmul for pose stream
+            fcW_pose = self._weights.weights['{}_input_2_weights'.format(fc_name)]
+            pose_out = tf.matmul(input_node_pose, fcW_pose)
 
-        # pack pose_out into a tensor of shape=tf.shape(convh_im)
-        pose_packed = self._pack(tf.shape(convh_im)[1], tf.shape(convh_im)[2], pose_out)
+            # pack pose_out into a tensor of shape=tf.shape(convh_im)
+            pose_packed = self._pack(tf.shape(convh_im)[1], tf.shape(convh_im)[2], pose_out)
 
-        # add the im and pose tensors 
-        convh = convh_im + pose_packed
+            # add the im and pose tensors 
+            convh = convh_im + pose_packed
+        else:
+            convh = convh_im
 
         # pack bias
         fc_bias = self._weights.weights['{}_bias'.format(fc_name)]
@@ -1265,9 +1284,12 @@ class GQCNNTF(object):
                 self._weights.weights['{}_bias'.format(name)] = fcb
 
             # build layer
-            fc = self._leaky_relu(tf.matmul(input_fc_node_1, input1W) +
+            if not self._sub_im_depth:
+                fc = self._leaky_relu(tf.matmul(input_fc_node_1, input1W) +
                                     tf.matmul(input_fc_node_2, input2W) +
                                     fcb)
+            else:
+                fc = self._leaky_relu(tf.matmul(input_fc_node_1, input1W) + fcb)
         fc = tf.nn.dropout(fc, 1 - drop_rate)
 
         # add output to feature dict
@@ -1320,8 +1342,24 @@ class GQCNNTF(object):
         return output_node, num_filt  
 
 
-    def _build_im_stream(self, input_node, input_height, input_width, input_channels, drop_rate, input_distort_rot_ang_node, layers):
+    def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, input_distort_rot_ang_node, layers):
         logging.info('Building Image Stream')
+
+        if self._sub_im_depth:
+            sub_mean = tf.constant(self.im_depth_sub_mean, dtype=tf.float32)
+            sub_std = tf.constant(self.im_depth_sub_std, dtype=tf.float32)
+            input_node = tf.div(tf.subtract(tf.subtract(input_node, tf.tile(tf.reshape(input_pose_node, tf.constant((-1, 1, 1, 1))), tf.constant((1, input_height, input_width, 1)))), sub_mean), sub_std)
+            self._sub_im_depth_out = input_node
+#             input_node = tf.concat([input_node, tf.multiply(tf.tile(tf.reshape(input_pose_node, tf.constant((-1, 1, 1, 1))), tf.constant((1, 46, 46, 1))), tf.constant(1.75, dtype=tf.float32))], axis=3)            
+
+#            orig_im = tf.add(tf.multiply(input_node, tf.constant(self._im_std, dtype=tf.float32)), tf.constant(self._im_mean, dtype=tf.float32))
+#            orig_pose = tf.add(tf.multiply(input_pose_node, tf.constant(self._pose_std, dtype=tf.float32)), tf.constant(self._pose_mean, dtype=tf.float32))
+#            self._orig_im = orig_im
+#            self._orig_pose = orig_pose
+#            mask = tf.subtract(orig_im, tf.tile(tf.reshape(orig_pose, tf.constant((-1, 1, 1, 1))), tf.constant((1, 46, 46, 1))))
+#            input_node = tf.concat([input_node, mask], axis=3)
+#            self._sub_im_depth_out = input_node
+
         output_node = input_node
         prev_layer = "start"
         first_residual = True
@@ -1338,7 +1376,7 @@ class GQCNNTF(object):
                 first_residual = True
                 if prev_layer == 'fc':
                     raise ValueError('Cannot have conv layer after fc layer')
-                if layers[layers.keys()[layer_idx + 1]]['type'] != ['conv']:
+                if layers[layers.keys()[layer_idx + 1]]['type'] != 'conv':
                     output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_distort_rot_ang_node, input_height, input_width, input_channels, layer_config['filt_dim'], layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, norm=layer_config['norm'], pad=layer_config['pad'], last_conv=True)
                 else:
                     output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_distort_rot_ang_node, input_height, input_width, input_channels, layer_config['filt_dim'],
@@ -1501,7 +1539,8 @@ class GQCNNTF(object):
         """
         logging.info('Building Network')
         with tf.name_scope('im_stream'):
-            output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, input_distort_rot_ang_node, self._architecture['im_stream'])
+            output_im_stream, fan_out_im = self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, input_distort_rot_ang_node, self._architecture['im_stream'])
+#             output_im_stream, fan_out_im = self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels + 1, input_drop_rate_node, input_distort_rot_ang_node, self._architecture['im_stream'])
         with tf.name_scope('pose_stream'):
             output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'])
         if input_gripper_node is not None:

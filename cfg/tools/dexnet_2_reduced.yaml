@@ -1,7 +1,8 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_2_fcn_mini
-output_dir: /home/vsatish/Data/dexnet/data/models/test_dump
+# dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/phoxi_v16_leg_04_12_18_mini/
+dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_2_fcn_mini/
+output_dir: /home/vsatish/Data/dexnet/data/models/test_dump/
 
 # general optimization parameters
 train_batch_size: 64
@@ -39,6 +40,9 @@ backend: 'gpu'
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
+tensorboard_bin_loc: /home/vsatish/Workspace/virtual_envs/dev/bin/
+tensorboard_port: 5998
+
 data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
 train_pct: 0.8 # percentage of the data to use for training vs validation
 total_pct: 1.0 # percentage of all the files to use
@@ -70,13 +74,15 @@ num_tensor_channels: 1
 
 num_random_files: 100
 
+# target_metric_name: robust_wrench_resistance
 target_metric_name: robust_ferrari_canny
+# metric_thresh: 0.5
 metric_thresh: 0.1
 
 # denoising / synthetic data params
 denoise:
-  # multiplicative_denoising: 
-  #   gamma_shape: 1000.00
+  multiplicative_denoising: 
+    gamma_shape: 1000.00
 
   symmetrize: 
 
@@ -138,6 +144,9 @@ gqcnn_config:
   # backend for use with Neon
   backend: 'gpu'
 
+  # number of angular bins
+  angular_bins: 0
+
   # architecture
   architecture: 
     im_stream:
@@ -148,7 +157,7 @@ gqcnn_config:
       conv1_1:
         type: conv
         filt_dim: 5
-        num_filt: 32
+        num_filt: 16
         pool_size: 1
         pool_stride: 1  
         norm: 0
@@ -156,7 +165,7 @@ gqcnn_config:
       conv1_2:
         type: conv
         filt_dim: 3
-        num_filt: 32
+        num_filt: 16
         pool_size: 2
         pool_stride: 2
         norm: 1
@@ -164,7 +173,7 @@ gqcnn_config:
       conv2_1:
         type: conv
         filt_dim: 3
-        num_filt: 32
+        num_filt: 16
         pool_size: 1
         pool_stride: 1  
         norm: 0
@@ -172,9 +181,9 @@ gqcnn_config:
       conv2_2:
         type: conv
         filt_dim: 3
-        num_filt: 32
-        pool_size: 1
-        pool_stride: 1
+        num_filt: 16
+        pool_size: 2
+        pool_stride: 2
         norm: 1
         pad: VALID
 #      res1_1:
@@ -202,14 +211,14 @@ gqcnn_config:
 #        filt_dim: 3
       fc3:
         type: fc
-        out_size: 1024
+        out_size: 64
 #      fc4: 
 #        type: fc
 #        out_size: 1048
     pose_stream:
       pc1:
         type: pc
-        out_size: 16
+        out_size: 4
 #    gripper_stream:
 #      gc1:
 #        type: gc
@@ -224,7 +233,7 @@ gqcnn_config:
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 512
+        out_size: 64
       fc5: 
         type: fc
         final_layer: True

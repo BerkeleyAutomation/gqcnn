@@ -27,25 +27,30 @@ logging.getLogger().setLevel(logging.INFO)
 # config params
 DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/yumi/case_00/phoxi'
 NORMAL_MODEL_DIR =  '/home/vsatish/Data/dexnet/data/models/test_dump/model_ebhsmdqmjd'
-ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_tiqeyfvwox'
+# ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_tiqeyfvwox' # larger net
+# ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_mbzpcvqsip'
+# ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_nuqxvmxxuc'
+ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_fqkvfbmrlf/'
 CAMERA_INTR_DIR =  '/nfs/diskstation/calib/phoxi/phoxi.intr'
 CAMERA_INTR_RESCALE_FACT = 0.25
 GRIPPER_WIDTH = 0.05
-NUM_TEST_SAMPLES = 2
+NUM_TEST_SAMPLES = 1
 IM_FILE_TEMPLATE = 'depth_ims_tf_table'
 POSE_FILE_TEMPLATE = 'hand_poses'
 RESCALE_FACT = 0.25
+# RESCALE_FACT = 1.0
 DEPTH_THRESH = 1.0
 NUM_CROPS = 107*75
 CROP_W = 46
 CROP_STRIDE = 2
 FULLY_CONV_CONFIG = {'im_width': 258, 'im_height': 193}
+# FULLY_CONV_CONFIG = {'im_width': 1032, 'im_height': 772}
 VIS = 1
 VIS_POSE_LOC = (5, 5)
 FIG_SIZE = (15, 15)
 # INFERENCE_DEPTHS = np.asarray([[0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8]])
-# INFERENCE_DEPTHS = np.asarray([[0.8]])
-INFERENCE_DEPTHS = np.asarray([[0.8], [0.8]])
+INFERENCE_DEPTHS = np.asarray([[0.87]])
+# INFERENCE_DEPTHS = np.asarray([[0.8], [0.8]])
 DEPTH_PARSER = lambda p: p[2:3]
 DEPTH_PARSER_MULTI_DIM = lambda p: p[:, 2:3]
 ANGLE_PARSER = lambda p: p[:, 3]
@@ -54,10 +59,11 @@ PI = math.pi
 PI_2 = math.pi / 2
 NUM_TEST_ITERATIONS = 2
 GPU_WARM_ITERATIONS = 2
-GRASP_SUCCESS_THRESH = 0.3
+GRASP_SUCCESS_THRESH = 0.25
+USE_PRED_OPT = 0
 
 ROT_IMAGES = 1
-TEST_NORMAL_GQCNN = 1
+TEST_NORMAL_GQCNN = 0
 TEST_FULLY_CONV_GQCNN = 1
 TEST_FULLY_CONV_ANG_GQCNN = 1
 
@@ -83,10 +89,12 @@ images = None
 poses = None
 counter = 0
 while counter < NUM_TEST_SAMPLES:
-    file_num = np.random.randint(len(im_filenames))
+#    file_num = np.random.randint(len(im_filenames))
+    file_num = 0
     im_data = np.load(os.path.join(DATASET_DIR, im_filenames[file_num]))['arr_0']
     pose_data = np.load(os.path.join(DATASET_DIR, pose_filenames[file_num]))['arr_0']
-    index = np.random.randint(im_data.shape[0])
+#    index = np.random.randint(im_data.shape[0])
+    index = 0    
 
     # threshold and re-scale the image
     im = im_data[index, ..., 0]
@@ -235,6 +243,9 @@ if TEST_FULLY_CONV_GQCNN and ROT_IMAGES:
     fully_conv_gqcnn_images = rot_images.reshape((NUM_TEST_SAMPLES * NUM_ANGULAR_BINS,) + rot_images.shape[2:])
     fully_conv_gqcnn_poses = np.repeat(INFERENCE_DEPTHS, NUM_ANGULAR_BINS, axis=0)
     
+    # generate unique image index map for use with prediction optimizations
+    unique_im_map = np.tile(np.arange(NUM_ANGULAR_BINS), NUM_TEST_SAMPLES)
+
     # create GQCNN
     logging.info('Creating Fully-Convolutional GQCNN')
     fully_conv_gqcnn = get_gqcnn_model().load(NORMAL_MODEL_DIR, fully_conv_config=FULLY_CONV_CONFIG)
@@ -247,7 +258,10 @@ if TEST_FULLY_CONV_GQCNN and ROT_IMAGES:
     logging.info('Warming Up GPU')
     for i in range(GPU_WARM_ITERATIONS):
         timeline_file = os.path.join(FULLY_CONV_TIMELINE_SAVE_DIR, 'warmup_timeline_iter_{}.json'.format(i))
-        _, pred_time = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses, timeline_save_file=timeline_file)
+        if USE_PRED_OPT:
+            _, pred_time = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses, timeline_save_file=timeline_file, unique_im_map=unique_im_map)
+        else:
+            _, pred_time = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses, timeline_save_file=timeline_file)
         logging.info('Fully-Convolutional GQCNN Inference warm-up iteration {} took {} seconds'.format(i, pred_time))
     
     # infer
@@ -255,7 +269,10 @@ if TEST_FULLY_CONV_GQCNN and ROT_IMAGES:
     fully_conv_inference_times = np.zeros((NUM_TEST_ITERATIONS,))
     for i in range(NUM_TEST_ITERATIONS):
         timeline_file = os.path.join(FULLY_CONV_TIMELINE_SAVE_DIR, 'inference_timeline_iter_{}.json'.format(i))
-        fully_conv_gqcnn_pred, pred_time = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses, timeline_save_file=timeline_file)
+        if USE_PRED_OPT:
+            fully_conv_gqcnn_pred, pred_time = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses, timeline_save_file=timeline_file, unique_im_map=unique_im_map)
+        else:
+            fully_conv_gqcnn_pred, pred_time = fully_conv_gqcnn.predict(fully_conv_gqcnn_images, fully_conv_gqcnn_poses, timeline_save_file=timeline_file)
         fully_conv_inference_times[i] = pred_time
         logging.info('Fully-Convolutional GQCNN Inference iteration {} took {} seconds'.format(i, fully_conv_inference_times[i]))
     avg_fully_conv_inference_time = np.mean(fully_conv_inference_times)
@@ -277,6 +294,9 @@ if TEST_FULLY_CONV_ANG_GQCNN:
     fully_conv_ang_gqcnn_images = images
     fully_conv_ang_gqcnn_poses = INFERENCE_DEPTHS
     
+    # generate unique image index map for use with prediction optimizations
+    unique_im_map = np.zeros((NUM_TEST_SAMPLES,), dtype=np.int32)
+
     # create GQCNN
     logging.info('Creating Fully-Convolutional Angular GQCNN')
     fully_conv_ang_gqcnn = get_gqcnn_model().load(ANGULAR_MODEL_DIR, fully_conv_config=FULLY_CONV_CONFIG)
@@ -289,7 +309,10 @@ if TEST_FULLY_CONV_ANG_GQCNN:
     logging.info('Warming Up GPU')
     for i in range(GPU_WARM_ITERATIONS):
         timeline_file = os.path.join(ANGULAR_TIMELINE_SAVE_DIR, 'warmup_timeline_iter_{}.json'.format(i))
-        _, pred_time = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses, timeline_save_file=timeline_file)
+        if USE_PRED_OPT:
+            _, pred_time = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses, timeline_save_file=timeline_file, unique_im_map=unique_im_map)
+        else:
+            _, pred_time = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses, timeline_save_file=timeline_file)
         logging.info('Fully-Convolutional Angular GQCNN Inference warm-up iteration {} took {} seconds'.format(i, pred_time))
     
     # infer
@@ -297,7 +320,10 @@ if TEST_FULLY_CONV_ANG_GQCNN:
     fully_conv_ang_inference_times = np.zeros((NUM_TEST_ITERATIONS,))
     for i in range(NUM_TEST_ITERATIONS):
         timeline_file = os.path.join(ANGULAR_TIMELINE_SAVE_DIR, 'inference_timeline_iter_{}.json'.format(i))
-        fully_conv_ang_pred, pred_time = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses, timeline_save_file=timeline_file)
+        if USE_PRED_OPT:
+            fully_conv_ang_pred, pred_time = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses, timeline_save_file=timeline_file, unique_im_map=unique_im_map)
+        else:
+            fully_conv_ang_pred, pred_time = fully_conv_ang_gqcnn.predict(fully_conv_ang_gqcnn_images, fully_conv_ang_gqcnn_poses, timeline_save_file=timeline_file)
         fully_conv_ang_inference_times[i] = pred_time
         logging.info('Fully-Convolutional Angular GQCNN Inference iteration {} took {} seconds'.format(i, fully_conv_ang_inference_times[i]))
     avg_fully_conv_ang_inference_time = np.mean(fully_conv_ang_inference_times)
@@ -377,8 +403,9 @@ if VIS:
     for i in range(NUM_TEST_SAMPLES):
         logging.info('Visualizing Grasps for Image {}'.format(i))
         plot_idx = 1
-        fig = vis.figure((15, 40))
-        fig.suptitle('Image: {}'.format(i))
+#        fig = vis.figure((15, 40))
+#        fig.suptitle('Image: {}'.format(i))
+        vis.figure()
         if TEST_NORMAL_GQCNN:
             vis.subplot(100 + num_subplots * 10 + plot_idx)
             plot_idx += 1

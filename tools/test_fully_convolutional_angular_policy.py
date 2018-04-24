@@ -72,7 +72,7 @@ im_states = []
 rgbd_raw_data_template = np.zeros(images[0].shape[:-1] + (4,))
 for i in range(num_test_samples):
     rgbd_raw_data_template[:, :, 3] = images[i, :, :, 0]
-    im_states.append(RgbdImageState(RgbdImage(rgbd_raw_data_template), camera_intr))
+    im_states.append(RgbdImageState(RgbdImage(rgbd_raw_data_template, frame='phoxi'), camera_intr))
 
 ############################################# ROLL OUT POLICY #############################################
 # create policy

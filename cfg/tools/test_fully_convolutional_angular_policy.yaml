@@ -1,4 +1,4 @@
-dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/yumi/case_00/phoxi/
+dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/yumi/case_02/phoxi/
 
 num_test_samples: 1
 num_warmup_iterations: 2 
@@ -12,7 +12,8 @@ camera_intr_rescale_fact: 0.25
 policy_config:
     num_depth_bins: 16
     width: 0.05
-    gqcnn_model: /home/vsatish/Data/dexnet/data/models/test_dump/model_nuqxvmxxuc/
+    gqcnn_model: /home/vsatish/Data/dexnet/data/models/test_dump/model_fqkvfbmrlf/
+#    gqcnn_model: /home/vsatish/Data/dexnet/data/models/test_dump/model_nuqxvmxxuc/
     gqcnn_backend: tf
     gqcnn_stride: 2
     gqcnn_recep_h: 46
@@ -22,9 +23,10 @@ policy_config:
         im_width: 258
         im_height: 193
 
-    vis:
-        top_k: 100
-        vis_top_k: 0
+    policy_vis:
+        top_k: 5
+        vis_top_k: 1
+        vis_3d: 1
         scale: 0.5
         show_axis: 1
-
+        

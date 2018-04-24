@@ -29,11 +29,18 @@ index_dir: /home/vsatish/Data/dexnet/data/models/test_dump/model_mefzdpxpyy
 
 mask_and_inpaint: 0
 
+angular_bins: 0
+
+distort_rot_conv_feat: 0
+
 # backend for use with Neon
 backend: 'gpu'
 
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
+
+tensorboard_bin_loc: /home/vsatish/Workspace/virtual_envs/dev/bin/
+tensorboard_port: 5998
 
 data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
 train_pct: 0.8 # percentage of the data to use for training vs validation
@@ -134,6 +141,9 @@ gqcnn_config:
 
   # backend for use with Neon
   backend: 'gpu'
+
+  # number of angular bins
+  angular_bins: 0
 
   # architecture
   architecture: 

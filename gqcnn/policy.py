@@ -946,9 +946,10 @@ class FullyConvolutionalAngularPolicy(object):
                 
             #visualize 2D
             logging.info('Generating 2D visualization...')
-            vis.figure((15, 15))
+            vis.figure()
             vis.imshow(d_im)
             for i in range(top_k):
+                logging.info('Depth: {}'.format(grasps[i].grasp.depth))
                 vis.grasp(grasps[i].grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color=plt.cm.RdYlGn(grasps[i].q_value))
             vis.show()
 
