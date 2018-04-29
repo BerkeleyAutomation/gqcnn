@@ -87,10 +87,16 @@ if __name__ == '__main__':
     norm_final_val_error = val_errors[-1] / val_errors[0]
     if pct_pos_val > 0:
         norm_final_val_error = val_errors[-1] / pct_pos_val        
-    
-    print 'Original val error', pct_pos_val
-    print 'Final val error', val_errors[-1]
-    print 'Normalized final val error', norm_final_val_error
+
+    print 'TRAIN'    
+    print 'Error', train_errors[-1]
+    print 'Orig loss', train_losses[0]
+    print 'Final loss', train_losses[-1]
+
+    print 'VAL'
+    print 'Original error', pct_pos_val
+    print 'Final error', val_errors[-1]
+    print 'Normalized error', norm_final_val_error
 
     plt.figure()
     plt.plot(train_iters, train_errors, linewidth=4, color='b')

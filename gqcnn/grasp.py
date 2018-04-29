@@ -49,7 +49,7 @@ class Grasp2D(object):
     contact_normals : list of :obj:`numpy.ndarray`
         pair of contact normals in image space
     """
-    def __init__(self, center, angle, depth, width=0.0, camera_intr=None,
+    def __init__(self, center, angle=0.0, depth=1.0, width=0.0, camera_intr=None,
                  contact_points=None, contact_normals=None):
         self.center = center
         self.angle = angle
@@ -238,7 +238,10 @@ class SuctionPoint2D(object):
     camera_intr : :obj:`perception.CameraIntrinsics`
         frame of reference for camera that the suction point corresponds to
     """
-    def __init__(self, center, axis, depth, camera_intr=None):
+    def __init__(self, center, axis=None, depth=1.0, camera_intr=None):
+        if axis is None:
+            axis = np.array([1,0,0])
+
         self.center = center
         self.axis = axis
 

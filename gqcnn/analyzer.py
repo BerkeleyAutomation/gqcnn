@@ -595,5 +595,16 @@ class GQCNNAnalyzer(object):
             vis2d.title('Training Loss vs Iteration', fontsize=self.font_size)
             figname = os.path.join(model_output_dir, 'training_losses.png')
             vis2d.savefig(figname, dpi=self.dpi)
+            
+            # log
+            logging.info('TRAIN')
+            logging.info('Error rate: %.3f' %(train_errors[-1]))
+            logging.info('Orig loss: %.3f' %(train_losses[0]))
+            logging.info('Final loss: %.3f' %(train_losses[-1]))
+            
+            logging.info('VAL')
+            logging.info('Original error: %.3f' %(pct_pos_val))
+            logging.info('Final error: %.3f' %(val_errors[-1]))
+            logging.info('Normalized error: %.3f' %(norm_final_val_error))
         except:
             logging.error('Failed to plot training curves!')
