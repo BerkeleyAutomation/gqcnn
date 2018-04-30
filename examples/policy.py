@@ -62,7 +62,7 @@ if __name__ == '__main__':
     if depth_im_filename is None:
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '..',
-                                         'data/rgbd/multiple_objects/depth_0.npy')
+                                         'data/examples/single_object/depth_0.npy')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
