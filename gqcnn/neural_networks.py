@@ -414,7 +414,7 @@ class GQCNN(object):
         self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
 
         # fix legacy
-        if self._pose_mean.shape[0] != self._pose_dim:
+        if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] != self._pose_dim:
             self._pose_mean = read_pose_data(self._pose_mean, self._gripper_mode)
             self._pose_std = read_pose_data(self._pose_std, self._gripper_mode)
         
