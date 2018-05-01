@@ -26,7 +26,7 @@ Author: Lucas Manuelli
 
 import os
 
-from ..optimizer_constants import GripperMode
+from .enums import GripperMode
 
 def set_cuda_visible_devices(gpu_list):
     """
@@ -110,3 +110,10 @@ def read_pose_data(pose_arr, gripper_mode):
             return pose_arr[:,2:4]
     else:
         raise ValueError('Gripper mode %s not supported.' %(gripper_mode))
+
+def reduce_shape(shape):
+    """ Get shape of a layer for flattening """
+    shape = [x.value for x in shape[1:]]
+    f = lambda x, y: 1 if y is None else x * y
+    return reduce(f, shape, 1)
+    

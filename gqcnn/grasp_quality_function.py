@@ -37,7 +37,8 @@ import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
 
-from . import Grasp2D, SuctionPoint2D, GQCNN, GripperMode
+from . import Grasp2D, SuctionPoint2D, GQCNN
+from .utils import GripperMode
 
 # constant for display
 FIGSIZE = 16

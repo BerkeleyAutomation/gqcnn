@@ -36,14 +36,7 @@ import sys
 import tensorflow as tf
 
 from autolab_core import YamlConfig
-from .optimizer_constants import GripperMode, TrainingMode
 from .utils import *
-
-def reduce_shape(shape):
-    """ Get shape of a layer for flattening """
-    shape = [x.value for x in shape[1:]]
-    f = lambda x, y: 1 if y is None else x * y
-    return reduce(f, shape, 1)
 
 class GQCnnWeights(object):
     """ Struct helper for storing weights """

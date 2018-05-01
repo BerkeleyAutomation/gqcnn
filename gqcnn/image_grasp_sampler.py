@@ -46,8 +46,7 @@ from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, GdImage
 from visualization import Visualizer2D as vis
 
 from . import Grasp2D, SuctionPoint2D
-
-from . import NoAntipodalPairsFoundException
+from .utils import NoAntipodalPairsFoundException
 
 def force_closure(p1, p2, n1, n2, mu):
     """ Computes whether or not the point and normal pairs are in force closure. """

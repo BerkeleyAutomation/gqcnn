@@ -63,6 +63,9 @@ fc3_drop_rate: 0.5
 drop_fc4: 0
 fc4_drop_rate: 0.5
 
+# tensorboard
+tensorboard_port: 6006
+
 # debugging params
 debug: 1
 debug_num_files: 1000000000

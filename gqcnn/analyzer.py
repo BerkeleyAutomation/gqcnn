@@ -44,7 +44,7 @@ from perception import DepthImage
 from visualization import Visualizer2D as vis2d
 
 from . import GQCNN, Grasp2D, SuctionPoint2D
-from .optimizer_constants import GripperMode, ImageMode
+from .utils import GripperMode, ImageMode
 from .utils import *
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'

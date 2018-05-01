@@ -31,6 +31,7 @@ import gc
 import json
 import logging
 import numbers
+import matplotlib.pyplot as plt
 import numpy as np
 import cPickle as pkl
 import os
@@ -39,15 +40,15 @@ import scipy.misc as sm
 import scipy.ndimage.filters as sf
 import scipy.ndimage.morphology as snm
 import scipy.stats as ss
-import skimage.draw as sd
-import signal
-import sys
 import shutil
+import signal
+import skimage.draw as sd
+import subprocess
+import sys
+import tensorflow as tf
 import threading
 import time
 import urllib
-import matplotlib.pyplot as plt
-import tensorflow as tf
 import yaml
 
 import IPython
@@ -56,8 +57,8 @@ from autolab_core import BinaryClassificationResult, RegressionResult, TensorDat
 from autolab_core.constants import *
 import autolab_core.utils as utils
 
-from .optimizer_constants import ImageMode, TrainingMode, GripperMode, GeneralConstants
-from .train_stats_logger import TrainStatsLogger
+from .utils import ImageMode, TrainingMode, GripperMode, GeneralConstants
+from .utils import TrainStatsLogger
 from .utils import pose_dim, read_pose_data
 
 class GQCNNOptimizer(object):
@@ -165,16 +166,22 @@ class GQCNNOptimizer(object):
 
     def _launch_tensorboard(self):
         """ Launches Tensorboard to visualize training """
-        logging.info("Launching Tensorboard, Please navigate to localhost:6006 in your favorite web browser to view summaries")
-        os.system('tensorboard --logdir=' + self.summary_dir + " &>/dev/null &")
+        FNULL = open(os.devnull, 'w')
+        logging.info(
+            "Launching Tensorboard, Please navigate to localhost:{} in your favorite web browser to view summaries".format(self._tensorboard_port))
+        self._tensorboard_proc = subprocess.Popen(['tensorboard', '--port', str(self._tensorboard_port),'--logdir', self.summary_dir], stdout=FNULL)
 
     def _close_tensorboard(self):
         """ Closes Tensorboard """
         logging.info('Closing Tensorboard')
-        tensorboard_pid = os.popen('pgrep tensorboard').read()
-        os.system('kill ' + tensorboard_pid)
+        self._tensorboard_proc.terminate()                        
 
-    def optimize(self):
+    def train(self):
+        """ Perform optimization """
+        with self.gqcnn.tf_graph.as_default():
+            self._train()
+        
+    def _train(self):
         """ Perform optimization """
         start_time = time.time()
 
@@ -768,6 +775,9 @@ class GQCNNOptimizer(object):
         self.metric_thresh = self.cfg['metric_thresh']
         self.training_mode = self.cfg['training_mode']
 
+        # tensorboad
+        self._tensorboard_port = self.cfg['tensorboard_port']
+        
         # preproc
         self.preproc_log_frequency = self.cfg['preproc_log_frequency']
         self.num_random_files = self.cfg['num_random_files']
@@ -846,9 +856,9 @@ class GQCNNOptimizer(object):
             self.num_val += val_indices.shape[0]
 
         # set params based on the number of training examples (convert epochs to steps)
-        self.eval_frequency = int(self.eval_frequency * (self.num_train / self.train_batch_size))
-        self.save_frequency = int(self.save_frequency * (self.num_train / self.train_batch_size))
-        self.vis_frequency = int(self.vis_frequency * (self.num_train / self.train_batch_size))
+        self.eval_frequency = int(np.ceil(self.eval_frequency * (float(self.num_train) / self.train_batch_size)))
+        self.save_frequency = int(np.ceil(self.save_frequency * (float(self.num_train) / self.train_batch_size)))
+        self.vis_frequency = int(np.ceil(self.vis_frequency * (float(self.num_train) / self.train_batch_size)))
         self.decay_step = self.decay_step_multiplier * self.num_train
 
     def _setup_tensorflow(self):
