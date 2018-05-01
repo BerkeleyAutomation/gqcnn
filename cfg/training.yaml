@@ -1,0 +1,136 @@
+# general optimization params
+train_batch_size: 64
+val_batch_size: 16
+
+# logging params
+num_epochs: 50        # number of epochs to train for
+eval_frequency: 10    # how often to get validation error (in epochs)
+save_frequency: 10    # how often to save output (in epochs)
+vis_frequency: 10000  # how often to visualize filters (in epochs)
+log_frequency: 1      # how often to log output (in steps)
+
+# train / val split params 
+train_pct: 0.8              # percentage of the data to use for training vs validation
+total_pct: 1.0              # percentage of all the files to use
+eval_total_train_error: 0   # whether or not to evaluate the total training error on each validataion
+max_files_eval: 1000        # the number of validation files to use in each eval
+
+# optimization params
+loss: sparse
+optimizer: momentum
+train_l2_regularizer: 0.0005
+base_lr: 0.01
+decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_rate: 0.95
+momentum_rate: 0.9
+max_training_examples_per_load: 128
+
+# fine-tuning params
+fine_tune: 0
+update_fc_only: 0
+update_conv0_only: 0
+reinit_pc1: 0
+reinit_fc3: 0
+reinit_fc4: 0
+reinit_fc5: 0
+
+# input params
+training_mode: classification
+image_field_name: tf_depth_ims
+pose_field_name: grasps
+
+# label params
+target_metric_name: grasp_metrics  # name of the field to use for the labels
+metric_thresh: 0.75                 # threshold for positive examples (label = 1 if grasp_metric > metric_thresh)
+
+# preproc params
+num_random_files: 1000     # the number of random files to compute dataset statistics in preprocessing (lower speeds initialization)
+preproc_log_frequency: 100 # how often to log preprocessing (in steps)
+
+# denoising / synthetic data params
+multiplicative_denoising: 0
+gamma_shape: 1000.00
+
+symmetrize: 1
+
+gaussian_process_denoising: 0
+gaussian_process_rate: 0.5
+gaussian_process_scaling_factor: 4.0
+gaussian_process_sigma: 0.005
+
+drop_fc3: 0
+fc3_drop_rate: 0.5
+drop_fc4: 0
+fc4_drop_rate: 0.5
+
+# tensorboard
+tensorboard_port: 6006
+
+# debugging params
+debug: 1
+debug_num_files: 1000000000
+seed: 24098
+
+### GQCNN CONFIG ###
+gqcnn:
+  # basic data metrics
+  im_height: 96
+  im_width: 96
+  im_channels: 1
+
+  # needs to match input data mode that was used for training, determines the pose dimensions for the network
+  gripper_mode: parallel_jaw
+
+  # prediction batch size, in training this will be overriden by the val_batch_size in the SGDOptimizer's config file
+  batch_size: 16
+
+  # architecture
+  architecture:
+    conv1_1:
+      filt_dim: 9
+      num_filt: 16
+      pool_size: 2
+      pool_stride: 2  
+      padding: VALID
+      norm: 0
+      norm_type: local_response
+    conv1_2:
+      filt_dim: 3
+      num_filt: 16
+      pool_size: 2
+      pool_stride: 2
+      padding: VALID
+      norm: 0
+      norm_type: local_response
+    conv2_1:
+      filt_dim: 3
+      num_filt: 16
+      pool_size: 1
+      pool_stride: 1
+      padding: VALID
+      norm: 0
+      norm_type: local_response
+    conv2_2:
+      filt_dim: 3
+      num_filt: 16
+      pool_size: 2
+      pool_stride: 2
+      padding: VALID
+      norm: 0
+      norm_type: local_response
+    pc1:
+      out_size: 4
+    pc2:
+      out_size: 0
+    fc3:
+      out_size: 64
+    fc4:
+      out_size: 64
+    fc5:
+      out_size: 2
+
+  # architecture normalization constants
+  radius: 2
+  alpha: 2.0e-05
+  beta: 0.75
+  bias: 1.0

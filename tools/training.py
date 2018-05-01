@@ -74,7 +74,7 @@ if __name__ == '__main__':
     if config_filename is None:
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                        '..',
-                                       'cfg/tools/training.yaml')
+                                       'cfg/training.yaml')
 
     # turn relative paths absolute
     if not os.path.isabs(dataset_dir):
