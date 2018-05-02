@@ -1,32 +1,32 @@
-dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/yumi/case_02/phoxi/
+dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_dexnet_thresh_full_ims_04_30_18/
 
-num_test_samples: 1
-num_warmup_iterations: 2 
-num_test_iterations: 100
+num_test_samples: 10
+num_warmup_iterations: 5 
+num_test_iterations: 5
 
 max_depth_thresh: 1.0
-rescale_fact: 0.25
+rescale_fact: 1.0
 camera_intr: /nfs/diskstation/calib/phoxi/phoxi.intr
-camera_intr_rescale_fact: 0.25
+camera_intr_rescale_fact: 1.0
 
 policy_config:
     num_depth_bins: 16
     width: 0.05
-    gqcnn_model: /home/vsatish/Data/dexnet/data/models/test_dump/model_fqkvfbmrlf/
-#    gqcnn_model: /home/vsatish/Data/dexnet/data/models/test_dump/model_nuqxvmxxuc/
+#    gqcnn_model: /home/vsatish/Data/dexnet/data/models/test_dump/model_ynajwbrkfk/
+    gqcnn_model: /home/vsatish/Data/dexnet/data/models/test_dump/model_wjssyojntv/
     gqcnn_backend: tf
-    gqcnn_stride: 2
-    gqcnn_recep_h: 46
-    gqcnn_recep_w: 46
+    gqcnn_stride: 4
+    gqcnn_recep_h: 96
+    gqcnn_recep_w: 96
 
     fully_conv_gqcnn_config:
-        im_width: 258
-        im_height: 193
+        im_width: 500
+        im_height: 500
 
     policy_vis:
-        top_k: 5
+        top_k: 100
         vis_top_k: 1
-        vis_3d: 1
+        vis_3d: 0
         scale: 0.5
         show_axis: 1
         

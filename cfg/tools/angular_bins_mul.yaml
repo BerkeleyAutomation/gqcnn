@@ -1,15 +1,15 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-#dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_2_fc_no_rot_mini_random_depths_pos_04_29_18/
-dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_benchmark_random_leg_no_rot_04_30_18/
+dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/salt_cube_leg_no_rot_04_23_18/
+# dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_2_fc_no_rot_02_13_18_mini/
 output_dir: /home/vsatish/Data/dexnet/data/models/test_dump/
 
 # general optimization parameters
 train_batch_size: 64
 val_batch_size: 16
-num_epochs: 50     # number of epochs to train for
+num_epochs: 100     # number of epochs to train for
 eval_frequency: -1  # how often to get validation error in steps, -1 defaults to every epoch 
-save_frequency: 1000  # how often to save output in steps, -1 defaults to every epoch
+save_frequency: -1  # how often to save output in steps, -1 defaults to every epoch
 vis_frequency: 1000
 log_frequency: 1     # how often to log output
 show_filters: 0
@@ -72,21 +72,21 @@ input_pose_mode: tf_image
 input_gripper_mode: none
 num_tensor_channels: 1
 
-normalize_inputs: 0
+normalize_inputs: 1
 
-sub_lambda: 1.0
+sub_lambda: 100.0
 
 num_random_files: 100
 
 target_metric_name: robust_wrench_resistance
-#target_metric_name: robust_ferrari_canny
+# target_metric_name: robust_ferrari_canny
 metric_thresh: 0.75
-#metric_thresh: 0.1
+# metric_thresh: 0.1
 
 # denoising / synthetic data params
 denoise:
-  # multiplicative_denoising: 
-  #   gamma_shape: 1000.00
+  multiplicative_denoising: 
+    gamma_shape: 1000.00
 
   # symmetrize: 
 
@@ -135,8 +135,8 @@ save_histograms: 0
 ### GQCNN CONFIG ###
 gqcnn_config:
   # basic data metrics
-  im_height: 96
-  im_width: 96
+  im_height: 46
+  im_width: 46
   im_channels: 1
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   input_pose_mode: tf_image
@@ -151,11 +151,11 @@ gqcnn_config:
   # number of angular bins
   angular_bins: 16
 
-  sub_im_depth: 1
+  sub_im_depth: 0
 
-  normalize_inputs: 0
+  normalize_inputs: 1
 
-  sub_lambda: 1.0
+  sub_lambda: 100.0
 
   # architecture
   architecture: 
@@ -166,10 +166,10 @@ gqcnn_config:
 #         num_transform_params: 6
       conv1_1:
         type: conv
-        filt_dim: 9
-        num_filt: 8
-        pool_size: 2
-        pool_stride: 2  
+        filt_dim: 5
+        num_filt: 16
+        pool_size: 1
+        pool_stride: 1  
         norm: 0
         pad: VALID
 #      res1_1:
@@ -179,7 +179,7 @@ gqcnn_config:
       conv1_2:
         type: conv
         filt_dim: 3
-        num_filt: 8
+        num_filt: 16
         pool_size: 2
         pool_stride: 2
         norm: 1
@@ -187,7 +187,7 @@ gqcnn_config:
       conv2_1:
         type: conv
         filt_dim: 3
-        num_filt: 8
+        num_filt: 16
         pool_size: 1
         pool_stride: 1  
         norm: 0
@@ -199,7 +199,7 @@ gqcnn_config:
       conv2_2:
         type: conv
         filt_dim: 3
-        num_filt: 8
+        num_filt: 16
         pool_size: 1
         pool_stride: 1
         norm: 1
@@ -229,7 +229,7 @@ gqcnn_config:
 #        filt_dim: 3
       fc3:
         type: fc
-        out_size: 32
+        out_size: 64
 #      fc4:
 #        type: fc
 #        out_size: 1024
@@ -254,7 +254,7 @@ gqcnn_config:
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 32
+        out_size: 64
       fc5: 
         type: fc
         final_layer: True

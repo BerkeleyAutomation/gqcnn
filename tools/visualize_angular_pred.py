@@ -10,8 +10,9 @@ from perception import CameraIntrinsics, DepthImage
 from gqcnn.model import get_gqcnn_model
 from gqcnn import Visualizer as vis, Grasp2D
 
-MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_fqkvfbmrlf/'
-DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/phoxi_v18_leg_no_rot_rand_depths_pos_04_22_18/'
+MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_txqntmdxqg/'
+# MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_cfxloaqbuj/' # good
+DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_big_window_v3_leg_no_rot_04_26_18/'
 CAMERA_INTR_DIR =  '/nfs/diskstation/calib/phoxi/phoxi.intr'
 IM_FILE_TEMPLATE = 'depth_ims_tf_table'
 POSE_FILE_TEMPLATE = 'hand_poses'
@@ -72,7 +73,7 @@ while counter < NUM_TEST_SAMPLES:
     metrics[counter] = metric
     counter += 1
 
-poses = np.tile(np.asarray([[0.9]]), (NUM_TEST_SAMPLES, 1))
+# poses = np.tile(np.asarray([[0.2]]), (NUM_TEST_SAMPLES, 1))
 
 # load Angular-GQCNN model
 logging.info('Loading Angular-GQCNN')
@@ -118,7 +119,7 @@ for i in range(NUM_TEST_SAMPLES):
 # visualize
 logging.info('Beginning Visualization')
 vis.figure(size=(10, 10))
-for i in range(2, NUM_TEST_SAMPLES):
+for i in range(NUM_TEST_SAMPLES):
     logging.info('Angular Pred: {}'.format(angular_pred[i]))
     logging.info('Depth: {}'.format(poses[i, 0]))
     vis.clf()

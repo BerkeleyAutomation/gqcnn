@@ -309,6 +309,9 @@ class GQCNNTF(object):
         self._norm_inputs = True
         if 'normalize_inputs' in gqcnn_config.keys():
             self._norm_inputs = gqcnn_config['normalize_inputs']
+        self.sub_lambda = 1.0
+        if 'sub_lambda' in gqcnn_config.keys():
+            self.sub_lambda = gqcnn_config['sub_lambda']
 
         self._fully_conv = False
         if fully_conv_config:
@@ -1348,8 +1351,15 @@ class GQCNNTF(object):
         if self._sub_im_depth:
             sub_mean = tf.constant(self.im_depth_sub_mean, dtype=tf.float32)
             sub_std = tf.constant(self.im_depth_sub_std, dtype=tf.float32)
-            input_node = tf.div(tf.subtract(tf.subtract(input_node, tf.tile(tf.reshape(input_pose_node, tf.constant((-1, 1, 1, 1))), tf.constant((1, input_height, input_width, 1)))), sub_mean), sub_std)
-            self._sub_im_depth_out = input_node
+            sub_lambda = tf.constant(self.sub_lambda, dtype=tf.float32)
+            orig_sub_im = tf.subtract(input_node, tf.tile(tf.reshape(input_pose_node, tf.constant((-1, 1, 1, 1))), tf.constant((1, input_height, input_width, 1))))
+            self.orig_sub_im = orig_sub_im
+            lambda_sub_im = tf.multiply(sub_lambda, orig_sub_im)
+            self.lambda_sub_im = lambda_sub_im
+            norm_sub_im = tf.div(tf.subtract(lambda_sub_im, sub_mean), sub_std)
+            self.norm_sub_im = norm_sub_im
+            input_node = norm_sub_im
+
 #             input_node = tf.concat([input_node, tf.multiply(tf.tile(tf.reshape(input_pose_node, tf.constant((-1, 1, 1, 1))), tf.constant((1, 46, 46, 1))), tf.constant(1.75, dtype=tf.float32))], axis=3)            
 
 #            orig_im = tf.add(tf.multiply(input_node, tf.constant(self._im_std, dtype=tf.float32)), tf.constant(self._im_mean, dtype=tf.float32))

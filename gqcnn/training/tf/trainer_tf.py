@@ -26,6 +26,10 @@ from gqcnn.utils.training_utils import copy_config, compute_indices_image_wise, 
     setup_data_filenames, setup_output_dirs
 from gqcnn.utils.enums import GeneralConstants, DataSplitMode, InputPoseMode, InputGripperMode, TrainingMode
 
+from autolab_core import Point
+from perception import CameraIntrinsics, DepthImage
+from gqcnn import Visualizer as vis, Grasp2D
+
 class GQCNNTrainerTF(object):
     """ Trains GQCNN with Tensorflow backend """
 
@@ -265,9 +269,10 @@ class GQCNNTrainerTF(object):
 
                 # fprop + bprop
                 if self.angular_bins > 0:
-                    _, l, lr, predictions, batch_labels, pred_mask, net_output, input_im, input_pose, labels = self.sess.run([optimizer, loss, learning_rate,
-                    train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_labels_node], 
-                    feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
+#                    _, l, lr, predictions, batch_labels, pred_mask, net_output, input_im, input_pose, labels, orig_sub_im, lambda_sub_im, norm_sub_im = self.sess.run([optimizer, loss, learning_rate,
+#                    train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_labels_node, self.gqcnn.orig_sub_im, self.gqcnn.lambda_sub_im, self.gqcnn.norm_sub_im], 
+#                    feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
+                     _, l, lr, predictions, batch_labels, pred_mask, net_output, input_im, input_pose, labels = self.sess.run([optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_labels_node], feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
                 else:
                     rot_angs = np.zeros((self.train_batch_size,))
                     if self._distort_rot_conv_feat:
@@ -288,15 +293,19 @@ class GQCNNTrainerTF(object):
                 
 #                NUM_IMS = 2
 #                for i in range(NUM_IMS):
-#                    if input_pose[i, 0] < 1.0:
-#                        logging.info('Visualizing image {} of {}'.format(i, NUM_IMS))
-#                        logging.info('Depth: {}'.format(orig_pose[i, 0]))
+#                    if labels[i] == 1:
+#                        logging.info('Visualizing image {} of {}'.format(i + 1, NUM_IMS))
+#                        logging.info('Depth: {}'.format(input_pose[i, 0]))
 #                        logging.info('Label: {}'.format(labels[i]))
 #                        plt.figure()
-#                        plt.subplot(121)
-#                        plt.imshow(orig_im[i, ..., 0], cmap=plt.cm.gray)
-#                        plt.subplot(122)
-#                        plt.imshow(sub_im_depth[i, ..., 1], cmap=plt.cm.gray)
+#                        plt.subplot(141)
+#                        plt.imshow(input_im[i, ..., 0], cmap=plt.cm.gray)
+#                        plt.subplot(142)
+#                        plt.imshow(orig_sub_im[i, ..., 0], cmap=plt.cm.gray)
+#                        plt.subplot(143)
+#                        plt.imshow(lambda_sub_im[i, ..., 0], cmap=plt.cm.gray)
+#                        plt.subplot(144)
+#                        plt.imshow(norm_sub_im[i, ..., 0], cmap=plt.cm.gray)
 #                        plt.show()
 
                 # log output
@@ -508,7 +517,7 @@ class GQCNNTrainerTF(object):
                     pose_filename = self.pose_filenames[k]
                     im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
                     pose_data_depth = np.load(os.path.join(self.data_dir, pose_filename))['arr_0'][:, 2:3]
-                    sub_data = im_data - np.tile(np.reshape(pose_data_depth, (-1, 1, 1, 1)), (1, im_data.shape[1], im_data.shape[2], 1))
+                    sub_data = (im_data - np.tile(np.reshape(pose_data_depth, (-1, 1, 1, 1)), (1, im_data.shape[1], im_data.shape[2], 1))) * self._sub_lambda
                     im_depth_mean += np.sum(sub_data[self.train_index_map[im_filename], ...])
                     num_summed += im_data[self.train_index_map[im_filename], ...].shape[0]
                 im_depth_mean = im_depth_mean / (num_summed * self.im_height * self.im_width)
@@ -518,7 +527,7 @@ class GQCNNTrainerTF(object):
                     pose_filename = self.pose_filenames[k]
                     im_data = np.load(os.path.join(self.data_dir, im_filename))['arr_0']
                     pose_data_depth = np.load(os.path.join(self.data_dir, pose_filename))['arr_0'][:, 2:3]
-                    sub_data = im_data - np.tile(np.reshape(pose_data_depth, (-1, 1, 1, 1)), (1, im_data.shape[1], im_data.shape[2], 1))
+                    sub_data = (im_data - np.tile(np.reshape(pose_data_depth, (-1, 1, 1, 1)), (1, im_data.shape[1], im_data.shape[2], 1))) * self._sub_lambda
                     im_depth_var += np.sum((sub_data[self.train_index_map[im_filename], ...] - im_depth_mean)**2)
                 im_depth_std = np.sqrt(im_depth_var / (num_summed * self.im_height * self.im_width))
 
@@ -713,7 +722,12 @@ class GQCNNTrainerTF(object):
 
         self._distort_rot_conv_feat = self.cfg['distort_rot_conv_feat']
 
-        self._norm_inputs = self.cfg['normalize_inputs']
+        self._norm_inputs = True
+        if 'normalize_inputs' in self.cfg.keys():
+            self._norm_inputs = self.cfg['normalize_inputs']
+        self._sub_lambda = 1.0
+        if 'sub_lambda' in self.cfg.keys():
+            self._sub_lambda = self.cfg['sub_lambda']
 
     def _read_data_params(self):
         """ Read data parameters from configuration file """
@@ -900,10 +914,10 @@ class GQCNNTrainerTF(object):
                 if self.input_gripper_mode == InputGripperMode.DEPTH_MASK:
                     train_gripper_depth_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_depth_mask_filenames_copy[file_num]))['arr_0'].astype(np.float32)
                     train_gripper_seg_mask_arr = np.load(os.path.join(self.data_dir, self.gripper_seg_mask_filenames_copy[file_num]))['arr_0'].astype(np.float32)
-                   
+                
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[train_data_filename]
-                np.random.shuffle(train_ind)
+#                np.random.shuffle(train_ind)
                 if self.input_pose_mode == InputPoseMode.TF_IMAGE_SUCTION:
                     tp_tmp = parse_pose_data(self.train_poses_arr.copy(), self.input_pose_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
@@ -963,6 +977,7 @@ class GQCNNTrainerTF(object):
                 if self._norm_inputs:
                     train_data_arr[:, :, :, 0] = (train_data_arr[:, :, :, 0] - self.im_mean) / self.im_std
                 angles = train_poses_arr[:, 3]
+                raw_angs = np.copy(angles)
                 if self._norm_inputs:
                     train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
 
@@ -979,10 +994,12 @@ class GQCNNTrainerTF(object):
                         train_label_arr = (train_label_arr - self.min_grasp_metric) / (self.max_grasp_metric - self.min_grasp_metric)
                 elif self.training_mode == TrainingMode.CLASSIFICATION:
                     # binary threshold labels
+                    metrics = np.copy(train_label_arr)
                     train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                     train_label_arr = train_label_arr.astype(self.numpy_dtype)
 #                    logging.info('Pct. Positive in Batch: {}'.format(float(np.where(train_label_arr == 1)[0].shape[0]) / self.train_batch_size))
                     if self.angular_bins > 0:
+                        bins = np.zeros_like(train_label_arr)
                         # form prediction mask to use when calculating loss
                         pi_2 = math.pi
                         pi_4 = math.pi / 2
@@ -998,6 +1015,7 @@ class GQCNNTrainerTF(object):
                         bin_width = pi_2 / self.angular_bins
                         train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self.angular_bins*2))
                         for i in range(angles.shape[0]):
+                            bins[i] = angles[i] // bin_width
                             train_pred_mask_arr[i, int((angles[i] // bin_width)*2)] = 1
                             train_pred_mask_arr[i, int((angles[i] // bin_width)*2 + 1)] = 1               
 
@@ -1012,6 +1030,17 @@ class GQCNNTrainerTF(object):
                     train_gripper[start_i:end_i] = parse_gripper_data(train_gripper_arr, self.input_gripper_mode)
                 if self.angular_bins > 0:
                     train_pred_mask[start_i:end_i] = train_pred_mask_arr
+
+#                center = Point(np.asarray([self.im_height / 2, self.im_width / 2]))
+#                depth = parse_pose_data(train_poses_arr, self.input_pose_mode)
+#                camera_intr = CameraIntrinsics.load('/nfs/diskstation/calib/phoxi/phoxi.intr').resize(1.0)
+#                vis.figure()
+#                for i in range(train_data_arr.shape[0]):
+#                    logging.info('Q: {}, Depth: {}, Bin: {}, Raw Ang: {}'.format(metrics[i], depth[i, 0], bins[i], raw_angs[i]))
+#                    vis.clf()
+#                    vis.imshow(DepthImage(train_data_arr[i, ...]))
+#                    vis.grasp(Grasp2D(center, raw_angs[i], depth[i, 0], width=0.05, camera_intr=camera_intr), scale=0.5, show_axis=True, color=plt.cm.RdYlGn(metrics[i]))
+#                    vis.show()
 
                 del train_data_arr
                 del train_poses_arr

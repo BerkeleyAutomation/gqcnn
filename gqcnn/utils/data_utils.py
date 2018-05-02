@@ -219,6 +219,10 @@ def denoise(im_arr, im_height, im_width, im_channels, denoising_params,
     im_arr = copy.deepcopy(im_arr)
     if pose_arr is not None:
         pose_arr = copy.deepcopy(pose_arr)
+    
+    # denoising_params dict is None because there are no denoising methods defined in config dict
+    if denoising_params is None:
+        return im_arr, pose_arr
 
     # apply denoising
     for method, params in denoising_params.iteritems():

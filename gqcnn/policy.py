@@ -24,7 +24,7 @@ from gqcnn.model import get_gqcnn_model
 from gqcnn import Visualizer as vis
 from gqcnn.utils.policy_exceptions import NoValidGraspsException
 
-from dexnet.visualization import DexNetVisualizer3D as vis3d
+# from dexnet.visualization import DexNetVisualizer3D as vis3d
 from dexnet.grasping import ParallelJawPtGrasp3D
 
 # declare any enums or constants
@@ -886,7 +886,9 @@ class FullyConvolutionalAngularPolicy(object):
             unique_im_map = np.zeros((self._num_depth_bins,), dtype=np.int32)
             preds = self._gqcnn.predict(images, depths, unique_im_map=unique_im_map)
         else:
+            pred_start_time = time()
             preds = self._gqcnn.predict(images, depths)
+            logging.info('Inference took {} seconds'.format(time() - pred_start_time))
         success_ind = np.arange(1, preds.shape[-1], 2)
 
         # if we want to visualize the top k, then extract those indices, else just get the top 1

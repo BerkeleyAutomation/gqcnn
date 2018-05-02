@@ -25,31 +25,34 @@ reload(logging)
 logging.getLogger().setLevel(logging.INFO)
 
 # config params
-DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/yumi/case_00/phoxi'
-NORMAL_MODEL_DIR =  '/home/vsatish/Data/dexnet/data/models/test_dump/model_ebhsmdqmjd'
+# DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/yumi/case_00/phoxi'
+DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_big_window_v3_full_ims_04_27_18/'
+# NORMAL_MODEL_DIR =  '/home/vsatish/Data/dexnet/data/models/test_dump/model_ebhsmdqmjd'
+NORMAL_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_zxwamgmwit/'
 # ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_tiqeyfvwox' # larger net
 # ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_mbzpcvqsip'
-# ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_nuqxvmxxuc'
-ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_fqkvfbmrlf/'
+ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_nuqxvmxxuc'
+# ANGULAR_MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_txqntmdxqg/'
 CAMERA_INTR_DIR =  '/nfs/diskstation/calib/phoxi/phoxi.intr'
-CAMERA_INTR_RESCALE_FACT = 0.25
+# CAMERA_INTR_RESCALE_FACT = 0.25
+CAMERA_INTR_RESCALE_FACT = 1.0
 GRIPPER_WIDTH = 0.05
-NUM_TEST_SAMPLES = 1
+NUM_TEST_SAMPLES = 10
 IM_FILE_TEMPLATE = 'depth_ims_tf_table'
 POSE_FILE_TEMPLATE = 'hand_poses'
-RESCALE_FACT = 0.25
-# RESCALE_FACT = 1.0
+# RESCALE_FACT = 0.25
+RESCALE_FACT = 1.0
 DEPTH_THRESH = 1.0
 NUM_CROPS = 107*75
-CROP_W = 46
+CROP_W = 48
 CROP_STRIDE = 2
-FULLY_CONV_CONFIG = {'im_width': 258, 'im_height': 193}
-# FULLY_CONV_CONFIG = {'im_width': 1032, 'im_height': 772}
+# FULLY_CONV_CONFIG = {'im_width': 258, 'im_height': 193}
+FULLY_CONV_CONFIG = {'im_width': 250, 'im_height': 250}
 VIS = 1
 VIS_POSE_LOC = (5, 5)
 FIG_SIZE = (15, 15)
 # INFERENCE_DEPTHS = np.asarray([[0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8], [0.8]])
-INFERENCE_DEPTHS = np.asarray([[0.87]])
+INFERENCE_DEPTHS = np.tile(np.asarray([[0.74]]), (NUM_TEST_SAMPLES, 1))
 # INFERENCE_DEPTHS = np.asarray([[0.8], [0.8]])
 DEPTH_PARSER = lambda p: p[2:3]
 DEPTH_PARSER_MULTI_DIM = lambda p: p[:, 2:3]
@@ -59,12 +62,13 @@ PI = math.pi
 PI_2 = math.pi / 2
 NUM_TEST_ITERATIONS = 2
 GPU_WARM_ITERATIONS = 2
-GRASP_SUCCESS_THRESH = 0.25
+#GRASP_SUCCESS_THRESH = 0.9999
+GRASP_SUCCESS_THRESH = 0.3
 USE_PRED_OPT = 0
 
-ROT_IMAGES = 1
+ROT_IMAGES = 0
 TEST_NORMAL_GQCNN = 0
-TEST_FULLY_CONV_GQCNN = 1
+TEST_FULLY_CONV_GQCNN = 0
 TEST_FULLY_CONV_ANG_GQCNN = 1
 
 NORMAL_TIMELINE_SAVE_DIR = '/home/vsatish/Data/dexnet/data/analyses/benchmarks/normal_gqcnn/timeline/'
@@ -79,22 +83,22 @@ test_start_time = time.time()
 logging.info('Reading all filenames')
 all_filenames = os.listdir(DATASET_DIR)
 im_filenames = [f for f in all_filenames if f.find(IM_FILE_TEMPLATE) > -1]
-pose_filenames = [f for f in all_filenames if f.find(POSE_FILE_TEMPLATE) > -1]
+#pose_filenames = [f for f in all_filenames if f.find(POSE_FILE_TEMPLATE) > -1]
 im_filenames.sort(key=lambda x: int(x[-9:-4]))
-pose_filenames.sort(key=lambda x: int(x[-9:-4]))
+#pose_filenames.sort(key=lambda x: int(x[-9:-4]))
  
 # sample NUM_TEST_SAMPLES images
 logging.info('Sampling test images')
 images = None
-poses = None
+#poses = None
 counter = 0
 while counter < NUM_TEST_SAMPLES:
 #    file_num = np.random.randint(len(im_filenames))
     file_num = 0
     im_data = np.load(os.path.join(DATASET_DIR, im_filenames[file_num]))['arr_0']
-    pose_data = np.load(os.path.join(DATASET_DIR, pose_filenames[file_num]))['arr_0']
-#    index = np.random.randint(im_data.shape[0])
-    index = 0    
+#    pose_data = np.load(os.path.join(DATASET_DIR, pose_filenames[file_num]))['arr_0']
+    index = np.random.randint(im_data.shape[0])
+#    index = 0    
 
     # threshold and re-scale the image
     im = im_data[index, ..., 0]
@@ -103,14 +107,17 @@ while counter < NUM_TEST_SAMPLES:
 
     if images is None:
         images = np.zeros((NUM_TEST_SAMPLES,) + im.shape + im_data.shape[3:])
-        poses = np.zeros((NUM_TEST_SAMPLES,) + pose_data.shape[1:])
+#        poses = np.zeros((NUM_TEST_SAMPLES,) + pose_data.shape[1:])
     images[counter, ..., 0] = im
-    poses[counter, ...] = pose_data[index]
+#    poses[counter, ...] = pose_data[index]
     counter += 1
 
 # make sure there are the same number of supplied INFERENCE DEPTHS as sampled IMAGES
 assert INFERENCE_DEPTHS.shape[0] == images.shape[0], 'Number of supplied inference depths must match number of test samples'
 
+#for i in range(images.shape[0]):
+#    im = images[i]
+#    INFERENCE_DEPTHS[i, 0] = (np.max(im) + np.min(im)) / 2
 
 ############################################# ROTATE IMAGES #############################################
 if ROT_IMAGES:
@@ -355,6 +362,7 @@ if VIS:
     # re-shape predictions into shape (NUM_TEST_SAMPLES, NUM_ANGULAR_BINS, OUT_W, OUT_H, 2)
     logging.info('Re-shaping predictions for visualization')
     NEW_SHAPE = (NUM_TEST_SAMPLES, NUM_ANGULAR_BINS, fully_conv_ang_pred.shape[1], fully_conv_ang_pred.shape[2], 2)
+#     NEW_SHAPE = (NUM_TEST_SAMPLES, NUM_ANGULAR_BINS, fully_conv_gqcnn_pred.shape[1], fully_conv_gqcnn_pred.shape[2], 2)
     if TEST_NORMAL_GQCNN:
         normal_gqcnn_pred_reshape = normal_gqcnn_pred.reshape(NEW_SHAPE)
     if TEST_FULLY_CONV_GQCNN:
