@@ -3,10 +3,10 @@ import logging
 
 import numpy as np
 
-DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/salt_cube_leg_no_rot_04_23_18/'
+DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_2_fc_no_rot_mini_random_depths_pos_04_29_18/'
 IMS_PER_FILE = 100
-METRIC_FILE_TEMPLATE = 'robust_wrench_resistance'
-METRIC_THRESH = 0.75
+METRIC_FILE_TEMPLATE = 'robust_ferrari_canny'
+METRIC_THRESH = 0.1
 
 # setup logger level
 logging.getLogger().setLevel(logging.INFO)
@@ -15,7 +15,7 @@ logging.getLogger().setLevel(logging.INFO)
 logging.info('Reading filenames...')
 all_filenames = os.listdir(DATASET_DIR)
 metric_filenames = [fname for fname in all_filenames if fname.find(METRIC_FILE_TEMPLATE) > -1]
-metric_filenames.sort(key=lambda x: int(x[-10:-4]))
+metric_filenames.sort(key=lambda x: int(x[-9:-4]))
 
 # calculate general dataset metrics useful in other calculation
 logging.info('Calculating general dataset metrics...')

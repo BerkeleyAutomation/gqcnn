@@ -10,12 +10,12 @@ import IPython
 
 import matplotlib.pyplot as plt
 
-from dexnet.learning import TensorDataset
+from autolab_core import TensorDataset
 from perception import DepthImage
 
-IM_DATASET_PATH = '/nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/salt_cube/images/'
-GRASP_DATASET_PATH = '/nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/salt_cube/grasps/'
-CROP_SIZE = 46
+IM_DATASET_PATH = '/nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/fizzytablets_benchmark_random/images/'
+GRASP_DATASET_PATH = '/nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/fizzytablets_benchmark_random/grasps/'
+CROP_SIZE = 96
 NUM_CHANNELS = 1
 IM_PER_FILE = 100
 POSE_DIM = 6
@@ -25,7 +25,7 @@ FNAME_PLACE = 6
 IM_FILE_TEMPLATE = 'depth_ims_tf_table'
 POSE_FILE_TEMPLATE = 'hand_poses'
 METRIC_FILE_TEMPLATE = 'robust_wrench_resistance'
-OUTPUT_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/salt_cube_leg_no_rot_04_23_18/'
+OUTPUT_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_benchmark_random_leg_no_rot_04_30_18/'
 ROTATE = 0
 NUM_RANDOM_DEPTHS = 0
 GRIPPER_DEPTH = 0.07
@@ -58,15 +58,15 @@ if __name__ == '__main__':
         im = DepthImage(datum['depth_ims'])
         grasp_start_ind = datum['grasp_start_ind']
         grasp_end_ind = datum['grasp_end_ind']
-        
+
         # iterate through the corresponding grasps
-        for i in range(grasp_start_ind, grasp_end_ind + 1):
+        for i in range(grasp_start_ind, grasp_end_ind):
             grasp = grasp_dataset[i]
             metric = grasp['grasp_metrics']
             pose = grasp['grasps']            
-
+            
             # align grasp
-            logging.info('Aligning grasp {} of {} for image {} of {}'.format(i - grasp_start_ind, grasp_end_ind - grasp_start_ind, im_idx, im_dataset.num_datapoints))
+            logging.info('Aligning grasp {} of {} for image {} of {}'.format(i + 1 - grasp_start_ind, grasp_end_ind - grasp_start_ind, im_idx + 1, im_dataset.num_datapoints))
             
             # rotate if training a normal GQCNN, else don't rotate for angular GQCNN
             if ROTATE:
