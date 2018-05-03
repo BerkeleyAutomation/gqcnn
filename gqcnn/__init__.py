@@ -30,6 +30,8 @@ from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGr
 from optimizer import GQCNNOptimizer
 from analyzer import GQCNNAnalyzer
 
+from utils import NoValidGraspsException
+
 __all__ = ['GQCNN', 
            'GQCNNOptimizer',
            'GQCNNAnalyzer',
