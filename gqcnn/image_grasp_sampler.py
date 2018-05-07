@@ -362,7 +362,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             Y = [pix[0] for pix in edge_pixels]
             U = [10*pix[1] for pix in edge_normals]
             V = [-10*pix[0] for pix in edge_normals]
-            plt.quiver(X, Y, U, V, units='x', scale=1, zorder=2, color='g')
+            plt.quiver(X, Y, U, V, units='x', scale=0.5, zorder=2, color='g')
             vis.title('Edge pixels and normals')
 
             vis.subplot(1,3,2)
