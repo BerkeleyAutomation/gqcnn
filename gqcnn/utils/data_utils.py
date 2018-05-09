@@ -21,9 +21,9 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
 Simple utility functions
-Author: Lucas Manuelli
+Authors: Jeff Mahler, Vishal Satish, Lucas Manuelli
 """
-
+import numpy as np
 import os
 
 from .enums import GripperMode
