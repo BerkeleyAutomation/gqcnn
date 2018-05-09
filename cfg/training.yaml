@@ -12,7 +12,7 @@ log_frequency: 1      # how often to log output (in steps)
 # train / val split params 
 train_pct: 0.8              # percentage of the data to use for training vs validation
 total_pct: 1.0              # percentage of all the files to use
-eval_total_train_error: 0   # whether or not to evaluate the total training error on each validataion
+eval_total_train_error: 0   # whether or not to evaluate the total training error on each validation
 max_files_eval: 1000        # the number of validation files to use in each eval
 
 # optimization params
@@ -20,10 +20,12 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_step_multiplier: 0.6   # proportion of training datapoints to see before stepping down learning rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
+drop_rate: 0.0
+max_global_grad_norm: 100000000000
 
 # fine-tuning params
 fine_tune: 0
@@ -58,16 +60,11 @@ gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
 
-drop_fc3: 0
-fc3_drop_rate: 0.5
-drop_fc4: 0
-fc4_drop_rate: 0.5
-
 # tensorboard
 tensorboard_port: 6006
 
 # debugging params
-debug: 1
+debug: 0
 debug_num_files: 1000000000
 seed: 24098
 
@@ -84,53 +81,65 @@ gqcnn:
   # prediction batch size, in training this will be overriden by the val_batch_size in the SGDOptimizer's config file
   batch_size: 16
 
+  # debugging params
+  debug: 0
+  seed: 24098
+
   # architecture
   architecture:
-    conv1_1:
-      filt_dim: 9
-      num_filt: 16
-      pool_size: 2
-      pool_stride: 2  
-      padding: VALID
-      norm: 0
-      norm_type: local_response
-    conv1_2:
-      filt_dim: 3
-      num_filt: 16
-      pool_size: 2
-      pool_stride: 2
-      padding: VALID
-      norm: 0
-      norm_type: local_response
-    conv2_1:
-      filt_dim: 3
-      num_filt: 16
-      pool_size: 1
-      pool_stride: 1
-      padding: VALID
-      norm: 0
-      norm_type: local_response
-    conv2_2:
-      filt_dim: 3
-      num_filt: 16
-      pool_size: 2
-      pool_stride: 2
-      padding: VALID
-      norm: 0
-      norm_type: local_response
-    pc1:
-      out_size: 4
-    pc2:
-      out_size: 0
-    fc3:
-      out_size: 64
-    fc4:
-      out_size: 64
-    fc5:
-      out_size: 2
+    im_stream:
+      conv1_1:
+        type: conv
+        filt_dim: 9
+        num_filt: 16
+        pool_size: 2
+        pool_stride: 2
+        norm: 0
+        pad: VALID
+      conv1_2:
+        type: conv
+        filt_dim: 3
+        num_filt: 16
+        pool_size: 2
+        pool_stride: 2
+        norm: 1
+        pad: VALID
+      conv2_1:
+        type: conv
+        filt_dim: 3
+        num_filt: 16
+        pool_size: 1
+        pool_stride: 1
+        norm: 0
+        pad: VALID
+      conv2_2:
+        type: conv
+        filt_dim: 3
+        num_filt: 16
+        pool_size: 1
+        pool_stride: 1
+        norm: 1
+        pad: VALID
+      fc3:
+        type: fc
+        out_size: 32
+    pose_stream:
+      pc1:
+        type: pc
+        out_size: 4
+    merge_stream:
+      fc4:
+        type: fc_merge
+        out_size: 32
+      fc5:
+        type: fc
+        out_size: 2
 
   # architecture normalization constants
   radius: 2
   alpha: 2.0e-05
   beta: 0.75
   bias: 1.0
+
+  # leaky relu coefficient
+  relu_coeff: 0.0

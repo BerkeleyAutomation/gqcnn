@@ -20,7 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Class for storing constants/enums for the DeepOptimizer
+Class for storing constants/enums for optimization
 Author: Vishal Satish
 """
 import tensorflow as tf
