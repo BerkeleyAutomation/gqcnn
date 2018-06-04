@@ -16,9 +16,9 @@ from sklearn.mixture import GaussianMixture
 
 import autolab_core.utils as utils
 from autolab_core import Point
-from perception import DepthImage
+from perception import DepthImage, RgbdImage, ColorImage
 
-from gqcnn import Grasp2D, ImageGraspSamplerFactory
+from gqcnn import Grasp2D, ImageGraspSamplerFactory, GraspQualityFunctionFactory
 from gqcnn.utils.enums import InputPoseMode
 from gqcnn.model import get_gqcnn_model
 from gqcnn import Visualizer as vis
@@ -46,11 +46,12 @@ class RgbdImageState(object):
     full_observed : :obj:`object`
         representation of the fully observed state
     """
-    def __init__(self, rgbd_im, camera_intr, segmask=None,
+    def __init__(self, rgbd_im, camera_intr, segmask=None, obj_segmask=None,
                  fully_observed=None):
         self.rgbd_im = rgbd_im
         self.camera_intr = camera_intr
         self.segmask = segmask
+        self.obj_segmask = obj_segmask
         self.fully_observed = fully_observed
 
 class ParallelJawGrasp(object):
@@ -95,25 +96,44 @@ class GraspingPolicy(Policy):
     """
     def __init__(self, config):
         # store parameters
-        self._config = config
-        self._gripper_width = config['gripper_width']
-        self._crop_height = config['crop_height']
-        self._crop_width = config['crop_width']
-        self._sampling_config = config['sampling']
-        self._gqcnn_model_dir = config['gqcnn_model']
-        self._gqcnn_backend = config['gqcnn_backend']
-        sampler_type = self._sampling_config['type']
+#        self._config = config
+#        self._gripper_width = config['gripper_width']
+#        self._crop_height = config['crop_height']
+#        self._crop_width = config['crop_width']
+#        self._sampling_config = config['sampling']
+#        self._gqcnn_model_dir = config['gqcnn_model']
+#        self._gqcnn_backend = config['gqcnn_backend']
+#        sampler_type = self._sampling_config['type']
         
         # init grasp sampler
-        self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
-                                                               self._sampling_config,
-                                                               self._gripper_width)
+#        self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
+#                                                               self._sampling_config,
+#                                                               self._gripper_width)
         
         # init GQ-CNN
-        self._gqcnn = get_gqcnn_model(self._gqcnn_backend).load(self._gqcnn_model_dir)
+#        self._gqcnn = get_gqcnn_model(self._gqcnn_backend).load(self._gqcnn_model_dir)
 
         # open tensorflow session for gqcnn
-        self._gqcnn.open_session()
+#        self._gqcnn.open_session()
+
+        # store parameters
+        self._config = config
+        self._gripper_width = np.inf
+        if 'gripper_width' in config.keys():
+            self._gripper_width = config['gripper_width']
+
+        # init grasp sampler
+        self._sampling_config = config['sampling']
+        self._sampling_config['gripper_width'] = self._gripper_width
+        sampler_type = self._sampling_config['type']
+        self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
+                                                               self._sampling_config)
+
+        # init grasp quality function
+        self._metric_config = config['metric']
+        metric_type = self._metric_config['type']
+        self._grasp_quality_fn = GraspQualityFunctionFactory.quality_function(metric_type,
+                                                                              self._metric_config)
 
     def __del__(self):
         try:
@@ -828,7 +848,7 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         # return action
         return ParallelJawGrasp(grasp, q_value, image)
 
-class FullyConvolutionalAngularPolicy(object):
+class FullyConvolutionalAngularPolicyTopK(object):
     ''' Grasp sampling policy using full-convolutional angular GQ-CNN network '''
     def __init__(self, cfg):
         # parse config
@@ -865,7 +885,7 @@ class FullyConvolutionalAngularPolicy(object):
     def action(self, state):
         return self._action(state)
 
-    def _action(self, state):
+    def _action(self, state, k=1):
         # extract raw depth data matrix
         rgbd_im = state.rgbd_im
         d_im = rgbd_im.depth
@@ -891,8 +911,8 @@ class FullyConvolutionalAngularPolicy(object):
             logging.info('Inference took {} seconds'.format(time() - pred_start_time))
         success_ind = np.arange(1, preds.shape[-1], 2)
 
-        # if we want to visualize the top k, then extract those indices, else just get the top 1
-        top_k = self._top_k_to_vis if self._vis_top_k else 1
+        # if we want to visualize the top k, then extract those indices, else just get the number specified by the policy
+        top_k = self._top_k_to_vis if self._vis_top_k else k
 
         # get indices of top k predictions
         preds_success_only = preds[:, :, :, success_ind]
@@ -907,11 +927,11 @@ class FullyConvolutionalAngularPolicy(object):
         im_width = preds_success_only.shape[2]
         im_height = preds_success_only.shape[1]
         num_angular_bins = preds_success_only.shape[3]
-        for k in range(top_k):
-            top_k_pred_ind[k, 0] = top_k_pred_ind_flat[k] // (im_width * im_height * num_angular_bins) 
-            top_k_pred_ind[k, 1] = (top_k_pred_ind_flat[k] - (top_k_pred_ind[k, 0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
-            top_k_pred_ind[k, 2] = (top_k_pred_ind_flat[k] - (top_k_pred_ind[k, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[k, 1] * (im_width * num_angular_bins))) // num_angular_bins
-            top_k_pred_ind[k, 3] = (top_k_pred_ind_flat[k] - (top_k_pred_ind[k, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[k, 1] * (im_width * num_angular_bins))) % num_angular_bins
+        for idx in range(top_k):
+            top_k_pred_ind[idx, 0] = top_k_pred_ind_flat[idx] // (im_width * im_height * num_angular_bins) 
+            top_k_pred_ind[idx, 1] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
+            top_k_pred_ind[idx, 2] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) // num_angular_bins
+            top_k_pred_ind[idx, 3] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) % num_angular_bins
 
 #        for i in range(self._num_depth_bins):
 #            h = top_k_pred_ind[i, 1]
@@ -950,9 +970,226 @@ class FullyConvolutionalAngularPolicy(object):
             logging.info('Generating 2D visualization...')
             vis.figure()
             vis.imshow(d_im)
+            im_tensor = np.zeros((50, 96, 96, 1))
+            pose_tensor = np.zeros((50, 6))
+            metric_tensor = np.zeros((50,))
             for i in range(top_k):
                 logging.info('Depth: {}'.format(grasps[i].grasp.depth))
                 vis.grasp(grasps[i].grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color=plt.cm.RdYlGn(grasps[i].q_value))
+                im_tensor[i] = d_im.align(1.0, [grasps[i].grasp.center.x, grasps[i].grasp.center.y], 0.0, 96, 96)._data
+                pose_tensor[i] = np.asarray([0, 0, grasps[i].grasp.depth, 0, 0, 0])
+                metric_tensor[i] = 0.0
             vis.show()
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/depth_ims_tf_table_00000', im_tensor)
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/hand_poses_00000', pose_tensor)
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/robust_wrench_resistance_00000', metric_tensor)
+        return grasps[-1] if k == 1 else grasps[-(k+1):]
 
-        return grasps[-1]
+    def action_set(self, state, num_actions):
+        return [pj_grasp.grasp for pj_grasp in self._action(state, k=num_actions)]
+
+class FullyConvolutionalAngularPolicyImportance(object):
+    ''' Grasp sampling policy using full-convolutional angular GQ-CNN network '''
+    def __init__(self, cfg):
+        # parse config
+        self._cfg = cfg
+        self._num_depth_bins = self._cfg['num_depth_bins']
+        self._width = self._cfg['width']
+
+        self._gqcnn_dir = self._cfg['gqcnn_model']
+        self._gqcnn_backend = self._cfg['gqcnn_backend']
+        self._gqcnn_stride = self._cfg['gqcnn_stride']
+        self._gqcnn_recep_h = self._cfg['gqcnn_recep_h']
+        self._gqcnn_recep_w = self._cfg['gqcnn_recep_w']
+        self._fully_conv_config = self._cfg['fully_conv_gqcnn_config']
+
+        self._vis_config = self._cfg['policy_vis']
+        self._top_k_to_vis = self._vis_config['top_k']
+        self._vis_top_k = self._vis_config['vis_top_k']
+        self._vis_3d = self._vis_config['vis_3d']
+               
+        # initialize gqcnn
+        self._gqcnn = get_gqcnn_model(backend=self._gqcnn_backend).load(self._gqcnn_dir, fully_conv_config=self._fully_conv_config)
+        self._gqcnn.open_session()
+
+    def __del__(self):
+        # close gqcnn session
+        try:
+            self._gqcnn.close_session()
+        except:
+            pass
+
+    def __call__(self, state):
+        return self._action(state)
+
+    def action(self, state):
+        return self._action(state)
+
+    def _action(self, state, k=1):
+        # extract raw depth data matrix
+        rgbd_im = state.rgbd_im
+        d_im = rgbd_im.depth
+        raw_d = d_im._data # TODO: Access this properly
+
+        # sample depths
+        max_d = np.max(raw_d)
+        min_d = np.min(raw_d)
+        depth_bin_width = (max_d - min_d) / self._num_depth_bins
+        depths = np.zeros((self._num_depth_bins, 1)) 
+        for i in range(self._num_depth_bins):
+            depths[i][0] = min_d + (i * depth_bin_width + depth_bin_width / 2)
+
+        # predict
+        images = np.tile(np.asarray([raw_d]), (self._num_depth_bins, 1, 1, 1))
+        use_opt = self._num_depth_bins > self._gqcnn.batch_size
+        if use_opt:
+            unique_im_map = np.zeros((self._num_depth_bins,), dtype=np.int32)
+            preds = self._gqcnn.predict(images, depths, unique_im_map=unique_im_map)
+        else:
+            pred_start_time = time()
+            preds = self._gqcnn.predict(images, depths)
+            logging.info('Inference took {} seconds'.format(time() - pred_start_time))
+        success_ind = np.arange(1, preds.shape[-1], 2)
+
+        # if we want to visualize the top k, then extract those indices, else just get the number specified by the policy
+        top_k = self._top_k_to_vis if self._vis_top_k else k
+
+        # get indices of top k predictions
+        preds_success_only = preds[:, :, :, success_ind]
+
+#        for i in range(self._num_depth_bins):
+#            logging.info('Max at slice {} is {}'.format(i, np.max(preds_success_only[i])))
+#            logging.info('Depth at slice {} is {}'.format(i, depths[i, 0]))
+
+        preds_success_only_flat = np.ravel(preds_success_only)
+        p_importance = preds_success_only_flat / np.sum(preds_success_only_flat)
+        x = np.random.multinomial(top_k, p_importance)
+        top_k_pred_ind_flat = np.where(x > 0)[0]
+        top_k_pred_ind = np.zeros((top_k, len(preds.shape)), dtype=np.int32)
+        im_width = preds_success_only.shape[2]
+        im_height = preds_success_only.shape[1]
+        num_angular_bins = preds_success_only.shape[3]
+        for idx in range(top_k):
+            top_k_pred_ind[idx, 0] = top_k_pred_ind_flat[idx] // (im_width * im_height * num_angular_bins) 
+            top_k_pred_ind[idx, 1] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
+            top_k_pred_ind[idx, 2] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) // num_angular_bins
+            top_k_pred_ind[idx, 3] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) % num_angular_bins
+
+#        for i in range(self._num_depth_bins):
+#            h = top_k_pred_ind[i, 1]
+#            w = top_k_pred_ind[i, 2]
+#            logging.info('Original depth at point ({}, {}) is {}'.format(w, h, images[i, h, w]))
+
+        # generate grasps
+        grasps = []
+        ang_bin_width = PI / preds_success_only.shape[-1]
+        for i in range(top_k):
+            im_idx = top_k_pred_ind[i, 0]
+            h_idx = top_k_pred_ind[i, 1]
+            w_idx = top_k_pred_ind[i, 2]
+            ang_idx = top_k_pred_ind[i, 3]
+            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
+            ang = PI / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
+            depth = depths[im_idx]
+            grasp = Grasp2D(center, ang, depth, width=self._width, camera_intr=state.camera_intr)
+            pj_grasp = ParallelJawGrasp(grasp, preds_success_only[im_idx, h_idx, w_idx, ang_idx], DepthImage(images[im_idx]))
+            grasps.append(pj_grasp)
+
+        if self._vis_top_k:
+            # visualize 3D
+            if self._vis_3d:
+                logging.info('Generating 3D Visualization...')
+                vis3d.figure()
+                for i in range(top_k):
+                    logging.info('Visualizing top k grasp {} of {}'.format(i, top_k))
+                    vis3d.clf()
+                    vis3d.points(state.camera_intr.deproject(d_im))
+                    logging.info('Depth: {}'.format(grasps[i].grasp.depth))
+                    vis3d.grasp(ParallelJawPtGrasp3D.grasp_from_pose(grasps[i].grasp.pose()), color=(1, 0, 0))
+                    vis3d.show()
+                
+            #visualize 2D
+            logging.info('Generating 2D visualization...')
+            vis.figure()
+            vis.imshow(d_im)
+            im_tensor = np.zeros((50, 96, 96, 1))
+            pose_tensor = np.zeros((50, 6))
+            metric_tensor = np.zeros((50,))
+            for i in range(top_k):
+                logging.info('Depth: {}'.format(grasps[i].grasp.depth))
+                vis.grasp(grasps[i].grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color=plt.cm.RdYlGn(grasps[i].q_value))
+                im_tensor[i] = d_im.align(1.0, [grasps[i].grasp.center.x, grasps[i].grasp.center.y], 0.0, 96, 96)._data
+                pose_tensor[i] = np.asarray([0, 0, grasps[i].grasp.depth, 0, 0, 0])
+                metric_tensor[i] = 0.0
+            vis.show()
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/depth_ims_tf_table_00000', im_tensor)
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/hand_poses_00000', pose_tensor)
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/robust_wrench_resistance_00000', metric_tensor)
+        return grasps[-1] if k == 1 else grasps[-(k+1):]
+
+    def action_set(self, state, num_actions):
+        return [pj_grasp.grasp for pj_grasp in self._action(state, k=num_actions)]
+
+class GraspAction(object):
+    """ Action to encapsulate parallel jaw grasps.
+    """
+    def __init__(self, grasp, q_value, image):
+        self.grasp = grasp
+        self.q_value = q_value
+        self.image = image
+
+    def save(self, save_dir):
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
+        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
+        image_filename = os.path.join(save_dir, 'tf_image.npy')
+        pkl.dump(self.grasp, open(grasp_filename, 'wb'))
+        pkl.dump(self.q_value, open(q_value_filename, 'wb'))
+        self.image.save(image_filename)
+
+class UniformRandomGraspingPolicy(GraspingPolicy):
+    """ Returns a grasp uniformly at random. """
+    def __init__(self, config):
+        GraspingPolicy.__init__(self, config)
+        self._num_grasp_samples = 1
+
+    def action(self, state):
+        """ Plans the grasp with the highest probability of success on
+        the given RGB-D image.
+
+        Attributes
+        ----------
+        state : :obj:`RgbdImageState`
+            image to plan grasps on
+
+        Returns
+        -------
+        :obj:`GraspAction`
+            grasp to execute
+        """
+        # check valid input
+        if not isinstance(state, RgbdImageState):
+            raise ValueError('Must provide an RGB-D image state.')
+
+        # parse state
+        rgbd_im = state.rgbd_im
+        camera_intr = state.camera_intr
+        segmask = state.segmask
+
+        # sample grasps
+        grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
+                                            self._num_grasp_samples,
+                                            segmask=segmask,
+                                            visualize=self.config['vis']['grasp_sampling'],
+                                            seed=None)
+        num_grasps = len(grasps)
+        if num_grasps == 0:
+            logging.warning('No valid grasps could be found')
+            raise NoValidGraspsException()
+
+        # set grasp
+        grasp = grasps[0]
+
+        # form tensors
+        return GraspAction(grasp, 0.0, state.rgbd_im.depth)
