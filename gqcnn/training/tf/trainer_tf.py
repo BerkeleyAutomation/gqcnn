@@ -382,6 +382,9 @@ class GQCNNTrainerTF(object):
             self.train_stats_logger.log()
             self.saver.save(self.sess, self.exp_path_gen('model.ckpt'))
 
+            # print out experiment dir for convenience
+            logging.info('Experiment Dir: {}'.format(self.experiment_dir))
+
         except Exception as e:
             self.term_event.set()
             if not self.forceful_exit:

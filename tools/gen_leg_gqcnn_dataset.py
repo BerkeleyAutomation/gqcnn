@@ -3,18 +3,17 @@ Script for converting a tensor dataset to a legacy GQCNN dataset.
 Author: Vishal Satish
 """
 import logging
-import numpy as np
 import os
 import time
-import IPython
+import shutil
+import argparse
 
+import numpy as np
 import matplotlib.pyplot as plt
 
 from autolab_core import TensorDataset
 from perception import DepthImage
 
-IM_DATASET_PATH = '/nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/fizzytablets_benchmark_random/images/'
-GRASP_DATASET_PATH = '/nfs/diskstation/projects/dex-net/parallel_jaws/datasets/dexnet_4/fizzytablets_benchmark_random/grasps/'
 CROP_SIZE = 96
 NUM_CHANNELS = 1
 IM_PER_FILE = 100
@@ -25,7 +24,6 @@ FNAME_PLACE = 6
 IM_FILE_TEMPLATE = 'depth_ims_tf_table'
 POSE_FILE_TEMPLATE = 'hand_poses'
 METRIC_FILE_TEMPLATE = 'robust_wrench_resistance'
-OUTPUT_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_benchmark_random_leg_no_rot_04_30_18/'
 ROTATE = 0
 NUM_RANDOM_DEPTHS = 0
 GRIPPER_DEPTH = 0.07
@@ -37,13 +35,30 @@ if __name__ == '__main__':
     # setup logger
     logging.getLogger().setLevel(logging.INFO)    
 
+    # parse args
+    parser = argparse.ArgumentParser(description='Convert a TensorDataset to the legacy GQCNN dataset format')
+    parser.add_argument('tensor_dataset_path', type=str, default=None, help='Path to the TensorDataset containing image and grasp datasets')
+    parser.add_argument('output_dir', type=str, default=None, help='Directory in which to store the converted dataset')
+    args = parser.parse_args()
+    im_dataset_path = os.path.join(args.tensor_dataset_path, 'images')
+    grasp_dataset_path = os.path.join(args.tensor_dataset_path, 'grasps')
+    output_dir = args.output_dir
+
     # get start time
     gen_start_time = time.time()
 
+    # create output dir if needed, else flush
+    if not os.path.exists(output_dir):
+        logging.info('Creating output directory')
+    else:
+        logging.info('Flushing output directory')
+        shutil.rmtree(output_dir)
+    os.mkdir(output_dir)
+
     # open datasets
     logging.info('Opening datasets')
-    im_dataset = TensorDataset.open(IM_DATASET_PATH)
-    grasp_dataset = TensorDataset.open(GRASP_DATASET_PATH)
+    im_dataset = TensorDataset.open(im_dataset_path)
+    grasp_dataset = TensorDataset.open(grasp_dataset_path)
     
     # generate buffers
     logging.info('Allocating buffers')
@@ -86,7 +101,10 @@ if __name__ == '__main__':
                 plt.subplot(122)
                 plt.imshow(tf_im.raw_data[..., 0], cmap=plt.cm.gray)
                 plt.show()
- 
+            
+            if DEBUG:
+                logging.info('Metric: {}, Pose: {}'.format(metric, pose))
+
             # generate random grasps depth-wise
             if NUM_RANDOM_DEPTHS > 0 and metric > METRIC_THRESH:
                 logging.info('Generating random grasps...')
@@ -122,9 +140,9 @@ if __name__ == '__main__':
                 im_fname = '{}_{}'.format(IM_FILE_TEMPLATE, str(out_file_idx).zfill(FNAME_PLACE))
                 pose_fname = '{}_{}'.format(POSE_FILE_TEMPLATE, str(out_file_idx).zfill(FNAME_PLACE))
                 metric_fname = '{}_{}'.format(METRIC_FILE_TEMPLATE, str(out_file_idx).zfill(FNAME_PLACE))
-                np.savez_compressed(os.path.join(OUTPUT_DIR, im_fname), im_buffer[:IM_PER_FILE])
-                np.savez_compressed(os.path.join(OUTPUT_DIR, pose_fname), pose_buffer[:IM_PER_FILE])
-                np.savez_compressed(os.path.join(OUTPUT_DIR, metric_fname), metric_buffer[:IM_PER_FILE])
+                np.savez_compressed(os.path.join(output_dir, im_fname), im_buffer[:IM_PER_FILE])
+                np.savez_compressed(os.path.join(output_dir, pose_fname), pose_buffer[:IM_PER_FILE])
+                np.savez_compressed(os.path.join(output_dir, metric_fname), metric_buffer[:IM_PER_FILE])
                 out_file_idx += 1
                 im_buffer[:buffer_ind % IM_PER_FILE] = im_buffer[IM_PER_FILE:buffer_ind]
                 pose_buffer[:buffer_ind % IM_PER_FILE] = pose_buffer[IM_PER_FILE:buffer_ind]
