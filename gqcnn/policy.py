@@ -1064,7 +1064,8 @@ class FullyConvolutionalAngularPolicyImportance(object):
         preds_success_only_flat = np.ravel(preds_success_only)
         p_importance = preds_success_only_flat / np.sum(preds_success_only_flat)
         x = np.random.multinomial(top_k, p_importance)
-        top_k_pred_ind_flat = np.where(x > 0)[0]
+        top_k_pred_ind_flat_rolled = np.where(x > 0)[0]
+        top_k_pred_ind_flat = np.repeat(top_k_pred_ind_flat_rolled, x[top_k_pred_ind_flat_rolled])
         top_k_pred_ind = np.zeros((top_k, len(preds.shape)), dtype=np.int32)
         im_width = preds_success_only.shape[2]
         im_height = preds_success_only.shape[1]
