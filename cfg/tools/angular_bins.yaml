@@ -1,7 +1,7 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_dexnet_only_v1_leg_no_rot_06_01_18/
-output_dir: /home/vsatish/Data/dexnet/data/models/test_dump/
+dataset_dir: /home/jmahler/Workspace/jeff_working/dex-net/experiments/fc_gqcnn/fizzytablets/train_replicate_dexnet_importance
+output_dir: /home/jmahler/Workspace/jeff_working/catkin_ws/src/gqcnn/models/fc_gqcnn/fizzytablets
 
 # general optimization parameters
 train_batch_size: 256
@@ -39,7 +39,7 @@ backend: 'gpu'
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
-tensorboard_bin_loc: /home/vsatish/Workspace/virtual_envs/dev/bin/
+tensorboard_bin_loc: /home/jmahler/Envs/dex-net/bin/
 tensorboard_port: 5997
 
 data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise

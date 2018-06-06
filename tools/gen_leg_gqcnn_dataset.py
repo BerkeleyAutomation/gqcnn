@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 from autolab_core import TensorDataset
 from perception import DepthImage
+from visualization import Visualizer2D as vis2d
 
 CROP_SIZE = 96
 NUM_CHANNELS = 1
