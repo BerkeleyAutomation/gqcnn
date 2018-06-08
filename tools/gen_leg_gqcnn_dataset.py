@@ -149,4 +149,14 @@ if __name__ == '__main__':
                 pose_buffer[:buffer_ind % IM_PER_FILE] = pose_buffer[IM_PER_FILE:buffer_ind]
                 metric_buffer[:buffer_ind % IM_PER_FILE] = metric_buffer[IM_PER_FILE:buffer_ind]
                 buffer_ind = buffer_ind % IM_PER_FILE
+
+    # write out once at the end
+    logging.info('Saving {} datapoints'.format(buffer_ind))
+    im_fname = '{}_{}'.format(IM_FILE_TEMPLATE, str(out_file_idx).zfill(FNAME_PLACE))
+    pose_fname = '{}_{}'.format(POSE_FILE_TEMPLATE, str(out_file_idx).zfill(FNAME_PLACE))
+    metric_fname = '{}_{}'.format(METRIC_FILE_TEMPLATE, str(out_file_idx).zfill(FNAME_PLACE))
+    np.savez_compressed(os.path.join(output_dir, im_fname), im_buffer[:buffer_ind])
+    np.savez_compressed(os.path.join(output_dir, pose_fname), pose_buffer[:buffer_ind])
+    np.savez_compressed(os.path.join(output_dir, metric_fname), metric_buffer[:buffer_ind])
+ 
     logging.info('Dataset generation took {} seconds'.format(time.time() - gen_start_time))
