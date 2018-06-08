@@ -77,6 +77,7 @@ class Policy(object):
 
 class GraspingPolicy(Policy):
     """ Policy for robust grasping with Grasp Quality Convolutional Neural Networks (GQ-CNN).
+
     Attributes
     ----------
     config : dict
@@ -95,16 +96,32 @@ class GraspingPolicy(Policy):
     """
     def __init__(self, config):
         # store parameters
+#        self._config = config
+#        self._gripper_width = config['gripper_width']
+#        self._crop_height = config['crop_height']
+#        self._crop_width = config['crop_width']
+#        self._sampling_config = config['sampling']
+#        self._gqcnn_model_dir = config['gqcnn_model']
+#        self._gqcnn_backend = config['gqcnn_backend']
+#        sampler_type = self._sampling_config['type']
+        
+        # init grasp sampler
+#        self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
+#                                                               self._sampling_config,
+#                                                               self._gripper_width)
+        
+        # init GQ-CNN
+#        self._gqcnn = get_gqcnn_model(self._gqcnn_backend).load(self._gqcnn_model_dir)
+
+        # open tensorflow session for gqcnn
+#        self._gqcnn.open_session()
+
+        # store parameters
         self._config = config
         self._gripper_width = np.inf
         if 'gripper_width' in config.keys():
             self._gripper_width = config['gripper_width']
 
-        # set the logging dir
-        self._logging_dir = None
-        if 'logging_dir' in self.config.keys():
-            self._logging_dir = self.config['logging_dir']
-            
         # init grasp sampler
         self._sampling_config = config['sampling']
         self._sampling_config['gripper_width'] = self._gripper_width
@@ -118,6 +135,13 @@ class GraspingPolicy(Policy):
         self._grasp_quality_fn = GraspQualityFunctionFactory.quality_function(metric_type,
                                                                               self._metric_config)
 
+    def __del__(self):
+        try:
+            self._gqcnn.close_session()
+        except:
+            pass
+        del self
+
     @property
     def config(self):
         """ Returns the policy parameters. """
@@ -129,52 +153,62 @@ class GraspingPolicy(Policy):
         return self._grasp_sampler
 
     @property
-    def grasp_quality_fn(self):
-        """ Returns the grasp sampler. """
-        return self._grasp_quality_fn
-
-    @property
     def gqcnn(self):
         """ Returns the GQ-CNN. """
         return self._gqcnn
 
-    def action(self, state):
-        """ Returns an action for a given state.
-        Public handle to function.
-        """
-        # save state
-        if self._logging_dir is not None:
-            policy_id = utils.gen_experiment_id()
-            self._policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
-            while os.path.exists(self._policy_dir):
-                policy_id = utils.gen_experiment_id()
-            self._policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
-            os.mkdir(self._policy_dir)
-            state_dir = os.path.join(self._policy_dir, 'state')
-            state.save(state_dir)
-
-        # plan action
-        action = self._action(state)
-
-        # save action
-        if self._logging_dir is not None:
-            action_dir = os.path.join(self._policy_dir, 'action')
-            action.save(action_dir)
-        return action
-        
     @abstractmethod
-    def _action(self, state):
+    def action(self, state):
         """ Returns an action for a given state.
         """
         pass
-    
-    def show(self, filename=None, dpi=100):
-        """ Show a figure. """
-        if self._logging_dir is None:
-            vis.show()
-        else:
-            filename = os.path.join(self._policy_dir, filename)
-            vis.savefig(filename, dpi=dpi)
+
+    def grasps_to_tensors(self, grasps, state):
+        """ Converts a list of grasps to an image and pose tensor.
+
+        Attributes
+        ----------
+        grasps : :obj:`list` of :obj:`Grasp2D`
+            list of image grassps to convert
+        state : :obj:`RgbdImageState`
+            RGB-D image to plan grasps on
+
+        Returns
+        -------
+        image_arr : :obj:`numpy.ndarray`
+            4D Tensor of image to be predicted
+        pose_arr : :obj:`numpy.ndarray`
+            2D Tensor of depth values
+        """
+        # parse params
+        gqcnn_im_height = self.gqcnn.im_height
+        gqcnn_im_width = self.gqcnn.im_width
+        gqcnn_num_channels = self.gqcnn.num_channels
+        gqcnn_pose_dim = self.gqcnn.pose_dim
+        input_data_mode = self.gqcnn.input_data_mode
+        num_grasps = len(grasps)
+        depth_im = state.rgbd_im.depth
+
+        # allocate tensors
+        tensor_start = time()
+        image_tensor = np.zeros([num_grasps, gqcnn_im_height, gqcnn_im_width, gqcnn_num_channels])
+        pose_tensor = np.zeros([num_grasps, gqcnn_pose_dim])
+        for i, grasp in enumerate(grasps):
+            translation = np.array([depth_im.center[0] - grasp.center.data[1],
+                                    depth_im.center[1] - grasp.center.data[0]])
+            im_tf = depth_im.transform(translation, grasp.angle)
+            im_tf = im_tf.crop(self._crop_height, self._crop_width)
+            im_tf = im_tf.resize((gqcnn_im_height, gqcnn_im_width))
+            image_tensor[i,...] = im_tf.raw_data
+            
+            if input_data_mode == InputPoseMode.TF_IMAGE:
+                pose_tensor[i] = grasp.depth
+            elif input_data_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
+                pose_tensor[i,...] = np.array([grasp.depth, grasp.center.x, grasp.center.y])
+            else:
+                raise ValueError('Input data mode %s not supported' %(input_data_mode))
+        logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
+        return image_tensor, pose_tensor
 
 class AntipodalGraspingPolicy(GraspingPolicy):
     """ Samples a set of antipodal grasp candidates in image space,
@@ -1165,6 +1199,9 @@ class FullyConvolutionalAngularPolicyUniform(object):
         self._fully_conv_config = self._cfg['fully_conv_gqcnn_config']
 
         self._vis_config = self._cfg['policy_vis']
+        self._vis_depth_im = False
+        if 'vis_depth_im' in self._vis_config.keys():
+            self._vis_depth_im = self._vis_config['vis_depth_im']
         self._top_k_to_vis = self._vis_config['top_k']
         self._vis_top_k = self._vis_config['vis_top_k']
         self._vis_3d = self._vis_config['vis_3d']
@@ -1193,6 +1230,12 @@ class FullyConvolutionalAngularPolicyUniform(object):
         d_im = rgbd_im.depth
         raw_d = d_im._data # TODO: Access this properly
 
+        # visualize depth image
+        if self._vis_depth_im:
+            vis.figure()
+            vis.imshow(d_im)
+            vis.show()
+
 #        if self._use_segmask:
 #            segmask = state.segmask
 #            raw_segmask = segmask.raw_data
@@ -1217,7 +1260,9 @@ class FullyConvolutionalAngularPolicyUniform(object):
          
         # sample depths
         max_d = np.max(raw_d)
-        min_d = np.min(raw_d)
+        raw_d_seg_min = np.ones_like(raw_d)
+        raw_d_seg_min[np.where(state.segmask.raw_data > 0)] = raw_d[np.where(state.segmask.raw_data > 0)] # remove the bin from the depth image
+        min_d = np.min(raw_d_seg_min)
         depth_bin_width = (max_d - min_d) / self._num_depth_bins
         depths = np.zeros((self._num_depth_bins, 1)) 
         for i in range(self._num_depth_bins):
