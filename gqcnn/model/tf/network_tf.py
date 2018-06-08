@@ -1019,8 +1019,8 @@ class GQCNNTF(object):
                 out_height = input_height / pool_stride_h
                 out_width = input_width / pool_stride_w
             else:
-                out_height = (((input_height - filter_h) / 1) + 1) / pool_stride_h
-                out_width = (((input_width - filter_w) / 1) +1) / pool_stride_w
+                out_height = math.ceil((((input_height - filter_h) / 1) + 1) / float(pool_stride_h))
+                out_width = math.ceil((((input_width - filter_w) / 1) +1) / float(pool_stride_w))
             out_channels = num_filt
 
             # build layer
@@ -1072,7 +1072,7 @@ class GQCNNTF(object):
                 logging.info('Building placeholder for final conv layer')
                 self._final_conv_placeholder = tf.placeholder_with_default(pool, pool.get_shape())
                 pool = self._final_conv_placeholder
-
+            
             return pool, out_height, out_width, out_channels
 
     def _pack(self, dim_h, dim_w, data, vector=False):
