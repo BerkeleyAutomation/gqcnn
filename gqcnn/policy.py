@@ -1311,7 +1311,7 @@ class FullyConvolutionalAngularPolicyUniform(object):
             preds_success_only = preds_success_only_new       
 
         preds_success_only_flat = np.ravel(preds_success_only)
-        top_k_pred_ind_flat = np.random.choice(np.where(preds_success_only_flat > 0)[0], size=top_k)
+        top_k_pred_ind_flat = np.random.choice(np.where(preds_success_only_flat >= 0)[0], size=top_k)
         top_k_pred_ind = np.zeros((top_k, len(preds.shape)), dtype=np.int32)
         im_width = preds_success_only.shape[2]
         im_height = preds_success_only.shape[1]
