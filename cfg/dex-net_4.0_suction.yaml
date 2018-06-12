@@ -41,7 +41,7 @@ pose_field_name: grasps
 
 # label params
 target_metric_name: grasp_metrics  # name of the field to use for the labels
-metric_thresh: 0.75                 # threshold for positive examples (label = 1 if grasp_metric > metric_thresh)
+metric_thresh: 0.5                 # threshold for positive examples (label = 1 if grasp_metric > metric_thresh)
 
 # preproc params
 num_random_files: 1000     # the number of random files to compute dataset statistics in preprocessing (lower speeds initialization)
