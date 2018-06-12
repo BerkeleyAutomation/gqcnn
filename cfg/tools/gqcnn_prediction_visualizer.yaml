@@ -1,5 +1,5 @@
 # dataset params
-dataset_dir: /home/autolab/Public/data/dex-net/data/grasp_quality_regression/3dnet_kit_04_09_17_minimal 
+dataset_dir: /path/to/dataset/gqcnn/model/was/trained/on/
 
 image_mode: depth_tf_table
 data_format: tf_image
@@ -8,7 +8,7 @@ metric_thresh: 0.002
 gripper_width_m: .05
 
 # gqcnn params
-model_dir: /home/autolab/Public/data/dex-net/data/models/grasp_quality/gqcnn_dexnet_large
+model_dir: /path/to/gqcnn/model/
 
 # vis params
 datapoint_type: false_positive # which datapoints to visualize, possible values are true positive, false positive, true negative, false negative
