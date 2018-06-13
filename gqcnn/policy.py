@@ -961,7 +961,7 @@ class FullyConvolutionalAngularPolicyTopK(object):
         im_width = preds_success_only.shape[2]
         im_height = preds_success_only.shape[1]
         num_angular_bins = preds_success_only.shape[3]
-        if k == 1:
+        if top_k == 1:
             preds_success_only_flat = np.ravel(preds_success_only)
             best_ind = np.argmax(preds_success_only_flat)
             top_k_pred_ind = np.zeros((1, len(preds.shape)), dtype=np.int32)
