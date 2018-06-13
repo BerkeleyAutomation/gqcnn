@@ -891,17 +891,31 @@ class FullyConvolutionalAngularPolicyTopK(object):
         # extract raw depth data matrix
         rgbd_im = state.rgbd_im
         d_im = rgbd_im.depth
-        raw_d = d_im._data # TODO: Access this properly
 
         policy_start_time = time()
-        
+
+        """
+        nonzero_px = state.segmask.nonzero_pixels()
+        min_u = np.min(nonzero_px, axis=0)
+        max_u = np.max(nonzero_px, axis=0)
+        dims = max_u - min_u
+        dims = dims + np.array([self._gqcnn_recep_h, self._gqcnn_recep_w])
+        center_u = 0.5 * (min_u + max_u)
+        d = d_im.crop(dims[0], dims[1], center_i=center_u[0], center_j=center_u[1])
+        cropped_camera_intr = state.camera_intr.crop(dims[0], dims[1], center_u[0], center_u[1])
+        raw_d = d._data # TODO: Access this properly
+        """
+        raw_d = d_im._data
+
         # sample depths
+        depth_start = time()
         max_d = np.max(raw_d)
         min_d = np.min(raw_d)
         depth_bin_width = (max_d - min_d) / self._num_depth_bins
         depths = np.zeros((self._num_depth_bins, 1)) 
         for i in range(self._num_depth_bins):
             depths[i][0] = min_d + (i * depth_bin_width + depth_bin_width / 2)
+        logging.info('Depth took {} seconds'.format(time() - depth_start))
 
         # predict
         images = np.tile(np.asarray([raw_d]), (self._num_depth_bins, 1, 1, 1))
@@ -919,14 +933,18 @@ class FullyConvolutionalAngularPolicyTopK(object):
         top_k = self._top_k_to_vis if self._vis_top_k else k
 
         # get indices of top k predictions
-        preds_success_only = preds[:, :, :, success_ind]
-
+        slice_start = time()
+        preds_success_only = preds[:, :, :, 1::2]
+        logging.info('Slicing took {} seconds'.format(time() - slice_start))
+        
 #        for i in range(self._num_depth_bins):
 #            logging.info('Max at slice {} is {}'.format(i, np.max(preds_success_only[i])))
 #            logging.info('Depth at slice {} is {}'.format(i, depths[i, 0]))
 
         if self._use_segmask:
+            segmask_start = time()
             raw_segmask = state.segmask.raw_data
+            #raw_segmask = raw_segmask.crop(dims[0], dims[1], center_i=center_u[0], center_j=center_u[1])
             preds_success_only_new = np.zeros_like(preds_success_only)
             raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h / 2:raw_segmask.shape[0] - self._gqcnn_recep_h / 2, self._gqcnn_recep_w / 2:raw_segmask.shape[1] - self._gqcnn_recep_w / 2, 0]
             raw_segmask_downsamp = raw_segmask_cropped[::self._gqcnn_stride, ::self._gqcnn_stride]
@@ -937,18 +955,30 @@ class FullyConvolutionalAngularPolicyTopK(object):
             nonzero_mask_ind = np.where(raw_segmask_downsamp > 0)
             preds_success_only_new[:, nonzero_mask_ind[0], nonzero_mask_ind[1]] = preds_success_only[:, nonzero_mask_ind[0], nonzero_mask_ind[1]]
             preds_success_only = preds_success_only_new       
+            logging.info('Segmask took {} seconds'.format(time() - segmask_start))
 
-        preds_success_only_flat = np.ravel(preds_success_only)
-        top_k_pred_ind_flat = np.argpartition(preds_success_only_flat, -1 * top_k)[-1 * top_k:]
-        top_k_pred_ind = np.zeros((top_k, len(preds.shape)), dtype=np.int32)
+        sort_start = time()
         im_width = preds_success_only.shape[2]
         im_height = preds_success_only.shape[1]
         num_angular_bins = preds_success_only.shape[3]
-        for idx in range(top_k):
-            top_k_pred_ind[idx, 0] = top_k_pred_ind_flat[idx] // (im_width * im_height * num_angular_bins) 
-            top_k_pred_ind[idx, 1] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
-            top_k_pred_ind[idx, 2] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) // num_angular_bins
-            top_k_pred_ind[idx, 3] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) % num_angular_bins
+        if k == 1:
+            preds_success_only_flat = np.ravel(preds_success_only)
+            best_ind = np.argmax(preds_success_only_flat)
+            top_k_pred_ind = np.zeros((1, len(preds.shape)), dtype=np.int32)
+            top_k_pred_ind[0,0] = best_ind // (im_width * im_height * num_angular_bins) 
+            top_k_pred_ind[0,1] = (best_ind - (top_k_pred_ind[0,0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
+            top_k_pred_ind[0,2] = (best_ind - (top_k_pred_ind[0,0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[0,1] * (im_width * num_angular_bins))) // num_angular_bins
+            top_k_pred_ind[0,3] = (best_ind - (top_k_pred_ind[0,0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[0,1] * (im_width * num_angular_bins))) % num_angular_bins
+        else:
+            preds_success_only_flat = np.ravel(preds_success_only)
+            top_k_pred_ind_flat = np.argpartition(preds_success_only_flat, -1 * top_k)[-1 * top_k:]
+            top_k_pred_ind = np.zeros((top_k, len(preds.shape)), dtype=np.int32)
+            for idx in range(top_k):
+                top_k_pred_ind[idx, 0] = top_k_pred_ind_flat[idx] // (im_width * im_height * num_angular_bins) 
+                top_k_pred_ind[idx, 1] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
+                top_k_pred_ind[idx, 2] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) // num_angular_bins
+                top_k_pred_ind[idx, 3] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) % num_angular_bins
+        logging.info('Sort took {} seconds'.format(time() - sort_start))
 
 #        for i in range(self._num_depth_bins):
 #            h = top_k_pred_ind[i, 1]
@@ -956,6 +986,7 @@ class FullyConvolutionalAngularPolicyTopK(object):
 #            logging.info('Original depth at point ({}, {}) is {}'.format(w, h, images[i, h, w]))
 
         # generate grasps
+        grasps_start = time()
         grasps = []
         ang_bin_width = PI / preds_success_only.shape[-1]
         for i in range(top_k):
@@ -966,10 +997,12 @@ class FullyConvolutionalAngularPolicyTopK(object):
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
             ang = PI / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
             depth = depths[im_idx]
+            #grasp = Grasp2D(center, ang, depth, width=self._width, camera_intr=cropped_camera_intr)
             grasp = Grasp2D(center, ang, depth, width=self._width, camera_intr=state.camera_intr)
             pj_grasp = ParallelJawGrasp(grasp, preds_success_only[im_idx, h_idx, w_idx, ang_idx], DepthImage(images[im_idx]))
             grasps.append(pj_grasp)
 
+        logging.info('Grasps took {} seconds'.format(time() - grasps_start))
         logging.info('Policy took {} seconds'.format(time() - policy_start_time))            
             
         if self._vis_top_k:
