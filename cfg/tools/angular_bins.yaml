@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/data/diskstation/datasets/corl2018/mini_dexnet/legacy
+dataset_dir: /mnt/data/diskstation/datasets/corl2018/mini_dexnet_large/legacy
 output_dir: /mnt/data/diskstation/models/corl2018
 
 # general optimization parameters
@@ -166,7 +166,7 @@ gqcnn_config:
       conv1_1:
         type: conv
         filt_dim: 9
-        num_filt: 16
+        num_filt: 8
         pool_size: 2
         pool_stride: 2  
         norm: 0
@@ -178,7 +178,7 @@ gqcnn_config:
       conv1_2:
         type: conv
         filt_dim: 3
-        num_filt: 16
+        num_filt: 9
         pool_size: 2
         pool_stride: 2
         norm: 1
@@ -186,7 +186,7 @@ gqcnn_config:
       conv2_1:
         type: conv
         filt_dim: 3
-        num_filt: 16
+        num_filt: 8
         pool_size: 1
         pool_stride: 1  
         norm: 0
@@ -198,9 +198,9 @@ gqcnn_config:
       conv2_2:
         type: conv
         filt_dim: 3
-        num_filt: 16
-        pool_size: 2
-        pool_stride: 2
+        num_filt: 8
+        pool_size: 1
+        pool_stride: 1
         norm: 1
         pad: VALID
 #      res1_1:
@@ -228,7 +228,7 @@ gqcnn_config:
 #        filt_dim: 3
       fc3:
         type: fc
-        out_size: 64
+        out_size: 32
 #      fc4:
 #        type: fc
 #        out_size: 1024
@@ -253,7 +253,7 @@ gqcnn_config:
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 64
+        out_size: 32
       fc5: 
         type: fc
         final_layer: True
