@@ -3,7 +3,7 @@ train_batch_size: 64
 val_batch_size: 16
 
 # logging params
-num_epochs: 100        # number of epochs to train for
+num_epochs: 50        # number of epochs to train for
 eval_frequency: 10    # how often to get validation error (in epochs)
 save_frequency: 10    # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
@@ -88,7 +88,7 @@ gqcnn:
   architecture:
     conv1_1:
       filt_dim: 9
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2  
       padding: VALID
@@ -96,7 +96,7 @@ gqcnn:
       norm_type: local_response
     conv1_2:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
       padding: VALID
@@ -104,7 +104,7 @@ gqcnn:
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 1
       pool_stride: 1
       padding: VALID
@@ -112,7 +112,7 @@ gqcnn:
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
       padding: VALID
@@ -123,9 +123,9 @@ gqcnn:
     pc2:
       out_size: 0
     fc3:
-      out_size: 64
+      out_size: 32
     fc4:
-      out_size: 64
+      out_size: 32
     fc5:
       out_size: 2
 
