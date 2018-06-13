@@ -1,15 +1,15 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/data/diskstation/datasets/corl2018/mini_dexnet_large/legacy
+dataset_dir: /mnt/data/diskstation/datasets/corl2018/mini_dexnet/legacy
 output_dir: /mnt/data/diskstation/models/corl2018
 
 # general optimization parameters
 train_batch_size: 256
 val_batch_size: 256
 num_epochs: 100        # number of epochs to train for
-eval_frequency: 1000  # how often to get validation error in steps, -1 defaults to every epoch 
+eval_frequency: 25000  # how often to get validation error in steps, -1 defaults to every epoch 
 save_frequency: 10000 # how often to save output in steps, -1 defaults to every epoch
-vis_frequency: 1000
+vis_frequency: 25000
 log_frequency: 1     # how often to log output
 show_filters: 0
 visualize_border_distortion: 0
@@ -178,7 +178,7 @@ gqcnn_config:
       conv1_2:
         type: conv
         filt_dim: 3
-        num_filt: 9
+        num_filt: 8
         pool_size: 2
         pool_stride: 2
         norm: 1
