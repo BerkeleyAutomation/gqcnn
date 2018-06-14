@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /mnt/data/diskstation/datasets/corl2018/mini_kit/legacy
+dataset_dir: /mnt/data/diskstation/datasets/corl2018/mini_kit_random_v2/legacy
 output_dir: /mnt/data/diskstation/models/corl2018
 
 # general optimization parameters

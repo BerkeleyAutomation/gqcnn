@@ -39,11 +39,10 @@ if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Convert a TensorDataset to the legacy GQCNN dataset format')
     parser.add_argument('tensor_dataset_path', type=str, default=None, help='Path to the TensorDataset containing image and grasp datasets')
-    parser.add_argument('output_dir', type=str, default=None, help='Directory in which to store the converted dataset')
     args = parser.parse_args()
     im_dataset_path = os.path.join(args.tensor_dataset_path, 'images')
     grasp_dataset_path = os.path.join(args.tensor_dataset_path, 'grasps')
-    output_dir = args.output_dir
+    output_dir = os.path.join(args.tensor_dataset_path, 'legacy')
 
     # get start time
     gen_start_time = time.time()
