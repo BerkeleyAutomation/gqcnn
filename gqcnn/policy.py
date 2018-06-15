@@ -1592,7 +1592,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             i += 1
         raise NoValidGraspsException('No grasps satisfied filters')
 
-    def _action(self, state):
+    def action(self, state):
         """ Plans the grasp with the highest probability of success on
         the given RGB-D image.
 
