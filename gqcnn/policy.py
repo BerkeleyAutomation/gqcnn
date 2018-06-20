@@ -27,6 +27,7 @@ from gqcnn.utils.policy_exceptions import NoValidGraspsException
 
 # from dexnet.visualization import DexNetVisualizer3D as vis3d
 from dexnet.grasping import ParallelJawPtGrasp3D
+from dexnet.visualization import DexNetVisualizer3D as vis3d
 
 # declare any enums or constants
 PI = math.pi
@@ -1105,6 +1106,8 @@ class FullyConvolutionalAngularPolicyTopK(object):
         raw_d = d_im._data # TODO: Access this properly
 #        logging.info('Extraction took {} seconds'.format(time() - st))
 
+        policy_start_time = time()
+        
         # sample depths
         st = time()
         max_d = np.max(raw_d)
@@ -1190,26 +1193,28 @@ class FullyConvolutionalAngularPolicyTopK(object):
             grasps.append(pj_grasp)
 #        logging.info('Generating grasps took {} seconds'.format(time() - st))
 
+        logging.info('Policy took {} seconds'.format(time() - policy_start_time))            
+            
         if self._vis_top_k:
             # visualize 3D
             if self._vis_3d:
                 logging.info('Generating 3D Visualization...')
                 vis3d.figure()
+                vis3d.points(state.camera_intr.deproject(d_im),
+                             scale=0.001)
                 for i in range(top_k):
                     logging.info('Visualizing top k grasp {} of {}'.format(i, top_k))
-                    vis3d.clf()
-                    vis3d.points(state.camera_intr.deproject(d_im))
                     logging.info('Depth: {}'.format(grasps[i].grasp.depth))
                     vis3d.grasp(ParallelJawPtGrasp3D.grasp_from_pose(grasps[i].grasp.pose()), color=(1, 0, 0))
-                    vis3d.show()
+                vis3d.show()
                 
             #visualize 2D
             logging.info('Generating 2D visualization...')
             vis.figure()
             vis.imshow(d_im)
-            im_tensor = np.zeros((50, 96, 96, 1))
-            pose_tensor = np.zeros((50, 6))
-            metric_tensor = np.zeros((50,))
+            im_tensor = np.zeros((top_k, 96, 96, 1))
+            pose_tensor = np.zeros((top_k, 6))
+            metric_tensor = np.zeros((top_k,))
             for i in range(top_k):
                 logging.info('Depth: {}'.format(grasps[i].grasp.depth))
                 vis.grasp(grasps[i].grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color=plt.cm.RdYlGn(grasps[i].q_value))
@@ -1217,9 +1222,11 @@ class FullyConvolutionalAngularPolicyTopK(object):
                 pose_tensor[i] = np.asarray([0, 0, grasps[i].grasp.depth, 0, 0, 0])
                 metric_tensor[i] = 0.0
             vis.show()
+            """
             np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/depth_ims_tf_table_00000', im_tensor)
             np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/hand_poses_00000', pose_tensor)
             np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/robust_wrench_resistance_00000', metric_tensor)
+            """
         return grasps[-1] if k == 1 else grasps[-(k+1):]
 
     def action_set(self, state, num_actions):
@@ -1535,7 +1542,10 @@ class FullyConvolutionalAngularPolicyUniform(object):
             preds_success_only = preds_success_only_new       
 
         preds_success_only_flat = np.ravel(preds_success_only)
-        top_k_pred_ind_flat = np.random.choice(np.where(preds_success_only_flat > 0)[0], size=top_k)
+        nonzero_ind = np.where(preds_success_only_flat > 0)[0]
+        if nonzero_ind.shape[0] == 0:
+            return []
+        top_k_pred_ind_flat = np.random.choice(nonzero_ind, size=top_k)
         top_k_pred_ind = np.zeros((top_k, len(preds.shape)), dtype=np.int32)
         im_width = preds_success_only.shape[2]
         im_height = preds_success_only.shape[1]

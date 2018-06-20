@@ -49,7 +49,7 @@ class Grasp2D(object):
     contact_normals : list of :obj:`numpy.ndarray`
         pair of contact normals in image space
     """
-    def __init__(self, center, angle, depth, width=0.0, camera_intr=None,
+    def __init__(self, center, angle=0.0, depth=1.0, width=0.0, camera_intr=None,
                  contact_points=None, contact_normals=None):
         self.center = center
         self.angle = angle
@@ -60,7 +60,15 @@ class Grasp2D(object):
             self.camera_intr = CameraIntrinsics('primesense_overhead', fx=525, fy=525, cx=319.5, cy=239.5, width=640, height=480)
         else: 
             self.camera_intr = camera_intr
+        self.contact_points = contact_points
+        self.contact_normals = contact_normals
 
+        frame = 'image'
+        if camera_intr is not None:
+            frame = camera_intr.frame
+        if isinstance(center, np.ndarray):
+            self.center = Point(center, frame=frame)
+        
     @property
     def axis(self):
         """ Returns the grasp axis. """
@@ -75,6 +83,7 @@ class Grasp2D(object):
     def frame(self):
         """ The name of the frame of reference for the grasp. """
         if self.camera_intr is None:
+
             raise ValueError('Must specify camera intrinsics')
         return self.camera_intr.frame
 
@@ -229,9 +238,20 @@ class SuctionPoint2D(object):
     camera_intr : :obj:`perception.CameraIntrinsics`
         frame of reference for camera that the suction point corresponds to
     """
-    def __init__(self, center, axis, depth, camera_intr=None):
+    def __init__(self, center, axis=None, depth=1.0, camera_intr=None):
+        if axis is None:
+            axis = np.array([1,0,0])
+
         self.center = center
         self.axis = axis
+
+        frame = 'image'
+        if camera_intr is not None:
+            frame = camera_intr.frame
+        if isinstance(center, np.ndarray):
+            self.center = Point(center, frame=frame)
+        if isinstance(axis, list):
+            self.axis = np.array(axis)
         if np.abs(np.linalg.norm(self.axis) - 1.0) > 1e-3:
             raise ValueError('Illegal axis. Must be norm 1.')
 

@@ -39,7 +39,7 @@ backend: 'gpu'
 queue_capacity: 100  # capacity of prefetch queue
 queue_sleep: 0.01     # how long to sleep between prefetches
 
-tensorboard_bin_loc: /home/vsatish/Workspace/virtual_envs/dev/bin/
+tensorboard_bin_loc: /home/jmahler/Envs/dex-net/bin/
 tensorboard_port: 5997
 
 data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
