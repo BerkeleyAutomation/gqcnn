@@ -169,6 +169,7 @@ class GQCNNTrainerTF(object):
 
         # setup learning rate
         batch = tf.Variable(0)
+        g_step = batch * self.train_batch_size
         learning_rate = tf.train.exponential_decay(
             self.base_lr,                # base learning rate.
             batch * self.train_batch_size,  # current index into the dataset.
@@ -272,7 +273,7 @@ class GQCNNTrainerTF(object):
 #                    _, l, lr, predictions, batch_labels, pred_mask, net_output, input_im, input_pose, labels, orig_sub_im, lambda_sub_im, norm_sub_im = self.sess.run([optimizer, loss, learning_rate,
 #                    train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_labels_node, self.gqcnn.orig_sub_im, self.gqcnn.lambda_sub_im, self.gqcnn.norm_sub_im], 
 #                    feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
-                     _, l, lr, predictions, batch_labels, pred_mask, net_output, input_im, input_pose, labels = self.sess.run([optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_labels_node], feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
+                     _, l, lr, predictions, batch_labels, pred_mask, net_output, input_im, input_pose, labels, glob_step = self.sess.run([optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_pred_mask_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_labels_node, g_step], feed_dict={drop_rate: self.drop_rate}, options=GeneralConstants.timeout_option)
                 else:
                     rot_angs = np.zeros((self.train_batch_size,))
                     if self._distort_rot_conv_feat:
@@ -290,6 +291,7 @@ class GQCNNTrainerTF(object):
 #                logging.debug('Min: ' + str(np.min(softmax[:, 1])))
                 logging.debug('Pred nonzero: ' + str(np.sum(np.argmax(predictions, axis=1))))
                 logging.debug('True nonzero: ' + str(np.sum(batch_labels)))
+                logging.info('Global step: {}'.format(glob_step))
                 
 #                NUM_IMS = 2
 #                for i in range(NUM_IMS):

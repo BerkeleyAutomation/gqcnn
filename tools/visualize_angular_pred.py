@@ -10,9 +10,10 @@ from perception import CameraIntrinsics, DepthImage
 from gqcnn.model import get_gqcnn_model
 from gqcnn import Visualizer as vis, Grasp2D
 
-MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_txqntmdxqg/'
+MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_ikwvhwbuhi/'
 # MODEL_DIR = '/home/vsatish/Data/dexnet/data/models/test_dump/model_cfxloaqbuj/' # good
-DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_big_window_v3_leg_no_rot_04_26_18/'
+# DATASET_DIR = '/nfs/diskstation/vsatish/dex-net/data/datasets/fizzytablets_benchmark_random_fc_ang_iter_3_leg_no_rot_05_21_18/'
+DATASET_DIR = '/home/vsatish/Workspace/dev/gqcnn/test_dump/'
 CAMERA_INTR_DIR =  '/nfs/diskstation/calib/phoxi/phoxi.intr'
 IM_FILE_TEMPLATE = 'depth_ims_tf_table'
 POSE_FILE_TEMPLATE = 'hand_poses'
@@ -20,11 +21,11 @@ METRIC_FILE_TEMPLATE = 'robust_wrench_resistance'
 NUM_TEST_SAMPLES = 10
 POSE_DIM = 1
 NUM_BINS = 16
-ONLY_POSITIVES = 1
+ONLY_POSITIVES = 0
 METRIC_THRESH = 0.75
 pose_parser = lambda p: p[2:3]
 GRIPPER_WIDTH = 0.05
-DEBUG = 1
+DEBUG = 0
 SEED = 12545
 
 # set random seed if debugging
