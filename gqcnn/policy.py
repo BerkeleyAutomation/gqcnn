@@ -11,6 +11,7 @@ import os
 import sys
 from time import time
 import math
+import copy
 
 from sklearn.mixture import GaussianMixture
 
@@ -849,6 +850,216 @@ class EpsilonGreedyQFunctionAntipodalGraspingPolicy(QFunctionAntipodalGraspingPo
         # return action
         return ParallelJawGrasp(grasp, q_value, image)
 
+class FullyConvolutionalAngularPolicyVis(object):
+    ''' Grasp sampling policy using full-convolutional angular GQ-CNN network '''
+    def __init__(self, cfg):
+        # parse config
+        self._cfg = cfg
+        self._num_depth_bins = self._cfg['num_depth_bins']
+        self._width = self._cfg['width']
+        self._use_segmask = self._cfg['use_segmask']
+
+        self._gqcnn_dir = self._cfg['gqcnn_model']
+        self._gqcnn_backend = self._cfg['gqcnn_backend']
+        self._gqcnn_stride = self._cfg['gqcnn_stride']
+        self._gqcnn_recep_h = self._cfg['gqcnn_recep_h']
+        self._gqcnn_recep_w = self._cfg['gqcnn_recep_w']
+        self._fully_conv_config = self._cfg['fully_conv_gqcnn_config']
+
+        self._vis_config = self._cfg['policy_vis']
+        self._top_k_to_vis = self._vis_config['top_k']
+        self._vis_top_k = self._vis_config['vis_top_k']
+        self._vis_3d = self._vis_config['vis_3d']
+               
+        # initialize gqcnn
+        self._gqcnn = get_gqcnn_model(backend=self._gqcnn_backend).load(self._gqcnn_dir, fully_conv_config=self._fully_conv_config)
+        self._gqcnn.open_session()
+
+    def __del__(self):
+        # close gqcnn session
+        try:
+            self._gqcnn.close_session()
+        except:
+            pass
+
+    def __call__(self, state):
+        return self._action(state)
+
+    def action(self, state):
+        return self._action(state)
+
+    def _action(self, state, k=1):
+        # extract raw depth data matrix
+        st = time()
+        rgbd_im = state.rgbd_im
+        d_im = rgbd_im.depth
+        raw_d = d_im._data # TODO: Access this properly
+#        logging.info('Extraction took {} seconds'.format(time() - st))
+
+        # sample depths
+        st = time()
+        max_d = np.max(raw_d)
+        min_d = np.min(raw_d)
+        depth_bin_width = (max_d - min_d) / self._num_depth_bins
+        depths = np.zeros((self._num_depth_bins, 1)) 
+        for i in range(self._num_depth_bins):
+            depths[i][0] = min_d + (i * depth_bin_width + depth_bin_width / 2)
+#        logging.info('Depth sampling took {} seconds'.format(time() - st))
+
+        # predict
+        st = time()
+        images = np.tile(np.asarray([raw_d]), (self._num_depth_bins, 1, 1, 1))
+#        logging.info('Tiling for prediction took {} seconds'.format(time() - st))
+        use_opt = self._num_depth_bins > self._gqcnn.batch_size
+        if use_opt:
+            unique_im_map = np.zeros((self._num_depth_bins,), dtype=np.int32)
+            preds = self._gqcnn.predict(images, depths, unique_im_map=unique_im_map)
+        else:
+            pred_start_time = time()
+            preds = self._gqcnn.predict(images, depths)
+#            logging.info('Inference took {} seconds'.format(time() - pred_start_time))
+        success_ind = np.arange(1, preds.shape[-1], 2)
+
+        # if we want to visualize the top k, then extract those indices, else just get the number specified by the policy
+        top_k = self._top_k_to_vis if self._vis_top_k else k
+
+        # get indices of top k predictions
+        preds_success_only = preds[:, :, :, success_ind]
+
+#        for i in range(self._num_depth_bins):
+#            logging.info('Max at slice {} is {}'.format(i, np.max(preds_success_only[i])))
+#            logging.info('Depth at slice {} is {}'.format(i, depths[i, 0]))
+
+        if self._use_segmask:
+            st = time()
+            raw_segmask = state.segmask.raw_data
+            preds_success_only_new = np.zeros_like(preds_success_only)
+            raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h / 2:raw_segmask.shape[0] - self._gqcnn_recep_h / 2, self._gqcnn_recep_w / 2:raw_segmask.shape[1] - self._gqcnn_recep_w / 2, 0]
+            raw_segmask_downsamp = raw_segmask_cropped[::self._gqcnn_stride, ::self._gqcnn_stride]
+            if raw_segmask_downsamp.shape[0] != preds_success_only.shape[1]:
+                raw_segmask_downsamp_new = np.zeros(preds_success_only.shape[1:3])
+                raw_segmask_downsamp_new[:raw_segmask_downsamp.shape[0], :raw_segmask_downsamp.shape[1]] = raw_segmask_downsamp
+                raw_segmask_downsamp = raw_segmask_downsamp_new
+            nonzero_mask_ind = np.where(raw_segmask_downsamp > 0)
+            preds_success_only_new[:, nonzero_mask_ind[0], nonzero_mask_ind[1]] = preds_success_only[:, nonzero_mask_ind[0], nonzero_mask_ind[1]]
+            preds_success_only = preds_success_only_new
+#            logging.info('Segmask stuff took {} seconds'.format(time() - st))       
+
+        st = time()
+        preds_success_only_flat = np.ravel(preds_success_only)
+        top_k_pred_ind_flat = np.argpartition(preds_success_only_flat, -1 * top_k)[-1 * top_k:]
+        top_k_pred_ind = np.zeros((top_k, len(preds.shape)), dtype=np.int32)
+        im_width = preds_success_only.shape[2]
+        im_height = preds_success_only.shape[1]
+        num_angular_bins = preds_success_only.shape[3]
+        for idx in range(top_k):
+            top_k_pred_ind[idx, 0] = top_k_pred_ind_flat[idx] // (im_width * im_height * num_angular_bins) 
+            top_k_pred_ind[idx, 1] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
+            top_k_pred_ind[idx, 2] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) // num_angular_bins
+            top_k_pred_ind[idx, 3] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) % num_angular_bins
+#        logging.info('Argmax + getting indices took {} seconds'.format(time() - st))
+
+#        for i in range(self._num_depth_bins):
+#            h = top_k_pred_ind[i, 1]
+#            w = top_k_pred_ind[i, 2]
+#            logging.info('Original depth at point ({}, {}) is {}'.format(w, h, images[i, h, w]))
+
+        # generate grasps
+        st = time()
+        grasps = []
+        ang_bin_width = PI / preds_success_only.shape[-1]
+        for i in range(top_k):
+            im_idx = top_k_pred_ind[i, 0]
+            h_idx = top_k_pred_ind[i, 1]
+            w_idx = top_k_pred_ind[i, 2]
+            ang_idx = top_k_pred_ind[i, 3]
+            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
+            ang = PI / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
+            depth = depths[im_idx]
+            grasp = Grasp2D(center, ang, depth, width=self._width, camera_intr=state.camera_intr)
+            pj_grasp = ParallelJawGrasp(grasp, preds_success_only[im_idx, h_idx, w_idx, ang_idx], DepthImage(images[im_idx]))
+            grasps.append(pj_grasp)
+#        logging.info('Generating grasps took {} seconds'.format(time() - st))
+
+        if self._vis_top_k:
+            # visualize 3D
+            if self._vis_3d:
+                logging.info('Generating 3D Visualization...')
+                vis3d.figure()
+                for i in range(top_k):
+                    logging.info('Visualizing top k grasp {} of {}'.format(i, top_k))
+                    vis3d.clf()
+                    vis3d.points(state.camera_intr.deproject(d_im))
+                    logging.info('Depth: {}'.format(grasps[i].grasp.depth))
+                    vis3d.grasp(ParallelJawPtGrasp3D.grasp_from_pose(grasps[i].grasp.pose()), color=(1, 0, 0))
+                    vis3d.show()
+                
+            #visualize 2D
+            logging.info('Generating 2D visualization...')
+            vis.figure()
+            vis.imshow(d_im)
+            im_tensor = np.zeros((50, 96, 96, 1))
+            pose_tensor = np.zeros((50, 6))
+            metric_tensor = np.zeros((50,))
+            for i in range(top_k):
+                logging.info('Depth: {}'.format(grasps[i].grasp.depth))
+                vis.grasp(grasps[i].grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color=plt.cm.RdYlGn(grasps[i].q_value))
+                im_tensor[i] = d_im.align(1.0, [grasps[i].grasp.center.x, grasps[i].grasp.center.y], 0.0, 96, 96)._data
+                pose_tensor[i] = np.asarray([0, 0, grasps[i].grasp.depth, 0, 0, 0])
+                metric_tensor[i] = 0.0
+            vis.show()
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/depth_ims_tf_table_00000', im_tensor)
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/hand_poses_00000', pose_tensor)
+            np.savez_compressed('/home/vsatish/Workspace/dev/gqcnn/test_dump/robust_wrench_resistance_00000', metric_tensor)
+
+        vis.figure()
+        affordance_map = preds_success_only[im_idx, ..., ang_idx]
+        logging.info(im_idx)
+        affordance_map_1 = preds_success_only[im_idx, ..., 4]
+        affordance_map_2 = preds_success_only[2, ..., 13]
+        affordance_map_3 = preds_success_only[2, ..., ang_idx]
+        affordance_map_4 = preds_success_only[0, ..., ang_idx]
+        crop_d_im = d_im.crop(affordance_map.shape[0], affordance_map.shape[1])
+        vis.clf()
+        vis.imshow(crop_d_im)
+        vis.show()
+        vis.clf()
+        vis.imshow(crop_d_im)
+        plt.imshow(affordance_map, alpha=0.7, cmap='RdYlGn', interpolation='nearest')
+        crop_camera_intr = state.camera_intr.crop(affordance_map.shape[0], affordance_map.shape[1], d_im.height / 2, d_im.width / 2)
+        grasp = Grasp2D(Point(np.asarray([grasps[0].grasp.center.x - 48, grasps[0].grasp.center.y - 48])), grasps[0].grasp.angle, grasps[0].grasp.depth, width=self._width, camera_intr=crop_camera_intr)
+        vis.grasp(grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color='black')
+        vis.show()
+        vis.clf()
+        vis.imshow(crop_d_im)
+        plt.imshow(affordance_map_1, alpha=0.7, cmap='RdYlGn', interpolation='nearest')
+        grasp = Grasp2D(Point(np.asarray([np.unravel_index(affordance_map_1.argmax(), affordance_map_1.shape)[1], np.unravel_index(affordance_map_1.argmax(), affordance_map_1.shape)[0]])), PI / 2 - (4 * ang_bin_width + ang_bin_width / 2), grasps[0].grasp.depth, width=self._width, camera_intr=crop_camera_intr)
+        vis.grasp(grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color='black')
+        vis.show()
+        vis.clf()
+        vis.imshow(crop_d_im)
+        plt.imshow(affordance_map_2, alpha=0.7, cmap='RdYlGn', interpolation='nearest')
+        grasp = Grasp2D(Point(np.asarray([np.unravel_index(affordance_map_2.argmax(), affordance_map_2.shape)[1], np.unravel_index(affordance_map_2.argmax(), affordance_map_2.shape)[0]])), PI / 2 - (13 * ang_bin_width + ang_bin_width / 2), grasps[0].grasp.depth, width=self._width, camera_intr=crop_camera_intr)
+        vis.grasp(grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color='black')
+        vis.show()
+        vis.clf()
+        vis.imshow(crop_d_im)
+        plt.imshow(affordance_map_3, alpha=0.7, cmap='RdYlGn', interpolation='nearest')
+        grasp = Grasp2D(Point(np.asarray([np.unravel_index(affordance_map_3.argmax(), affordance_map_3.shape)[1], np.unravel_index(affordance_map_3.argmax(), affordance_map_3.shape)[0]])), PI / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2), grasps[0].grasp.depth, width=self._width, camera_intr=crop_camera_intr)
+        vis.grasp(grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color='black')
+        vis.show()
+        vis.clf()
+        vis.imshow(crop_d_im)
+        plt.imshow(affordance_map_4, alpha=0.7, cmap='RdYlGn', interpolation='nearest')
+        grasp = Grasp2D(Point(np.asarray([np.unravel_index(affordance_map_4.argmax(), affordance_map_4.shape)[1], np.unravel_index(affordance_map_4.argmax(), affordance_map_4.shape)[0]])), PI / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2), grasps[0].grasp.depth, width=self._width, camera_intr=crop_camera_intr)
+        vis.grasp(grasp, scale=self._vis_config['scale'], show_axis=self._vis_config['show_axis'], color='black')
+        vis.show()
+
+        return grasps[-1] if k == 1 else grasps[-(k+1):]
+
+    def action_set(self, state, num_actions):
+        return [pj_grasp.grasp for pj_grasp in self._action(state, k=num_actions)]
+
 class FullyConvolutionalAngularPolicyTopK(object):
     ''' Grasp sampling policy using full-convolutional angular GQ-CNN network '''
     def __init__(self, cfg):
@@ -889,22 +1100,12 @@ class FullyConvolutionalAngularPolicyTopK(object):
 
     def _action(self, state, k=1):
         # extract raw depth data matrix
+        st = time()
         rgbd_im = state.rgbd_im
         d_im = rgbd_im.depth
 
         policy_start_time = time()
 
-        """
-        nonzero_px = state.segmask.nonzero_pixels()
-        min_u = np.min(nonzero_px, axis=0)
-        max_u = np.max(nonzero_px, axis=0)
-        dims = max_u - min_u
-        dims = dims + np.array([self._gqcnn_recep_h, self._gqcnn_recep_w])
-        center_u = 0.5 * (min_u + max_u)
-        d = d_im.crop(dims[0], dims[1], center_i=center_u[0], center_j=center_u[1])
-        cropped_camera_intr = state.camera_intr.crop(dims[0], dims[1], center_u[0], center_u[1])
-        raw_d = d._data # TODO: Access this properly
-        """
         raw_d = d_im._data
 
         # sample depths
@@ -918,7 +1119,9 @@ class FullyConvolutionalAngularPolicyTopK(object):
         logging.info('Depth took {} seconds'.format(time() - depth_start))
 
         # predict
+        st = time()
         images = np.tile(np.asarray([raw_d]), (self._num_depth_bins, 1, 1, 1))
+        logging.info('Tiling for prediction took {} seconds'.format(time() - st))
         use_opt = self._num_depth_bins > self._gqcnn.batch_size
         if use_opt:
             unique_im_map = np.zeros((self._num_depth_bins,), dtype=np.int32)
@@ -944,7 +1147,6 @@ class FullyConvolutionalAngularPolicyTopK(object):
         if self._use_segmask:
             segmask_start = time()
             raw_segmask = state.segmask.raw_data
-            #raw_segmask = raw_segmask.crop(dims[0], dims[1], center_i=center_u[0], center_j=center_u[1])
             preds_success_only_new = np.zeros_like(preds_success_only)
             raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h / 2:raw_segmask.shape[0] - self._gqcnn_recep_h / 2, self._gqcnn_recep_w / 2:raw_segmask.shape[1] - self._gqcnn_recep_w / 2, 0]
             raw_segmask_downsamp = raw_segmask_cropped[::self._gqcnn_stride, ::self._gqcnn_stride]
@@ -978,7 +1180,6 @@ class FullyConvolutionalAngularPolicyTopK(object):
                 top_k_pred_ind[idx, 1] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins))) // (im_width * num_angular_bins)
                 top_k_pred_ind[idx, 2] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) // num_angular_bins
                 top_k_pred_ind[idx, 3] = (top_k_pred_ind_flat[idx] - (top_k_pred_ind[idx, 0] * (im_width * im_height * num_angular_bins)) - (top_k_pred_ind[idx, 1] * (im_width * num_angular_bins))) % num_angular_bins
-        logging.info('Sort took {} seconds'.format(time() - sort_start))
 
 #        for i in range(self._num_depth_bins):
 #            h = top_k_pred_ind[i, 1]
@@ -1297,7 +1498,15 @@ class FullyConvolutionalAngularPolicyUniform(object):
 #            crop_min_y_scaled = (crop_min_y - self._gqcnn_recep_h / 2) / self._gqcnn_stride
 #            crop_max_x_scaled = (crop_max_x - self._gqcnn_recep_w / 2) / self._gqcnn_stride
 #            crop_max_y_scaled = (crop_max_y - self._gqcnn_recep_h / 2) / self._gqcnn_stride
-         
+#        vis.figure()
+#        vis.imshow(state.segmask)
+#        vis.show()  
+
+        if self._vis_segmask_crop:
+            vis.figure()
+            vis.imshow(state.segmask)
+            vis.show()      
+ 
         # sample depths
         max_d = np.max(raw_d)
         raw_d_seg_min = np.ones_like(raw_d)
