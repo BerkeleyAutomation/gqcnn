@@ -312,7 +312,6 @@ if __name__ == '__main__':
 	gqcnn = GQCNN.load(model_dir)
 	output = gqcnn.predict(images, poses)
 	pred_p_success = output[:,1]
-	gqcnn.close_session()
 	logging.info('Total Prediction Time:' + str(get_elapsed_time(time.time() - start_time)))
 	"""
 

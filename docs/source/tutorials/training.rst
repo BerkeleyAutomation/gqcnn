@@ -141,7 +141,6 @@ To predict the probability of success, or grasp robustness, of a new datapoint, 
 	gqcnn = GQCNN.load(model_dir)
 	output = gqcnn.predict(images, poses)
 	pred_p_success = output[:,1]
-	gqcnn.close_session()
 
 The images should be specified as an `N`x32x32x1 array and the poses should be specified as an `N`x1 array of depths, where `N` is the number of datapoints to predict.
 For an example, load a batch of images from `depth_ims_tf_table_00000.npz` and a batch of corresponding poses from column 2 of `hand_poses_00000.npz` from the Adv-Synth dataset.
