@@ -1153,7 +1153,7 @@ class SGDOptimizer(object):
 					thresh = ss.gamma.rvs(self.cfg['gradient_dropout_shape'], self.cfg['gradient_dropout_scale'], size=1)
 					high_gradient_px = np.where(grad_mag > thresh)
 					train_image[high_gradient_px[0], high_gradient_px[1]] = 0.0
-				    self.train_data_arr[i,:,:,0] = train_image
+				        self.train_data_arr[i,:,:,0] = train_image
 
 		# add correlated Gaussian noise
 		if self.cfg['gaussian_process_denoising']:
@@ -1218,7 +1218,7 @@ class SGDOptimizer(object):
 				train_image = self.train_data_arr[i,:,:,0]                
 				if np.random.rand() < self.cfg['background_rate']:
 					train_image[train_image > 0] = self.cfg['background_min_depth'] + (self.cfg['background_max_depth'] - self.cfg['background_min_depth']) * np.random.rand()
-                self.train_data_arr[i,:,:,0] = train_image
+                                self.train_data_arr[i,:,:,0] = train_image
 
 		# symmetrize images
 		if self.cfg['symmetrize']:
