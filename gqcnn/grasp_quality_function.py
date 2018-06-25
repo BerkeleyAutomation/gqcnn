@@ -35,8 +35,9 @@ import scipy.ndimage.filters as snf
 
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
-# from gqcnn import Grasp2D, SuctionPoint2D, GQCNN, InputDataMode
-from gqcnn import Grasp2D
+from gqcnn import Grasp2D, SuctionPoint2D
+from gqcnn.utils.enums import InputPoseMode
+#from gqcnn import Grasp2D
 from gqcnn.model import get_gqcnn_model
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
 
@@ -878,7 +879,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         gqcnn_im_width = self.gqcnn.im_width
         gqcnn_num_channels = self.gqcnn.num_channels
         gqcnn_pose_dim = self.gqcnn.pose_dim
-        input_data_mode = self.gqcnn.input_data_mode
+        input_data_mode = self.gqcnn.input_pose_mode
         num_grasps = len(grasps)
         depth_im = state.rgbd_im.depth
 
@@ -896,15 +897,15 @@ class GQCnnQualityFunction(GraspQualityFunction):
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
             image_tensor[i,...] = im_tf.raw_data
             
-            if input_data_mode == InputDataMode.PARALLEL_JAW:
+#            if input_data_mode == InputDataMode.PARALLEL_JAW:
+#                pose_tensor[i] = grasp.depth
+#            elif input_data_mode == InputDataMode.SUCTION:
+#                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
+            if input_data_mode == InputPoseMode.TF_IMAGE:
                 pose_tensor[i] = grasp.depth
-            elif input_data_mode == InputDataMode.SUCTION:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
-            elif input_data_mode == InputDataMode.TF_IMAGE:
-                pose_tensor[i] = grasp.depth
-            elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
+            elif input_data_mode == InputPoseMode.TF_IMAGE_PERSPECTIVE:
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.center.x, grasp.center.y])
-            elif input_data_mode == InputDataMode.TF_IMAGE_SUCTION:
+            elif input_data_mode == InputPoseMode.TF_IMAGE_SUCTION:
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
             else:
                 raise ValueError('Input data mode %s not supported' %(input_data_mode))

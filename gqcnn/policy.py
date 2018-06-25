@@ -19,7 +19,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import DepthImage, RgbdImage, ColorImage
 
-from gqcnn import Grasp2D, ImageGraspSamplerFactory, GraspQualityFunctionFactory
+from gqcnn import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GraspQualityFunctionFactory, GQCnnQualityFunction
 from gqcnn.utils.enums import InputPoseMode
 from gqcnn.model import get_gqcnn_model
 from gqcnn import Visualizer as vis
