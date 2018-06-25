@@ -1,6 +1,6 @@
 ### TRAINING CONFIGURATIONS ###
 # dataset 
-dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/mini_dexnet_dexnet_fc_uniform_v2_06_21_18/legacy_no_rot/
+dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/mini_dexnet_dexnet_image_v2_06_21_18/legacy_rot/
 output_dir: /home/vsatish/Data/dexnet/data/models/test_dump/
 
 # general optimization parameters
@@ -29,7 +29,7 @@ index_dir: /home/vsatish/Data/dexnet/data/models/test_dump/model_mefzdpxpyy
 
 mask_and_inpaint: 0
 
-angular_bins: 16
+angular_bins: 0
 
 distort_rot_conv_feat: 0
 
@@ -71,7 +71,7 @@ input_pose_mode: tf_image
 input_gripper_mode: none
 num_tensor_channels: 1
 
-normalize_inputs: 0
+normalize_inputs: 1
 
 sub_lambda: 1.0
 
@@ -148,11 +148,11 @@ gqcnn_config:
   backend: 'gpu'
 
   # number of angular bins
-  angular_bins: 16
+  angular_bins: 0
 
-  sub_im_depth: 1
+  sub_im_depth: 0
 
-  normalize_inputs: 0
+  normalize_inputs: 1
 
   sub_lambda: 1.0
 
@@ -257,7 +257,7 @@ gqcnn_config:
       fc5: 
         type: fc
         final_layer: True
-        out_size: 32
+        out_size: 2
 #      fc6:
 #        type: fc
 #        out_size: 2

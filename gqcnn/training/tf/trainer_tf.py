@@ -291,7 +291,7 @@ class GQCNNTrainerTF(object):
 #                logging.debug('Min: ' + str(np.min(softmax[:, 1])))
                 logging.debug('Pred nonzero: ' + str(np.sum(np.argmax(predictions, axis=1))))
                 logging.debug('True nonzero: ' + str(np.sum(batch_labels)))
-                logging.info('Global step: {}'.format(glob_step))
+#                logging.info('Global step: {}'.format(glob_step))
                 
 #                NUM_IMS = 2
 #                for i in range(NUM_IMS):
