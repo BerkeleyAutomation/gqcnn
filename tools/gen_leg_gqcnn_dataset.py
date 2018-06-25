@@ -42,7 +42,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     im_dataset_path = os.path.join(args.tensor_dataset_path, 'images')
     grasp_dataset_path = os.path.join(args.tensor_dataset_path, 'grasps')
-    output_dir = os.path.join(args.tensor_dataset_path, 'legacy')
+    if ROTATE:
+        output_dir = os.path.join(args.tensor_dataset_path, 'legacy_rot')
+    else:
+        output_dir = os.path.join(args.tensor_dataset_path, 'legacy_no_rot')
 
     # get start time
     gen_start_time = time.time()
