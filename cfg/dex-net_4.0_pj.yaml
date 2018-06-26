@@ -89,8 +89,8 @@ gqcnn:
     conv1_1:
       filt_dim: 9
       num_filt: 8
-      pool_size: 2
-      pool_stride: 2  
+      pool_size: 1
+      pool_stride: 1  
       padding: VALID
       norm: 0
       norm_type: local_response
@@ -123,9 +123,9 @@ gqcnn:
     pc2:
       out_size: 0
     fc3:
-      out_size: 32
+      out_size: 64
     fc4:
-      out_size: 32
+      out_size: 64
     fc5:
       out_size: 2
 
