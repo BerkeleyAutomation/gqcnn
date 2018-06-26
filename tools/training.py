@@ -13,7 +13,7 @@ from autolab_core import YamlConfig
 # setup logger
 logging.getLogger().setLevel(logging.INFO)
 
-train_config = YamlConfig('cfg/tools/standard_gqcnn.yaml')
+train_config = YamlConfig('cfg/tools/angular_bins.yaml')
 gqcnn_config = train_config['gqcnn_config']
 backend = 'tf'
 
