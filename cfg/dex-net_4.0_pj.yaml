@@ -1,6 +1,6 @@
 # general optimization params
-train_batch_size: 64
-val_batch_size: 16
+train_batch_size: 256
+val_batch_size: 256
 
 # logging params
 num_epochs: 50        # number of epochs to train for
