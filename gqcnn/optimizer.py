@@ -751,10 +751,6 @@ class GQCNNOptimizer(object):
         if 'max_files_eval' in self.cfg.keys():
             self.max_files_eval = self.cfg['max_files_eval']
         
-        # update the GQCNN's batch_size param to this one
-        logging.info("updating val_batch_size to %d" %(self.val_batch_size))
-        self.gqcnn.set_batch_size(self.val_batch_size)
-
         # logging
         self.num_epochs = self.cfg['num_epochs']
         self.eval_frequency = self.cfg['eval_frequency']

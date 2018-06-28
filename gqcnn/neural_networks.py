@@ -283,16 +283,6 @@ class GQCNN(object):
         """ Adds sigmoid to output tensor of prediction network """
         self._output_tensor = tf.nn.sigmoid(self._output_tensor)
 
-    def set_batch_size(self, batch_size):
-        """ Updates the prediction batch size 
-
-        Parameters
-        ----------
-        batch_size : float
-            batch size to be used for prediction
-        """
-        self._batch_size = batch_size
-
     @property
     def filters(self):
         """ Returns the set of conv1_1 filters 

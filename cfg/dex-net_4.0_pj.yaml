@@ -1,6 +1,6 @@
 # general optimization params
 train_batch_size: 256
-val_batch_size: 256
+val_batch_size: &val_batch_size 256
 
 # logging params
 num_epochs: 50        # number of epochs to train for
@@ -81,8 +81,8 @@ gqcnn:
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   gripper_mode: parallel_jaw
 
-  # prediction batch size, in training this will be overriden by the val_batch_size in the SGDOptimizer's config file
-  batch_size: 16
+  # prediction batch size, in training this will be overriden by the val_batch_size in the optimizer's config file
+  batch_size: *val_batch_size
 
   # architecture
   architecture:
