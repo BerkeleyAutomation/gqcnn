@@ -37,8 +37,6 @@ from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleIm
 from . import Grasp2D, GQCNN, ClassificationResult, InputDataMode, ImageMode, ImageFileTemplates
 from . import Visualizer as vis2d
 
-import IPython
-
 class GQCNNPredictionVisualizer(object):
     """ Class to visualize predictions of GQCNN on a specified dataset. Visualizes TP, TN, FP, FN. """
 
@@ -266,11 +264,7 @@ class GQCNNPredictionVisualizer(object):
         :obj:`ndArray`
             sliced pose_data corresponding to input data mode
         """
-        if input_data_mode == InputDataMode.PARALLEL_JAW:
-            return pose_arr[:,2:3]
-        elif input_data_mode == InputDataMode.SUCTION:
-            return np.c_[pose_arr[:,2], pose_arr[:,4]]
-        elif input_data_mode == InputDataMode.TF_IMAGE:
+        if input_data_mode == InputDataMode.TF_IMAGE:
             return pose_arr[:,2:3]
         elif input_data_mode == InputDataMode.TF_IMAGE_PERSPECTIVE:
             return np.c_[pose_arr[:,2:3], pose_arr[:,4:6]]
@@ -278,8 +272,5 @@ class GQCNNPredictionVisualizer(object):
             return pose_arr[:,:4]
         elif input_data_mode == InputDataMode.RAW_IMAGE_PERSPECTIVE:
             return pose_arr[:,:6]
-        elif input_data_mode == InputDataMode.REGRASPING:
-            # depth, approach angle, and delta angle for reorientation
-            return np.c_[pose_arr[:,2:3], pose_arr[:,4:5], pose_arr[:,6:7]]
         else:
             raise ValueError('Input data mode %s not supported. The RAW_* input data modes have been deprecated.' %(input_data_mode))
