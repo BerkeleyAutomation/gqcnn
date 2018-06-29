@@ -287,6 +287,10 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
         GraspingPolicy.__init__(self, config)
         self._num_grasp_samples = 1
 
+        self._grasp_center_std = 0.0
+        if 'grasp_center_std' in config.keys():
+            self._grasp_center_std = config['grasp_center_std']
+        
     def _action(self, state):
         """ Plans the grasp with the highest probability of success on
         the given RGB-D image.
@@ -323,7 +327,12 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
 
         # set grasp
         grasp = grasps[0]
-
+        
+        # perturb grasp
+        if self._grasp_center_std > 0.0:
+            grasp_center_rv = ss.multivariate_normal(grasp.center.data, cov=self._grasp_center_std**2)
+            grasp.center.data = grasp_center_rv.rvs(size=1)[0]
+        
         # form tensors
         return GraspAction(grasp, 0.0, state.rgbd_im.depth)
 
