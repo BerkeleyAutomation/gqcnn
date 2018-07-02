@@ -1,6 +1,6 @@
 # general optimization params
 train_batch_size: 64
-val_batch_size: 16
+val_batch_size: &val_batch_size 64
 
 # logging params
 num_epochs: 50        # number of epochs to train for
@@ -19,8 +19,8 @@ max_files_eval: 1000        # the number of validation files to use in each eval
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.001
-decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+base_lr: 0.01
+decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -58,9 +58,9 @@ gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
 
-drop_fc3: 0
+drop_fc3: 1
 fc3_drop_rate: 0.5
-drop_fc4: 0
+drop_fc4: 1
 fc4_drop_rate: 0.5
 
 # tensorboard
@@ -81,51 +81,51 @@ gqcnn:
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   gripper_mode: parallel_jaw
 
-  # prediction batch size, in training this will be overriden by the val_batch_size in the SGDOptimizer's config file
-  batch_size: 16
+  # prediction batch size, in training this will be overriden by the val_batch_size in the optimizer's config file
+  batch_size: *val_batch_size
 
   # architecture
   architecture:
     conv1_1:
-      filt_dim: 7
-      num_filt: 64
+      filt_dim: 9
+      num_filt: 8
       pool_size: 1
       pool_stride: 1  
-      padding: SAME
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv1_2:
-      filt_dim: 5
-      num_filt: 64
+      filt_dim: 3
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
-      padding: SAME
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 64
+      num_filt: 8
       pool_size: 1
       pool_stride: 1
-      padding: SAME
+      padding: VALID
       norm: 0
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 64
-      pool_size: 1
-      pool_stride: 1
-      padding: SAME
+      num_filt: 8
+      pool_size: 2
+      pool_stride: 2
+      padding: VALID
       norm: 0
       norm_type: local_response
     pc1:
-      out_size: 16
+      out_size: 4
     pc2:
       out_size: 0
     fc3:
-      out_size: 1024
+      out_size: 64
     fc4:
-      out_size: 1024
+      out_size: 64
     fc5:
       out_size: 2
 

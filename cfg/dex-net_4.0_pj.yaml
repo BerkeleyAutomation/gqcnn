@@ -1,6 +1,6 @@
 # general optimization params
-train_batch_size: 256
-val_batch_size: &val_batch_size 256
+train_batch_size: 64
+val_batch_size: &val_batch_size 64
 
 # logging params
 num_epochs: 50        # number of epochs to train for
@@ -88,15 +88,15 @@ gqcnn:
   architecture:
     conv1_1:
       filt_dim: 9
-      num_filt: 8
-      pool_size: 1
-      pool_stride: 1  
+      num_filt: 16
+      pool_size: 2
+      pool_stride: 2  
       padding: VALID
       norm: 0
       norm_type: local_response
     conv1_2:
       filt_dim: 3
-      num_filt: 8
+      num_filt: 16
       pool_size: 2
       pool_stride: 2
       padding: VALID
@@ -104,7 +104,7 @@ gqcnn:
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 8
+      num_filt: 16
       pool_size: 1
       pool_stride: 1
       padding: VALID
@@ -112,7 +112,7 @@ gqcnn:
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 8
+      num_filt: 16
       pool_size: 2
       pool_stride: 2
       padding: VALID

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>gqcnn</name>
-  <version>0.1.0</version>
+  <version>0.0.2</version>
   <description>The GQCNN package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
