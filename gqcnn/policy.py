@@ -610,6 +610,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
                                             seed=self._seed)
+        
         num_grasps = len(grasps)
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
@@ -682,7 +683,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             # normalize elite set
             elite_grasp_mean = np.mean(elite_grasp_arr, axis=0)
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
-            elite_grasp_std[elite_grasp_std == 0] = 1.0
+            elite_grasp_std[elite_grasp_std == 0] = 1e-6
             elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
             logging.info('Elite set computation took %.3f sec' %(time()-elite_start))
 
