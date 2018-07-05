@@ -201,7 +201,7 @@ class GraspingPolicy(Policy):
     def __init__(self, config):
         # store parameters
         self._config = config
-        self._gripper_width = np.inf
+        self._gripper_width = 0.05
         if 'gripper_width' in config.keys():
             self._gripper_width = config['gripper_width']
 
@@ -434,27 +434,6 @@ class RobustGraspingPolicy(GraspingPolicy):
             logging.warning('No valid grasps could be found')
             raise NoValidGraspsException()
         
-        # save if specified
-        if self._logging_dir is not None:
-            if not os.path.exists(self._logging_dir):
-                raise ValueError('Logging directory %s does not exist' %(self._logging_dir))
-
-            # create output dir
-            test_case_id = utils.gen_experiment_id()
-            test_case_dir = os.path.join(self._logging_dir, 'test_case_%s' %(test_case_id))
-
-            # re-sample if the test case dir exists
-            while os.path.exists(test_case_dir):
-                test_case_id = utils.gen_experiment_id()
-                test_case_dir = os.path.join(self._logging_dir, 'test_case_%s' %(test_case_id))
-                
-            # create the directory and save
-            os.mkdir(test_case_dir)
-            candidate_actions_filename = os.path.join(test_case_dir, 'actions.pkl')
-            pkl.dump(grasps, open(candidate_actions_filename, 'wb'))
-            image_state_filename = os.path.join(test_case_dir, 'state.pkl')
-            pkl.dump(state, open(image_state_filename, 'wb'))
-
         # compute grasp quality
         compute_start = time()
         q_values = self._grasp_quality_fn(state, grasps, params=self._config)
@@ -625,16 +604,6 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if not isinstance(state, RgbdImageState):
             raise ValueError('Must provide an RGB-D image state.')
 
-        if self._logging_dir is not None:
-            policy_id = utils.gen_experiment_id()
-            policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
-            while os.path.exists(policy_dir):
-                policy_id = utils.gen_experiment_id()
-                policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
-            os.mkdir(policy_dir)
-            state_dir = os.path.join(policy_dir, 'state')
-            state.save(state_dir)
-        
         # parse state
         seed_set_start = time()
         rgbd_im = state.rgbd_im
@@ -650,6 +619,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
                                             seed=self._seed)
+        
         num_grasps = len(grasps)
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
@@ -722,7 +692,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             # normalize elite set
             elite_grasp_mean = np.mean(elite_grasp_arr, axis=0)
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
-            elite_grasp_std[elite_grasp_std == 0] = 1.0
+            elite_grasp_std[elite_grasp_std == 0] = 1e-6
             elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
             logging.info('Elite set computation took %.3f sec' %(time()-elite_start))
 
@@ -852,11 +822,6 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
         # return action
         action = GraspAction(grasp, q_value, image)
-
-        if self._logging_dir is not None:
-            action_dir = os.path.join(policy_dir, 'action')
-            action.save(action_dir)
-
         return action
         
 class QFunctionRobustGraspingPolicy(CrossEntropyRobustGraspingPolicy):

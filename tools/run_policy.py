@@ -28,6 +28,7 @@ import logging
 import IPython
 import numpy as np
 import os
+import random
 import sys
 import time
 
@@ -35,7 +36,8 @@ from autolab_core import RigidTransform, YamlConfig
 
 from gqcnn import RgbdImageState, ParallelJawGrasp
 from gqcnn import CrossEntropyRobustGraspingPolicy
-from gqcnn import Visualizer as vis
+
+from visualization import Visualizer2D as vis2d
 
 if __name__ == '__main__':
     # set up logger
@@ -46,10 +48,12 @@ if __name__ == '__main__':
     parser.add_argument('test_case_path', type=str, default=None, help='path to test case')
     parser.add_argument('--config_filename', type=str, default='cfg/tools/run_policy.yaml', help='path to configuration file to use')
     parser.add_argument('--output_dir', type=str, default=None, help='directory to store output')
+    parser.add_argument('--seed', type=int, default=None, help='random seed')
     args = parser.parse_args()
     test_case_path = args.test_case_path
     config_filename = args.config_filename
     output_dir = args.output_dir
+    seed = args.seed
 
     # make output dir
     if output_dir is not None and not os.path.exists(output_dir):
@@ -61,6 +65,11 @@ if __name__ == '__main__':
                                        '..',
                                        config_filename)
 
+    # set random seed
+    if seed is not None:
+        np.random.seed(seed)
+        random.seed(seed)
+        
     # read config
     config = YamlConfig(config_filename)
     policy_config = config['policy']
@@ -75,32 +84,32 @@ if __name__ == '__main__':
     policy = CrossEntropyRobustGraspingPolicy(policy_config)
 
     if policy_config['vis']['input_images']:
-        vis.figure()
+        vis2d.figure()
         if state.segmask is None:
-            vis.subplot(1,2,1)
-            vis.imshow(state.rgbd_im.color)
-            vis.title('COLOR')
-            vis.subplot(1,2,2)
-            vis.imshow(state.rgbd_im.depth,
+            vis2d.subplot(1,2,1)
+            vis2d.imshow(state.rgbd_im.color)
+            vis2d.title('COLOR')
+            vis2d.subplot(1,2,2)
+            vis2d.imshow(state.rgbd_im.depth,
                        vmin=policy_config['vis']['vmin'],
                        vmax=policy_config['vis']['vmax'])
-            vis.title('DEPTH')
+            vis2d.title('DEPTH')
         else:
-            vis.subplot(1,3,1)
-            vis.imshow(state.rgbd_im.color)
-            vis.title('COLOR')
-            vis.subplot(1,3,2)
-            vis.imshow(state.rgbd_im.depth,
+            vis2d.subplot(1,3,1)
+            vis2d.imshow(state.rgbd_im.color)
+            vis2d.title('COLOR')
+            vis2d.subplot(1,3,2)
+            vis2d.imshow(state.rgbd_im.depth,
                        vmin=policy_config['vis']['vmin'],
                        vmax=policy_config['vis']['vmax'])
-            vis.title('DEPTH')
-            vis.subplot(1,3,3)
-            vis.imshow(state.segmask)            
-            vis.title('SEGMASK')
+            vis2d.title('DEPTH')
+            vis2d.subplot(1,3,3)
+            vis2d.imshow(state.segmask)            
+            vis2d.title('SEGMASK')
         filename = None
         if output_dir is not None:
             filename = os.path.join(output_dir, 'input_images.png')
-        vis.show(filename)    
+        vis2d.show(filename)    
 
     # query policy
     policy_start = time.time()
@@ -109,21 +118,22 @@ if __name__ == '__main__':
 
     # vis final grasp
     if policy_config['vis']['final_grasp']:
-        vis.figure(size=(10,10))
-        vis.subplot(1,2,1)
-        vis.imshow(state.rgbd_im.depth,
+        vis2d.figure(size=(10,10))
+        vis2d.subplot(1,2,1)
+        vis2d.imshow(state.rgbd_im.depth,
                    vmin=policy_config['vis']['vmin'],
                    vmax=policy_config['vis']['vmax'])
-        vis.grasp(original_action.grasp, scale=policy_config['vis']['grasp_scale'], show_center=False, show_axis=True, color='r')
-        vis.title('Original (Q=%.3f)' %(original_action.q_value))
-        vis.subplot(1,2,2)
-        vis.imshow(state.rgbd_im.depth,
+        vis2d.grasp(original_action.grasp, scale=policy_config['vis']['grasp_scale'], show_center=False, show_axis=True, color='r')
+        vis2d.title('Original (Q=%.3f) (Z=%.3f)' %(original_action.q_value,
+                                                   original_action.grasp.depth))
+        vis2d.subplot(1,2,2)
+        vis2d.imshow(state.rgbd_im.depth,
                    vmin=policy_config['vis']['vmin'],
                    vmax=policy_config['vis']['vmax'])
-        vis.grasp(action.grasp, scale=policy_config['vis']['grasp_scale'], show_center=False, show_axis=True, color='r')
-        vis.title('New (Q=%.3f)' %(action.q_value))
+        vis2d.grasp(action.grasp, scale=policy_config['vis']['grasp_scale'], show_center=False, show_axis=True, color='r')
+        vis2d.title('New (Q=%.3f) (Z=%.3f)' %(action.q_value,
+                                              action.grasp.depth))
         filename = None
         if output_dir is not None:
             filename = os.path.join(output_dir, 'planned_grasp.png')
-        vis.show(filename)
-    
+        vis2d.show(filename)

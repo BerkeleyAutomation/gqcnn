@@ -855,7 +855,7 @@ class GQCNN(object):
                 self.open_session()
             i = 0
             while i < num_images:
-                logging.debug('Predicting file %d' % (i))
+                logging.debug('Predicting Q-value for datapoint %d' % (i))
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
                 end_ind = cur_ind + dim
