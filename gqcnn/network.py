@@ -98,28 +98,6 @@ class GQCNN(object):
             raise ValueError('Invalid training mode: {}'.format(training_mode))
         return gqcnn
 
-    @property
-    def tf_graph(self):
-        """ Returns the graph for this tf session 
-
-        Returns
-        -------
-        :obj:`tf Graph`
-            TensorFlow Graph 
-        """
-        return self._graph
-
-    @property
-    def weights(self):
-        """ Returns the weights for this network 
-
-        Returns
-        -------
-        :obj:`GQCnnWeights`
-            network weights
-        """
-        return self._weights.weights
-
     def init_mean_and_std(self, model_dir):
         """ Initializes the mean and std to use for data normalization during prediction 
 
