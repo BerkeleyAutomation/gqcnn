@@ -99,9 +99,6 @@ class GQCNNOptimizer(object):
             logging.warning('Using default image-wise split')
             self.split_name = 'image_wise'
         
-        # update split name to reflect training-validation ratio
-        self.split_name += '_{}-{}'.format(self.cfg['train_pct'], 1 - self.cfg['train_pct'])
-
         # update cfg for saving
         self.cfg['dataset_dir'] = self.dataset_dir
         self.cfg['split_name'] = self.split_name

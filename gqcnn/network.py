@@ -311,7 +311,7 @@ class GQCNN(object):
 
     @property
     def weights(self):
-        return self._weights
+        return self._weights.weights
 
     @property
     def tf_graph(self):
@@ -562,8 +562,8 @@ class GQCNN(object):
                 out_height = input_height / pool_stride_h
                 out_width = input_width / pool_stride_w
             else:
-                out_height = (((input_height - filter_h) / 1) + 1) / pool_stride_h
-                out_width = (((input_width - filter_w) / 1) +1) / pool_stride_w
+                out_height = math.ceil(float(input_height - filter_h + 1) / pool_stride_h)
+                out_width = math.ceil(float(input_width - filter_w + 1) / pool_stride_w)
             out_channels = num_filt
 
             # build layer
@@ -695,6 +695,7 @@ class GQCNN(object):
                     filter_dim /= layer_config['pool_stride']
                 else:
                     filter_dim = ((filter_dim - layer_config['filt_dim']) / layer_config['pool_stride']) + 1
+                
             elif layer_type == 'fc':
                 prev_layer_is_conv_or_res = False
                 if prev_layer == 'conv':
