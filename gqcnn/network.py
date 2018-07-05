@@ -98,7 +98,8 @@ class GQCNN(object):
             raise ValueError('Invalid training mode: {}'.format(training_mode))
         return gqcnn
 
-    def get_tf_graph(self):
+    @property
+    def tf_graph(self):
         """ Returns the graph for this tf session 
 
         Returns
@@ -108,7 +109,8 @@ class GQCNN(object):
         """
         return self._graph
 
-    def get_weights(self):
+    @property
+    def weights(self):
         """ Returns the weights for this network 
 
         Returns

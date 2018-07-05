@@ -911,7 +911,7 @@ class GQCNNOptimizer(object):
             self.gqcnn.reinitialize_layers(self.cfg['reinit_fc3'], self.cfg['reinit_fc4'], self.cfg['reinit_fc5'], reinit_pc1=reinit_pc1)
 
         # get weights
-        self.weights = self.gqcnn.get_weights()
+        self.weights = self.gqcnn.weights
 
         # open a tf session for the gqcnn object and store it also as the optimizer session
         self.sess = self.gqcnn.open_session()
