@@ -140,21 +140,24 @@ class GQCNNOptimizer(object):
         :obj:`tf.train.Optimizer`
             optimizer
         """    
+        # instantiate optimizer
         if self.cfg['optimizer'] == 'momentum':
-            return tf.train.MomentumOptimizer(learning_rate,
-                                              self.momentum_rate).minimize(loss,
-                                                                           global_step=batch,
-                                                                           var_list=var_list)
+            optimizer = tf.train.MomentumOptimizer(learning_rate, self.momentum_rate)
         elif self.cfg['optimizer'] == 'adam':
-            return tf.train.AdamOptimizer(learning_rate).minimize(loss,
-                                                                  global_step=batch,
-                                                                  var_list=var_list)
+            optimizer = tf.train.AdamOptimizer(learning_rate)
         elif self.cfg['optimizer'] == 'rmsprop':
-            return tf.train.RMSPropOptimizer(learning_rate).minimize(loss,
-                                                                     global_step=batch,
-                                                                     var_list=var_list)
+            optimizer = tf.train.RMSPropOptimizer(learning_rate)
         else:
             raise ValueError('Optimizer %s not supported' %(self.cfg['optimizer']))
+
+        # compute gradients
+        gradients, variables = zip(*optimizer.compute_gradients(loss, var_list=var_list))
+        # clip gradients to prevent exploding gradient problem
+        gradients, global_grad_norm = tf.clip_by_global_norm(gradients, self.max_global_grad_norm)
+        # generate op to apply gradients
+        apply_grads = optimizer.apply_gradients(zip(gradients, variables), global_step=batch)
+
+        return apply_grads, global_grad_norm
 
     def _check_dead_queue(self):
         """ Checks to see if the queue is dead and if so closes the tensorflow session and cleans up the variables """
@@ -163,7 +166,7 @@ class GQCNNOptimizer(object):
             self.sess.close()
             
             # cleanup
-            for layer_weights in self.weights.__dict__.values():
+            for layer_weights in self.weights.values():
                 del layer_weights
             del self.saver
             del self.sess
@@ -192,44 +195,31 @@ class GQCNNOptimizer(object):
         # run setup 
         self._setup()
         
-        # read and setup dropouts from config
-        drop_fc3 = False
-        if 'drop_fc3' in self.cfg.keys() and self.cfg['drop_fc3']:
-            drop_fc3 = True
-        drop_fc4 = False
-        if 'drop_fc4' in self.cfg.keys() and self.cfg['drop_fc4']:
-            drop_fc4 = True
-        
-        fc3_drop_rate = self.cfg['fc3_drop_rate']
-        fc4_drop_rate = self.cfg['fc4_drop_rate']
-        
-        # build training and validation networks
-        with tf.name_scope('validation_network'):
-            if self.training_mode == TrainingMode.REGRESSION:
-                self.gqcnn.initialize_network(add_softmax=False, add_sigmoid=True) # builds validation network inside gqcnn class
-            elif self.cfg['loss'] != 'weighted_cross_entropy':
-                self.gqcnn.initialize_network(add_softmax=True, add_sigmoid=False) # builds validation network inside gqcnn class
+        # build network
+        self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node)
+        self.train_net_output = self.gqcnn.output
+        if self.training_mode == TrainingMode.CLASSIFICATION:
+            if self.cfg['loss'] == 'weighted_cross_entropy':
+                self.gqcnn.add_sigmoid_to_output()
             else:
-                self.gqcnn.initialize_network(add_softmax=False, add_sigmoid=True) # builds validation network inside gqcnn class                
-        with tf.name_scope('training_network'):
-            self.train_net_output = self.gqcnn._build_network(self.input_im_node, self.input_pose_node, drop_fc3, drop_fc4, fc3_drop_rate , fc4_drop_rate)
+                self.gqcnn.add_softmax_to_output()
+        elif self.training_mode == TrainingMode.REGRESSION:
+            self.gqcnn.add_sigmoid_to_output()
+        else:
+            raise ValueError('Training mode: {} not supported !'.format(self.training_mode))
+        train_predictions = self.gqcnn.output
+        drop_rate_in = self.gqcnn.input_drop_rate_node
 
-            # form loss
+        # once weights have been initialized create tf Saver for weights
+        self.saver = tf.train.Saver()
+
+        # form loss
+        with tf.name_scope('loss'):
             # part 1: error
-            if self.training_mode == TrainingMode.CLASSIFICATION:
-                if self.cfg['loss'] == 'weighted_cross_entropy':
-                    train_predictions = tf.nn.sigmoid(self.train_net_output)
-                else:
-                    train_predictions = tf.nn.softmax(self.train_net_output)
-                with tf.name_scope('loss'):
-                    loss = self._create_loss()
-            elif self.training_mode == TrainingMode.REGRESSION:
-                train_predictions = tf.nn.sigmoid(self.train_net_output)
-                with tf.name_scope('loss'):
-                    loss = self._create_loss()
+            loss = self._create_loss()
 
             # part 2: regularization
-            layer_weights = self.weights.__dict__.values()
+            layer_weights = self.weights.values()
             with tf.name_scope('regularization'):
                 regularizers = tf.nn.l2_loss(layer_weights[0])
                 for w in layer_weights[1:]:
@@ -246,15 +236,15 @@ class GQCNNOptimizer(object):
             staircase=True)
 
         # setup variable list
-        var_list = self.weights.__dict__.values()
+        var_list = self.weights.values()
         if self.cfg['fine_tune'] and self.cfg['update_fc_only']:
-            var_list = [v for k, v in self.weights.__dict__.iteritems() if k.find('conv') == -1]
+            var_list = [v for k, v in self.weights.iteritems() if k.find('conv') == -1]
         elif self.cfg['fine_tune'] and self.cfg['update_conv0_only'] and self.use_conv0:
-            var_list = [v for k, v in self.weights.__dict__.iteritems() if k.find('conv0') > -1]
+            var_list = [v for k, v in self.weights.iteritems() if k.find('conv0') > -1]
 
         # create optimizer
         with tf.name_scope('optimizer'):
-            optimizer = self._create_optimizer(loss, batch, var_list, learning_rate)
+            apply_grad_op, global_grad_norm = self._create_optimizer(loss, batch, var_list, learning_rate)
 
         def handler(signum, frame):
             logging.info('caught CTRL+C, exiting...')
@@ -279,7 +269,7 @@ class GQCNNOptimizer(object):
             logging.info('Cleaning and Preparing to Exit Optimization')
                 
             # cleanup
-            for layer_weights in self.weights.__dict__.values():
+            for layer_weights in self.weights.values():
                 del layer_weights
             del self.saver
             del self.sess
@@ -317,8 +307,8 @@ class GQCNNOptimizer(object):
 
                 # run optimization
                 step_start = time.time()
-                _, l, lr, predictions, batch_labels, output, train_images, conv1_1W, conv1_1b, train_poses = self.sess.run(
-                        [optimizer, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.weights.conv1_1W, self.weights.conv1_1b, self.input_pose_node], options=GeneralConstants.timeout_option)
+                _, l, lr, predictions, batch_labels, output, train_images, train_poses, conv1_1W, conv1_1b = self.sess.run(
+                        [apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.weights['conv1_1_weights'], self.weights['conv1_1_bias']], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
                 step_stop = time.time()
                 logging.info('Step took %.3f sec' %(step_stop-step_start))
                 
@@ -333,6 +323,7 @@ class GQCNNOptimizer(object):
                     logging.info('Min ' + str(np.min(softmax[:,1])))
                     logging.info('Pred nonzero ' + str(np.sum(softmax[:,1] > 0.5)))
                     logging.info('True nonzero ' + str(np.sum(batch_labels)))
+                   
                 else:
                     sigmoid = 1.0 / (1.0 + np.exp(-output))
                     logging.info('Max ' +  str(np.max(sigmoid)))
@@ -341,6 +332,7 @@ class GQCNNOptimizer(object):
                     logging.info('True nonzero ' + str(np.sum(batch_labels > 0.5)))
 
                 if np.isnan(l) or np.any(np.isnan(train_poses)):
+                    logging.info('Encountered NaN in loss or training poses!')
                     IPython.embed()
                     logging.info('Exiting...')
                     break
@@ -375,20 +367,24 @@ class GQCNNOptimizer(object):
                         # update the TrainStatsLogger and save
                         self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_error, val_eval_iter=None, val_error=None, learning_rate=None)
                         self.train_stats_logger.log()
-
-                    val_error = self._error_rate_in_batches()
-                    self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_error}), step)
-                    logging.info('Validation error: %.3f' %(val_error))
+                    
+                    if self.train_pct < 1.0:
+                        val_error = self._error_rate_in_batches()
+                        self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_error}), step)
+                        logging.info('Validation error: %.3f' %(val_error))
                     sys.stdout.flush()
 
                     # update the TrainStatsLogger
-                    self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+                    if self.train_pct < 1.0:
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+                    else:
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, learning_rate=None)
 
                     # save everything!
                     self.train_stats_logger.log()
 
                 # save filters
-                if step % self.vis_frequency == 0:
+                if step % self.vis_frequency == 0 and step > 0:
                     # conv1_1
                     num_filt = conv1_1W.shape[3]
                     d = int(np.ceil(np.sqrt(num_filt)))
@@ -411,9 +407,12 @@ class GQCNNOptimizer(object):
                     self.tensorboard_has_launched = True
                     self._launch_tensorboard()
 
-            # get final logs
-            val_error = self._error_rate_in_batches()
-            logging.info('Final validation error: %.3f%%' %val_error)
+            # get final errors and flush the stdout pipeline
+            final_val_error = self._error_rate_in_batches()
+            logging.info('Final validation error: %.3f%%' %final_val_error)
+            if self.cfg['eval_total_train_error']:
+                final_train_error = self._error_rate_in_batches(validation_set=False)
+                logging.info('Final training error: {}'.format(final_train_error))
             sys.stdout.flush()
 
             # update the TrainStatsLogger
@@ -427,7 +426,7 @@ class GQCNNOptimizer(object):
             self.term_event.set()
             if not self.forceful_exit:
                 self.sess.close() 
-                for layer_weights in self.weights.__dict__.values():
+                for layer_weights in self.weights.values():
                     del layer_weights
                 del self.saver
                 del self.sess
@@ -454,7 +453,7 @@ class GQCNNOptimizer(object):
         self.sess.close()
             
         # cleanup
-        for layer_weights in self.weights.__dict__.values():
+        for layer_weights in self.weights.values():
             del layer_weights
         del self.saver
         del self.sess
@@ -646,11 +645,13 @@ class GQCNNOptimizer(object):
             pct_pos_train = float(np.sum(all_train_metrics > self.metric_thresh)) / all_train_metrics.shape[0]
             np.save(pct_pos_train_filename, np.array(pct_pos_train))
 
-            pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
-            np.save(pct_pos_val_filename, np.array(pct_pos_val))
+            if self.train_pct < 1.0:
+                pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
+                np.save(pct_pos_val_filename, np.array(pct_pos_val))
 
         logging.info('Percent positive in train: ' + str(pct_pos_train))
-        logging.info('Percent positive in val: ' + str(pct_pos_val))
+        if self.train_pct < 1.0:
+            logging.info('Percent positive in val: ' + str(pct_pos_val))
         
     def _compute_split_indices(self):
         """ Compute train and validation indices for each tensor to speed data accesses"""
@@ -704,8 +705,8 @@ class GQCNNOptimizer(object):
             # if the summary directory already exists, clean it out by deleting all files in it
             # we don't want tensorboard to get confused with old logs while debugging with the same directory
             old_files = os.listdir(self.summary_dir)
-            for file in old_files:
-                os.remove(os.path.join(self.summary_dir, file))
+            for f in old_files:
+                os.remove(os.path.join(self.summary_dir, f))
 
         # setup filter directory
         self.filter_dir = os.path.join(self.model_dir, 'filters')
@@ -771,6 +772,8 @@ class GQCNNOptimizer(object):
         self.decay_rate = self.cfg['decay_rate']
         self.momentum_rate = self.cfg['momentum_rate']
         self.max_training_examples_per_load = self.cfg['max_training_examples_per_load']
+        self.drop_rate = self.cfg['drop_rate']
+        self.max_global_grad_norm = self.cfg['max_global_grad_norm']
 
         # metrics
         self.target_metric_name = self.cfg['target_metric_name']
@@ -799,7 +802,7 @@ class GQCNNOptimizer(object):
             raise ValueError('Train percentage must be in range [0,1]')
 
         if self.total_pct < 0 or self.total_pct > 1:
-            raise ValueError('Train percentage must be in range [0,1]')
+            raise ValueError('Total percentage must be in range [0,1]')
 
         
     def _setup_denoising_and_synthetic(self):
@@ -827,7 +830,10 @@ class GQCNNOptimizer(object):
 
         # read split
         if not self.dataset.has_split(self.split_name):
-            self.dataset.make_split(self.split_name)
+            logging.info('Training split: {} not found in dataset. Creating new split...')
+            self.dataset.make_split(self.split_name, train_pct=self.train_pct)
+        else:
+            logging.info('Training split: {} found in dataset.'.format(self.split_name))
         self._compute_split_indices()
         
     def _compute_data_params(self):
@@ -894,26 +900,17 @@ class GQCNNOptimizer(object):
 
         # setup weights using gqcnn
         if self.cfg['fine_tune']:
-            # check that the gqcnn has weights, re-initialize if not
-            try:
-                self.weights = self.gqcnn.weights
-            except:
-                self.gqcnn.init_weights_gaussian()                
-
             # this assumes that a gqcnn was passed in that was initialized with weights from a model using GQCNN.load(), so all that has to
             # be done is to possibly reinitialize fc3/fc4/fc5
             reinit_pc1 = False
             if 'reinit_pc1' in self.cfg.keys():
                 reinit_pc1 = self.cfg['reinit_pc1']
             self.gqcnn.reinitialize_layers(self.cfg['reinit_fc3'], self.cfg['reinit_fc4'], self.cfg['reinit_fc5'], reinit_pc1=reinit_pc1)
-        else:
-            self.gqcnn.init_weights_gaussian()
 
         # get weights
         self.weights = self.gqcnn.weights
 
         # open a tf session for the gqcnn object and store it also as the optimizer session
-        self.saver = tf.train.Saver()
         self.sess = self.gqcnn.open_session()
 
         # setup term event/dead event
@@ -972,15 +969,15 @@ class GQCNNOptimizer(object):
         # read training parameters from config file
         self._read_training_params()
 
-        # setup denoising and synthetic data parameters
-        self._setup_denoising_and_synthetic()
-
         # setup image and pose data files
-        self._open_dataset()
+        self._open_dataset() 
 
         # compute data parameters
         self._compute_data_params()
-            
+ 
+        # setup denoising and synthetic data parameters
+        self._setup_denoising_and_synthetic()
+          
         # compute means, std's, and normalization metrics
         self._compute_data_metrics()
 
@@ -1128,7 +1125,7 @@ class GQCNNOptimizer(object):
         
         # denoising and synthetic data generation
         if self.cfg['multiplicative_denoising']:
-            mult_samples = ss.gamma.rvs(self.gamma_shape, scale=self.gamma_scale, size=num_loaded)
+            mult_samples = ss.gamma.rvs(self.gamma_shape, scale=self.gamma_scale, size=num_images)
             mult_samples = mult_samples[:,np.newaxis,np.newaxis,np.newaxis]
             image_arr = image_arr * np.tile(mult_samples, [1, self.im_height, self.im_width, self.im_channels])
 
