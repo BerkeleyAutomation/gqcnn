@@ -68,7 +68,8 @@ class GQCNNOptimizer(object):
                  dataset_dir,
                  split_name,
                  output_dir,
-                 config):
+                 config,
+                 name=None):
         """
         Parameters
         ----------
@@ -82,6 +83,8 @@ class GQCNNOptimizer(object):
             path to save the model output
         config : dict
             dictionary of configuration parameters
+        name : str
+            name of the the model
         """
         self.gqcnn = gqcnn
         self.dataset_dir = dataset_dir
@@ -89,7 +92,8 @@ class GQCNNOptimizer(object):
         self.output_dir = output_dir
         self.cfg = config
         self.tensorboard_has_launched = False
-
+        self.model_name = name
+    
         # check default split
         if split_name is None:
             logging.warning('Using default image-wise split')
@@ -685,8 +689,10 @@ class GQCNNOptimizer(object):
     def _setup_output_dirs(self):
         """ Setup output directories """
         # create a directory for the model
-        model_id = utils.gen_experiment_id()
-        self.model_dir = os.path.join(self.output_dir, 'model_%s' %(model_id))
+        if self.model_name is None:
+            model_id = utils.gen_experiment_id()
+            self.model_name = 'model_%s' %(model_id)
+        self.model_dir = os.path.join(self.output_dir, self.model_name)
         if not os.path.exists(self.model_dir):
             os.mkdir(self.model_dir)
 

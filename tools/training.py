@@ -45,7 +45,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network from scratch with TensorFlow')
     parser.add_argument('dataset_dir', type=str, default=None,
                         help='path to the dataset to use for training and validation')
-    parser.add_argument('--split_name', type=str, default=None,
+    parser.add_argument('--split_name', type=str, default='image_wise',
                         help='name of the split to train on')
     parser.add_argument('--output_dir', type=str, default=None,
                         help='path to store the model')
@@ -55,8 +55,10 @@ if __name__ == '__main__':
                         help='random seed for training')
     parser.add_argument('--config_filename', type=str, default=None,
                         help='path to the configuration file to use')
-    parser.add_argument('--unique_name', type=bool, default=False,
-                        help='add a unique name to dataset path which encodes the current date')
+    parser.add_argument('--name', type=str, default=None,
+                        help='name for the trained model')
+    parser.add_argument('--save_datetime', type=bool, default=False,
+                        help='whether or not to save a model with the date and time of training')
     args = parser.parse_args()
     dataset_dir = args.dataset_dir
     split_name = args.split_name
@@ -64,7 +66,9 @@ if __name__ == '__main__':
     tensorboard_port = args.tensorboard_port
     seed = args.seed
     config_filename = args.config_filename
-
+    name = args.name
+    save_datetime = args.save_datetime
+    
     # set default output dir
     if output_dir is None:
         output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -94,7 +98,7 @@ if __name__ == '__main__':
     gqcnn_params = train_config['gqcnn']
 
     # create a unique output folder based on the date and time
-    if args.unique_name:
+    if save_datetime:
         # create output dir
         unique_name = time.strftime("%Y%m%d-%H%M%S")
         output_dir = os.path.join(output_dir, unique_name)
@@ -111,6 +115,7 @@ if __name__ == '__main__':
                                dataset_dir,
                                split_name,
                                output_dir,
-                               train_config)
+                               train_config,
+                               name=name)
     optimizer.train()
     logging.info('Total Training Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 

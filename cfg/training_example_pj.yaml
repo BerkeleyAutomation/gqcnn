@@ -3,14 +3,14 @@ train_batch_size: 64
 val_batch_size: &val_batch_size 64
 
 # logging params
-num_epochs: 100        # number of epochs to train for
+num_epochs: 25        # number of epochs to train for
 eval_frequency: 10    # how often to get validation error (in epochs)
 save_frequency: 10    # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
 log_frequency: 1      # how often to log output (in steps)
 
 # train / val split params 
-train_pct: 0.8              # percentage of the data to use for training vs validation
+train_pct: 0.9              # percentage of the data to use for training vs validation
 total_pct: 1.0              # percentage of all the files to use
 eval_total_train_error: 0   # whether or not to evaluate the total training error on each validataion
 max_files_eval: 1000        # the number of validation files to use in each eval
@@ -79,7 +79,7 @@ gqcnn:
   im_channels: 1
 
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
-  gripper_mode: suction
+  gripper_mode: parallel_jaw
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the optimizer's config file
   batch_size: *val_batch_size
@@ -88,15 +88,15 @@ gqcnn:
   architecture:
     conv1_1:
       filt_dim: 9
-      num_filt: 16
-      pool_size: 1
-      pool_stride: 1  
+      num_filt: 8
+      pool_size: 2
+      pool_stride: 2  
       padding: VALID
       norm: 0
       norm_type: local_response
     conv1_2:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
       padding: VALID
@@ -104,7 +104,7 @@ gqcnn:
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 1
       pool_stride: 1
       padding: VALID
@@ -112,14 +112,14 @@ gqcnn:
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
       padding: VALID
       norm: 0
       norm_type: local_response
     pc1:
-      out_size: 16
+      out_size: 4
     pc2:
       out_size: 0
     fc3:
