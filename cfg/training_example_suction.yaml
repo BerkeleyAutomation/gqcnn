@@ -3,7 +3,7 @@ train_batch_size: 64
 val_batch_size: &val_batch_size 64
 
 # logging params
-num_epochs: 25        # number of epochs to train for
+num_epochs: 50        # number of epochs to train for
 eval_frequency: 10    # how often to get validation error (in epochs)
 save_frequency: 10    # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
@@ -95,8 +95,8 @@ gqcnn:
         type: conv
         filt_dim: 9
         num_filt: 8
-        pool_size: 2
-        pool_stride: 2  
+        pool_size: 1
+        pool_stride: 1
         pad: VALID
         norm: 0
         norm_type: local_response

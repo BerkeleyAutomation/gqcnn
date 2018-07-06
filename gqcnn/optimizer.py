@@ -469,8 +469,8 @@ class GQCNNOptimizer(object):
                                                replace=False)
         
         # compute image stats
-        im_mean_filename = os.path.join(self.model_dir, 'mean.npy')
-        im_std_filename = os.path.join(self.model_dir, 'std.npy')
+        im_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
+        im_std_filename = os.path.join(self.model_dir, 'im_std.npy')
         if self.cfg['fine_tune']:
             self.im_mean = self.gqcnn.im_mean
             self.im_std = self.gqcnn.im_std
@@ -593,8 +593,8 @@ class GQCNNOptimizer(object):
 
         # save mean and std to file for finetuning
         if self.cfg['fine_tune']:
-            out_mean_filename = os.path.join(self.model_dir, 'mean.npy')
-            out_std_filename = os.path.join(self.model_dir, 'std.npy')
+            out_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
+            out_std_filename = os.path.join(self.model_dir, 'im_std.npy')
             out_pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
             out_pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
             np.save(out_mean_filename, self.im_mean)

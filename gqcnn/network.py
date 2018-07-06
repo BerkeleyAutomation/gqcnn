@@ -83,8 +83,77 @@ class GQCNN(object):
         with open(config_file) as data_file:    
             train_config = json.load(data_file, object_pairs_hook=OrderedDict)
 
-        gqcnn_config = train_config['gqcnn_config']
-        
+        # read gqcnn config with legacy support
+        try:
+            gqcnn_config = train_config['gqcnn']
+        except:
+            gqcnn_config = train_config['gqcnn_config']            
+
+        # convert old networks to new flexible arch format
+        gqcnn_config['debug'] = 0
+        gqcnn_config['seed'] = 0
+        arch_config = gqcnn_config['architecture']
+        if 'im_stream' not in arch_config.keys():
+            new_arch_config = OrderedDict()
+            new_arch_config['im_stream'] = OrderedDict()
+            new_arch_config['pose_stream'] = OrderedDict()
+            new_arch_config['merge_stream'] = OrderedDict()  
+
+            layer_name = 'conv1_1'
+            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+            new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+            new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+
+            layer_name = 'conv1_2'
+            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+            new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+            new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']            
+
+            layer_name = 'conv2_1'
+            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+            new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+            new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+
+            layer_name = 'conv2_2'
+            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+            new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+            new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']            
+
+            layer_name = 'conv3_1'
+            if layer_name in arch_config.keys():
+                new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+                new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']                        
+
+            layer_name = 'conv3_2'
+            if layer_name in arch_config.keys():
+                new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+                new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+
+            layer_name = 'fc3'
+            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+            new_arch_config['im_stream'][layer_name]['type'] = 'fc'            
+                
+            layer_name = 'pc1'
+            new_arch_config['pose_stream'][layer_name] = arch_config[layer_name]
+            new_arch_config['pose_stream'][layer_name]['type'] = 'pc'
+
+            layer_name = 'pc2'
+            if layer_name in arch_config.keys():
+                new_arch_config['pose_stream'][layer_name] = arch_config[layer_name]
+                new_arch_config['pose_stream'][layer_name]['type'] = 'pc'
+                
+            layer_name = 'fc4'
+            new_arch_config['merge_stream'][layer_name] = arch_config[layer_name]
+            new_arch_config['merge_stream'][layer_name]['type'] = 'fc_merge'            
+
+            layer_name = 'fc5'
+            new_arch_config['merge_stream'][layer_name] = arch_config[layer_name]
+            new_arch_config['merge_stream'][layer_name]['type'] = 'fc'            
+
+            gqcnn_config['architecture'] = new_arch_config
+            
         # create GQCNN object and initialize weights and network
         gqcnn = GQCNN(gqcnn_config)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
@@ -108,14 +177,26 @@ class GQCNN(object):
         """
         # load in means and stds 
         # pose format is: grasp center row, grasp center col, gripper depth, grasp theta, crop center row, crop center col, grip width
-        self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
-        self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
+        try:
+            self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
+            self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
+        except:
+            # for backwards compatibility
+            self._im_mean = np.load(os.path.join(model_dir, 'mean.npy'))
+            self._im_std = np.load(os.path.join(model_dir, 'std.npy'))
         self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
         self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
 
+        # fix legacy
         # read the certain parts of the pose mean/std that we desire
-        self._pose_mean = read_pose_data(self._pose_mean, self._input_pose_mode)
-        self._pose_std = read_pose_data(self._pose_std, self._input_pose_mode)
+        if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] != self._pose_dim:
+            # handle multidim storage
+            if self._pose_mean.shape[1] == self._pose_dim:
+                self._pose_mean = self._pose_mean[0,:]
+                self._pose_std = self._pose_std[0,:]
+            else:
+                self._pose_mean = read_pose_data(self._pose_mean, self._gripper_mode)
+                self._pose_std = read_pose_data(self._pose_std, self._gripper_mode)
       
     def init_weights_file(self, ckpt_file):
         """ Initialize network weights from the specified model 
@@ -185,7 +266,9 @@ class GQCNN(object):
         self._normalization_bias = gqcnn_config['bias']
 
         # get ReLU coefficient
-        self._relu_coeff = gqcnn_config['relu_coeff']
+        self._relu_coeff = 0.0
+        if 'relu_coeff' in gqcnn_config.keys():
+            self._relu_coeff = gqcnn_config['relu_coeff']
 
         # debugging
         self._debug = gqcnn_config['debug']
@@ -284,10 +367,6 @@ class GQCNN(object):
     @property
     def pose_dim(self):
         return self._pose_dim
-
-    @property
-    def input_pose_mode(self):
-        return self._input_pose_mode
 
     @property
     def gripper_mode(self):
@@ -413,6 +492,26 @@ class GQCNN(object):
             logging.info('Building Sigmoid Layer...')
             self._output_tensor = tf.nn.sigmoid(self._output_tensor)
 
+    @property
+    def filters(self):
+        """ Returns the set of conv1_1 filters 
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            filters(weights) from conv1_1 of the network
+        """
+        close_sess = False
+        if self._sess is None:
+            close_sess = True
+            self.open_session()
+
+        first_layer_im_stream = self._architecture['im_stream'].keys()[0]
+        filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_im_stream)])
+
+        if close_sess:
+            self.close_session()
+        return filters
+            
     def update_batch_size(self, batch_size):
         """ Updates the prediction batch size 
 

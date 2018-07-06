@@ -95,7 +95,7 @@ def read_pose_data(pose_arr, gripper_mode):
             return pose_arr[:,2:3]
     elif gripper_mode == GripperMode.SUCTION:
         if pose_arr.ndim == 1:
-            return np.c_[pose_arr[2], pose_arr[4]]
+            return np.r_[pose_arr[2], pose_arr[4]]
         else:
             return np.c_[pose_arr[:,2], pose_arr[:,4]]
     elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
