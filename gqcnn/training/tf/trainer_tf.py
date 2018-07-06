@@ -921,6 +921,10 @@ class GQCNNTrainerTF(object):
         # angular training
         self._angular_bins = self.gqcnn.angular_bins
 
+        # during angular training, make sure symmetrization in denoising is turned off
+        if self._angular_bins > 0:
+            assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training'
+
     def _setup_denoising_and_synthetic(self):
         """ Setup denoising and synthetic data parameters """
         # multiplicative denoising
