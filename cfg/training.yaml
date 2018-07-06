@@ -10,7 +10,7 @@ vis_frequency: 10000  # how often to visualize filters (in epochs)
 log_frequency: 1      # how often to log output (in steps)
 
 # train / val split params 
-train_pct: 0.9              # percentage of the data to use for training vs validation
+train_pct: 0.8              # percentage of the data to use for training vs validation
 total_pct: 1.0              # percentage of all the files to use
 eval_total_train_error: 0   # whether or not to evaluate the total training error on each validataion
 max_files_eval: 1000        # the number of validation files to use in each eval

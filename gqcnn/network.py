@@ -102,34 +102,46 @@ class GQCNN(object):
             layer_name = 'conv1_1'
             new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
             new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-            new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+            new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+            if 'padding' in arch_config[layer_name].keys():
+                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
             layer_name = 'conv1_2'
             new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-            new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']            
+            new_arch_config['im_stream'][layer_name]['type'] = 'conv' 
+            new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+            if 'padding' in arch_config[layer_name].keys():
+                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
             layer_name = 'conv2_1'
             new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
             new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-            new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+            new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+            if 'padding' in arch_config[layer_name].keys():
+                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
             layer_name = 'conv2_2'
             new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
             new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-            new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']            
+            new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+            if 'padding' in arch_config[layer_name].keys():
+                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
             layer_name = 'conv3_1'
             if layer_name in arch_config.keys():
                 new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
                 new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']                        
+                new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+                if 'padding' in arch_config[layer_name].keys():
+                    new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
             layer_name = 'conv3_2'
             if layer_name in arch_config.keys():
                 new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
                 new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+                new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+                if 'padding' in arch_config[layer_name].keys():
+                    new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
             layer_name = 'fc3'
             new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
@@ -191,7 +203,7 @@ class GQCNN(object):
         # read the certain parts of the pose mean/std that we desire
         if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] != self._pose_dim:
             # handle multidim storage
-            if self._pose_mean.shape[1] == self._pose_dim:
+            if len(self._pose_mean.shape) > 1 and self._pose_mean.shape[1] == self._pose_dim:
                 self._pose_mean = self._pose_mean[0,:]
                 self._pose_std = self._pose_std[0,:]
             else:

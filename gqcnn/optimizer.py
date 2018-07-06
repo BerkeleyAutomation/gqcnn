@@ -830,7 +830,7 @@ class GQCNNOptimizer(object):
 
         # read split
         if not self.dataset.has_split(self.split_name):
-            logging.info('Training split: {} not found in dataset. Creating new split...')
+            logging.info('Training split: {} not found in dataset. Creating new split...'.format(self.split_name))
             self.dataset.make_split(self.split_name, train_pct=self.train_pct)
         else:
             logging.info('Training split: {} found in dataset.'.format(self.split_name))
