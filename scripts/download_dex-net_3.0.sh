@@ -4,4 +4,5 @@ wget -O data/training/dexnet_3.tar.gz https://berkeley.box.com/shared/static/wd5
 
 cd data/training
 tar -xvzf dexnet_3.tar.gz
+mv dexnet_3 dex-net_3.0
 cd ../..
