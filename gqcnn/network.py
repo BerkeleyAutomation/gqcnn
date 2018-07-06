@@ -258,12 +258,12 @@ class GQCNN(object):
         try:
             self._gripper_mode = gqcnn_config['gripper_mode']
         except:
-            logging.warning('Could not read gripper mode. Attempting legacy conversion')
             self._input_data_mode = gqcnn_config['input_data_mode']
             if self._input_data_mode == 'tf_image':
                 self._gripper_mode = GripperMode.LEGACY_PARALLEL_JAW
             elif self._input_data_mode == 'tf_image_suction':
                 self._gripper_mode = GripperMode.LEGACY_SUCTION                
+            logging.warning('Could not read gripper mode. Attempting legacy conversion to {}'.format(self._gripper_mode))
             
         # setup correct pose dimensions
         self._pose_dim = pose_dim(self._gripper_mode)

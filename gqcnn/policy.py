@@ -751,16 +751,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                          grasp.approach_angle < self._max_approach_angle):
 
                         # check validity according to filters
-                        valid = True
-                        if self._filters is not None:
-                            for filter_name, is_valid in self._filters.iteritems():
-                                valid = is_valid(grasp) 
-                                logging.debug('Grasp {} filter {} valid: {}'.format(k, filter_name, valid))
-                                if not valid:
-                                    valid = False
-                                    break
-                        if valid:
-                            grasps.append(grasp)
+                        grasps.append(grasp)
                     logging.debug('Bounds took %.5f sec' %(time()-bounds_start))
                     num_tries += 1
                     
