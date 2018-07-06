@@ -779,6 +779,10 @@ class GQCNN(object):
             input1W = self._weights.weights['{}_input_1_weights'.format(name)]
             input2W = self._weights.weights['{}_input_2_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
+        if '{}W_im'.format(name) in self._weights.weights.keys():
+            input1W = self._weights.weights['{}W_im'.format(name)]
+            input2W = self._weights.weights['{}W_pose'.format(name)]
+            fcb = self._weights.weights['{}b'.format(name)] 
         else:
             std = np.sqrt(2.0 / (fan_in_1 + fan_in_2))
             input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std), name='{}_input_1_weights'.format(name))
