@@ -658,7 +658,11 @@ class GQCNN(object):
             if '{}_weights'.format(name) in self._weights.weights.keys():
                 convW = self._weights.weights['{}_weights'.format(name)]
                 convb = self._weights.weights['{}_bias'.format(name)] 
+            elif '{}W'.format(name) in self._weights.weights.keys():
+                convW = self._weights.weights['{}W'.format(name)]
+                convb = self._weights.weights['{}b'.format(name)] 
             else:
+                logging.info('Reinitializing layer {}'.format(name))
                 convW_shape = [filter_h, filter_w, input_channels, num_filt]
 
                 fan_in = filter_h * filter_w * input_channels
@@ -706,7 +710,11 @@ class GQCNN(object):
         if '{}_weights'.format(name) in self._weights.weights.keys():
             fcW = self._weights.weights['{}_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
+        elif '{}W'.format(name) in self._weights.weights.keys():
+            fcW = self._weights.weights['{}W'.format(name)]
+            fcb = self._weights.weights['{}b'.format(name)] 
         else:
+            logging.info('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std), name='{}_weights'.format(name))
             if final_fc_layer:
@@ -740,7 +748,11 @@ class GQCNN(object):
         if '{}_weights'.format(name) in self._weights.weights.keys():
             pcW = self._weights.weights['{}_weights'.format(name)]
             pcb = self._weights.weights['{}_bias'.format(name)] 
+        elif '{}W'.format(name) in self._weights.weights.keys():
+            pcW = self._weights.weights['{}W'.format(name)]
+            pcb = self._weights.weights['{}b'.format(name)] 
         else:
+            logging.info('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             pcW = tf.Variable(tf.truncated_normal([fan_in, out_size],
                                                stddev=std), name='{}_weights'.format(name))
@@ -808,6 +820,8 @@ class GQCNN(object):
                     filter_dim = ((filter_dim - layer_config['filt_dim']) / layer_config['pool_stride']) + 1
                 
             elif layer_type == 'fc':
+                if layer_config['out_size'] == 0:
+                    continue
                 prev_layer_is_conv_or_res = False
                 if prev_layer == 'conv':
                     prev_layer_is_conv = True
@@ -834,6 +848,8 @@ class GQCNN(object):
             elif layer_type == 'fc':
                 raise ValueError('Cannot have fc layer in pose stream')
             elif layer_type == 'pc':
+                if layer_config['out_size'] == 0:
+                    continue
                 output_node, fan_in = self._build_pc_layer(output_node, fan_in, layer_config['out_size'], layer_name)
                 prev_layer = layer_type
             elif layer_type == 'fc_merge':
@@ -859,6 +875,8 @@ class GQCNN(object):
             if layer_type == 'conv':
                raise ValueError('Cannot have conv layer in merge stream!')
             elif layer_type == 'fc':
+                if layer_config['out_size'] == 0:
+                    continue
                 if layer_index == last_index:
                     output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, drop_rate, final_fc_layer=True)
                 else:
@@ -867,6 +885,8 @@ class GQCNN(object):
             elif layer_type == 'pc':  
                 raise ValueError('Cannot have pose-connected layer in merge stream!')
             elif layer_type == 'fc_merge':
+                if layer_config['out_size'] == 0:
+                    continue
                 output_node, fan_in = self._build_fc_merge(input_stream_1, input_stream_2, fan_in_1, fan_in_2, layer_config['out_size'], drop_rate, layer_name)
                 prev_layer = layer_type   
             else:
