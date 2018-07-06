@@ -44,7 +44,7 @@ target_metric_name: grasp_metrics  # name of the field to use for the labels
 metric_thresh: 0.5                 # threshold for positive examples (label = 1 if grasp_metric > metric_thresh)
 
 # preproc params
-num_random_files: 1000     # the number of random files to compute dataset statistics in preprocessing (lower speeds initialization)
+num_random_files: 10000     # the number of random files to compute dataset statistics in preprocessing (lower speeds initialization)
 preproc_log_frequency: 100 # how often to log preprocessing (in steps)
 
 # denoising / synthetic data params
@@ -88,7 +88,7 @@ gqcnn:
   architecture:
     conv1_1:
       filt_dim: 9
-      num_filt: 16
+      num_filt: 8
       pool_size: 1
       pool_stride: 1  
       padding: VALID
@@ -96,7 +96,7 @@ gqcnn:
       norm_type: local_response
     conv1_2:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
       padding: VALID
@@ -104,7 +104,7 @@ gqcnn:
       norm_type: local_response
     conv2_1:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 1
       pool_stride: 1
       padding: VALID
@@ -112,7 +112,7 @@ gqcnn:
       norm_type: local_response
     conv2_2:
       filt_dim: 3
-      num_filt: 16
+      num_filt: 8
       pool_size: 2
       pool_stride: 2
       padding: VALID

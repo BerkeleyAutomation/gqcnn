@@ -432,7 +432,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             width = np.linalg.norm(p1 - p2)
             k += 1
 
-            # check center and axis
+            # compute center and axis
             grasp_center = (p1 + p2) / 2
             grasp_axis = p2 - p1
             grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
@@ -440,7 +440,14 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             if grasp_axis[1] != 0:
                 grasp_theta = np.arctan(grasp_axis[0] / grasp_axis[1])
             grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
-                
+
+            # check center px dist from boundary
+            if grasp_center[0] < self._min_dist_from_boundary or \
+               grasp_center[1] < self._min_dist_from_boundary or \
+               grasp_center[0] > depth_im.height - self._min_dist_from_boundary or \
+               grasp_center[1] > depth_im.width - self._min_dist_from_boundary:
+                continue
+            
             # sample depths
             for i in range(self._depth_samples_per_grasp):
                 # get depth in the neighborhood of the center pixel
@@ -505,6 +512,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         # read params
         self._max_suction_dir_optical_axis_angle = np.deg2rad(self._config['max_suction_dir_optical_axis_angle'])
         self._max_dist_from_center = self._config['max_dist_from_center']
+        self._min_dist_from_boundary = self._config['min_dist_from_boundary']
         self._max_num_samples = self._config['max_num_samples']
 
         self._min_theta = -np.deg2rad(self._config['delta_theta'])
@@ -628,9 +636,16 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             center = Point(center_px, frame=camera_intr.frame)
             axis = -normal_cloud_im[center.y, center.x]
             depth = point_cloud_im[center.y, center.x][2]
-
+            
             # update number of tries
             k += 1
+
+            # check center px dist from boundary
+            if center_px[0] < self._min_dist_from_boundary or \
+               center_px[1] < self._min_dist_from_boundary or \
+               center_px[1] > depth_im.height - self._min_dist_from_boundary or \
+               center_px[0] > depth_im.width - self._min_dist_from_boundary:
+                continue            
             
             # perturb depth
             delta_depth = self._depth_rv.rvs(size=1)[0]

@@ -1,34 +1,16 @@
-# visualization
-vis:
-  vis_cropped_rgbd_image: 0
-  vis_uncropped_color_image: 0
-  vis_uncropped_depth_image: 0
-
-# padding for the cropped images so when they are rotated to be centered on the grasp point there will not be any gaps where there is no part of the image
-width_pad: 0
-height_pad: 0
-
-# inpaint
-inpaint_rescale_factor: 0.5 # amount to rescale the images before inpainting (smaller numbers == faster code) 
-
 # policy params
 policy:
   # optimization params
-  num_seed_samples: 200 # number of seed samples
+  num_seed_samples: 250 # number of seed samples
   num_gmm_samples: 50
   num_iters: 3
   gmm_refit_p: 0.25
   gmm_component_frac: 0.4
   gmm_reg_covar: 0.01
 
-  # gqcnn params
-  gqcnn_model: /mnt/hdd/dex-net/data/models/grasp_quality/GQ-Image-Wise
-
   # general params
   deterministic: 1
   gripper_width: 0.05
-  crop_height: 96
-  crop_width: 96
 
   # sampling params
   sampling:
@@ -41,20 +23,29 @@ policy:
     depth_grad_thresh: 0.0025
     depth_grad_gaussian_sigma: 1.0
     downsample_rate: 4
-    max_rejection_samples: 2500
+    max_rejection_samples: 4000
 
     # distance
-    max_dist_from_center: 10000000
-    min_dist_from_boundary: 40
+    max_dist_from_center: 160
+    min_dist_from_boundary: 45
     min_grasp_dist: 2.5
     angle_dist_weight: 5.0
 
     # depth sampling
+    depth_sampling_mode: uniform
     depth_samples_per_grasp: 1
     depth_sample_win_height: 1
     depth_sample_win_width: 1
-    min_depth_offset: 0.015
-    max_depth_offset: 0.0
+    min_depth_offset: 0.005
+    max_depth_offset: 0.04
+
+  # metrics
+  metric:
+    type: gqcnn
+    gqcnn_model: models/GQCNN-2.0
+    
+    crop_height: 96
+    crop_width: 96
 
   # visualization
   vis:
@@ -66,5 +57,17 @@ policy:
     grasp_plan: 0
     final_grasp: 0
 
+    vmin: 0.6
+    vmax: 0.9
+
     k: 25
 
+# visualization
+vis:
+  cropped_rgbd_image: 0
+  color_image: 0
+  depth_image: 0
+  segmask: 0
+
+# inpaint
+inpaint_rescale_factor: 0.5 # amount to rescale the images before inpainting (smaller numbers == faster code) 

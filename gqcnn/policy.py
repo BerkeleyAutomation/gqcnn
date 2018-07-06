@@ -28,6 +28,7 @@ from abc import ABCMeta, abstractmethod
 import cPickle as pkl
 import logging
 import matplotlib.pyplot as plt
+import math
 import numpy as np
 import os
 import sys
@@ -119,8 +120,8 @@ class RgbdImageState(object):
                               obj_segmask=obj_segmask,
                               fully_observed=fully_observed)
             
-class ParallelJawGrasp(object):
-    """ Action to encapsulate parallel jaw grasps.
+class GraspAction(object):
+    """ Action to encapsulate grasps.
     """
     def __init__(self, grasp, q_value, image):
         self.grasp = grasp
@@ -147,25 +148,7 @@ class ParallelJawGrasp(object):
         grasp = pkl.load(open(grasp_filename, 'rb'))
         q_value = pkl.load(open(q_value_filename, 'rb'))
         image = DepthImage.open(image_filename)
-        return ParallelJawGrasp(grasp, q_value, image)
-        
-class GraspAction(object):
-    """ Action to encapsulate parallel jaw grasps.
-    """
-    def __init__(self, grasp, q_value, image):
-        self.grasp = grasp
-        self.q_value = q_value
-        self.image = image
-
-    def save(self, save_dir):
-        if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
-        grasp_filename = os.path.join(save_dir, 'grasp.pkl')
-        q_value_filename = os.path.join(save_dir, 'pred_robustness.pkl')
-        image_filename = os.path.join(save_dir, 'tf_image.npy')
-        pkl.dump(self.grasp, open(grasp_filename, 'wb'))
-        pkl.dump(self.q_value, open(q_value_filename, 'wb'))
-        self.image.save(image_filename)
+        return GraspAction(grasp, q_value, image)
         
 class Policy(object):
     """ Abstract policy class. """
@@ -212,6 +195,13 @@ class GraspingPolicy(Policy):
             
         # init grasp sampler
         self._sampling_config = config['sampling']
+        self._sampling_config['gripper_width'] = self._gripper_width
+        if 'crop_width' in config['metric'].keys() and 'crop_height' in config['metric'].keys():
+            pad = max(
+                math.ceil(np.sqrt(2) * (float(config['metric']['crop_width']) / 2)),
+                math.ceil(np.sqrt(2) * (float(config['metric']['crop_height']) / 2))
+            )
+            self._sampling_config['min_dist_from_boundary'] = pad
         self._sampling_config['gripper_width'] = self._gripper_width
         sampler_type = self._sampling_config['type']
         self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,

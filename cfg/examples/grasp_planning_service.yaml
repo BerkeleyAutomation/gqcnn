@@ -1,0 +1,6 @@
+# visualization
+vis:
+  final_grasp: 1
+
+  vmin: 0.6
+  vmax: 0.9

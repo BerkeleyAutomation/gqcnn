@@ -25,7 +25,7 @@ from grasp import Grasp2D, SuctionPoint2D
 
 from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
 from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
-from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction, ParallelJawGrasp
+from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction
 
 from optimizer import GQCNNOptimizer
 from analyzer import GQCNNAnalyzer
