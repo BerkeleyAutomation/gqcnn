@@ -42,8 +42,9 @@ from autolab_core import BinaryClassificationResult, Point, TensorDataset
 from autolab_core.constants import *
 from perception import DepthImage
 from visualization import Visualizer2D as vis2d
+from gqcnn.model import get_gqcnn_model
 
-from . import GQCNN, Grasp2D, SuctionPoint2D
+from . import Grasp2D, SuctionPoint2D
 from .utils import GripperMode, ImageMode
 from .utils import *
 
@@ -160,7 +161,7 @@ class GQCNNAnalyzer(object):
 
         # load model
         logging.info('Loading model %s' %(model_dir))
-        gqcnn = GQCNN.load(model_dir)
+        gqcnn = get_gqcnn_model().load(model_dir)
         gqcnn.open_session()
         gripper_mode = gqcnn.gripper_mode
 

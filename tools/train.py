@@ -30,11 +30,11 @@ import argparse
 import logging
 import os
 import time
-import os
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig
-from gqcnn import GQCNN, GQCNNOptimizer, GQCNNAnalyzer
+from gqcnn.model import get_gqcnn_model
+from gqcnn.training import get_gqcnn_trainer
 from gqcnn import utils as gqcnn_utils
 
 if __name__ == '__main__':
@@ -59,6 +59,8 @@ if __name__ == '__main__':
                         help='name for the trained model')
     parser.add_argument('--save_datetime', type=bool, default=False,
                         help='whether or not to save a model with the date and time of training')
+    parser.add_argument('--backend', type=str, default='tf', 
+                        help='the deep learning framework to use')
     args = parser.parse_args()
     dataset_dir = args.dataset_dir
     split_name = args.split_name
@@ -68,6 +70,7 @@ if __name__ == '__main__':
     config_filename = args.config_filename
     name = args.name
     save_datetime = args.save_datetime
+    backend = args.backend
     
     # set default output dir
     if output_dir is None:
@@ -110,12 +113,12 @@ if __name__ == '__main__':
 
     # train the network
     start_time = time.time()
-    gqcnn = GQCNN(gqcnn_params)
-    optimizer = GQCNNOptimizer(gqcnn,
-                               dataset_dir,
-                               split_name,
-                               output_dir,
-                               train_config,
-                               name=name)
-    optimizer.train()
+    gqcnn = get_gqcnn_model(backend)(gqcnn_params)
+    trainer = get_gqcnn_trainer(backend)(gqcnn,
+                                           dataset_dir,
+                                           split_name,
+                                           output_dir,
+                                           train_config,
+                                           name=name)
+    trainer.train()
     logging.info('Total Training Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 

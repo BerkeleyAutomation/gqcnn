@@ -35,14 +35,14 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf
 
-from .utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode
+from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode, InputDepthMode
 
 class GQCNNWeights(object):
     """ Struct helper for storing weights """
     def __init__(self):
         self.weights = {}
 
-class GQCNN(object):
+class GQCNNTF(object):
     """ GQCNN network implemented in Tensorflow """
 
     def __init__(self, gqcnn_config):
@@ -86,6 +86,8 @@ class GQCNN(object):
         # convert old networks to new flexible arch format
         gqcnn_config['debug'] = 0
         gqcnn_config['seed'] = 0
+        gqcnn_config['num_angular_bins'] = 0
+        gqcnn_config['input_depth_mode'] = InputDepthMode.POSE_STREAM
         arch_config = gqcnn_config['architecture']
         if 'im_stream' not in arch_config.keys():
             new_arch_config = OrderedDict()
@@ -161,7 +163,7 @@ class GQCNN(object):
             gqcnn_config['architecture'] = new_arch_config
             
         # create GQCNN object and initialize weights and network
-        gqcnn = GQCNN(gqcnn_config)
+        gqcnn = GQCNNTF(gqcnn_config)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         gqcnn.init_mean_and_std(model_dir)
         training_mode = train_config['training_mode']
@@ -182,28 +184,31 @@ class GQCNN(object):
             path to model directory where means and standard deviations are stored
         """
         # load in means and stds 
-        # pose format is: grasp center row, grasp center col, gripper depth, grasp theta, crop center row, crop center col, grip width
-        try:
-            self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
-            self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
-        except:
-            # for backwards compatibility
-            self._im_mean = np.load(os.path.join(model_dir, 'mean.npy'))
-            self._im_std = np.load(os.path.join(model_dir, 'std.npy'))
-        self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
-        self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
+        if self._input_depth_mode == InputDepthMode.POSE_STREAM:
+            try:
+                self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
+                self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
+            except:
+                # for backwards compatibility
+                self._im_mean = np.load(os.path.join(model_dir, 'mean.npy'))
+                self._im_std = np.load(os.path.join(model_dir, 'std.npy'))
+            self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
+            self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
 
-        # fix legacy
-        # read the certain parts of the pose mean/std that we desire
-        if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] != self._pose_dim:
-            # handle multidim storage
-            if len(self._pose_mean.shape) > 1 and self._pose_mean.shape[1] == self._pose_dim:
-                self._pose_mean = self._pose_mean[0,:]
-                self._pose_std = self._pose_std[0,:]
-            else:
-                self._pose_mean = read_pose_data(self._pose_mean, self._gripper_mode)
-                self._pose_std = read_pose_data(self._pose_std, self._gripper_mode)
-
+            # fix legacy
+            # read the certain parts of the pose mean/std that we desire
+            if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] != self._pose_dim:
+                # handle multidim storage
+                if len(self._pose_mean.shape) > 1 and self._pose_mean.shape[1] == self._pose_dim:
+                    self._pose_mean = self._pose_mean[0,:]
+                    self._pose_std = self._pose_std[0,:]
+                else:
+                    self._pose_mean = read_pose_data(self._pose_mean, self._gripper_mode)
+                    self._pose_std = read_pose_data(self._pose_std, self._gripper_mode) 
+        elif self._input_depth_mode == InputDepthMode.SUB:
+            self._im_depth_sub_mean = np.load(os.path.join(model_dir, 'im_depth_sub_mean.npy')) 
+            self._im_depth_sub_std = np.load(os.path.join(model_dir, 'im_depth_sub_std.npy'))
+ 
     def set_base_network(self, model_dir):
         """ Initialize network weights from the base model.
         Useful for fine-tuning
@@ -342,6 +347,9 @@ class GQCNN(object):
 
         # load architecture
         self._architecture = gqcnn_config['architecture']
+
+        # get input depth mode
+        self._input_depth_mode = gqcnn_config['input_depth_mode']
         
         # load normalization constants
         self._normalization_radius = gqcnn_config['radius']
@@ -359,10 +367,21 @@ class GQCNN(object):
         self._rand_seed = gqcnn_config['seed']
 
         # initialize means and standard deviation to be 0 and 1, respectively
-        self._im_mean = 0
-        self._im_std = 1
-        self._pose_mean = np.zeros(self._pose_dim)
-        self._pose_std = np.ones(self._pose_dim)
+        if self._input_depth_mode == InputDepthMode.POSE_STREAM:
+            self._im_mean = 0
+            self._im_std = 1
+            self._pose_mean = np.zeros(self._pose_dim)
+            self._pose_std = np.ones(self._pose_dim)
+        elif self._input_depth_mode == InputDepthMode.SUB:
+            self._im_depth_sub_mean = 0
+            self._im_depth_sub_std = 1
+
+        # get number of angular bins
+        self._angular_bins = gqcnn_config['angular_bins']
+
+        # if using angular bins, make sure output size of final fc layer is 2x # of angular bins
+        if self._angular_bins > 0:
+            assert self._architecture.values()[-1].values()[-1]['out_size'] == 2*self._angular_bins, 'When predicting angular outputs, output size of final fc layer must be 2x # of angular bins'
 
         # create empty holder for feature handles
         self._base_layer_names = []
@@ -431,6 +450,10 @@ class GQCNN(object):
             self._sess = None
 
     @property
+    def input_depth_mode(self):
+        return self._input_depth_mode
+
+    @property
     def batch_size(self):
         return self._batch_size
 
@@ -484,6 +507,30 @@ class GQCNN(object):
     @property
     def sess(self):
         return self._sess
+
+    @property
+    def angular_bins(self):
+        return self._angular_bins
+
+    @property
+    def filters(self):
+        """ Returns the set of conv1_1 filters 
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            filters(weights) from conv1_1 of the network
+        """
+        close_sess = False
+        if self._sess is None:
+            close_sess = True
+            self.open_session()
+
+        first_layer_im_stream = self._architecture['im_stream'].keys()[0]
+        filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_im_stream)])
+
+        if close_sess:
+            self.close_session()
+        return filters
 
     def set_im_mean(self, im_mean):
         """ Updates image mean to be used for normalization when predicting 
@@ -565,11 +612,23 @@ class GQCNN(object):
         """
         return self._pose_std
 
+    def set_im_depth_sub_mean(self, im_depth_sub_mean):
+        self._im_depth_sub_mean = im_depth_sub_mean
+
+    def set_im_depth_sub_std(self, im_depth_sub_std):
+        self._im_depth_sub_std = im_depth_sub_std
+
     def add_softmax_to_output(self):
         """ Adds softmax to output of network """
         with tf.name_scope('softmax'):
-            logging.info('Building Softmax Layer...')
-            self._output_tensor = tf.nn.softmax(self._output_tensor)
+            if self._angular_bins > 0:
+                logging.info('Building Pair-wise Softmax Layer...')
+                binwise_split_output = tf.split(self._output_tensor, self._angular_bins, axis=-1)
+                binwise_split_output_soft = [tf.nn.softmax(s) for s in binwise_split_output]
+                self._output_tensor = tf.concat(binwise_split_output_soft, -1)
+            else:
+                logging.info('Building Softmax Layer...')
+                self._output_tensor = tf.nn.softmax(self._output_tensor)
 
     def add_sigmoid_to_output(self):
         """ Adds sigmoid to output of network """
@@ -642,11 +701,15 @@ class GQCNN(object):
                 cur_ind = i
                 end_ind = cur_ind + dim
                 
-                self._input_im_arr[:dim, ...] = (
+                if self._input_depth_mode == InputDepthMode.POSE_STREAM:
+                    self._input_im_arr[:dim, ...] = (
                         image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std 
                 
-                self._input_pose_arr[:dim, :] = (
+                    self._input_pose_arr[:dim, :] = (
                         pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
+                elif self._input_depth_mode == InputDepthMode.SUB:
+                    self._input_im_arr[:dim, ...] = image_arr[cur_ind:end_ind, ...] 
+                    self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind, :]
 
                 gqcnn_output = self._sess.run(self._output_tensor,
                                                       feed_dict={self._input_im_node: self._input_im_arr,
@@ -888,34 +951,38 @@ class GQCNN(object):
         return fc, out_size
 
 
-    def _build_im_stream(self, input_node, input_height, input_width, input_channels, drop_rate, layers):
+    def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, layers, only_stream=False):
         logging.info('Building Image Stream...')
+
+        if self._input_depth_mode == InputDepthMode.SUB:
+            sub_mean = tf.constant(self._im_depth_sub_mean, dtype=tf.float32)
+            sub_std = tf.constant(self._im_depth_sub_std, dtype=tf.float32)
+            sub_im = tf.subtract(input_node, tf.tile(tf.reshape(input_pose_node, tf.constant((-1, 1, 1, 1))), tf.constant((1, input_height, input_width, 1))))
+            norm_sub_im = tf.div(tf.subtract(sub_im, sub_mean), sub_std)
+            input_node = norm_sub_im
 
         output_node = input_node
         prev_layer = "start"
-        filter_dim = self._train_im_width
-        for layer_name, layer_config in layers.iteritems():
+        last_index = len(layers.keys()) - 1
+        for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
             layer_type = layer_config['type']
             if layer_type == 'conv':
                 if prev_layer == 'fc':
                     raise ValueError('Cannot have conv layer after fc layer!')
                 output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filt_dim'], layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, norm=layer_config['norm'], pad=layer_config['pad'])
-                prev_layer = layer_type
-                if layer_config['pad'] == 'SAME':
-                    filter_dim /= layer_config['pool_stride']
-                else:
-                    filter_dim = ((filter_dim - layer_config['filt_dim']) / layer_config['pool_stride']) + 1
-                
+                prev_layer = layer_type 
             elif layer_type == 'fc':
                 if layer_config['out_size'] == 0:
                     continue
-                prev_layer_is_conv_or_res = False
+                prev_layer_is_conv = False
                 if prev_layer == 'conv':
                     prev_layer_is_conv = True
                     fan_in = input_height * input_width * input_channels
-                output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate)
+                if layer_index == last_index and only_stream:
+                    output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate, final_fc_layer=True)
+                else:
+                    output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate)
                 prev_layer = layer_type
-                filter_dim = 1
             elif layer_type == 'pc':
                 raise ValueError('Cannot have pose-connected layer in image stream!')
             elif layer_type == 'fc_merge':
@@ -955,7 +1022,6 @@ class GQCNN(object):
             
         prev_layer = "start"
         last_index = len(layers.keys()) - 1
-        filter_dim = 1
         fan_in = -1
         for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
             layer_type = layer_config['type']
@@ -998,9 +1064,16 @@ class GQCNN(object):
             output of network
         """
         logging.info('Building Network...')
-        with tf.name_scope('im_stream'):
-            output_im_stream, fan_out_im = self._build_im_stream(input_im_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'])
-        with tf.name_scope('pose_stream'):
-            output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'])
-        with tf.name_scope('merge_stream'):
-            return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, input_drop_rate_node, self._architecture['merge_stream'])[0]
+        if self._input_depth_mode == InputDepthMode.POSE_STREAM:
+            assert 'pose_stream' in self._architecture.keys() and 'merge_stream' in self._architecture.keys(), 'When using input depth mode "pose_stream", both pose stream and merge stream must be present'
+            with tf.name_scope('im_stream'):
+                output_im_stream, fan_out_im = self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'])
+            with tf.name_scope('pose_stream'):
+                output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'])
+            with tf.name_scope('merge_stream'):
+                return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, input_drop_rate_node, self._architecture['merge_stream'])[0]
+        elif self._input_depth_mode == InputDepthMode.SUB:
+            assert not ('pose_stream' in self._architecture.keys() or 'merge_stream' in self._architecture.keys()), 'When using input depth mode "sub", only im stream is allowed'
+            with tf.name_scope('im_stream'):
+                return self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'], only_stream=True)[0]
+        

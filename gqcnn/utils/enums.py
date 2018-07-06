@@ -49,9 +49,14 @@ class TrainingMode:
     CLASSIFICATION = 'classification'
     REGRESSION = 'regression' # has not been shown to work, for experimentation only!
 
-# enum for input data formats
+# enum for input pose data formats
 class GripperMode:
     PARALLEL_JAW = 'parallel_jaw'
     SUCTION = 'suction'
     LEGACY_PARALLEL_JAW = 'legacy_parallel_jaw'
     LEGACY_SUCTION = 'legacy_suction'
+
+# enum for input depth mode 
+class InputDepthMode:
+    POSE_STREAM = 'pose_stream'
+    SUB = 'im_depth_sub'

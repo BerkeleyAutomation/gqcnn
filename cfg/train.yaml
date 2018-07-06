@@ -85,6 +85,12 @@ gqcnn:
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   gripper_mode: parallel_jaw
 
+  # method by which to integrate depth into the network
+  input_depth_mode: pose_stream
+
+  # used for training with multiple angular predictions
+  angular_bins: 0
+
   # prediction batch size, in training this will be overriden by the val_batch_size in the optimizer's config file
   batch_size: *val_batch_size
 

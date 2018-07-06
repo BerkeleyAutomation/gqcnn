@@ -36,8 +36,8 @@ import scipy.ndimage.filters as snf
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
-
-from . import Grasp2D, SuctionPoint2D, GQCNN
+from gqcnn.model import get_gqcnn_model
+from . import Grasp2D, SuctionPoint2D
 from .utils import GripperMode
 
 # constant for display
@@ -831,7 +831,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         self._crop_width = config['crop_width']
 
         # init GQ-CNN
-        self._gqcnn = GQCNN.load(self._gqcnn_model_dir)
+        self._gqcnn = get_gqcnn_model().load(self._gqcnn_model_dir)
 
         # open tensorflow session for gqcnn
         self._gqcnn.open_session()
