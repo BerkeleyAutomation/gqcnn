@@ -237,6 +237,10 @@ class GQCNNAnalyzer(object):
         train_result.save(os.path.join(model_output_dir, 'train_result.cres'))
         val_result.save(os.path.join(model_output_dir, 'val_result.cres'))
 
+        # get stats, plot curves
+        logging.info('Model %s training error rate: %.3f' %(model_name, train_result.error_rate))
+        logging.info('Model %s validation error rate: %.3f' %(model_name, val_result.error_rate))
+        
         # save images
         vis2d.figure()
         example_dir = os.path.join(model_output_dir, 'examples')
@@ -417,10 +421,6 @@ class GQCNNAnalyzer(object):
         styles = ['-', '--', '-.', ':', '-'] 
         num_colors = len(colors)
         num_styles = len(styles)
-
-        # get stats, plot curves
-        logging.info('Model %s training error rate: %.3f' %(model_name, train_result.error_rate))
-        logging.info('Model %s validation error rate: %.3f' %(model_name, val_result.error_rate))
 
         # PR, ROC
         vis2d.clf()
