@@ -5,7 +5,7 @@ wget -O data/training/example_training_dataset_pj.zip https://berkeley.box.com/s
 
 cd data/training
 unzip example_training_dataset_pj.zip
-mv grasps example_training_dataset_pj
+mv grasps example_pj
 cd ../..
 
 # SUCTION
@@ -13,7 +13,7 @@ wget -O data/training/example_training_dataset_suction.zip https://berkeley.box.
 
 cd data/training
 unzip example_training_dataset_suction.zip
-mv grasps example_training_dataset_suction
+mv grasps example_suction
 cd ../..
 
 # PARALLEL JAW ANGULAR
@@ -21,5 +21,5 @@ wget -O data/training/example_training_dataset_pj_angular.zip https://berkeley.b
 
 cd data/training
 unzip example_training_dataset_pj_angular.zip
-mv grasps example_training_dataset_pj_angular
+mv grasps example_pj_angular
 cd ../..
