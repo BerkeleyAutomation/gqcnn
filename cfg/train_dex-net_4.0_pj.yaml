@@ -97,7 +97,7 @@ gqcnn:
         num_filt: 8
         pool_size: 2
         pool_stride: 2
-        pad: SAME
+        pad: VALID
         norm: 0
         norm_type: local_response
       conv1_2:
@@ -106,7 +106,7 @@ gqcnn:
         num_filt: 8
         pool_size: 2
         pool_stride: 2
-        pad: SAME
+        pad: VALID
         norm: 0
         norm_type: local_response
       conv2_1:
@@ -115,7 +115,7 @@ gqcnn:
         num_filt: 8
         pool_size: 1
         pool_stride: 1
-        pad: SAME
+        pad: VALID
         norm: 0
         norm_type: local_response
       conv2_2:
@@ -124,7 +124,7 @@ gqcnn:
         num_filt: 8
         pool_size: 2
         pool_stride: 2
-        pad: SAME
+        pad: VALID
         norm: 0
         norm_type: local_response
       fc3:
