@@ -115,6 +115,7 @@ class GQCNNAnalyzer(object):
             os.mkdir(model_output_dir)
 
         logging.info('Analyzing model %s' %(model_name))
+        logging.info('Saving output to %s' %(output_dir))
             
         # run predictions
         train_result, val_result = self._run_prediction_single_model(model_dir,
@@ -236,6 +237,9 @@ class GQCNNAnalyzer(object):
         train_result.save(os.path.join(model_output_dir, 'train_result.cres'))
         val_result.save(os.path.join(model_output_dir, 'val_result.cres'))
 
+        import IPython
+        IPython.embed()
+        
         # save images
         vis2d.figure()
         example_dir = os.path.join(model_output_dir, 'examples')
@@ -598,7 +602,8 @@ class GQCNNAnalyzer(object):
             
             # log
             logging.info('TRAIN')
-            logging.info('Error rate: %.3f' %(train_errors[-1]))
+            logging.info('Original error: %.3f' %(train_errors[0]))
+            logging.info('Final error: %.3f' %(train_errors[-1]))
             logging.info('Orig loss: %.3f' %(train_losses[0]))
             logging.info('Final loss: %.3f' %(train_losses[-1]))
             
