@@ -238,8 +238,8 @@ class GQCNNAnalyzer(object):
         val_result.save(os.path.join(model_output_dir, 'val_result.cres'))
 
         # get stats, plot curves
-        logging.info('Model %s training error rate: %.3f' %(model_name, train_result.error_rate))
-        logging.info('Model %s validation error rate: %.3f' %(model_name, val_result.error_rate))
+        logging.info('Model %s training error rate: %.3f' %(model_dir, train_result.error_rate))
+        logging.info('Model %s validation error rate: %.3f' %(model_dir, val_result.error_rate))
         
         # save images
         vis2d.figure()
@@ -561,9 +561,9 @@ class GQCNNAnalyzer(object):
             init_val_error = val_errors[0]
             norm_train_errors = train_errors / init_val_error
             norm_val_errors = val_errors / init_val_error
-            norm_final_val_error = val_errors[-1] / val_errors[0]
+            norm_final_val_error = val_result.error_rate / val_errors[0]
             if pct_pos_val > 0:
-                norm_final_val_error = val_errors[-1] / pct_pos_val        
+                norm_final_val_error = val_result.error_rate / pct_pos_val        
     
             vis2d.clf()
             vis2d.plot(train_iters, train_errors, linewidth=self.line_width, color='b')
