@@ -166,7 +166,7 @@ class GQCNNOptimizer(object):
             self.sess.close()
             
             # cleanup
-            for layer_weights in self.gqcnn.weights.values():
+            for layer_weights in self.weights.values():
                 del layer_weights
             del self.saver
             del self.sess
@@ -247,7 +247,8 @@ class GQCNNOptimizer(object):
             raise ValueError('Training mode: {} not supported !'.format(self.training_mode))
         train_predictions = self.gqcnn.output
         drop_rate_in = self.gqcnn.input_drop_rate_node
-
+        self.weights = self.gqcnn.weights
+        
         # once weights have been initialized create tf Saver for weights
         self.saver = tf.train.Saver()
 
@@ -257,7 +258,7 @@ class GQCNNOptimizer(object):
             loss = self._create_loss()
 
             # part 2: regularization
-            layer_weights = self.gqcnn.weights.values()
+            layer_weights = self.weights.values()
             with tf.name_scope('regularization'):
                 regularizers = tf.nn.l2_loss(layer_weights[0])
                 for w in layer_weights[1:]:
@@ -274,10 +275,10 @@ class GQCNNOptimizer(object):
             staircase=True)
 
         # setup variable list
-        var_list = self.gqcnn.weights.values()
+        var_list = self.weights.values()
         if finetune:
             var_list = []
-            for weights_name, weights_val in self.gqcnn.weights.iteritems():
+            for weights_name, weights_val in self.weights.iteritems():
                 layer_name = weight_name_to_layer_name(weights_name)
                 if self.optimize_base_layers or layer_name not in self.gqcnn._base_layer_names:
                     var_list.append(weights_val)
@@ -309,7 +310,7 @@ class GQCNNOptimizer(object):
             logging.info('Cleaning and Preparing to Exit Optimization')
                 
             # cleanup
-            for layer_weights in self.gqcnn.weights.values():
+            for layer_weights in self.weights.values():
                 del layer_weights
             del self.saver
             del self.sess
@@ -452,7 +453,7 @@ class GQCNNOptimizer(object):
             self.term_event.set()
             if not self.forceful_exit:
                 self.sess.close() 
-                for layer_weights in self.gqcnn.weights.values():
+                for layer_weights in self.weights.values():
                     del layer_weights
                 del self.saver
                 del self.sess
@@ -479,7 +480,7 @@ class GQCNNOptimizer(object):
         self.sess.close()
             
         # cleanup
-        for layer_weights in self.gqcnn.weights.values():
+        for layer_weights in self.weights.values():
             del layer_weights
         del self.saver
         del self.sess
@@ -910,6 +911,9 @@ class GQCNNOptimizer(object):
             self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
             self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
 
+        # set weights
+        self.weights = self.gqcnn.weights
+            
         # open a tf session for the gqcnn object and store it also as the optimizer session
         self.sess = self.gqcnn.open_session()
 

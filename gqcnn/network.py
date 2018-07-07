@@ -270,7 +270,7 @@ class GQCNN(object):
 
                 # add weights
                 if layer_name in self._base_layer_names:
-                    self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
+                    self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name), name=full_var_name)
 
     def init_weights_file(self, ckpt_file):
         """ Initialize network weights from the specified model 
@@ -297,7 +297,7 @@ class GQCNN(object):
     
             # load variables
             for full_var_name, short_name in zip(full_var_names, short_names):
-                self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
+                self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name), name=full_var_name)
 
     def _parse_config(self, gqcnn_config):
         """ Parses configuration file for this GQCNN 
