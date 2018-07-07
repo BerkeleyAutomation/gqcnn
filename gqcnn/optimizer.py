@@ -648,7 +648,7 @@ class GQCNNOptimizer(object):
             if self.train_pct < 1.0:
                 pct_pos_val = float(np.sum(all_val_metrics > self.metric_thresh)) / all_val_metrics.shape[0]
                 np.save(pct_pos_val_filename, np.array(pct_pos_val))
-
+                
         logging.info('Percent positive in train: ' + str(pct_pos_train))
         if self.train_pct < 1.0:
             logging.info('Percent positive in val: ' + str(pct_pos_val))
