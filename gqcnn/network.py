@@ -659,6 +659,7 @@ class GQCNN(object):
                 convW = self._weights.weights['{}_weights'.format(name)]
                 convb = self._weights.weights['{}_bias'.format(name)] 
             elif '{}W'.format(name) in self._weights.weights.keys():
+                logging.info('Using old format for layer {}'.format(name))
                 convW = self._weights.weights['{}W'.format(name)]
                 convb = self._weights.weights['{}b'.format(name)] 
             else:
@@ -711,6 +712,7 @@ class GQCNN(object):
             fcW = self._weights.weights['{}_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
         elif '{}W'.format(name) in self._weights.weights.keys():
+            logging.info('Using old format for layer {}'.format(name))
             fcW = self._weights.weights['{}W'.format(name)]
             fcb = self._weights.weights['{}b'.format(name)] 
         else:
@@ -749,6 +751,7 @@ class GQCNN(object):
             pcW = self._weights.weights['{}_weights'.format(name)]
             pcb = self._weights.weights['{}_bias'.format(name)] 
         elif '{}W'.format(name) in self._weights.weights.keys():
+            logging.info('Using old format for layer {}'.format(name))
             pcW = self._weights.weights['{}W'.format(name)]
             pcb = self._weights.weights['{}b'.format(name)] 
         else:
@@ -779,11 +782,13 @@ class GQCNN(object):
             input1W = self._weights.weights['{}_input_1_weights'.format(name)]
             input2W = self._weights.weights['{}_input_2_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
-        if '{}W_im'.format(name) in self._weights.weights.keys():
+        elif '{}W_im'.format(name) in self._weights.weights.keys():
+            logging.info('Using old format for layer {}'.format(name))
             input1W = self._weights.weights['{}W_im'.format(name)]
             input2W = self._weights.weights['{}W_pose'.format(name)]
             fcb = self._weights.weights['{}b'.format(name)] 
         else:
+            logging.info('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in_1 + fan_in_2))
             input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std), name='{}_input_1_weights'.format(name))
             input2W = tf.Variable(tf.truncated_normal([fan_in_2, out_size], stddev=std), name='{}_input_2_weights'.format(name))

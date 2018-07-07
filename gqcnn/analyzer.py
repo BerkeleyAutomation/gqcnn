@@ -237,9 +237,6 @@ class GQCNNAnalyzer(object):
         train_result.save(os.path.join(model_output_dir, 'train_result.cres'))
         val_result.save(os.path.join(model_output_dir, 'val_result.cres'))
 
-        import IPython
-        IPython.embed()
-        
         # save images
         vis2d.figure()
         example_dir = os.path.join(model_output_dir, 'examples')
@@ -603,13 +600,13 @@ class GQCNNAnalyzer(object):
             # log
             logging.info('TRAIN')
             logging.info('Original error: %.3f' %(train_errors[0]))
-            logging.info('Final error: %.3f' %(train_errors[-1]))
+            logging.info('Final error: %.3f' %(train_result.error_rate))
             logging.info('Orig loss: %.3f' %(train_losses[0]))
             logging.info('Final loss: %.3f' %(train_losses[-1]))
             
             logging.info('VAL')
             logging.info('Original error: %.3f' %(pct_pos_val))
-            logging.info('Final error: %.3f' %(val_errors[-1]))
+            logging.info('Final error: %.3f' %(val_result.error_rate))
             logging.info('Normalized error: %.3f' %(norm_final_val_error))
         except:
             logging.error('Failed to plot training curves!')
