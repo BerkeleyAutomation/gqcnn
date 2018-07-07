@@ -116,4 +116,19 @@ def reduce_shape(shape):
     shape = [x.value for x in shape[1:]]
     f = lambda x, y: 1 if y is None else x * y
     return reduce(f, shape, 1)
+
+def weight_name_to_layer_name(weight_name):
+    """ Convert the name of weights to the layer name """
+    tokens = weight_name.split('_')
+    type_name = tokens[-1]
+
+    # modern naming convention
+    if type_name == 'weights' or type_name == 'bias':
+        return weight_name[:weight_name.rfind(type_name)-1]
+    # legacy
+    if type_name == 'im':
+        return weight_name[:-4]
+    if type_name == 'pose':
+        return weight_name[:-6]
+    return weight_name[:-1]
     

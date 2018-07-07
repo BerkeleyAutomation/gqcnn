@@ -59,7 +59,7 @@ import autolab_core.utils as utils
 
 from .utils import ImageMode, TrainingMode, GripperMode, GeneralConstants
 from .utils import TrainStatsLogger
-from .utils import pose_dim, read_pose_data
+from .utils import pose_dim, read_pose_data, weight_name_to_layer_name
 
 class GQCNNOptimizer(object):
     """ Optimizer for gqcnn object """
@@ -166,7 +166,7 @@ class GQCNNOptimizer(object):
             self.sess.close()
             
             # cleanup
-            for layer_weights in self.weights.values():
+            for layer_weights in self.gqcnn.weights.values():
                 del layer_weights
             del self.saver
             del self.sess
@@ -197,6 +197,44 @@ class GQCNNOptimizer(object):
         
         # build network
         self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node)
+
+        # optimize weights
+        self._optimize_weights()
+
+    def finetune(self, base_model_dir):
+        """ Perform fine-tuning.
+        
+        Parameters
+        ----------
+        base_model_dir : str
+            path to the base model to use
+        """
+        with self.gqcnn.tf_graph.as_default():
+            self._finetune(base_model_dir)
+        
+    def _finetune(self, base_model_dir):
+        """ Perform fine-tuning.
+        
+        Parameters
+        ----------
+        base_model_dir : str
+            path to the base model to use
+        """
+        # run setup 
+        self._setup()
+        
+        # build network
+        self.gqcnn.set_base_network(base_model_dir)
+        self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node)
+        
+        # optimize weights
+        self._optimize_weights(finetune=True)
+        
+    def _optimize_weights(self, finetune=False):
+        """ Optimize the network weights. """
+        start_time = time.time()
+
+        # setup output
         self.train_net_output = self.gqcnn.output
         if self.training_mode == TrainingMode.CLASSIFICATION:
             if self.cfg['loss'] == 'weighted_cross_entropy':
@@ -219,7 +257,7 @@ class GQCNNOptimizer(object):
             loss = self._create_loss()
 
             # part 2: regularization
-            layer_weights = self.weights.values()
+            layer_weights = self.gqcnn.weights.values()
             with tf.name_scope('regularization'):
                 regularizers = tf.nn.l2_loss(layer_weights[0])
                 for w in layer_weights[1:]:
@@ -236,11 +274,13 @@ class GQCNNOptimizer(object):
             staircase=True)
 
         # setup variable list
-        var_list = self.weights.values()
-        if self.cfg['fine_tune'] and self.cfg['update_fc_only']:
-            var_list = [v for k, v in self.weights.iteritems() if k.find('conv') == -1]
-        elif self.cfg['fine_tune'] and self.cfg['update_conv0_only'] and self.use_conv0:
-            var_list = [v for k, v in self.weights.iteritems() if k.find('conv0') > -1]
+        var_list = self.gqcnn.weights.values()
+        if finetune:
+            var_list = []
+            for weights_name, weights_val in self.gqcnn.weights.iteritems():
+                layer_name = weight_name_to_layer_name(weights_name)
+                if self.optimize_base_layers or layer_name not in self.gqcnn._base_layer_names:
+                    var_list.append(weights_val)
 
         # create optimizer
         with tf.name_scope('optimizer'):
@@ -269,7 +309,7 @@ class GQCNNOptimizer(object):
             logging.info('Cleaning and Preparing to Exit Optimization')
                 
             # cleanup
-            for layer_weights in self.weights.values():
+            for layer_weights in self.gqcnn.weights.values():
                 del layer_weights
             del self.saver
             del self.sess
@@ -307,8 +347,8 @@ class GQCNNOptimizer(object):
 
                 # run optimization
                 step_start = time.time()
-                _, l, lr, predictions, batch_labels, output, train_images, train_poses, conv1_1W, conv1_1b = self.sess.run(
-                        [apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.weights['conv1_1_weights'], self.weights['conv1_1_bias']], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
+                _, l, lr, predictions, batch_labels, output, train_images, train_poses = self.sess.run(
+                        [apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
                 step_stop = time.time()
                 logging.info('Step took %.3f sec' %(step_stop-step_start))
                 
@@ -383,20 +423,6 @@ class GQCNNOptimizer(object):
                     # save everything!
                     self.train_stats_logger.log()
 
-                # save filters
-                if step % self.vis_frequency == 0 and step > 0:
-                    # conv1_1
-                    num_filt = conv1_1W.shape[3]
-                    d = int(np.ceil(np.sqrt(num_filt)))
-
-                    plt.clf()
-                    for i in range(num_filt):
-                        plt.subplot(d,d,i+1)
-                        plt.imshow(conv1_1W[:,:,0,i], cmap=plt.cm.gray, interpolation='nearest')
-                        plt.axis('off')
-                        plt.title('b=%.3f' %(conv1_1b[i]), fontsize=10)
-                    plt.savefig(os.path.join(self.filter_dir, 'conv1_1W_%05d.jpg' %(step)))
-                    
                 # save the model
                 if step % self.save_frequency == 0 and step > 0:
                     self.saver.save(self.sess, os.path.join(self.model_dir, 'model_%05d.ckpt' %(step)))
@@ -426,7 +452,7 @@ class GQCNNOptimizer(object):
             self.term_event.set()
             if not self.forceful_exit:
                 self.sess.close() 
-                for layer_weights in self.weights.values():
+                for layer_weights in self.gqcnn.weights.values():
                     del layer_weights
                 del self.saver
                 del self.sess
@@ -453,7 +479,7 @@ class GQCNNOptimizer(object):
         self.sess.close()
             
         # cleanup
-        for layer_weights in self.weights.values():
+        for layer_weights in self.gqcnn.weights.values():
             del layer_weights
         del self.saver
         del self.sess
@@ -471,10 +497,7 @@ class GQCNNOptimizer(object):
         # compute image stats
         im_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
         im_std_filename = os.path.join(self.model_dir, 'im_std.npy')
-        if self.cfg['fine_tune']:
-            self.im_mean = self.gqcnn.im_mean
-            self.im_std = self.gqcnn.im_std
-        elif os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
+        if os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
             self.im_mean = np.load(im_mean_filename)
             self.im_std = np.load(im_std_filename)
         else:
@@ -516,10 +539,7 @@ class GQCNNOptimizer(object):
         # compute pose stats
         pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
         pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
-        if self.cfg['fine_tune']:
-            self.pose_mean = self.gqcnn.pose_mean
-            self.pose_std = self.gqcnn.pose_std
-        elif os.path.exists(pose_mean_filename) and os.path.exists(pose_std_filename):
+        if os.path.exists(pose_mean_filename) and os.path.exists(pose_std_filename):
             self.pose_mean = np.load(pose_mean_filename)
             self.pose_std = np.load(pose_std_filename)
         else:
@@ -591,17 +611,6 @@ class GQCNNOptimizer(object):
             IPython.embed()
             exit(0)
 
-        # save mean and std to file for finetuning
-        if self.cfg['fine_tune']:
-            out_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
-            out_std_filename = os.path.join(self.model_dir, 'im_std.npy')
-            out_pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
-            out_pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
-            np.save(out_mean_filename, self.im_mean)
-            np.save(out_std_filename, self.im_std)
-            np.save(out_pose_mean_filename, self.pose_mean)
-            np.save(out_pose_std_filename, self.pose_std)
-            
         # compute normalization parameters of the network
         pct_pos_train_filename = os.path.join(self.model_dir, 'pct_pos_train.npy')
         pct_pos_val_filename = os.path.join(self.model_dir, 'pct_pos_val.npy')
@@ -774,7 +783,10 @@ class GQCNNOptimizer(object):
         self.max_training_examples_per_load = self.cfg['max_training_examples_per_load']
         self.drop_rate = self.cfg['drop_rate']
         self.max_global_grad_norm = self.cfg['max_global_grad_norm']
-
+        self.optimize_base_layers = False
+        if 'optimize_base_layers' in self.cfg.keys():
+            self.optimize_base_layers = self.cfg['optimize_base_layers']
+        
         # metrics
         self.target_metric_name = self.cfg['target_metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
@@ -897,18 +909,6 @@ class GQCNNOptimizer(object):
             self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch])
             self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
             self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
-
-        # setup weights using gqcnn
-        if self.cfg['fine_tune']:
-            # this assumes that a gqcnn was passed in that was initialized with weights from a model using GQCNN.load(), so all that has to
-            # be done is to possibly reinitialize fc3/fc4/fc5
-            reinit_pc1 = False
-            if 'reinit_pc1' in self.cfg.keys():
-                reinit_pc1 = self.cfg['reinit_pc1']
-            self.gqcnn.reinitialize_layers(self.cfg['reinit_fc3'], self.cfg['reinit_fc4'], self.cfg['reinit_fc5'], reinit_pc1=reinit_pc1)
-
-        # get weights
-        self.weights = self.gqcnn.weights
 
         # open a tf session for the gqcnn object and store it also as the optimizer session
         self.sess = self.gqcnn.open_session()

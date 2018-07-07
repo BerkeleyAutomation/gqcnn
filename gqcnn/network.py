@@ -35,13 +35,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf
 
-from .utils import read_pose_data, pose_dim, GripperMode, TrainingMode
-
-def reduce_shape(shape):
-    """ Get shape of a layer for flattening """
-    shape = [x.value for x in shape[1:]]
-    f = lambda x, y: 1 if y is None else x * y
-    return reduce(f, shape, 1)
+from .utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode
 
 class GQCNNWeights(object):
     """ Struct helper for storing weights """
@@ -209,7 +203,75 @@ class GQCNN(object):
             else:
                 self._pose_mean = read_pose_data(self._pose_mean, self._gripper_mode)
                 self._pose_std = read_pose_data(self._pose_std, self._gripper_mode)
-      
+
+    def set_base_network(self, model_dir):
+        """ Initialize network weights from the base model.
+        Useful for fine-tuning
+
+        Parameters
+        ----------
+        model_dir : str
+            path to the base model weights
+        """
+        # check architecture
+        if 'base_model' not in self._architecture.keys():
+            logging.warning('Architecuture has no base model. The network has not been modified')
+            return False
+        base_model_config = self._architecture['base_model']
+        output_layer = base_model_config['output_layer']
+        
+        # read model
+        ckpt_file = os.path.join(model_dir, 'model.ckpt')
+        config_file = os.path.join(model_dir, 'architecture.json')
+        base_arch = json.load(open(config_file, 'r'), object_pairs_hook=OrderedDict)
+
+        # read base layer names
+        self._base_layer_names = []
+        found_base_layer = False
+        use_legacy = not ('im_stream' in base_arch.keys())
+        if use_legacy:
+            layer_iter = iter(base_arch)
+            while not found_base_layer:
+                layer_name = layer_iter.next()
+                self._base_layer_names.append(layer_name)
+                if layer_name == output_layer:
+                    found_base_layer = True
+        else:
+            stream_iter = iter(base_arch)
+            while not found_base_layer:
+                stream_name = stream_iter.next()
+                stream_arch = base_arch[stream_name]
+                layer_iter = iter(stream_arch)
+                while not found_base_layer:
+                    layer_name = layer_iter.next()
+                    self._base_layer_names.append(layer_name)
+                    if layer_name == output_layer:
+                        found_base_layer = True
+                    
+        with self._graph.as_default():
+            # create new tf checkpoint reader
+            reader = tf.train.NewCheckpointReader(ckpt_file)
+        
+            # create empty weights object
+            self._weights = GQCNNWeights()
+
+            # read/generate weight/bias variable names
+            ckpt_vars = tcf.list_variables(ckpt_file)
+            full_var_names = []
+            short_names = []
+            for variable, shape in ckpt_vars:
+                full_var_names.append(variable)
+                short_names.append(variable.split('/')[-1])
+
+            # load variables
+            for full_var_name, short_name in zip(full_var_names, short_names):
+                # check valid weights
+                layer_name = weight_name_to_layer_name(short_name)
+
+                # add weights
+                if layer_name in self._base_layer_names:
+                    self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name))
+
     def init_weights_file(self, ckpt_file):
         """ Initialize network weights from the specified model 
 
@@ -299,6 +361,7 @@ class GQCNN(object):
         self._pose_std = np.ones(self._pose_dim)
 
         # create empty holder for feature handles
+        self._base_layer_names = []
         self._feature_tensors = {}
     
     def initialize_network(self, train_im_node=None, train_pose_node=None, add_softmax=False, add_sigmoid=False):
