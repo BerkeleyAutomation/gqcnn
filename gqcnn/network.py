@@ -524,7 +524,12 @@ class GQCNN(object):
             self.open_session()
 
         first_layer_im_stream = self._architecture['im_stream'].keys()[0]
-        filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_im_stream)])
+        try:
+            filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_im_stream)])
+        except:
+            logging.info('Attempting legacy conversion')
+            filters = self._sess.run(self._weights.weights['{}W'.format(first_layer_im_stream)])
+            
 
         if close_sess:
             self.close_session()
