@@ -263,6 +263,12 @@ class GQCNN(object):
                 self._gripper_mode = GripperMode.LEGACY_PARALLEL_JAW
             elif self._input_data_mode == 'tf_image_suction':
                 self._gripper_mode = GripperMode.LEGACY_SUCTION                
+            elif self._input_data_mode == 'suction':
+                self._gripper_mode = GripperMode.SUCTION                
+            elif self._input_data_mode == 'parallel_jaw':
+                self._gripper_mode = GripperMode.PARALLEL_JAW
+            else:
+                raise ValueError('Input data mode {} not supported!'.format(self._input_data_mode))
             logging.warning('Could not read gripper mode. Attempting legacy conversion to {}'.format(self._gripper_mode))
             
         # setup correct pose dimensions
