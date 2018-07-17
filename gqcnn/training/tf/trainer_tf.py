@@ -48,7 +48,6 @@ import tensorflow as tf
 import threading
 import time
 import yaml
-import math
 
 from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset, YamlConfig
 from autolab_core.constants import *
@@ -745,22 +744,19 @@ class GQCNNTrainerTF(object):
             for m in range(self.num_tensors):
                 pose_arr = self.dataset.tensor(self.pose_field_name, m).arr
                 angles = pose_arr[:, 3]
-                pi_2 = math.pi 
-                pi_4 = math.pi / 2
                 neg_ind = np.where(angles < 0)
-                angles = np.abs(angles) % pi_2
+                angles = np.abs(angles) % GeneralConstants.PI
                 angles[neg_ind] *= -1
-                g_90 = np.where(angles > pi_4)
-                l_neg_90 = np.where(angles < (-1 * pi_4))
-                angles[g_90] -= pi_2
-                angles[l_neg_90] += pi_2
+                g_90 = np.where(angles > (GeneralConstants.PI / 2))
+                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
+                angles[g_90] -= GeneralConstants.PI
+                angles[l_neg_90] += GeneralConstants.PI
                 angles *= -1 # hack to fix reverse angle convention
-                angles += pi_4
-                bin_width = pi_2 / self._angular_bins
+                angles += (GeneralConstants.PI / 2)
                 for i in range(angles.shape[0]):
-                    bin_counts[int(angles[i] // bin_width)] += 1
+                    bin_counts[int(angles[i] // self._bin_width)] += 1
             logging.info('Bin counts: {}'.format(bin_counts))
-        
+
     def _compute_split_indices(self):
         """ Compute train and validation indices for each tensor to speed data accesses"""
         # read indices
@@ -923,9 +919,10 @@ class GQCNNTrainerTF(object):
         # angular training
         self._angular_bins = self.gqcnn.angular_bins
 
-        # during angular training, make sure symmetrization in denoising is turned off
+        # during angular training, make sure symmetrization in denoising is turned off and also set the angular bin width
         if self._angular_bins > 0:
             assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training'
+            self._bin_width = GeneralConstants.PI / self._angular_bins
 
     def _setup_denoising_and_synthetic(self):
         """ Setup denoising and synthetic data parameters """
@@ -1210,23 +1207,20 @@ class GQCNNTrainerTF(object):
                 if self._angular_bins > 0:
                     bins = np.zeros_like(train_label_arr)
                     # form prediction mask to use when calculating loss
-                    pi_2 = math.pi
-                    pi_4 = math.pi / 2
                     neg_ind = np.where(angles < 0)
-                    angles = np.abs(angles) % pi_2
+                    angles = np.abs(angles) % GeneralConstants.PI
                     angles[neg_ind] *= -1
-                    g_90 = np.where(angles > pi_4)
-                    l_neg_90 = np.where(angles < (-1 * pi_4))
-                    angles[g_90] -= pi_2
-                    angles[l_neg_90] += pi_2
+                    g_90 = np.where(angles > (GeneralConstants.PI / 2))
+                    l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
+                    angles[g_90] -= GeneralConstants.PI
+                    angles[l_neg_90] += GeneralConstants.PI
                     angles *= -1 # hack to fix reverse angle convention
-                    angles += pi_4
-                    bin_width = pi_2 / self._angular_bins
+                    angles += (GeneralConstants.PI / 2)
                     train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self._angular_bins*2))
                     for i in range(angles.shape[0]):
-                        bins[i] = angles[i] // bin_width
-                        train_pred_mask_arr[i, int((angles[i] // bin_width)*2)] = 1
-                        train_pred_mask_arr[i, int((angles[i] // bin_width)*2 + 1)] = 1
+                        bins[i] = angles[i] // self._bin_width
+                        train_pred_mask_arr[i, int((angles[i] // self._bin_width)*2)] = 1
+                        train_pred_mask_arr[i, int((angles[i] // self._bin_width)*2 + 1)] = 1
 
                 # compute the number of examples loaded
                 num_loaded = train_images_arr.shape[0]
@@ -1363,24 +1357,21 @@ class GQCNNTrainerTF(object):
                 labels = labels.astype(np.uint8)
 
             if self._angular_bins > 0:
-                # form prediction mask to use when calculating error_rate
+                # form mask to extract predictions from ground-truth angular bins
                 angles = raw_poses[:, 3]
-                pi_2 = math.pi
-                pi_4 = math.pi / 2
                 neg_ind = np.where(angles < 0)
-                angles = np.abs(angles) % pi_2
+                angles = np.abs(angles) % GeneralConstants.PI
                 angles[neg_ind] *= -1
-                g_90 = np.where(angles > pi_4)
-                l_neg_90 = np.where(angles < (-1 * pi_4))
-                angles[g_90] -= pi_2
-                angles[l_neg_90] += pi_2
+                g_90 = np.where(angles > (GeneralConstants.PI / 2))
+                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
+                angles[g_90] -= GeneralConstants.PI
+                angles[l_neg_90] += GeneralConstants.PI
                 angles *= -1 # hack to fix reverse angle convention
-                angles += pi_4
-                bin_width = pi_2 / self._angular_bins
+                angles += (GeneralConstants.PI / 2)
                 pred_mask = np.zeros((labels.shape[0], self._angular_bins*2), dtype=bool)
                 for i in range(angles.shape[0]):
-                    pred_mask[i, int((angles[i] // bin_width)*2)] = True
-                    pred_mask[i, int((angles[i] // bin_width)*2 + 1)] = True
+                    pred_mask[i, int((angles[i] // self._bin_width)*2)] = True
+                    pred_mask[i, int((angles[i] // self._bin_width)*2 + 1)] = True
                 
             # get predictions
             predictions = self.gqcnn.predict(images, poses)

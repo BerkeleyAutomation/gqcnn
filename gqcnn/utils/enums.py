@@ -24,6 +24,7 @@ Class for storing constants/enums for optimization
 Author: Vishal Satish
 """
 import tensorflow as tf
+import math
 
 # other constants
 class GeneralConstants:
@@ -32,6 +33,7 @@ class GeneralConstants:
     JSON_INDENT = 2
     QUEUE_CAPACITY = 1000
     QUEUE_SLEEP = 0.001
+    PI = math.pi
     
 # enum for image modalities
 class ImageMode:

@@ -3,7 +3,7 @@ train_batch_size: 64
 val_batch_size: &val_batch_size 64
 
 # logging params
-num_epochs: 100       # number of epochs to train for
+num_epochs: 50       # number of epochs to train for
 eval_frequency: 10    # how often to get validation error (in epochs)
 save_frequency: 10    # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
@@ -20,8 +20,8 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate (in epochs)
-decay_rate: 0.98
+decay_step_multiplier: 1.0  # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
 drop_rate: 0.0
@@ -38,12 +38,12 @@ reinit_fc5: 0
 
 # input params
 training_mode: classification
-image_field_name: tf_depth_ims
+image_field_name: tf_depth_ims_no_rot
 pose_field_name: grasps
 
 # label params
 target_metric_name: grasp_metrics  # name of the field to use for the labels
-metric_thresh: 0.5                 # threshold for positive examples (label = 1 if grasp_metric > metric_thresh)
+metric_thresh: 0.75                 # threshold for positive examples (label = 1 if grasp_metric > metric_thresh)
 
 # preproc params
 num_random_files: 1000     # the number of random files to compute dataset statistics in preprocessing (lower speeds initialization)

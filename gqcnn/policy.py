@@ -181,7 +181,7 @@ class GraspingPolicy(Policy):
     gqcnn_model : str
         string path to a trained GQ-CNN model see gqcnn/neural_networks.py
     """
-    def __init__(self, config):
+    def __init__(self, config, init_sampler=True):
         # store parameters
         self._config = config
         self._gripper_width = 0.05
@@ -194,18 +194,19 @@ class GraspingPolicy(Policy):
             self._logging_dir = self.config['logging_dir']
             
         # init grasp sampler
-        self._sampling_config = config['sampling']
-        self._sampling_config['gripper_width'] = self._gripper_width
-        if 'crop_width' in config['metric'].keys() and 'crop_height' in config['metric'].keys():
-            pad = max(
-                math.ceil(np.sqrt(2) * (float(config['metric']['crop_width']) / 2)),
-                math.ceil(np.sqrt(2) * (float(config['metric']['crop_height']) / 2))
-            )
-            self._sampling_config['min_dist_from_boundary'] = pad
-        self._sampling_config['gripper_width'] = self._gripper_width
-        sampler_type = self._sampling_config['type']
-        self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
-                                                               self._sampling_config)
+        if init_sampler:
+            self._sampling_config = config['sampling']
+            self._sampling_config['gripper_width'] = self._gripper_width
+            if 'crop_width' in config['metric'].keys() and 'crop_height' in config['metric'].keys():
+                pad = max(
+                    math.ceil(np.sqrt(2) * (float(config['metric']['crop_width']) / 2)),
+                    math.ceil(np.sqrt(2) * (float(config['metric']['crop_height']) / 2))
+                )
+                self._sampling_config['min_dist_from_boundary'] = pad
+            self._sampling_config['gripper_width'] = self._gripper_width
+            sampler_type = self._sampling_config['type']
+            self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
+                                                                   self._sampling_config)
 
         # init grasp quality function
         self._metric_config = config['metric']
@@ -439,19 +440,17 @@ class RobustGraspingPolicy(GraspingPolicy):
             for grasp, q in zip(grasps, norm_q_values):
                 vis.grasp(grasp, scale=1.0,
                           grasp_center_size=10,
-                          grasp_center_thickness=2.5,
-                          jaw_width=2.5,
                           show_center=False,
                           show_axis=True,
                           color=plt.cm.RdYlGn(q))
-            vis.title('Sampled grasps')
-            self.show('grasp_candidates.png')
+                vis.title('Sampled grasps')
+                self.show('grasp_candidates.png')
 
         # select grasp
         index = self.select(grasps, q_values)
         grasp = grasps[index]
         q_value = q_values[index]
-        if self.config['vis']['grasp_plan']:
+        if self.config['vis']['grasp_plane']:
             vis.figure()
             vis.imshow(rgbd_im.depth,
                        vmin=self.config['vis']['vmin'],
@@ -476,7 +475,6 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     ----------
     filters : :obj:`dict` mapping names to functions
         list of functions to apply to filter invalid grasps
-
     Notes
     -----
     Required configuration parameters are specified in Other Parameters

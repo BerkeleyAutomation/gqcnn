@@ -3,4 +3,4 @@ font_size: 15
 line_width: 4
 dpi: 100
 num_bins: 100
-num_vis: 10
+num_vis: 50

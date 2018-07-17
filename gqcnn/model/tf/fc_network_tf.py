@@ -16,13 +16,12 @@ class FCGQCNNTF(GQCNNTF):
     """FC-GQCNN network implemented in Tensorflow"""
 
     def __init__(self, gqcnn_config, fc_config):
-        super(FCGQCNN, self).__init__(gqcnn_config)
+        super(FCGQCNNTF, self).__init__(gqcnn_config)
+        super(FCGQCNNTF, self)._parse_config(gqcnn_config)
         self._parse_config(fc_config)
 
         # check that conv layers of gqcnn were trained with VALID padding
-        for layer_name, layer_config in self._architecture['im_stream']:
-            import IPython
-            IPython.embed()
+        for layer_name, layer_config in self._architecture['im_stream'].iteritems():
             if layer_config['type'] == 'conv':
                 assert layer_config['pad'] == 'VALID', 'GQCNN used for FC-GQCNN must have VALID padding for conv layers. Found layer {} with padding {}'.format(layer_name, layer_config['pad'])
 
@@ -179,7 +178,7 @@ class FCGQCNNTF(GQCNNTF):
                 raise ValueError('Cannot have merge layer in image stream!')
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
-        return output_node, fan_in
+        return output_node, -1
 
     def _build_merge_stream(self, input_stream_1, input_stream_2, fan_in_1, fan_in_2, drop_rate, layers):
         logging.info('Building Merge Stream...')

@@ -83,85 +83,85 @@ class GQCNNTF(object):
         except:
             gqcnn_config = train_config['gqcnn_config']            
 
-        # convert old networks to new flexible arch format
-        gqcnn_config['debug'] = 0
-        gqcnn_config['seed'] = 0
-        gqcnn_config['num_angular_bins'] = 0
-        gqcnn_config['input_depth_mode'] = InputDepthMode.POSE_STREAM
-        arch_config = gqcnn_config['architecture']
-        if 'im_stream' not in arch_config.keys():
-            new_arch_config = OrderedDict()
-            new_arch_config['im_stream'] = OrderedDict()
-            new_arch_config['pose_stream'] = OrderedDict()
-            new_arch_config['merge_stream'] = OrderedDict()  
+            # convert old networks to new flexible arch format
+            gqcnn_config['debug'] = 0
+            gqcnn_config['seed'] = 0
+            gqcnn_config['num_angular_bins'] = 0
+            gqcnn_config['input_depth_mode'] = InputDepthMode.POSE_STREAM
+            arch_config = gqcnn_config['architecture']
+            if 'im_stream' not in arch_config.keys():
+                new_arch_config = OrderedDict()
+                new_arch_config['im_stream'] = OrderedDict()
+                new_arch_config['pose_stream'] = OrderedDict()
+                new_arch_config['merge_stream'] = OrderedDict()  
 
-            layer_name = 'conv1_1'
-            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-            new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
-            if 'padding' in arch_config[layer_name].keys():
-                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
-
-            layer_name = 'conv1_2'
-            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['im_stream'][layer_name]['type'] = 'conv' 
-            new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
-            if 'padding' in arch_config[layer_name].keys():
-                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
-
-            layer_name = 'conv2_1'
-            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-            new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
-            if 'padding' in arch_config[layer_name].keys():
-                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
-
-            layer_name = 'conv2_2'
-            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['im_stream'][layer_name]['type'] = 'conv'
-            new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
-            if 'padding' in arch_config[layer_name].keys():
-                new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
-
-            layer_name = 'conv3_1'
-            if layer_name in arch_config.keys():
+                layer_name = 'conv1_1'
                 new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
                 new_arch_config['im_stream'][layer_name]['type'] = 'conv'
                 new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
                 if 'padding' in arch_config[layer_name].keys():
                     new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
-            layer_name = 'conv3_2'
-            if layer_name in arch_config.keys():
+                layer_name = 'conv1_2'
+                new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+                new_arch_config['im_stream'][layer_name]['type'] = 'conv' 
+                new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+                if 'padding' in arch_config[layer_name].keys():
+                    new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+
+                layer_name = 'conv2_1'
                 new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
                 new_arch_config['im_stream'][layer_name]['type'] = 'conv'
                 new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
                 if 'padding' in arch_config[layer_name].keys():
                     new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
-            layer_name = 'fc3'
-            new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['im_stream'][layer_name]['type'] = 'fc'            
-                
-            layer_name = 'pc1'
-            new_arch_config['pose_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['pose_stream'][layer_name]['type'] = 'pc'
+                layer_name = 'conv2_2'
+                new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+                new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+                new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+                if 'padding' in arch_config[layer_name].keys():
+                    new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
 
-            layer_name = 'pc2'
-            if layer_name in arch_config.keys():
+                layer_name = 'conv3_1'
+                if layer_name in arch_config.keys():
+                    new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+                    new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+                    new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+                    if 'padding' in arch_config[layer_name].keys():
+                        new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+
+                layer_name = 'conv3_2'
+                if layer_name in arch_config.keys():
+                    new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+                    new_arch_config['im_stream'][layer_name]['type'] = 'conv'
+                    new_arch_config['im_stream'][layer_name]['pad'] = 'SAME'
+                    if 'padding' in arch_config[layer_name].keys():
+                        new_arch_config['im_stream'][layer_name]['pad'] = arch_config[layer_name]['padding']
+
+                layer_name = 'fc3'
+                new_arch_config['im_stream'][layer_name] = arch_config[layer_name]
+                new_arch_config['im_stream'][layer_name]['type'] = 'fc'            
+                    
+                layer_name = 'pc1'
                 new_arch_config['pose_stream'][layer_name] = arch_config[layer_name]
                 new_arch_config['pose_stream'][layer_name]['type'] = 'pc'
+
+                layer_name = 'pc2'
+                if layer_name in arch_config.keys():
+                    new_arch_config['pose_stream'][layer_name] = arch_config[layer_name]
+                    new_arch_config['pose_stream'][layer_name]['type'] = 'pc'
+                    
+                layer_name = 'fc4'
+                new_arch_config['merge_stream'][layer_name] = arch_config[layer_name]
+                new_arch_config['merge_stream'][layer_name]['type'] = 'fc_merge'            
+
+                layer_name = 'fc5'
+                new_arch_config['merge_stream'][layer_name] = arch_config[layer_name]
+                new_arch_config['merge_stream'][layer_name]['type'] = 'fc'            
+
+                gqcnn_config['architecture'] = new_arch_config
                 
-            layer_name = 'fc4'
-            new_arch_config['merge_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['merge_stream'][layer_name]['type'] = 'fc_merge'            
-
-            layer_name = 'fc5'
-            new_arch_config['merge_stream'][layer_name] = arch_config[layer_name]
-            new_arch_config['merge_stream'][layer_name]['type'] = 'fc'            
-
-            gqcnn_config['architecture'] = new_arch_config
-            
         # create GQCNN object and initialize weights and network
         gqcnn = GQCNNTF(gqcnn_config)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
