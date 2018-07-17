@@ -163,7 +163,7 @@ class GQCNNAnalyzer(object):
         gqcnn = GQCNN.load(model_dir)
         gqcnn.open_session()
         gripper_mode = gqcnn.gripper_mode
-        
+
         # read params from the config
         if dataset_config is None:
             dataset_dir = model_config['dataset_dir']
