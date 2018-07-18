@@ -959,10 +959,8 @@ class GQCNNOptimizer(object):
         self.forceful_exit = False
 
         # set random seed for deterministic execution
-        self.debug = self.cfg['debug']
-        if self.debug:
-            np.random.seed(self.cfg['seed'])
-            random.seed(self.cfg['seed'])
+        np.random.seed(self.cfg['seed'])
+        random.seed(self.cfg['seed'])
 
         # setup output directories
         self._setup_output_dirs()

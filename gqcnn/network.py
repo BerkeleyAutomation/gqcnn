@@ -242,12 +242,16 @@ class GQCNN(object):
                 stream_name = stream_iter.next()
                 stream_arch = base_arch[stream_name]
                 layer_iter = iter(stream_arch)
-                while not found_base_layer:
-                    layer_name = layer_iter.next()
-                    self._base_layer_names.append(layer_name)
-                    if layer_name == output_layer:
-                        found_base_layer = True
-                    
+                stop = False
+                while not found_base_layer and not stop:
+                    try:
+                        layer_name = layer_iter.next()
+                        self._base_layer_names.append(layer_name)
+                        if layer_name == output_layer:
+                            found_base_layer = True
+                    except StopIteration:
+                        stop = True
+                            
         with self._graph.as_default():
             # create new tf checkpoint reader
             reader = tf.train.NewCheckpointReader(ckpt_file)
@@ -271,7 +275,7 @@ class GQCNN(object):
                 # add weights
                 if layer_name in self._base_layer_names:
                     self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name), name=full_var_name)
-
+                    
     def init_weights_file(self, ckpt_file):
         """ Initialize network weights from the specified model 
 
