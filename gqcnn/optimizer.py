@@ -911,7 +911,7 @@ class GQCNNOptimizer(object):
             self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
             self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
 
-        # set weights
+        # get weights
         self.weights = self.gqcnn.weights
             
         # open a tf session for the gqcnn object and store it also as the optimizer session
