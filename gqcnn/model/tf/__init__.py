@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
 Permission to use, copy, modify, and distribute this software and its documentation for educational,
