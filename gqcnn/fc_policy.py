@@ -136,7 +136,7 @@ class FullyConvolutionalAngularPolicyTopK(GraspingPolicy):
 
 class FullyConvolutionalAngularPolicyUniform(GraspingPolicy):
     """ Grasp sampling policy using full-convolutional angular GQ-CNN network that returns
-        the uniform predictions
+        uniformly-sampled predictions
     """
     def __init__(self, cfg):
         GraspingPolicy.__init__(self, cfg, init_sampler=False)
@@ -160,10 +160,6 @@ class FullyConvolutionalAngularPolicyUniform(GraspingPolicy):
         rgbd_im = state.rgbd_im
         d_im = rgbd_im.depth
         raw_d = d_im._data # TODO: Access this properly
-
-#        vis.figure()
-#        vis.imshow(d_im)
-#        vis.show()
 
         # sample depths
         max_d = np.max(raw_d)
@@ -253,17 +249,4 @@ class FullyConvolutionalAngularPolicyUniform(GraspingPolicy):
 
     def action_set(self, state, num_actions):
         actions = self._action(state, k=num_actions)
-#        depths = {}
-#        ds = []
-#        for a in actions:
-#            if str(a.grasp.depth) not in depths.keys():
-#                depths[str(a.grasp.depth)] = 1
-#                ds.append(a.grasp.depth)
-#            else:
-#                depths[str(a.grasp.depth)] += 1
-#        ds = sorted(ds)
-#        chosen_ds = ds[-3:]
-#        for d in ds:
-#            print(d, depths[str(d)])
-#        return [pj_grasp.grasp for pj_grasp in actions if pj_grasp.grasp.depth in chosen_ds]
         return [pj_grasp.grasp for pj_grasp in actions]
