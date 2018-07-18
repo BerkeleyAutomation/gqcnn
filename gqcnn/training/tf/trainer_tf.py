@@ -27,7 +27,6 @@ import argparse
 import collections
 import copy
 import cv2
-import gc
 import json
 import logging
 import matplotlib.pyplot as plt
@@ -507,10 +506,7 @@ class GQCNNTrainerTF(object):
             # compute image stats
             im_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
             im_std_filename = os.path.join(self.model_dir, 'im_std.npy')
-            if self.cfg['fine_tune']:
-                self.im_mean = self.gqcnn.im_mean
-                self.im_std = self.gqcnn.im_std
-            elif os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
+            if os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
                 self.im_mean = np.load(im_mean_filename)
                 self.im_std = np.load(im_std_filename)
             else:
@@ -552,10 +548,7 @@ class GQCNNTrainerTF(object):
             # compute pose stats
             pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
             pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
-            if self.cfg['fine_tune']:
-                self.pose_mean = self.gqcnn.pose_mean
-                self.pose_std = self.gqcnn.pose_std
-            elif os.path.exists(pose_mean_filename) and os.path.exists(pose_std_filename):
+            if os.path.exists(pose_mean_filename) and os.path.exists(pose_std_filename):
                 self.pose_mean = np.load(pose_mean_filename)
                 self.pose_std = np.load(pose_std_filename)
             else:
@@ -627,24 +620,11 @@ class GQCNNTrainerTF(object):
                 IPython.embed()
                 exit(0)
 
-            # save mean and std to file for finetuning
-            if self.cfg['fine_tune']:
-                out_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
-                out_std_filename = os.path.join(self.model_dir, 'im_std.npy')
-                out_pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
-                out_pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
-                np.save(out_mean_filename, self.im_mean)
-                np.save(out_std_filename, self.im_std)
-                np.save(out_pose_mean_filename, self.pose_mean)
-                np.save(out_pose_std_filename, self.pose_std)
         elif self.gqcnn.input_depth_mode == InputDepthMode.SUB:
             # compute (image - depth) stats
             im_depth_sub_mean_filename = os.path.join(self.model_dir, 'im_depth_sub_mean.npy')
             im_depth_sub_std_filename = os.path.join(self.model_dir, 'im_depth_sub_std.npy')
-            if self.cfg['fine_tune']:
-                self.im_depth_sub_mean = self.gqcnn.im_depth_sub_mean
-                self.im_depth_sub_std = self.gqcnn.im_depth_sub_std
-            elif os.path.exists(im_depth_sub_mean_filename) and os.path.exists(im_depth_sub_std_filename):
+            if os.path.exists(im_depth_sub_mean_filename) and os.path.exists(im_depth_sub_std_filename):
                 self.im_depth_sub_mean = np.load(im_depth_sub_mean_filename)
                 self.im_depth_sub_std = np.load(im_depth_sub_std_filename)
             else:
