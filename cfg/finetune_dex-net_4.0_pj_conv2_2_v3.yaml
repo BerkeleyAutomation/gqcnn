@@ -3,14 +3,14 @@ train_batch_size: 64
 val_batch_size: &val_batch_size 64
 
 # logging params
-num_epochs: 50        # number of epochs to train for
-eval_frequency: 10    # how often to get validation error (in epochs)
-save_frequency: 10    # how often to save output (in epochs)
+num_epochs: 25        # number of epochs to train for
+eval_frequency: 5.0    # how often to get validation error (in epochs)
+save_frequency: 5.0   # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
 log_frequency: 1      # how often to log output (in steps)
 
 # train / val split params 
-train_pct: 0.8              # percentage of the data to use for training vs validation
+train_pct: 0.9              # percentage of the data to use for training vs validation
 total_pct: 1.0              # percentage of all the files to use
 eval_total_train_error: 0   # whether or not to evaluate the total training error on each validataion
 max_files_eval: 1000        # the number of validation files to use in each eval
@@ -19,22 +19,14 @@ max_files_eval: 1000        # the number of validation files to use in each eval
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.01
-decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+base_lr: 0.001
+decay_step_multiplier: 5.0   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
 drop_rate: 0.0
 max_global_grad_norm: 100000000000
-
-# fine-tuning params
-fine_tune: 0
-update_fc_only: 0
-update_conv0_only: 0
-reinit_pc1: 0
-reinit_fc3: 0
-reinit_fc4: 0
-reinit_fc5: 0
+optimize_base_layers: 0
 
 # input params
 training_mode: classification
@@ -46,7 +38,7 @@ target_metric_name: rewards  # name of the field to use for the labels
 metric_thresh: 0.5                 # threshold for positive examples (label = 1 if grasp_metric > metric_thresh)
 
 # preproc params
-num_random_files: 10000     # the number of random files to compute dataset statistics in preprocessing (lower speeds initialization)
+num_random_files: 1000     # the number of random files to compute dataset statistics in preprocessing (lower speeds initialization)
 preproc_log_frequency: 100 # how often to log preprocessing (in steps)
 
 # denoising / synthetic data params
@@ -59,11 +51,6 @@ gaussian_process_denoising: 0
 gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
-
-drop_fc3: 0
-fc3_drop_rate: 0.5
-drop_fc4: 0
-fc4_drop_rate: 0.5
 
 # tensorboard
 tensorboard_port: 6006
@@ -90,13 +77,15 @@ gqcnn:
 
   # architecture
   architecture:
+    base_model:
+      output_layer: conv2_2
     im_stream:
       conv1_1:
         type: conv
         filt_dim: 9
         num_filt: 16
         pool_size: 1
-        pool_stride: 1
+        pool_stride: 1  
         pad: VALID
         norm: 0
         norm_type: local_response
@@ -129,7 +118,7 @@ gqcnn:
         norm_type: local_response
       fc3:
         type: fc
-        out_size: 128
+        out_size: 32
     pose_stream:
       pc1:
         type: pc
@@ -140,7 +129,7 @@ gqcnn:
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 128
+        out_size: 32
       fc5:
         type: fc
         out_size: 2

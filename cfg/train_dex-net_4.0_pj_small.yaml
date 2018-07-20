@@ -60,11 +60,6 @@ gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
 
-drop_fc3: 0
-fc3_drop_rate: 0.5
-drop_fc4: 0
-fc4_drop_rate: 0.5
-
 # tensorboard
 tensorboard_port: 6006
 
@@ -94,7 +89,7 @@ gqcnn:
       conv1_1:
         type: conv
         filt_dim: 9
-        num_filt: 16
+        num_filt: 8
         pool_size: 1
         pool_stride: 1
         pad: VALID
@@ -103,7 +98,7 @@ gqcnn:
       conv1_2:
         type: conv
         filt_dim: 5
-        num_filt: 16
+        num_filt: 8
         pool_size: 2
         pool_stride: 2
         pad: VALID
@@ -112,7 +107,7 @@ gqcnn:
       conv2_1:
         type: conv
         filt_dim: 5
-        num_filt: 16
+        num_filt: 8
         pool_size: 1
         pool_stride: 1
         pad: VALID
@@ -121,7 +116,7 @@ gqcnn:
       conv2_2:
         type: conv
         filt_dim: 5
-        num_filt: 16
+        num_filt: 8
         pool_size: 2
         pool_stride: 2
         pad: VALID
@@ -129,7 +124,7 @@ gqcnn:
         norm_type: local_response
       fc3:
         type: fc
-        out_size: 128
+        out_size: 32
     pose_stream:
       pc1:
         type: pc
@@ -140,7 +135,7 @@ gqcnn:
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 128
+        out_size: 32
       fc5:
         type: fc
         out_size: 2

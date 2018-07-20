@@ -667,7 +667,7 @@ class GQCNNOptimizer(object):
         """ Compute train and validation indices for each tensor to speed data accesses"""
         # read indices
         train_indices, val_indices, _ = self.dataset.split(self.split_name)
-
+        
         # loop through tensors, assigning indices to each file
         self.train_index_map = {}
         for i in range(self.dataset.num_tensors):
