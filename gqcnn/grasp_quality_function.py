@@ -957,7 +957,9 @@ class NoMagicQualityFunction(GraspQualityFunction):
         from tensorpack.predict.config import PredictConfig
         from tensorpack import SaverRestore
         from tensorpack.predict import OfflinePredictor
-
+        import json
+        import os
+        
         # store parameters
         self._model_path = config['gqcnn_model']
         self._batch_size = config['batch_size']
@@ -968,6 +970,8 @@ class NoMagicQualityFunction(GraspQualityFunction):
         self._num_channels = config['num_channels']
         self._pose_dim = config['pose_dim']
         self._gripper_mode = config['gripper_mode']
+        self._data_mean = config['data_mean']
+        self._data_std = config['data_std']
 
         # init config
         model = ConvNetModel()
@@ -976,7 +980,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
             session_init=SaverRestore(self._model_path),
             output_names=['prob'])
         self._predictor = OfflinePredictor(self._config)
-
+        
     @property
     def gqcnn(self):
         """ Returns the GQ-CNN. """
@@ -1029,8 +1033,8 @@ class NoMagicQualityFunction(GraspQualityFunction):
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
 
             im_encoded = cv2.imencode('.png', np.uint8(im_tf.raw_data*255))[1].tostring()
-            im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8), 0)
-            image_tensor[i,:,:,0] = im_decoded
+            im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8), 0) / 255.0
+            image_tensor[i,:,:,0] = ((im_decoded - self._data_mean) / self._data_std)
             
             if gripper_mode == GripperMode.PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
@@ -1043,7 +1047,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
             else:
                 raise ValueError('Gripper mode %s not supported' %(gripper_mode))
         logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
-        return image_tensor.astype(np.uint8), pose_tensor
+        return image_tensor, pose_tensor
 
     def quality(self, state, actions, params): 
         """ Evaluate the quality of a set of actions according to a GQ-CNN.
@@ -1075,7 +1079,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
             for i, image_tf in enumerate(image_tensor[:k,...]):
                 depth = pose_tensor[i][0]
                 vis2d.subplot(d,d,i+1)
-                vis2d.imshow(GrayscaleImage(image_tf))
+                vis2d.imshow(DepthImage(image_tf))
                 vis2d.title('Image %d: d=%.3f' %(i, depth))
             vis2d.show()
 
