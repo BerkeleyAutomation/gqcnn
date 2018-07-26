@@ -240,10 +240,10 @@ class GraspingPolicy(Policy):
         # save state
         if self._logging_dir is not None:
             policy_id = utils.gen_experiment_id()
-            policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
+            policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' % (policy_id))
             while os.path.exists(policy_dir):
                 policy_id = utils.gen_experiment_id()
-                policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
+                policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' % (policy_id))
             self._policy_dir = policy_dir
             os.mkdir(self._policy_dir)
             state_dir = os.path.join(self._policy_dir, 'state')
