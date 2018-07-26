@@ -243,7 +243,7 @@ class GraspingPolicy(Policy):
             self._policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
             while os.path.exists(self._policy_dir):
                 policy_id = utils.gen_experiment_id()
-            self._policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
+                self._policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
             os.mkdir(self._policy_dir)
             state_dir = os.path.join(self._policy_dir, 'state')
             state.save(state_dir)
