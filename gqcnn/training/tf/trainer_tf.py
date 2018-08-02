@@ -409,22 +409,24 @@ class GQCNNTrainerTF(object):
                 # evaluate validation error
                 if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
-                        train_error = self._error_rate_in_batches(validation_set=False)
+                        train_error, train_loss = self._error_rate_in_batches(validation_set=False)
                         logging.info('Training error: %.3f' %(train_error))
+			logging.info('Training loss: %.3f' %(train_loss))
 
                         # update the TrainStatsLogger and save
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_error, val_eval_iter=None, val_error=None, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_error, total_train_loss=train_loss, val_eval_iter=None, val_error=None, learning_rate=None)
                         self.train_stats_logger.log()
                     
                     if self.train_pct < 1.0:
-                        val_error = self._error_rate_in_batches()
+                        val_error, val_loss = self._error_rate_in_batches()
                         self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_error}), step)
                         logging.info('Validation error: %.3f' %(val_error))
+			logging.info('Validation loss: %.3f' %(val_loss))
                     sys.stdout.flush()
 
                     # update the TrainStatsLogger
                     if self.train_pct < 1.0:
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, val_loss=val_loss, learning_rate=None)
                     else:
                         self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, learning_rate=None)
 
@@ -442,15 +444,17 @@ class GQCNNTrainerTF(object):
                     self._launch_tensorboard()
 
             # get final errors and flush the stdout pipeline
-            final_val_error = self._error_rate_in_batches()
+            final_val_error, final_val_loss = self._error_rate_in_batches()
             logging.info('Final validation error: %.3f%%' %final_val_error)
+	    logging.info('Final validation loss: %.3f%%' %final_val_loss)
             if self.cfg['eval_total_train_error']:
-                final_train_error = self._error_rate_in_batches(validation_set=False)
+                final_train_error, final_train_loss = self._error_rate_in_batches(validation_set=False)
                 logging.info('Final training error: {}'.format(final_train_error))
+		logging.info('Final training loss: {}'.format(final_train_loss))
             sys.stdout.flush()
 
-            # update the TrainStatsLogger
-            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+            # update the TrainStatsLogger 
+            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=final_val_error, val_loss=final_val_loss, learning_rate=None)
 
             # log & save everything!
             self.train_stats_logger.log()
@@ -666,7 +670,50 @@ class GQCNNTrainerTF(object):
             # update gqcnn
             self.gqcnn.set_im_depth_sub_mean(self.im_depth_sub_mean)
             self.gqcnn.set_im_depth_sub_std(self.im_depth_sub_std)
-                
+
+	elif self.gqcnn.input_depth_mode == InputDepthMode.IM_ONLY:
+            # compute image stats
+            im_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
+            im_std_filename = os.path.join(self.model_dir, 'im_std.npy')
+            if os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
+                self.im_mean = np.load(im_mean_filename)
+                self.im_std = np.load(im_std_filename)
+            else:
+                self.im_mean = 0
+                self.im_std = 0
+
+                # compute mean
+                logging.info('Computing image mean')
+                num_summed = 0
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to image mean estimate' %(k+1, random_file_indices.shape[0]))
+                    im_data = self.dataset.tensor(self.im_field_name, i).arr
+                    train_indices = self.train_index_map[i]
+                    if train_indices.shape[0] > 0:
+                        self.im_mean += np.sum(im_data[train_indices, ...])
+                        num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
+                self.im_mean = self.im_mean / num_summed
+
+                # compute std
+                logging.info('Computing image std')
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to image std estimate' %(k+1, random_file_indices.shape[0]))
+                    im_data = self.dataset.tensor(self.im_field_name, i).arr
+                    train_indices = self.train_index_map[i]
+                    if train_indices.shape[0] > 0:
+                        self.im_std += np.sum((im_data[train_indices, ...] - self.im_mean)**2)
+                self.im_std = np.sqrt(self.im_std / num_summed)
+
+                # save
+                np.save(im_mean_filename, self.im_mean)
+                np.save(im_std_filename, self.im_std)
+
+            # update gqcnn
+            self.gqcnn.set_im_mean(self.im_mean)
+            self.gqcnn.set_im_std(self.im_std)
+               
         # compute normalization parameters of the network
         pct_pos_train_filename = os.path.join(self.model_dir, 'pct_pos_train.npy')
         pct_pos_val_filename = os.path.join(self.model_dir, 'pct_pos_val.npy')
@@ -1180,7 +1227,8 @@ class GQCNNTrainerTF(object):
                 # standardize inputs and outputs
                 if self._norm_inputs:
                     train_images_arr = (train_images_arr - self.im_mean) / self.im_std
-                    train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
+		    if self.gqcnn.input_depth_mode == InputDepthMode.POSE_STREAM:
+                    	train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
                 train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                 train_label_arr = train_label_arr.astype(self.numpy_dtype)
 
@@ -1294,14 +1342,17 @@ class GQCNNTrainerTF(object):
         return image_arr, pose_arr
 
     def _error_rate_in_batches(self, num_files_eval=None, validation_set=True):
-        """ Get all predictions for a dataset by running it in small batches
+        """ Compute error and loss over either training or validation set
 
         Returns
         -------
         : float
-            validation error
+            error
+	: float
+	    loss
         """
         error_rates = []
+	losses = []
 
         # subsample files
         file_indices = np.arange(self.num_tensors)
@@ -1360,7 +1411,9 @@ class GQCNNTrainerTF(object):
 
             # get error rate
             if self.training_mode == TrainingMode.CLASSIFICATION:
-                error_rates.append(BinaryClassificationResult(predictions[:,1], labels).error_rate)
+		classification_result = BinaryClassificationResult(predictions[:,1], labels) 
+                error_rates.append(classification_result.error_rate)
+		losses.append(classification_result.cross_entropy_loss)
             else:
                 error_rates.append(RegressionResult(predictions, labels).error_rate)
             
@@ -1369,5 +1422,5 @@ class GQCNNTrainerTF(object):
             del poses
             del labels
 
-        # return average error rate over all files (assuming same size)
-        return np.mean(error_rates)
+        # return average error rate and loss over all files (assuming same size)
+        return np.mean(error_rates), np.mean(losses)

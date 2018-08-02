@@ -208,6 +208,9 @@ class GQCNNTF(object):
         elif self._input_depth_mode == InputDepthMode.SUB:
             self._im_depth_sub_mean = np.load(os.path.join(model_dir, 'im_depth_sub_mean.npy')) 
             self._im_depth_sub_std = np.load(os.path.join(model_dir, 'im_depth_sub_std.npy'))
+	elif self._input_depth_mode == InputDepthMode.IM_ONLY:
+	    self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
+	    self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
  
     def set_base_network(self, model_dir):
         """ Initialize network weights from the base model.
@@ -375,6 +378,9 @@ class GQCNNTF(object):
         elif self._input_depth_mode == InputDepthMode.SUB:
             self._im_depth_sub_mean = 0
             self._im_depth_sub_std = 1
+	elif self._input_depth_mode == InputDepthMode.IM_ONLY:
+	    self._im_mean = 0
+	    self._im_std = 1
 
         # get number of angular bins
         self._angular_bins = gqcnn_config['angular_bins']
@@ -710,6 +716,9 @@ class GQCNNTF(object):
                 elif self._input_depth_mode == InputDepthMode.SUB:
                     self._input_im_arr[:dim, ...] = image_arr[cur_ind:end_ind, ...] 
                     self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind, :]
+		elif self._input_depth_mode == InputDepthMode.IM_ONLY:
+	 	    self._input_im_arr[:dim, ...] = (
+                        image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std
 
                 gqcnn_output = self._sess.run(self._output_tensor,
                                                       feed_dict={self._input_im_node: self._input_im_arr,
@@ -1072,8 +1081,8 @@ class GQCNNTF(object):
                 output_pose_stream, fan_out_pose = self._build_pose_stream(input_pose_node, self._pose_dim, self._architecture['pose_stream'])
             with tf.name_scope('merge_stream'):
                 return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, input_drop_rate_node, self._architecture['merge_stream'])[0]
-        elif self._input_depth_mode == InputDepthMode.SUB:
-            assert not ('pose_stream' in self._architecture.keys() or 'merge_stream' in self._architecture.keys()), 'When using input depth mode "sub", only im stream is allowed'
+        elif self._input_depth_mode == InputDepthMode.SUB or self._input_depth_mode == InputDepthMode.IM_ONLY:
+            assert not ('pose_stream' in self._architecture.keys() or 'merge_stream' in self._architecture.keys()), 'When using input depth mode "{}", only im stream is allowed'.format(self._input_depth_mode)
             with tf.name_scope('im_stream'):
                 return self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'], only_stream=True)[0]
         

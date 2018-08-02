@@ -62,3 +62,4 @@ class GripperMode:
 class InputDepthMode:
     POSE_STREAM = 'pose_stream'
     SUB = 'im_depth_sub'
+    IM_ONLY = 'im_only'
