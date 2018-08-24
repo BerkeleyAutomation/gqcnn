@@ -3,7 +3,7 @@ train_batch_size: 64
 val_batch_size: &val_batch_size 64
 
 # logging params
-num_epochs: 50        # number of epochs to train for
+num_epochs: 100       # number of epochs to train for
 eval_frequency: 10    # how often to get validation error (in epochs)
 save_frequency: 10    # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
@@ -21,20 +21,11 @@ optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
 decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate (in epochs)
-decay_rate: 0.95
+decay_rate: 0.98
 momentum_rate: 0.9
 max_training_examples_per_load: 128
 drop_rate: 0.0
 max_global_grad_norm: 100000000000
-
-# fine-tuning params
-fine_tune: 0
-update_fc_only: 0
-update_conv0_only: 0
-reinit_pc1: 0
-reinit_fc3: 0
-reinit_fc4: 0
-reinit_fc5: 0
 
 # input params
 training_mode: classification
@@ -60,11 +51,6 @@ gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
 
-drop_fc3: 0
-fc3_drop_rate: 0.5
-drop_fc4: 0
-fc4_drop_rate: 0.5
-
 # tensorboard
 tensorboard_port: 6006
 
@@ -84,6 +70,12 @@ gqcnn:
 
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   gripper_mode: parallel_jaw
+
+  # method by which to integrate depth into the network
+  input_depth_mode: pose_stream
+  
+  # used for training with multiple angular predictions
+  angular_bins: 0
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the optimizer's config file
   batch_size: *val_batch_size

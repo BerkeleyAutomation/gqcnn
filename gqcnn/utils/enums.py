@@ -24,6 +24,7 @@ Class for storing constants/enums for optimization
 Author: Vishal Satish
 """
 import tensorflow as tf
+import math
 
 # other constants
 class GeneralConstants:
@@ -32,6 +33,7 @@ class GeneralConstants:
     JSON_INDENT = 2
     QUEUE_CAPACITY = 1000
     QUEUE_SLEEP = 0.001
+    PI = math.pi
     
 # enum for image modalities
 class ImageMode:
@@ -49,9 +51,15 @@ class TrainingMode:
     CLASSIFICATION = 'classification'
     REGRESSION = 'regression' # has not been shown to work, for experimentation only!
 
-# enum for input data formats
+# enum for input pose data formats
 class GripperMode:
     PARALLEL_JAW = 'parallel_jaw'
     SUCTION = 'suction'
     LEGACY_PARALLEL_JAW = 'legacy_parallel_jaw'
     LEGACY_SUCTION = 'legacy_suction'
+
+# enum for input depth mode 
+class InputDepthMode:
+    POSE_STREAM = 'pose_stream'
+    SUB = 'im_depth_sub'
+    IM_ONLY = 'im_only'

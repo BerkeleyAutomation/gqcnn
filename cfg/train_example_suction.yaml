@@ -27,15 +27,6 @@ max_training_examples_per_load: 128
 drop_rate: 0.0
 max_global_grad_norm: 100000000000
 
-# fine-tuning params
-fine_tune: 0
-update_fc_only: 0
-update_conv0_only: 0
-reinit_pc1: 0
-reinit_fc3: 0
-reinit_fc4: 0
-reinit_fc5: 0
-
 # input params
 training_mode: classification
 image_field_name: tf_depth_ims
@@ -60,11 +51,6 @@ gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
 
-drop_fc3: 0
-fc3_drop_rate: 0.5
-drop_fc4: 0
-fc4_drop_rate: 0.5
-
 # tensorboard
 tensorboard_port: 6006
 
@@ -84,6 +70,12 @@ gqcnn:
 
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   gripper_mode: suction
+
+  # method by which to integrate depth into the network
+  input_depth_mode: pose_stream
+
+  # used for training with multiple angular predictions
+  angular_bins: 0
 
   # prediction batch size, in training this will be overriden by the val_batch_size in the optimizer's config file
   batch_size: *val_batch_size

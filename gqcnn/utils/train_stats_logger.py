@@ -26,7 +26,6 @@ Author: Vishal Satish
 import numpy as np
 import os
 
-
 class TrainStatsLogger(object):
     """ Class to log optimization error rates/parameters/losses/etc. """
 
@@ -42,8 +41,10 @@ experiment_dir : str
         self.train_losses = []
         self.train_errors = []
         self.total_train_errors = []
+	self.total_train_losses = []
         self.val_eval_iters = []
         self.val_errors = []
+	self.val_losses = []
         self.learning_rates = []
 
     def log(self):
@@ -71,6 +72,11 @@ experiment_dir : str
         np.save(
             os.path.join(
                 self.experiment_dir,
+                'total_train_losses.npy'),
+            self.total_train_losses)
+        np.save(
+            os.path.join(
+                self.experiment_dir,
                 'val_eval_iters.npy'),
             self.val_eval_iters)
         np.save(
@@ -78,6 +84,11 @@ experiment_dir : str
                 self.experiment_dir,
                 'val_errors.npy'),
             self.val_errors)
+        np.save(
+            os.path.join(
+                self.experiment_dir,
+                'val_losses.npy'),
+            self.val_losses)
         np.save(
             os.path.join(
                 self.experiment_dir,
@@ -107,12 +118,18 @@ experiment_dir : str
             elif statistic == "total_train_error":
                 if stats[statistic] is not None:
                     self.total_train_errors.append(stats[statistic])
+            elif statistic == "total_train_loss":
+                if stats[statistic] is not None:
+                    self.total_train_losses.append(stats[statistic])
             elif statistic == "val_eval_iter":
                 if stats[statistic] is not None:
                     self.val_eval_iters.append(stats[statistic])
             elif statistic == "val_error":
                 if stats[statistic] is not None:
                     self.val_errors.append(stats[statistic])
+            elif statistic == "val_loss":
+                if stats[statistic] is not None:
+                    self.val_losses.append(stats[statistic])
             elif statistic == "learning_rate":
                 if stats[statistic] is not None:
                     self.learning_rates.append(stats[statistic])

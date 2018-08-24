@@ -1,0 +1,281 @@
+### TRAINING CONFIGURATIONS ###
+# dataset 
+dataset_dir: /home/vsatish/Workspace/dev/gqcnn/data/training/example_pj_angular/tensors
+#dataset_dir: /nfs/diskstation/vsatish/dex-net/data/datasets/angular_copy/
+output_dir: /home/vsatish/Data/dexnet/data/models/test_dump
+
+# general optimization parameters
+train_batch_size: 64
+val_batch_size: 64
+num_epochs: 100     # number of epochs to train for
+eval_frequency: 800  # how often to get validation error in steps, -1 defaults to every epoch 
+save_frequency: 10000 # how often to save output in steps, -1 defaults to every epoch
+vis_frequency: 1000
+log_frequency: 1     # how often to log output
+show_filters: 0
+visualize_border_distortion: 0
+visualize_border_distort_mask_inpaint: 0
+distort_val_data: 0
+save_original_train_images: 0
+num_original_train_images: 50
+save_distorted_train_images: 0
+num_distorted_train_images: 50
+save_original_val_images: 0
+num_original_val_images: 50
+save_distorted_val_images: 0
+num_distorted_val_images: 50
+
+use_existing_indices: 1
+#use_existing_indices: 0
+index_dir: /home/vsatish/Workspace/dev/gqcnn/data/training/example_pj_angular/splits/image_wise
+
+mask_and_inpaint: 0
+
+angular_bins: 16
+
+distort_rot_conv_feat: 0
+
+# backend for use with Neon
+backend: 'gpu'
+
+queue_capacity: 100  # capacity of prefetch queue
+queue_sleep: 0.01     # how long to sleep between prefetches
+
+tensorboard_bin_loc: /home/jmahler/Envs/dex-net/bin/
+tensorboard_port: 5997
+
+data_split_mode: image_wise # how to split up the data into training vs validation: options are image_wise, stable_pose_wise, object_wise
+train_pct: 0.9 # percentage of the data to use for training vs validation
+total_pct: 1.0 # percentage of all the files to use
+eval_total_train_error: 0
+
+loss: cross_entropy
+optimizer: momentum
+train_l2_regularizer: 0.0005
+base_lr: 0.01
+decay_step_multiplier: 1.0   # proportion of training datapoints to go through before stepping down learning rate
+decay_rate: 0.98
+momentum_rate: 0.9
+max_training_examples_per_load: 1000
+drop_rate: 0.0
+
+fine_tune: 0
+update_fc_only: 0
+update_conv0_only: 0
+reinit_fc3: 0
+reinit_fc4: 0
+reinit_fc5: 0
+
+image_mode: depth_tf_table
+training_mode: classification
+preproc_mode: none
+input_pose_mode: tf_image
+input_gripper_mode: none
+num_tensor_channels: 1
+
+normalize_inputs: 0
+
+sub_lambda: 1.0
+
+num_random_files: 100
+
+target_metric_name: grasp_metrics
+#target_metric_name: robust_wrench_resistance
+metric_thresh: 0.5
+#metric_thresh: 0.75
+
+# denoising / synthetic data params
+denoise:
+  # multiplicative_denoising: 
+  #   gamma_shape: 1000.00
+
+  # symmetrize: 
+
+  # morphological: 
+  #   morph_open_rate: 0.25
+  #   morph_poisson_mean: 1.5
+
+  # image_dropout: 
+  #   image_dropout_rate: 0.25
+  #   dropout_poisson_mean: 1.0
+  #   dropout_radius_shape: 3.0
+  #   dropout_radius_scale: 1.0
+
+  # gradient_dropout: 
+  #   gradient_dropout_rate: 0.1
+  #   gradient_dropout_sigma: 0.5
+  #   gradient_dropout_shape: 15
+  #   gradient_dropout_scale: 0.001
+
+  # gaussian_process_denoising: 
+  #   gaussian_process_rate: 0.5
+  #   gaussian_process_scaling_factor: 4.0
+  #   gaussian_process_sigma: 0.005
+
+  # border_distortion: 
+  #   border_distortion_rate: .5
+  #   border_grad_sigma: 1.0
+  #   border_grad_thresh: 0.005
+  #   border_poisson_mean: 8.0
+  #   border_radius_shape: 3.75
+  #   border_radius_scale: 0.4
+  #   border_fill_type: zero
+
+  # background_denoising: 
+  #   background_rate: 0.25
+  #   background_min_depth: 0.0
+  #   background_max_depth: 0.65
+
+# debugging params
+debug: 0
+debug_num_files: 100
+
+# tensorflow summary params
+save_histograms: 0
+
+### GQCNN CONFIG ###
+gqcnn_config:
+  # basic data metrics
+  im_height: 96
+  im_width: 96
+  im_channels: 1
+  # needs to match input data mode that was used for training, determines the pose dimensions for the network
+  input_pose_mode: tf_image
+  input_gripper_mode: none
+
+  # prediction batch size, in training this will be overriden by the val_batch_size 
+  batch_size: 16
+
+  # backend for use with Neon
+  backend: 'gpu'
+
+  # number of angular bins
+  angular_bins: 16
+
+  sub_im_depth: 1
+
+  normalize_inputs: 0
+
+  sub_lambda: 1.0
+
+  # architecture
+  architecture: 
+    im_stream:
+#      spatial_transformer:
+#         type: spatial_transformer
+#         out_size: 46
+#         num_transform_params: 6
+      conv1_1:
+        type: conv
+        filt_dim: 9
+        num_filt: 8
+        pool_size: 1
+        pool_stride: 1  
+        norm: 0
+        pad: VALID
+#      res1_1:
+#        type: residual
+#        filt_dim: 5
+#        num_filt: 16
+      conv1_2:
+        type: conv
+        filt_dim: 3
+        num_filt: 8
+        pool_size: 2
+        pool_stride: 2
+        norm: 1
+        pad: VALID
+      conv2_1:
+        type: conv
+        filt_dim: 3
+        num_filt: 8
+        pool_size: 1
+        pool_stride: 1  
+        norm: 0
+        pad: VALID
+#      res2_1:
+#        type: residual
+#        filt_dim: 5
+#        num_filt: 16
+      conv2_2:
+        type: conv
+        filt_dim: 3
+        num_filt: 8
+        pool_size: 2
+        pool_stride: 2
+        norm: 1
+        pad: VALID
+#      res1_1:
+#        type: residual
+#        num_filt: 3
+#        filt_dim: 5
+#      res1_2:
+#        type: residual
+#        num_filt: 3
+#        filt_dim: 3
+#      conv1_1:
+#        type: conv
+#        filt_dim: 3
+#        num_filt: 32
+#        pool_size: 2
+#        pool_stride: 2
+#        norm: 1
+#      res2_1:
+#        type: residual
+#        num_filt: 32
+#        filt_dim: 3
+#      res2_2:
+#        type: residual
+#        num_filt: 32
+#        filt_dim: 3
+      fc3:
+        type: fc
+        out_size: 64
+#      fc4:
+#        type: fc
+#        out_size: 1024
+#      fc4: 
+#        type: fc
+#        out_size: 1048
+    pose_stream:
+      pc1:
+        type: pc
+        out_size: 4
+#    gripper_stream:
+#      gc1:
+#        type: gc
+#        out_size: 128
+#    gripper_pose_merge_stream:
+#      gp_fc1:
+#        type: fc_merge
+#        out_size: 512
+#      gp_fc2:
+#        type: fc
+#        out_size: 512
+    merge_stream:
+      fc4:
+        type: fc_merge
+        out_size: 64
+      fc5: 
+        type: fc
+        final_layer: True
+        out_size: 32
+#      fc6:
+#        type: fc
+#        out_size: 2
+#      fc5:
+#        type: fc
+#        out_size: 128
+      # fc7: 
+      #   type: fc
+      #   out_size: 128   
+#      fc6:
+#        type: fc
+#        final_layer: True
+#        out_size: 2
+
+  # network normalization constants
+  radius: 3 # must be odd for compatibility with Neon
+  alpha: 2.0e-05
+  beta: 0.75
+  bias: 1.0

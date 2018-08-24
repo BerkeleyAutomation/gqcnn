@@ -42,10 +42,10 @@ from autolab_core import BinaryClassificationResult, Point, TensorDataset
 from autolab_core.constants import *
 from perception import DepthImage
 from visualization import Visualizer2D as vis2d
+from gqcnn.model import get_gqcnn_model
 
-from . import GQCNN, Grasp2D, SuctionPoint2D
-from .utils import GripperMode, ImageMode
-from .utils import *
+from . import Grasp2D, SuctionPoint2D
+from .utils import GripperMode, ImageMode, GeneralConstants, read_pose_data
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'
@@ -130,24 +130,35 @@ class GQCNNAnalyzer(object):
 
         return train_result, val_result
 
-    def _plot_grasp(self, datapoint, image_field_name, pose_field_name, gripper_mode):
+    def _plot_grasp(self, datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=None):
         """ Plots a single grasp represented as a datapoint. """
         image = DepthImage(datapoint[image_field_name][:,:,0])
         depth = datapoint[pose_field_name][2]
         width = 0
+        grasps = []
         if gripper_mode == GripperMode.PARALLEL_JAW or \
            gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
-            grasp = Grasp2D(center=image.center,
+            if angular_preds is not None:
+                num_bins = angular_preds.shape[0] / 2
+                bin_width = GeneralConstants.PI / num_bins
+                for i in range(num_bins):
+                    bin_cent_ang = i * bin_width + bin_width / 2
+                    grasps.append(Grasp2D(center=image.center, angle=GeneralConstants.PI / 2 - bin_cent_ang, depth=depth, width=0.0))
+                grasps.append(Grasp2D(center=image.center, angle=datapoint[pose_field_name][3], depth=depth, width=0.0))
+            else:
+                grasps.append(Grasp2D(center=image.center,
                             angle=0,
                             depth=depth,
-                            width=0.0)
+                            width=0.0))
             width = datapoint[pose_field_name][-1]
         else:
-            grasp = SuctionPoint2D(center=image.center,
+            grasps.append(SuctionPoint2D(center=image.center,
                                    axis=[1,0,0],
-                                   depth=depth)                
+                                   depth=depth))                
         vis2d.imshow(image)
-        vis2d.grasp(grasp, width=width)
+        for i, grasp in enumerate(grasps[:-1]):
+            vis2d.grasp(grasp, width=width, color=plt.cm.RdYlGn(angular_preds[i * 2 + 1]))
+        vis2d.grasp(grasps[-1], width=width, color='b')
         
     def _run_prediction_single_model(self, model_dir,
                                      model_output_dir,
@@ -160,10 +171,11 @@ class GQCNNAnalyzer(object):
 
         # load model
         logging.info('Loading model %s' %(model_dir))
-        gqcnn = GQCNN.load(model_dir)
+        gqcnn = get_gqcnn_model().load(model_dir)
         gqcnn.open_session()
         gripper_mode = gqcnn.gripper_mode
-
+        angular_bins = gqcnn.angular_bins
+        
         # read params from the config
         if dataset_config is None:
             dataset_dir = model_config['dataset_dir']
@@ -199,6 +211,8 @@ class GQCNNAnalyzer(object):
         
         # aggregate training and validation true labels and predicted probabilities
         all_predictions = []
+        if angular_bins > 0:
+            all_predictions_raw = []
         all_labels = []
         for i in range(dataset.num_tensors):
             # log progress
@@ -212,12 +226,35 @@ class GQCNNAnalyzer(object):
             metric_arr = dataset.tensor(metric_name, i).arr
             label_arr = 1 * (metric_arr > metric_thresh)
             label_arr = label_arr.astype(np.uint8)
+            if angular_bins > 0:
+                # form mask to extract predictions from ground-truth angular bins
+                raw_poses = dataset.tensor(pose_field_name, i).arr
+                angles = raw_poses[:, 3]
+                neg_ind = np.where(angles < 0)
+                angles = np.abs(angles) % GeneralConstants.PI
+                angles[neg_ind] *= -1
+                g_90 = np.where(angles > (GeneralConstants.PI / 2))
+                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
+                angles[g_90] -= GeneralConstants.PI
+                angles[l_neg_90] += GeneralConstants.PI
+                angles *= -1 # hack to fix reverse angle convention
+                angles += (GeneralConstants.PI / 2)
+                pred_mask = np.zeros((raw_poses.shape[0], angular_bins*2), dtype=bool)
+                bin_width = GeneralConstants.PI / angular_bins
+                for i in range(angles.shape[0]):
+                    pred_mask[i, int((angles[i] // bin_width)*2)] = True
+                    pred_mask[i, int((angles[i] // bin_width)*2 + 1)] = True
 
             # predict with GQ-CNN
             predictions = gqcnn.predict(image_arr, pose_arr)
+            if angular_bins > 0:
+                raw_predictions = np.array(predictions)
+                predictions = predictions[pred_mask].reshape((-1, 2))
             
             # aggregate
             all_predictions.extend(predictions[:,1].tolist())
+            if angular_bins > 0:
+                all_predictions_raw.extend(raw_predictions.tolist())
             all_labels.extend(label_arr.tolist())
             
         # close session
@@ -230,7 +267,11 @@ class GQCNNAnalyzer(object):
         val_predictions = all_predictions[val_indices]
         train_labels = all_labels[train_indices]
         val_labels = all_labels[val_indices]
-        
+        if angular_bins > 0:
+            all_predictions_raw = np.array(all_predictions_raw)
+            train_predictions_raw = all_predictions_raw[train_indices]
+            val_predictions_raw = all_predictions_raw[val_indices]        
+
         # aggregate results
         train_result = BinaryClassificationResult(train_predictions, train_labels)
         val_result = BinaryClassificationResult(val_predictions, val_labels)
@@ -262,7 +303,10 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            if angular_bins > 0:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=train_predictions_raw[j])
+            else:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  train_result.pred_probs[j],
                                                                  train_result.labels[j]),
@@ -278,7 +322,10 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            if angular_bins > 0:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=train_predictions_raw[j])
+            else: 
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  train_result.pred_probs[j],
                                                                  train_result.labels[j]),
@@ -294,7 +341,10 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            if angular_bins > 0:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=train_predictions_raw[j])
+            else: 
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  train_result.pred_probs[j],
                                                                  train_result.labels[j]),
@@ -310,7 +360,10 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            if angular_bins > 0:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=train_predictions_raw[j])
+            else: 
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  train_result.pred_probs[j],
                                                                  train_result.labels[j]),
@@ -332,7 +385,10 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            if angular_bins > 0:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=val_predictions_raw[j])
+            else: 
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),
@@ -348,7 +404,10 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            if angular_bins > 0:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=val_predictions_raw[j])
+            else: 
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),
@@ -364,7 +423,10 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            if angular_bins > 0:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=val_predictions_raw[j])
+            else: 
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),
@@ -380,7 +442,10 @@ class GQCNNAnalyzer(object):
             datapoint = dataset.datapoint(k, field_names=[image_field_name,
                                                           pose_field_name])
             vis2d.clf()
-            self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
+            if angular_bins > 0:
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=val_predictions_raw[j])
+            else: 
+                self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
             vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),

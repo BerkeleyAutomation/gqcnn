@@ -19,16 +19,18 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from grasp import Grasp2D, SuctionPoint2D
-from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
-from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
-from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction
-from fc_policy import FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
-from analyzer import GQCNNAnalyzer
-from utils import NoValidGraspsException
+"""
+Factory functions to obtain GQCNNTrainer class based on backend.
 
-__all__ = ['GQCNNAnalyzer',
-           'Grasp2D', 'SuctionPoint2D',
-           'GraspAction', 'Policy', 'GraspingPolicy', 'UniformRandomGraspingPolicy', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction',
-           'RgbdImageState',
-           'GraspQualityFunction', 'SuctionQualityFunction', 'BestFitPlanaritySuctionQualityFunction', 'ApproachPlanaritySuctionQualityFunction', 'GQCnnQualityFunction', 'GraspQualityFunctionFactory']
+Author
+------
+Vishal Satish
+"""
+from gqcnn.training.tf.trainer_tf import GQCNNTrainerTF
+
+def get_gqcnn_trainer(backend='tf'):
+    # return desired GQCNN training instance based on backend
+    if backend == 'tf':
+        return GQCNNTrainerTF
+    else:
+        raise ValueError('Invalid backend: {}'.format(backend))

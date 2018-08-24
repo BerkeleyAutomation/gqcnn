@@ -19,16 +19,30 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from grasp import Grasp2D, SuctionPoint2D
-from grasp_quality_function import GraspQualityFunction, SuctionQualityFunction, BestFitPlanaritySuctionQualityFunction, ApproachPlanaritySuctionQualityFunction, GQCnnQualityFunction, GraspQualityFunctionFactory
-from image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, DepthImageSuctionPointSampler, ImageGraspSamplerFactory
-from policy import Policy, GraspingPolicy, UniformRandomGraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, QFunctionRobustGraspingPolicy, EpsilonGreedyQFunctionRobustGraspingPolicy, RgbdImageState, GraspAction
-from fc_policy import FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
-from analyzer import GQCNNAnalyzer
-from utils import NoValidGraspsException
+"""
+Factory functions to obtain GQCNN/FCGQCNN class based on backend.
 
-__all__ = ['GQCNNAnalyzer',
-           'Grasp2D', 'SuctionPoint2D',
-           'GraspAction', 'Policy', 'GraspingPolicy', 'UniformRandomGraspingPolicy', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction',
-           'RgbdImageState',
-           'GraspQualityFunction', 'SuctionQualityFunction', 'BestFitPlanaritySuctionQualityFunction', 'ApproachPlanaritySuctionQualityFunction', 'GQCnnQualityFunction', 'GraspQualityFunctionFactory']
+Author
+------
+Vishal Satish
+"""
+import logging
+
+from gqcnn.model.tf.network_tf import GQCNNTF
+from gqcnn.model.tf.fc_network_tf import FCGQCNNTF
+ 
+def get_gqcnn_model(backend='tf'):
+    # return desired GQCNN instance based on backend
+    if backend == 'tf':
+        logging.info('Initializing GQCNN with Tensorflow as backend...')
+        return GQCNNTF
+    else:
+        raise ValueError('Invalid backend: {}'.format(backend))
+
+def get_fc_gqcnn_model(backend='tf'):
+    # return desired Fully-Convolutional GQCNN instance based on backend
+    if backend == 'tf':
+        logging.info('Initializing FC-GQCNN with Tensorflow as backend...')
+        return FCGQCNNTF
+    else:
+        raise ValueError('Invalid backend: {}'.format(backend))

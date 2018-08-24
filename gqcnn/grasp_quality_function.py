@@ -36,8 +36,8 @@ import scipy.ndimage.filters as snf
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
-
-from . import Grasp2D, SuctionPoint2D, GQCNN
+from gqcnn.model import get_gqcnn_model, get_fc_gqcnn_model
+from . import Grasp2D, SuctionPoint2D
 from .utils import GripperMode
 
 # constant for display
@@ -831,7 +831,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         self._crop_width = config['crop_width']
 
         # init GQ-CNN
-        self._gqcnn = GQCNN.load(self._gqcnn_model_dir)
+        self._gqcnn = get_gqcnn_model().load(self._gqcnn_model_dir)
 
         # open tensorflow session for gqcnn
         self._gqcnn.open_session()
@@ -1098,6 +1098,40 @@ class NoMagicQualityFunction(GraspQualityFunction):
         logging.debug('Prediction took %.3f sec' %(time()-predict_start))
         return q_values.tolist()
 
+class FCGQCnnQualityFunction(GraspQualityFunction):
+    def __init__(self, config):
+        """ Grasp quality function usinng the fully-convolutional gqcnn """
+        # store parameters
+        self._config = config
+        self._model_dir = config['gqcnn_model']
+        self._backend = config['gqcnn_backend']
+        self._fully_conv_config = config['fully_conv_gqcnn_config']
+
+        # init fcgqcnn
+        self._fcgqcnn = get_fc_gqcnn_model(backend=self._backend).load(self._model_dir, self._fully_conv_config)
+
+        # open tensorflow session for fcgqcnn
+        self._fcgqcnn.open_session()
+
+    def __del__(self):
+        try:
+            self._fcgqcnn.close_session()
+        except:
+            pass
+        del self
+
+    @property
+    def gqcnn(self):
+        """ Returns the FC-GQCNN. """
+        return self._fcgqcnn
+
+    @property
+    def config(self):
+        """ Returns the FC-GQCNN quality function parameters. """
+        return self._config
+
+    def quality(self, images, depths): 
+        return self._fcgqcnn.predict(images, depths)
 
 class GraspQualityFunctionFactory(object):
     """Factory for grasp quality functions. """
@@ -1127,5 +1161,7 @@ class GraspQualityFunctionFactory(object):
             return GQCnnQualityFunction(config)
         elif metric_type == 'nomagic':
             return NoMagicQualityFunction(config)
+        elif metric_type == 'fcgqcnn':
+            return FCGQCnnQualityFunction(config)
         else:
             raise ValueError('Grasp function type %s not supported!' %(metric_type))

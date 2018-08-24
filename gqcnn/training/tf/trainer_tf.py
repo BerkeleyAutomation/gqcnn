@@ -20,17 +20,15 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Optimizer class for training a gqcnn(Grasp Quality Neural Network) object.
+Trains a GQCNN network using Tensorflow backend.
 Author: Vishal Satish and Jeff Mahler
 """
 import argparse
 import collections
 import copy
 import cv2
-import gc
 import json
 import logging
-import numbers
 import matplotlib.pyplot as plt
 import numpy as np
 import cPickle as pkl
@@ -48,21 +46,18 @@ import sys
 import tensorflow as tf
 import threading
 import time
-import urllib
 import yaml
-
-import IPython
 
 from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset, YamlConfig
 from autolab_core.constants import *
 import autolab_core.utils as utils
 
-from .utils import ImageMode, TrainingMode, GripperMode, GeneralConstants
-from .utils import TrainStatsLogger
-from .utils import pose_dim, read_pose_data, weight_name_to_layer_name
+from gqcnn.utils import ImageMode, TrainingMode, GripperMode, InputDepthMode, GeneralConstants
+from gqcnn.utils import TrainStatsLogger
+from gqcnn.utils import pose_dim, read_pose_data, weight_name_to_layer_name
 
-class GQCNNOptimizer(object):
-    """ Optimizer for gqcnn object """
+class GQCNNTrainerTF(object):
+    """ Trains GQCNN with Tensorflow backend """
 
     def __init__(self, gqcnn,
                  dataset_dir,
@@ -114,7 +109,12 @@ class GQCNNOptimizer(object):
         if self.cfg['loss'] == 'l2':
             return (1.0 / self.train_batch_size) * tf.nn.l2_loss(tf.subtract(tf.nn.sigmoid(self.train_net_output), self.train_labels_node))
         elif self.cfg['loss'] == 'sparse':
-            return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node, logits=self.train_net_output, name=None))
+            if self._angular_bins > 0:
+                log = tf.reshape(tf.dynamic_partition(self.train_net_output, self.train_pred_mask_node, 2)[1], (-1, 2))
+                return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node,
+                    logits=log))
+            else:
+                return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node, logits=self.train_net_output, name=None))
         elif self.cfg['loss'] == 'weighted_cross_entropy':
             return tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(targets=tf.reshape(self.train_labels_node, [-1,1]),
                                                                            logits=self.train_net_output,
@@ -348,7 +348,11 @@ class GQCNNOptimizer(object):
 
                 # run optimization
                 step_start = time.time()
-                _, l, lr, predictions, batch_labels, output, train_images, train_poses = self.sess.run(
+                if self._angular_bins > 0:
+                    _, l, lr, predictions, batch_labels, output, train_images, train_poses, pred_mask = self.sess.run([apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_pred_mask_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
+ 
+                else:
+                    _, l, lr, predictions, batch_labels, output, train_images, train_poses = self.sess.run(
                         [apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
                 step_stop = time.time()
                 logging.info('Step took %.3f sec' %(step_stop-step_start))
@@ -357,13 +361,14 @@ class GQCNNOptimizer(object):
                     logging.info('Max ' +  str(np.max(predictions)))
                     logging.info('Min ' + str(np.min(predictions)))
                 elif self.cfg['loss'] != 'weighted_cross_entropy':
-                    ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
-                    softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
+                    if self._angular_bins == 0:
+                        ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
+                        softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 		        
-                    logging.info('Max ' +  str(np.max(softmax[:,1])))
-                    logging.info('Min ' + str(np.min(softmax[:,1])))
-                    logging.info('Pred nonzero ' + str(np.sum(softmax[:,1] > 0.5)))
-                    logging.info('True nonzero ' + str(np.sum(batch_labels)))
+                        logging.info('Max ' +  str(np.max(softmax[:,1])))
+                        logging.info('Min ' + str(np.min(softmax[:,1])))
+                        logging.info('Pred nonzero ' + str(np.sum(softmax[:,1] > 0.5)))
+                        logging.info('True nonzero ' + str(np.sum(batch_labels)))
                    
                 else:
                     sigmoid = 1.0 / (1.0 + np.exp(-output))
@@ -388,6 +393,8 @@ class GQCNNOptimizer(object):
                     logging.info('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
+                        if self._angular_bins > 0:
+                            predictions = predictions[pred_mask.astype(bool)].reshape((-1, 2))
                         classification_result = BinaryClassificationResult(predictions[:,1], batch_labels)
                         train_error = classification_result.error_rate
                         
@@ -402,22 +409,24 @@ class GQCNNOptimizer(object):
                 # evaluate validation error
                 if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
-                        train_error = self._error_rate_in_batches(validation_set=False)
+                        train_error, train_loss = self._error_rate_in_batches(validation_set=False)
                         logging.info('Training error: %.3f' %(train_error))
+			logging.info('Training loss: %.3f' %(train_loss))
 
                         # update the TrainStatsLogger and save
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_error, val_eval_iter=None, val_error=None, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_error, total_train_loss=train_loss, val_eval_iter=None, val_error=None, learning_rate=None)
                         self.train_stats_logger.log()
                     
                     if self.train_pct < 1.0:
-                        val_error = self._error_rate_in_batches()
+                        val_error, val_loss = self._error_rate_in_batches()
                         self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_error}), step)
                         logging.info('Validation error: %.3f' %(val_error))
+			logging.info('Validation loss: %.3f' %(val_loss))
                     sys.stdout.flush()
 
                     # update the TrainStatsLogger
                     if self.train_pct < 1.0:
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, val_loss=val_loss, learning_rate=None)
                     else:
                         self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, learning_rate=None)
 
@@ -435,15 +444,17 @@ class GQCNNOptimizer(object):
                     self._launch_tensorboard()
 
             # get final errors and flush the stdout pipeline
-            final_val_error = self._error_rate_in_batches()
+            final_val_error, final_val_loss = self._error_rate_in_batches()
             logging.info('Final validation error: %.3f%%' %final_val_error)
+	    logging.info('Final validation loss: %.3f%%' %final_val_loss)
             if self.cfg['eval_total_train_error']:
-                final_train_error = self._error_rate_in_batches(validation_set=False)
+                final_train_error, final_train_loss = self._error_rate_in_batches(validation_set=False)
                 logging.info('Final training error: {}'.format(final_train_error))
+		logging.info('Final training loss: {}'.format(final_train_loss))
             sys.stdout.flush()
 
-            # update the TrainStatsLogger
-            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, learning_rate=None)
+            # update the TrainStatsLogger 
+            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=final_val_error, val_loss=final_val_loss, learning_rate=None)
 
             # log & save everything!
             self.train_stats_logger.log()
@@ -495,123 +506,214 @@ class GQCNNOptimizer(object):
                                                size=self.num_random_files,
                                                replace=False)
         
-        # compute image stats
-        im_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
-        im_std_filename = os.path.join(self.model_dir, 'im_std.npy')
-        if os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
-            self.im_mean = np.load(im_mean_filename)
-            self.im_std = np.load(im_std_filename)
-        else:
-            self.im_mean = 0
-            self.im_std = 0
+        if self.gqcnn.input_depth_mode == InputDepthMode.POSE_STREAM:
+            # compute image stats
+            im_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
+            im_std_filename = os.path.join(self.model_dir, 'im_std.npy')
+            if os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
+                self.im_mean = np.load(im_mean_filename)
+                self.im_std = np.load(im_std_filename)
+            else:
+                self.im_mean = 0
+                self.im_std = 0
 
-            # compute mean
-            logging.info('Computing image mean')
-            num_summed = 0
-            for k, i in enumerate(random_file_indices):
-                if k % self.preproc_log_frequency == 0:
-                    logging.info('Adding file %d of %d to image mean estimate' %(k+1, random_file_indices.shape[0]))
-                im_data = self.dataset.tensor(self.im_field_name, i).arr
-                train_indices = self.train_index_map[i]
-                if train_indices.shape[0] > 0:
-                    self.im_mean += np.sum(im_data[train_indices, ...])
-                    num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
-            self.im_mean = self.im_mean / num_summed
+                # compute mean
+                logging.info('Computing image mean')
+                num_summed = 0
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to image mean estimate' %(k+1, random_file_indices.shape[0]))
+                    im_data = self.dataset.tensor(self.im_field_name, i).arr
+                    train_indices = self.train_index_map[i]
+                    if train_indices.shape[0] > 0:
+                        self.im_mean += np.sum(im_data[train_indices, ...])
+                        num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
+                self.im_mean = self.im_mean / num_summed
 
-            # compute std
-            logging.info('Computing image std')
-            for k, i in enumerate(random_file_indices):
-                if k % self.preproc_log_frequency == 0:
-                    logging.info('Adding file %d of %d to image std estimate' %(k+1, random_file_indices.shape[0]))
-                im_data = self.dataset.tensor(self.im_field_name, i).arr
-                train_indices = self.train_index_map[i]
-                if train_indices.shape[0] > 0:
-                    self.im_std += np.sum((im_data[train_indices, ...] - self.im_mean)**2)
-            self.im_std = np.sqrt(self.im_std / num_summed)
+                # compute std
+                logging.info('Computing image std')
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to image std estimate' %(k+1, random_file_indices.shape[0]))
+                    im_data = self.dataset.tensor(self.im_field_name, i).arr
+                    train_indices = self.train_index_map[i]
+                    if train_indices.shape[0] > 0:
+                        self.im_std += np.sum((im_data[train_indices, ...] - self.im_mean)**2)
+                self.im_std = np.sqrt(self.im_std / num_summed)
 
-            # save
-            np.save(im_mean_filename, self.im_mean)
-            np.save(im_std_filename, self.im_std)
+                # save
+                np.save(im_mean_filename, self.im_mean)
+                np.save(im_std_filename, self.im_std)
 
-        # update gqcnn
-        self.gqcnn.set_im_mean(self.im_mean)
-        self.gqcnn.set_im_std(self.im_std)
+            # update gqcnn
+            self.gqcnn.set_im_mean(self.im_mean)
+            self.gqcnn.set_im_std(self.im_std)
 
-        # compute pose stats
-        pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
-        pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
-        if os.path.exists(pose_mean_filename) and os.path.exists(pose_std_filename):
-            self.pose_mean = np.load(pose_mean_filename)
-            self.pose_std = np.load(pose_std_filename)
-        else:
-            self.pose_mean = np.zeros(self.raw_pose_shape)
-            self.pose_std = np.zeros(self.raw_pose_shape)
+            # compute pose stats
+            pose_mean_filename = os.path.join(self.model_dir, 'pose_mean.npy')
+            pose_std_filename = os.path.join(self.model_dir, 'pose_std.npy')
+            if os.path.exists(pose_mean_filename) and os.path.exists(pose_std_filename):
+                self.pose_mean = np.load(pose_mean_filename)
+                self.pose_std = np.load(pose_std_filename)
+            else:
+                self.pose_mean = np.zeros(self.raw_pose_shape)
+                self.pose_std = np.zeros(self.raw_pose_shape)
 
-            # compute mean
-            num_summed = 0
-            logging.info('Computing pose mean')
-            for k, i in enumerate(random_file_indices):
-                if k % self.preproc_log_frequency == 0:
-                    logging.info('Adding file %d of %d to pose mean estimate' %(k+1, random_file_indices.shape[0]))
-                pose_data = self.dataset.tensor(self.pose_field_name, i).arr
-                train_indices = self.train_index_map[i]
-                if self.gripper_mode == GripperMode.SUCTION:
-                    rand_indices = np.random.choice(pose_data.shape[0],
-                                                    size=pose_data.shape[0]/2,
-                                                    replace=False)
-                    pose_data[rand_indices, 4] = -pose_data[rand_indices, 4]
-                elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
-                    rand_indices = np.random.choice(pose_data.shape[0],
-                                                    size=pose_data.shape[0]/2,
-                                                    replace=False)
-                    pose_data[rand_indices, 3] = -pose_data[rand_indices, 3]
-                if train_indices.shape[0] > 0:
-                    pose_data = pose_data[train_indices,:]
-                    pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
-                    self.pose_mean += np.sum(pose_data, axis=0)
-                    num_summed += pose_data.shape[0]
-            self.pose_mean = self.pose_mean / num_summed
+                # compute mean
+                num_summed = 0
+                logging.info('Computing pose mean')
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to pose mean estimate' %(k+1, random_file_indices.shape[0]))
+                    pose_data = self.dataset.tensor(self.pose_field_name, i).arr
+                    train_indices = self.train_index_map[i]
+                    if self.gripper_mode == GripperMode.SUCTION:
+                        rand_indices = np.random.choice(pose_data.shape[0],
+                                                        size=pose_data.shape[0]/2,
+                                                        replace=False)
+                        pose_data[rand_indices, 4] = -pose_data[rand_indices, 4]
+                    elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
+                        rand_indices = np.random.choice(pose_data.shape[0],
+                                                        size=pose_data.shape[0]/2,
+                                                        replace=False)
+                        pose_data[rand_indices, 3] = -pose_data[rand_indices, 3]
+                    if train_indices.shape[0] > 0:
+                        pose_data = pose_data[train_indices,:]
+                        pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
+                        self.pose_mean += np.sum(pose_data, axis=0)
+                        num_summed += pose_data.shape[0]
+                self.pose_mean = self.pose_mean / num_summed
 
-            # compute std
-            logging.info('Computing pose std')
-            for k, i in enumerate(random_file_indices):
-                if k % self.preproc_log_frequency == 0:
-                    logging.info('Adding file %d of %d to pose std estimate' %(k+1, random_file_indices.shape[0]))
-                pose_data = self.dataset.tensor(self.pose_field_name, i).arr
-                train_indices = self.train_index_map[i]
-                if self.gripper_mode == GripperMode.SUCTION:
-                    rand_indices = np.random.choice(pose_data.shape[0],
-                                                    size=pose_data.shape[0]/2,
-                                                    replace=False)
-                    pose_data[rand_indices, 4] = -pose_data[rand_indices, 4]
-                elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
-                    rand_indices = np.random.choice(pose_data.shape[0],
-                                                    size=pose_data.shape[0]/2,
-                                                    replace=False)
-                    pose_data[rand_indices, 3] = -pose_data[rand_indices, 3]
-                if train_indices.shape[0] > 0:
-                    pose_data = pose_data[train_indices,:]
-                    pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
-                    self.pose_std += np.sum((pose_data - self.pose_mean)**2, axis=0)
-            self.pose_std = np.sqrt(self.pose_std / num_summed)
-            self.pose_std[self.pose_std==0] = 1.0
+                # compute std
+                logging.info('Computing pose std')
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to pose std estimate' %(k+1, random_file_indices.shape[0]))
+                    pose_data = self.dataset.tensor(self.pose_field_name, i).arr
+                    train_indices = self.train_index_map[i]
+                    if self.gripper_mode == GripperMode.SUCTION:
+                        rand_indices = np.random.choice(pose_data.shape[0],
+                                                        size=pose_data.shape[0]/2,
+                                                        replace=False)
+                        pose_data[rand_indices, 4] = -pose_data[rand_indices, 4]
+                    elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
+                        rand_indices = np.random.choice(pose_data.shape[0],
+                                                        size=pose_data.shape[0]/2,
+                                                        replace=False)
+                        pose_data[rand_indices, 3] = -pose_data[rand_indices, 3]
+                    if train_indices.shape[0] > 0:
+                        pose_data = pose_data[train_indices,:]
+                        pose_data = pose_data[np.isfinite(pose_data[:,3]),:]
+                        self.pose_std += np.sum((pose_data - self.pose_mean)**2, axis=0)
+                self.pose_std = np.sqrt(self.pose_std / num_summed)
+                self.pose_std[self.pose_std==0] = 1.0
 
-            # save
-            self.pose_mean = read_pose_data(self.pose_mean, self.gripper_mode)
-            self.pose_std = read_pose_data(self.pose_std, self.gripper_mode)
-            np.save(pose_mean_filename, self.pose_mean)
-            np.save(pose_std_filename, self.pose_std)
+                # save
+                self.pose_mean = read_pose_data(self.pose_mean, self.gripper_mode)
+                self.pose_std = read_pose_data(self.pose_std, self.gripper_mode)
+                np.save(pose_mean_filename, self.pose_mean)
+                np.save(pose_std_filename, self.pose_std)
 
-        # update gqcnn
-        self.gqcnn.set_pose_mean(self.pose_mean)
-        self.gqcnn.set_pose_std(self.pose_std)
+            # update gqcnn
+            self.gqcnn.set_pose_mean(self.pose_mean)
+            self.gqcnn.set_pose_std(self.pose_std)
 
-        # check for invalid values
-        if np.any(np.isnan(self.pose_mean)) or np.any(np.isnan(self.pose_std)):
-            logging.error('Pose mean or pose std is NaN! Check the input dataset')
-            IPython.embed()
-            exit(0)
+            # check for invalid values
+            if np.any(np.isnan(self.pose_mean)) or np.any(np.isnan(self.pose_std)):
+                logging.error('Pose mean or pose std is NaN! Check the input dataset')
+                IPython.embed()
+                exit(0)
 
+        elif self.gqcnn.input_depth_mode == InputDepthMode.SUB:
+            # compute (image - depth) stats
+            im_depth_sub_mean_filename = os.path.join(self.model_dir, 'im_depth_sub_mean.npy')
+            im_depth_sub_std_filename = os.path.join(self.model_dir, 'im_depth_sub_std.npy')
+            if os.path.exists(im_depth_sub_mean_filename) and os.path.exists(im_depth_sub_std_filename):
+                self.im_depth_sub_mean = np.load(im_depth_sub_mean_filename)
+                self.im_depth_sub_std = np.load(im_depth_sub_std_filename)
+            else:
+                self.im_depth_sub_mean = 0
+                self.im_depth_sub_std = 0
+
+                # compute mean
+                logging.info('Computing (image - depth) mean')
+                num_summed = 0
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to (image - depth) mean estimate' %(k+1, random_file_indices.shape[0]))
+                    im_data = self.dataset.tensor(self.im_field_name, i).arr
+                    depth_data = read_pose_data(self.dataset.tensor(self.pose_field_name, i).arr, self.gripper_mode)
+                    sub_data = im_data - np.tile(np.reshape(depth_data, (-1, 1, 1, 1)), (1, im_data.shape[1], im_data.shape[2], 1))
+                    train_indices = self.train_index_map[i]
+                    if train_indices.shape[0] > 0:
+                        self.im_depth_sub_mean += np.sum(sub_data[train_indices, ...])
+                        num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
+                self.im_depth_sub_mean = self.im_depth_sub_mean / num_summed
+
+                # compute std
+                logging.info('Computing (image - depth) std')
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to (image - depth) std estimate' %(k+1, random_file_indices.shape[0]))
+                    im_data = self.dataset.tensor(self.im_field_name, i).arr
+                    depth_data = read_pose_data(self.dataset.tensor(self.pose_field_name, i).arr, self.gripper_mode)
+                    sub_data = im_data - np.tile(np.reshape(depth_data, (-1, 1, 1, 1)), (1, im_data.shape[1], im_data.shape[2], 1))
+                    train_indices = self.train_index_map[i]
+                    if train_indices.shape[0] > 0:
+                        self.im_depth_sub_std += np.sum((sub_data[train_indices, ...] - self.im_depth_sub_mean)**2)
+                self.im_depth_sub_std = np.sqrt(self.im_depth_sub_std / num_summed)
+
+                # save
+                np.save(im_depth_sub_mean_filename, self.im_depth_sub_mean)
+                np.save(im_depth_sub_std_filename, self.im_depth_sub_std)
+
+            # update gqcnn
+            self.gqcnn.set_im_depth_sub_mean(self.im_depth_sub_mean)
+            self.gqcnn.set_im_depth_sub_std(self.im_depth_sub_std)
+
+	elif self.gqcnn.input_depth_mode == InputDepthMode.IM_ONLY:
+            # compute image stats
+            im_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
+            im_std_filename = os.path.join(self.model_dir, 'im_std.npy')
+            if os.path.exists(im_mean_filename) and os.path.exists(im_std_filename):
+                self.im_mean = np.load(im_mean_filename)
+                self.im_std = np.load(im_std_filename)
+            else:
+                self.im_mean = 0
+                self.im_std = 0
+
+                # compute mean
+                logging.info('Computing image mean')
+                num_summed = 0
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to image mean estimate' %(k+1, random_file_indices.shape[0]))
+                    im_data = self.dataset.tensor(self.im_field_name, i).arr
+                    train_indices = self.train_index_map[i]
+                    if train_indices.shape[0] > 0:
+                        self.im_mean += np.sum(im_data[train_indices, ...])
+                        num_summed += self.train_index_map[i].shape[0] * im_data.shape[1] * im_data.shape[2]
+                self.im_mean = self.im_mean / num_summed
+
+                # compute std
+                logging.info('Computing image std')
+                for k, i in enumerate(random_file_indices):
+                    if k % self.preproc_log_frequency == 0:
+                        logging.info('Adding file %d of %d to image std estimate' %(k+1, random_file_indices.shape[0]))
+                    im_data = self.dataset.tensor(self.im_field_name, i).arr
+                    train_indices = self.train_index_map[i]
+                    if train_indices.shape[0] > 0:
+                        self.im_std += np.sum((im_data[train_indices, ...] - self.im_mean)**2)
+                self.im_std = np.sqrt(self.im_std / num_summed)
+
+                # save
+                np.save(im_mean_filename, self.im_mean)
+                np.save(im_std_filename, self.im_std)
+
+            # update gqcnn
+            self.gqcnn.set_im_mean(self.im_mean)
+            self.gqcnn.set_im_std(self.im_std)
+               
         # compute normalization parameters of the network
         pct_pos_train_filename = os.path.join(self.model_dir, 'pct_pos_train.npy')
         pct_pos_val_filename = os.path.join(self.model_dir, 'pct_pos_val.npy')
@@ -662,7 +764,26 @@ class GQCNNOptimizer(object):
         logging.info('Percent positive in train: ' + str(pct_pos_train))
         if self.train_pct < 1.0:
             logging.info('Percent positive in val: ' + str(pct_pos_val))
-        
+
+        if self._angular_bins > 0:
+            logging.info('Calculating angular bin statistics...')
+            bin_counts = np.zeros((self._angular_bins,))
+            for m in range(self.num_tensors):
+                pose_arr = self.dataset.tensor(self.pose_field_name, m).arr
+                angles = pose_arr[:, 3]
+                neg_ind = np.where(angles < 0)
+                angles = np.abs(angles) % GeneralConstants.PI
+                angles[neg_ind] *= -1
+                g_90 = np.where(angles > (GeneralConstants.PI / 2))
+                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
+                angles[g_90] -= GeneralConstants.PI
+                angles[l_neg_90] += GeneralConstants.PI
+                angles *= -1 # hack to fix reverse angle convention
+                angles += (GeneralConstants.PI / 2)
+                for i in range(angles.shape[0]):
+                    bin_counts[int(angles[i] // self._bin_width)] += 1
+            logging.info('Bin counts: {}'.format(bin_counts))
+
     def _compute_split_indices(self):
         """ Compute train and validation indices for each tensor to speed data accesses"""
         # read indices
@@ -817,7 +938,19 @@ class GQCNNOptimizer(object):
         if self.total_pct < 0 or self.total_pct > 1:
             raise ValueError('Total percentage must be in range [0,1]')
 
-        
+        # normalization
+        self._norm_inputs = True
+        if self.gqcnn.input_depth_mode == InputDepthMode.SUB:
+            self._norm_inputs = False       
+ 
+        # angular training
+        self._angular_bins = self.gqcnn.angular_bins
+
+        # during angular training, make sure symmetrization in denoising is turned off and also set the angular bin width
+        if self._angular_bins > 0:
+            assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training'
+            self._bin_width = GeneralConstants.PI / self._angular_bins
+
     def _setup_denoising_and_synthetic(self):
         """ Setup denoising and synthetic data parameters """
         # multiplicative denoising
@@ -903,13 +1036,21 @@ class GQCNNOptimizer(object):
             raise ValueError('Training mode %s not supported' %(self.training_mode))
         with tf.name_scope('train_labels_node'):
             self.train_labels_batch = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+        if self._angular_bins > 0:
+            self.train_pred_mask_batch = tf.placeholder(tf.int32, (self.train_batch_size, self._angular_bins*2))
 
         # create queue
         with tf.name_scope('data_queue'):
-            self.q = tf.FIFOQueue(GeneralConstants.QUEUE_CAPACITY, [tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.im_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,)])
-            self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch])
-            self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
-            self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
+            if self._angular_bins > 0:
+                self.q = tf.FIFOQueue(GeneralConstants.QUEUE_CAPACITY, [tf.float32, tf.float32, train_label_dtype, tf.int32], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.im_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,), (self.train_batch_size, self._angular_bins * 2)])
+                self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch, self.train_pred_mask_batch])
+                self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+                self.input_im_node, self.input_pose_node, self.train_labels_node, self.train_pred_mask_node = self.q.dequeue()
+            else:
+                self.q = tf.FIFOQueue(GeneralConstants.QUEUE_CAPACITY, [tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.im_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,)])
+                self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch])
+                self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+                self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
 
         # get weights
         self.weights = self.gqcnn.weights
@@ -1010,6 +1151,8 @@ class GQCNNOptimizer(object):
                 [self.train_batch_size, self.im_height, self.im_width, self.im_channels]).astype(np.float32)
             train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
             train_labels = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
+            if self._angular_bins > 0:
+                train_pred_mask = np.zeros((self.train_batch_size, self._angular_bins*2), dtype=bool)
             
             while start_i < self.train_batch_size:
                 # compute num remaining
@@ -1056,6 +1199,7 @@ class GQCNNOptimizer(object):
                 # subsample data
                 train_images_arr = train_images_tensor.arr[ind, ...]
                 train_poses_arr = train_poses_tensor.arr[ind, ...]
+                angles = train_poses_arr[:, 3]
                 train_label_arr = train_labels_tensor.arr[ind]
                 num_images = train_images_arr.shape[0]
 
@@ -1080,11 +1224,31 @@ class GQCNNOptimizer(object):
                 train_poses_arr = read_pose_data(train_poses_arr,
                                                  self.gripper_mode)
 
-                # standardize inputs and outpus
-                train_images_arr = (train_images_arr - self.im_mean) / self.im_std
-                train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
+                # standardize inputs and outputs
+                if self._norm_inputs:
+                    train_images_arr = (train_images_arr - self.im_mean) / self.im_std
+		    if self.gqcnn.input_depth_mode == InputDepthMode.POSE_STREAM:
+                    	train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
                 train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                 train_label_arr = train_label_arr.astype(self.numpy_dtype)
+
+                if self._angular_bins > 0:
+                    bins = np.zeros_like(train_label_arr)
+                    # form prediction mask to use when calculating loss
+                    neg_ind = np.where(angles < 0)
+                    angles = np.abs(angles) % GeneralConstants.PI
+                    angles[neg_ind] *= -1
+                    g_90 = np.where(angles > (GeneralConstants.PI / 2))
+                    l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
+                    angles[g_90] -= GeneralConstants.PI
+                    angles[l_neg_90] += GeneralConstants.PI
+                    angles *= -1 # hack to fix reverse angle convention
+                    angles += (GeneralConstants.PI / 2)
+                    train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self._angular_bins*2))
+                    for i in range(angles.shape[0]):
+                        bins[i] = angles[i] // self._bin_width
+                        train_pred_mask_arr[i, int((angles[i] // self._bin_width)*2)] = 1
+                        train_pred_mask_arr[i, int((angles[i] // self._bin_width)*2 + 1)] = 1
 
                 # compute the number of examples loaded
                 num_loaded = train_images_arr.shape[0]
@@ -1094,6 +1258,8 @@ class GQCNNOptimizer(object):
                 train_images[start_i:end_i, ...] = train_images_arr.copy()
                 train_poses[start_i:end_i,:] = train_poses_arr.copy()
                 train_labels[start_i:end_i] = train_label_arr.copy()
+                if self._angular_bins > 0:
+                    train_pred_mask[start_i:end_i] = train_pred_mask_arr.copy()
 
                 del train_images_arr
                 del train_poses_arr
@@ -1106,7 +1272,13 @@ class GQCNNOptimizer(object):
             # send data to queue
             if not self.term_event.is_set():
                 try:
-                    self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_images,
+                    if self._angular_bins > 0:
+                        self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_images,
+                                                              self.train_poses_batch: train_poses,
+                                                              self.train_labels_batch: train_labels,
+                                                              self.train_pred_mask_batch: train_pred_mask})                       
+                    else:
+                        self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_images,
                                                               self.train_poses_batch: train_poses,
                                                               self.train_labels_batch: train_labels})
                     queue_stop = time.time()
@@ -1170,14 +1342,17 @@ class GQCNNOptimizer(object):
         return image_arr, pose_arr
 
     def _error_rate_in_batches(self, num_files_eval=None, validation_set=True):
-        """ Get all predictions for a dataset by running it in small batches
+        """ Compute error and loss over either training or validation set
 
         Returns
         -------
         : float
-            validation error
+            error
+	: float
+	    loss
         """
         error_rates = []
+	losses = []
 
         # subsample files
         file_indices = np.arange(self.num_tensors)
@@ -1191,6 +1366,7 @@ class GQCNNOptimizer(object):
             # load next file
             images = self.dataset.tensor(self.im_field_name, i).arr
             poses = self.dataset.tensor(self.pose_field_name, i).arr
+            raw_poses = np.array(poses, copy=True)
             labels = self.dataset.tensor(self.label_field_name, i).arr
 
             # if no datapoints from this file are in validation then just continue
@@ -1204,18 +1380,40 @@ class GQCNNOptimizer(object):
             images = images[indices,...]
             poses = read_pose_data(poses[indices,:],
                                    self.gripper_mode)
+            raw_poses = raw_poses[indices, :]
             labels = labels[indices]
 
             if self.training_mode == TrainingMode.CLASSIFICATION:
                 labels = 1 * (labels > self.metric_thresh)
                 labels = labels.astype(np.uint8)
-                    
+
+            if self._angular_bins > 0:
+                # form mask to extract predictions from ground-truth angular bins
+                angles = raw_poses[:, 3]
+                neg_ind = np.where(angles < 0)
+                angles = np.abs(angles) % GeneralConstants.PI
+                angles[neg_ind] *= -1
+                g_90 = np.where(angles > (GeneralConstants.PI / 2))
+                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
+                angles[g_90] -= GeneralConstants.PI
+                angles[l_neg_90] += GeneralConstants.PI
+                angles *= -1 # hack to fix reverse angle convention
+                angles += (GeneralConstants.PI / 2)
+                pred_mask = np.zeros((labels.shape[0], self._angular_bins*2), dtype=bool)
+                for i in range(angles.shape[0]):
+                    pred_mask[i, int((angles[i] // self._bin_width)*2)] = True
+                    pred_mask[i, int((angles[i] // self._bin_width)*2 + 1)] = True
+                
             # get predictions
             predictions = self.gqcnn.predict(images, poses)
-            
+            if self._angular_bins > 0:
+                predictions = predictions[pred_mask].reshape((-1, 2))            
+
             # get error rate
             if self.training_mode == TrainingMode.CLASSIFICATION:
-                error_rates.append(BinaryClassificationResult(predictions[:,1], labels).error_rate)
+		classification_result = BinaryClassificationResult(predictions[:,1], labels) 
+                error_rates.append(classification_result.error_rate)
+		losses.append(classification_result.cross_entropy_loss)
             else:
                 error_rates.append(RegressionResult(predictions, labels).error_rate)
             
@@ -1224,5 +1422,5 @@ class GQCNNOptimizer(object):
             del poses
             del labels
 
-        # return average error rate over all files (assuming same size)
-        return np.mean(error_rates)
+        # return average error rate and loss over all files (assuming same size)
+        return np.mean(error_rates), np.mean(losses)

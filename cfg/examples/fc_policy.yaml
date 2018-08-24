@@ -1,0 +1,30 @@
+# policy params
+policy:
+  num_depth_bins: 16
+  gripper_width: 0.05
+  gqcnn_stride: 4
+  gqcnn_recep_h: 96
+  gqcnn_recep_w: 96
+
+  # metrics
+  metric:
+    type: fcgqcnn
+    gqcnn_model: models/gqcnn_fizzytablets_angular
+    gqcnn_backend: tf
+    fully_conv_gqcnn_config:
+     im_height: 500
+     im_width: 500 
+
+  # visualization
+  policy_vis:
+    scale: 0.5
+    show_axis: 1
+    top_k: 0
+    vis_top_k: 0
+    vis_3d: 0
+
+  vis:
+    final_grasp: 0
+
+# image proc params
+inpaint_rescale_factor: 0.5
