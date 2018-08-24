@@ -52,7 +52,7 @@ class GraspQualityFunction(object):
         return self.quality(state, actions, params)
 
     @abstractmethod
-    def quality(self, state, actions, params):
+    def quality(self, state, actions, params=None):
         """ Evaluates grasp quality for a set of actions given a state.
 
         Parameters
@@ -73,7 +73,7 @@ class GraspQualityFunction(object):
 
 class ZeroGraspQualityFunction(object):
     """ Null function. """
-    def quality(self, state, actions, params):
+    def quality(self, state, actions, params=None):
         """ Returns zero for all grasps
 
         Parameters
@@ -1130,7 +1130,7 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         """ Returns the FC-GQCNN quality function parameters. """
         return self._config
 
-    def quality(self, images, depths): 
+    def quality(self, images, depths, params=None): 
         return self._fcgqcnn.predict(images, depths)
 
 class GraspQualityFunctionFactory(object):
