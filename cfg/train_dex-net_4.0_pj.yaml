@@ -20,7 +20,7 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 1.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -59,11 +59,6 @@ gaussian_process_denoising: 0
 gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
-
-drop_fc3: 0
-fc3_drop_rate: 0.5
-drop_fc4: 0
-fc4_drop_rate: 0.5
 
 # tensorboard
 tensorboard_port: 6006
