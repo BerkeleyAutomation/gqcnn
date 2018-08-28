@@ -36,8 +36,8 @@ import scipy.ndimage.filters as snf
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
-
-from . import Grasp2D, SuctionPoint2D, GQCNN
+from gqcnn.model import get_gqcnn_model, get_fc_gqcnn_model
+from . import Grasp2D, SuctionPoint2D
 from .utils import GripperMode
 
 # constant for display
@@ -52,7 +52,7 @@ class GraspQualityFunction(object):
         return self.quality(state, actions, params)
 
     @abstractmethod
-    def quality(self, state, actions, params):
+    def quality(self, state, actions, params=None):
         """ Evaluates grasp quality for a set of actions given a state.
 
         Parameters
@@ -73,7 +73,7 @@ class GraspQualityFunction(object):
 
 class ZeroGraspQualityFunction(object):
     """ Null function. """
-    def quality(self, state, actions, params):
+    def quality(self, state, actions, params=None):
         """ Returns zero for all grasps
 
         Parameters
@@ -831,7 +831,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         self._crop_width = config['crop_width']
 
         # init GQ-CNN
-        self._gqcnn = GQCNN.load(self._gqcnn_model_dir)
+        self._gqcnn = get_gqcnn_model().load(self._gqcnn_model_dir)
 
         # open tensorflow session for gqcnn
         self._gqcnn.open_session()
@@ -957,7 +957,9 @@ class NoMagicQualityFunction(GraspQualityFunction):
         from tensorpack.predict.config import PredictConfig
         from tensorpack import SaverRestore
         from tensorpack.predict import OfflinePredictor
-
+        import json
+        import os
+        
         # store parameters
         self._model_path = config['gqcnn_model']
         self._batch_size = config['batch_size']
@@ -968,6 +970,8 @@ class NoMagicQualityFunction(GraspQualityFunction):
         self._num_channels = config['num_channels']
         self._pose_dim = config['pose_dim']
         self._gripper_mode = config['gripper_mode']
+        self._data_mean = config['data_mean']
+        self._data_std = config['data_std']
 
         # init config
         model = ConvNetModel()
@@ -976,7 +980,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
             session_init=SaverRestore(self._model_path),
             output_names=['prob'])
         self._predictor = OfflinePredictor(self._config)
-
+        
     @property
     def gqcnn(self):
         """ Returns the GQ-CNN. """
@@ -1029,8 +1033,8 @@ class NoMagicQualityFunction(GraspQualityFunction):
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
 
             im_encoded = cv2.imencode('.png', np.uint8(im_tf.raw_data*255))[1].tostring()
-            im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8), 0)
-            image_tensor[i,:,:,0] = im_decoded
+            im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8), 0) / 255.0
+            image_tensor[i,:,:,0] = ((im_decoded - self._data_mean) / self._data_std)
             
             if gripper_mode == GripperMode.PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
@@ -1043,7 +1047,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
             else:
                 raise ValueError('Gripper mode %s not supported' %(gripper_mode))
         logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
-        return image_tensor.astype(np.uint8), pose_tensor
+        return image_tensor, pose_tensor
 
     def quality(self, state, actions, params): 
         """ Evaluate the quality of a set of actions according to a GQ-CNN.
@@ -1075,7 +1079,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
             for i, image_tf in enumerate(image_tensor[:k,...]):
                 depth = pose_tensor[i][0]
                 vis2d.subplot(d,d,i+1)
-                vis2d.imshow(GrayscaleImage(image_tf))
+                vis2d.imshow(DepthImage(image_tf))
                 vis2d.title('Image %d: d=%.3f' %(i, depth))
             vis2d.show()
 
@@ -1094,6 +1098,40 @@ class NoMagicQualityFunction(GraspQualityFunction):
         logging.debug('Prediction took %.3f sec' %(time()-predict_start))
         return q_values.tolist()
 
+class FCGQCnnQualityFunction(GraspQualityFunction):
+    def __init__(self, config):
+        """ Grasp quality function usinng the fully-convolutional gqcnn """
+        # store parameters
+        self._config = config
+        self._model_dir = config['gqcnn_model']
+        self._backend = config['gqcnn_backend']
+        self._fully_conv_config = config['fully_conv_gqcnn_config']
+
+        # init fcgqcnn
+        self._fcgqcnn = get_fc_gqcnn_model(backend=self._backend).load(self._model_dir, self._fully_conv_config)
+
+        # open tensorflow session for fcgqcnn
+        self._fcgqcnn.open_session()
+
+    def __del__(self):
+        try:
+            self._fcgqcnn.close_session()
+        except:
+            pass
+        del self
+
+    @property
+    def gqcnn(self):
+        """ Returns the FC-GQCNN. """
+        return self._fcgqcnn
+
+    @property
+    def config(self):
+        """ Returns the FC-GQCNN quality function parameters. """
+        return self._config
+
+    def quality(self, images, depths, params=None): 
+        return self._fcgqcnn.predict(images, depths)
 
 class GraspQualityFunctionFactory(object):
     """Factory for grasp quality functions. """
@@ -1123,5 +1161,7 @@ class GraspQualityFunctionFactory(object):
             return GQCnnQualityFunction(config)
         elif metric_type == 'nomagic':
             return NoMagicQualityFunction(config)
+        elif metric_type == 'fcgqcnn':
+            return FCGQCnnQualityFunction(config)
         else:
             raise ValueError('Grasp function type %s not supported!' %(metric_type))

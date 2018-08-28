@@ -52,11 +52,6 @@ gaussian_process_rate: 0.5
 gaussian_process_scaling_factor: 4.0
 gaussian_process_sigma: 0.005
 
-drop_fc3: 0
-fc3_drop_rate: 0.5
-drop_fc4: 0
-fc4_drop_rate: 0.5
-
 # tensorboard
 tensorboard_port: 6006
 
