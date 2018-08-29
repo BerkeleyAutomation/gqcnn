@@ -446,7 +446,7 @@ class GQCNNTrainerTF(object):
             # get final errors and flush the stdout pipeline
             final_val_result = self._error_rate_in_batches()
             logging.info('Final validation error: %.3f%%' %final_val_result.error_rate)
-	    logging.info('Final validation loss: %.3f%%' %final_val_result.cross_entropy_loss)
+	    logging.info('Final validation loss: %.3f' %final_val_result.cross_entropy_loss)
             if self.cfg['eval_total_train_error']:
                 final_train_result = self._error_rate_in_batches(validation_set=False)
                 logging.info('Final training error: {}'.format(final_train_result.error_rate))

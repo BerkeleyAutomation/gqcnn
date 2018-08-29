@@ -65,8 +65,12 @@ if __name__ == '__main__':
     if os.path.exists(pct_pos_val_filename):
         pct_pos_val = 100.0 * np.load(pct_pos_val_filename)
     raw_train_losses = np.load(train_losses_filename)
-    val_losses = np.load(val_losses_filename)
-
+    val_losses = None
+    try:
+        val_losses = np.load(val_losses_filename)
+    except:
+        pass
+        
     val_errors = np.r_[pct_pos_val, val_errors]
     val_iters = np.r_[0, val_iters]
     
@@ -84,7 +88,8 @@ if __name__ == '__main__':
     train_losses = np.array(train_losses)
     train_iters = np.array(train_iters)
 
-    val_losses = np.r_[train_losses[0], val_losses]
+    if val_losses is not None:
+        val_losses = np.r_[train_losses[0], val_losses]
     
     init_val_error = val_errors[0]
     norm_train_errors = train_errors / init_val_error
@@ -103,8 +108,9 @@ if __name__ == '__main__':
     print 'Original error', pct_pos_val
     print 'Final error', val_errors[-1]
     print 'Normalized error', norm_final_val_error
-    print 'Orig loss', val_losses[0]
-    print 'Final loss', val_losses[-1]
+    if val_losses is not None:
+        print 'Orig loss', val_losses[0]
+        print 'Final loss', val_losses[-1]
 
     plt.figure()
     plt.plot(train_iters, train_errors, linewidth=4, color='b')
@@ -129,12 +135,13 @@ if __name__ == '__main__':
     plt.xlabel('Iteration', fontsize=15)
     plt.ylabel('Training Loss', fontsize=15)
 
-    val_losses[val_losses > 100.0] = 3.0
-    plt.figure()
-    plt.plot(val_iters, val_losses, linewidth=4, color='b')
-    plt.ylim(0, 2.0)
-    plt.xlabel('Iteration', fontsize=15)
-    plt.ylabel('Validation Loss', fontsize=15)
+    if val_losses is not None:
+        val_losses[val_losses > 100.0] = 3.0
+        plt.figure()
+        plt.plot(val_iters, val_losses, linewidth=4, color='b')
+        plt.ylim(0, 2.0)
+        plt.xlabel('Iteration', fontsize=15)
+        plt.ylabel('Validation Loss', fontsize=15)
     plt.show()
     
     plt.figure(figsize=(8,6))
