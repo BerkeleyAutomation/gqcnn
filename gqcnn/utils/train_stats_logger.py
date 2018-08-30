@@ -31,11 +31,11 @@ class TrainStatsLogger(object):
 
     def __init__(self, experiment_dir):
         """
-Parameters
-----------
-experiment_dir : str
-    the experiment directory to save statistics to
-"""
+        Parameters
+        ----------
+        experiment_dir : str
+            the experiment directory to save statistics to
+        """
         self.experiment_dir = experiment_dir
         self.train_eval_iters = []
         self.train_losses = []
@@ -43,6 +43,7 @@ experiment_dir : str
         self.total_train_errors = []
 	self.total_train_losses = []
         self.val_eval_iters = []
+        self.val_losses = []
         self.val_errors = []
 	self.val_losses = []
         self.learning_rates = []
@@ -79,6 +80,11 @@ experiment_dir : str
                 self.experiment_dir,
                 'val_eval_iters.npy'),
             self.val_eval_iters)
+        np.save(
+            os.path.join(
+                self.experiment_dir,
+                'val_losses.npy'),
+            self.val_losses)
         np.save(
             os.path.join(
                 self.experiment_dir,
@@ -124,6 +130,9 @@ experiment_dir : str
             elif statistic == "val_eval_iter":
                 if stats[statistic] is not None:
                     self.val_eval_iters.append(stats[statistic])
+            elif statistic == "val_loss":
+                if stats[statistic] is not None:
+                    self.val_losses.append(stats[statistic])
             elif statistic == "val_error":
                 if stats[statistic] is not None:
                     self.val_errors.append(stats[statistic])

@@ -3,9 +3,9 @@ train_batch_size: 64
 val_batch_size: &val_batch_size 64
 
 # logging params
-num_epochs: 25        # number of epochs to train for
-eval_frequency: 5.0    # how often to get validation error (in epochs)
-save_frequency: 5.0   # how often to save output (in epochs)
+num_epochs: 50        # number of epochs to train for
+eval_frequency: 10.0    # how often to get validation error (in epochs)
+save_frequency: 10.0   # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
 log_frequency: 1      # how often to log output (in steps)
 
@@ -19,14 +19,14 @@ max_files_eval: 1000        # the number of validation files to use in each eval
 loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
-base_lr: 0.001
+base_lr: 0.01
 decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
 drop_rate: 0.0
 max_global_grad_norm: 100000000000
-optimize_base_layers: 1
+optimize_base_layers: 0
 
 # input params
 training_mode: classification
@@ -72,13 +72,19 @@ gqcnn:
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   gripper_mode: parallel_jaw
 
+  # method by which to integrate depth into the network
+  input_depth_mode: pose_stream
+
+  # used for training with multiple angular predictions
+  angular_bins: 0
+
   # prediction batch size, in training this will be overriden by the val_batch_size in the optimizer's config file
   batch_size: *val_batch_size
 
   # architecture
   architecture:
     base_model:
-      output_layer: fc5
+      output_layer: fc4
     im_stream:
       conv1_1:
         type: conv
