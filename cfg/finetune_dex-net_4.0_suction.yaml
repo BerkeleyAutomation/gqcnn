@@ -20,7 +20,7 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 1.0   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -84,7 +84,7 @@ gqcnn:
   # architecture
   architecture:
     base_model:
-      output_layer: conv2_2
+      output_layer: fc3
     im_stream:
       conv1_1:
         type: conv
@@ -124,7 +124,7 @@ gqcnn:
         norm_type: local_response
       fc3:
         type: fc
-        out_size: 32
+        out_size: 128
     pose_stream:
       pc1:
         type: pc
@@ -135,7 +135,7 @@ gqcnn:
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 32
+        out_size: 128
       fc5:
         type: fc
         out_size: 2

@@ -124,6 +124,8 @@ def weight_name_to_layer_name(weight_name):
 
     # modern naming convention
     if type_name == 'weights' or type_name == 'bias':
+        if len(tokens) >= 3 and tokens[-3] == 'input':
+            return weight_name[:weight_name.rfind('input')-1]            
         return weight_name[:weight_name.rfind(type_name)-1]
     # legacy
     if type_name == 'im':
