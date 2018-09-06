@@ -443,7 +443,7 @@ class RobustGraspingPolicy(GraspingPolicy):
                           grasp_center_size=10,
                           show_center=False,
                           show_axis=True,
-                          color=plt.cm.RdYlGn(q))
+                          color=plt.cm.RdYlBu(q))
                 vis.title('Sampled grasps')
                 self.show('grasp_candidates.png')
 
@@ -647,7 +647,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                               jaw_width=2.0,
                               show_center=False,
                               show_axis=True,
-                              color=plt.cm.RdYlGn(q))
+                              color=plt.cm.RdYlBu(q))
                 vis.title('Sampled grasps iter %d' %(j))
                 filename = None
                 if self._logging_dir is not None:
@@ -671,7 +671,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                            vmax=self.config['vis']['vmax'])
                 for grasp, q in zip(elite_grasps, norm_q_values):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
-                              color=plt.cm.RdYlGn(q))
+                              color=plt.cm.RdYlBu(q))
                 vis.title('Elite grasps iter %d' %(j))
                 filename = None
                 if self._logging_dir is not None:
@@ -769,7 +769,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                           jaw_width=2.0,
                           show_center=False,
                           show_axis=True,
-                          color=plt.cm.RdYlGn(q))
+                          color=plt.cm.RdYlBu(q))
             vis.title('Final sampled grasps')
             filename = None
             if self._logging_dir is not None:

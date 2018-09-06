@@ -35,6 +35,7 @@ from gqcnn import Grasp2D, SuctionPoint2D
 from perception import DepthImage
 from visualization import Visualizer2D as vis
 from policy import GraspingPolicy, GraspAction
+from .utils import NoValidGraspsException
 
 class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """ Abstract grasp sampling policy class using fully-convolutional GQ-CNN network """
@@ -57,6 +58,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             self._depth_offset = self._cfg['depth_offset']
 
         self._filters = filters
+        self._max_filtered_grasps = self._cfg['max_grasps_filter']
+        self._filter_grasps = self._cfg['filter_grasps']
 
         self._vis_config = self._cfg['policy_vis']
         self._num_vis_samples = self._vis_config['num_samples']
@@ -148,25 +151,23 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         vis.show()
 
     def _filter(self, actions):
-	valid_actions = []
 	for action in actions:
-	    valid = True
+            valid = True
 	    for filter_name, is_valid in self._filters.iteritems():
 		if not is_valid(action.grasp):
-		    valid = False
-#		    logging.info('Grasp {} is not valid with filter {}'.format(action.grasp, filter_name))
-		    break
+		    logging.info('Grasp {} is not valid with filter {}'.format(action.grasp, filter_name))
+                    valid = False
+                    break
 	    if valid:
-		valid_actions.append(action)
-	if len(valid_actions) == 0:
-	    raise Exception('No grasps found after filtering!')
-	return [max(valid_actions, key=lambda a: a.q_value)]
+		return action
+	raise NoValidGraspsException('No grasps found after filtering!')
 
     def _action(self, state, num_actions=1):
         """ Plan action(s)  """
-	num_actions_orig = num_actions
-	if num_actions == 1:
-		num_actions = 1000
+        if self._filter_grasps:
+            assert self._filters, 'Trying to filter grasps but no filters were provided!'
+            assert num_actions == 1, 'Filtering support is only implemented for single actions!'
+            num_actions = self._max_filtered_grasps
 
         # unpack the RgbdImageState
         wrapped_depth, raw_depth, raw_seg, camera_intr = self._unpack_state(state)
@@ -193,10 +194,9 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         # wrap actions to be returned
         actions = self._get_actions(preds_success_only, sampled_ind, images, depths, camera_intr, num_actions_to_sample)
 
-	# filter
-	if num_actions_orig == 1:
-            logging.info('Filtering...')
-	    actions = self._filter(actions)
+        if self._filter_grasps:
+            actions.sort(reverse=True, key=lambda action: action.q_value)
+            actions = [self._filter(actions)]
 
         if self._vis:
             # visualize 3D
@@ -207,7 +207,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             logging.info('Generating 2D visualization...')
             self._visualize_2d(actions, wrapped_depth, num_actions_to_sample, self._vis_config['scale'], self._vis_config['show_axis'])
 
-        return actions[-1] if num_actions_orig == 1 else actions[-(num_actions+1):]
+        return actions[-1] if (self._filter_grasps or num_actions == 1) else actions[-(num_actions+1):]
 
     def action_set(self, state, num_actions):
         """ Plan a set of actions  """
