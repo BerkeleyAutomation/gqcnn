@@ -27,7 +27,6 @@ from setuptools import setup
 
 requirements = [
     'autolab_core',
-    'autolab_perception',
     'numpy',
     'scipy',
     'matplotlib',
