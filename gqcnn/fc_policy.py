@@ -110,9 +110,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             if self._sampling_method == 'top_k':
                 return [np.argmax(preds_flat)]
             elif self._sampling_method == 'uniform':
-                nonzero_ind = np.where(preds_flat > 0)[0]
-                import IPython
-                IPython.embed() #TODO: make sure a list/array is returned 
+                nonzero_ind = np.where(preds_flat > 0)[0] 
                 return np.random.choice(nonzero_ind)
             else:
                 raise ValueError('Invalid sampling method: {}'.format(self._sampling_method))
