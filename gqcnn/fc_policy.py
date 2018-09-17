@@ -34,7 +34,7 @@ from autolab_core import Point
 from gqcnn import Grasp2D, SuctionPoint2D
 from perception import DepthImage
 from visualization import Visualizer2D as vis
-from policy import GraspingPolicy, GraspAction
+from policy import GraspingPolicy, GraspAction, NoValidGraspsException
 
 class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """ Abstract grasp sampling policy class using fully-convolutional GQ-CNN network """
@@ -119,6 +119,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
                 return np.argpartition(preds_flat, -1 * num_samples)[-1 * num_samples:]
             elif self._sampling_method == 'uniform':
                 nonzero_ind = np.where(preds_flat > 0)[0]
+                if nonzero_ind.shape[0] == 0:
+                    raise NoValidGraspsException('No grasps with nonzero quality')
                 return np.random.choice(nonzero_ind, size=num_samples)
             else:
                 raise ValueError('Invalid sampling method: {}'.format(self._sampling_method))
@@ -146,9 +148,19 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         # unpack the RgbdImageState
         wrapped_depth, raw_depth, raw_seg, camera_intr = self._unpack_state(state)
 
+        """
+        from visualization import Visualizer2D as vis2d
+        vis2d.figure()
+        vis2d.subplot(1,2,1)
+        vis2d.imshow(state.rgbd_im.depth)
+        vis2d.subplot(1,2,2)
+        vis2d.imshow(state.segmask)
+        vis2d.show()
+        """
+
         # sample depths to evaluate from the depth image
         depths = self._sample_depths(raw_depth, raw_seg)
-
+        
         # predict
         images = np.tile(np.asarray([raw_depth]), (self._num_depth_bins, 1, 1, 1))
         preds = self._grasp_quality_fn.quality(images, depths)
