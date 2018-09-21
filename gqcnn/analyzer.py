@@ -281,7 +281,10 @@ class GQCNNAnalyzer(object):
         # get stats, plot curves
         logging.info('Model %s training error rate: %.3f' %(model_dir, train_result.error_rate))
         logging.info('Model %s validation error rate: %.3f' %(model_dir, val_result.error_rate))
-        
+
+        logging.info('Model %s training loss: %.3f' %(model_dir, train_result.cross_entropy_loss))
+        logging.info('Model %s validation loss: %.3f' %(model_dir, val_result.cross_entropy_loss))
+
         # save images
         vis2d.figure()
         example_dir = os.path.join(model_output_dir, 'examples')
@@ -456,7 +459,8 @@ class GQCNNAnalyzer(object):
         train_summary_stats = {
             'error_rate': train_result.error_rate,
             'ap_score': train_result.ap_score,
-            'auc_score': train_result.auc_score
+            'auc_score': train_result.auc_score,
+            'loss': train_result.cross_entropy_loss
         }
         train_stats_filename = os.path.join(model_output_dir, 'train_stats.json')
         json.dump(train_summary_stats, open(train_stats_filename, 'w'),
@@ -466,7 +470,8 @@ class GQCNNAnalyzer(object):
         val_summary_stats = {
             'error_rate': val_result.error_rate,
             'ap_score': val_result.ap_score,
-            'auc_score': val_result.auc_score
+            'auc_score': val_result.auc_score,
+            'loss': val_result.cross_entropy_loss            
         }
         val_stats_filename = os.path.join(model_output_dir, 'val_stats.json')
         json.dump(val_summary_stats, open(val_stats_filename, 'w'),

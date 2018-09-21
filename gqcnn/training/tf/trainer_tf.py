@@ -256,7 +256,8 @@ class GQCNNTrainerTF(object):
         with tf.name_scope('loss'):
             # part 1: error
             loss = self._create_loss()
-
+            unregularized_loss = loss
+            
             # part 2: regularization
             layer_weights = self.weights.values()
             with tf.name_scope('regularization'):
@@ -349,11 +350,11 @@ class GQCNNTrainerTF(object):
                 # run optimization
                 step_start = time.time()
                 if self._angular_bins > 0:
-                    _, l, lr, predictions, batch_labels, output, train_images, train_poses, pred_mask = self.sess.run([apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_pred_mask_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
+                    _, l, ur_l, lr, predictions, batch_labels, output, train_images, train_poses, pred_mask = self.sess.run([apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_pred_mask_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
  
                 else:
-                    _, l, lr, predictions, batch_labels, output, train_images, train_poses = self.sess.run(
-                        [apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
+                    _, l, ur_l, lr, predictions, batch_labels, output, train_images, train_poses = self.sess.run(
+                        [apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
                 step_stop = time.time()
                 logging.info('Step took %.3f sec' %(step_stop-step_start))
                 
@@ -409,24 +410,23 @@ class GQCNNTrainerTF(object):
                 # evaluate validation error
                 if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
-                        train_error, train_loss = self._error_rate_in_batches(validation_set=False)
-                        logging.info('Training error: %.3f' %(train_error))
-			logging.info('Training loss: %.3f' %(train_loss))
+                        train_result = self._error_rate_in_batches(validation_set=False)
+                        logging.info('Training error: %.3f' %(train_result.error_rate))
 
                         # update the TrainStatsLogger and save
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_error, total_train_loss=train_loss, val_eval_iter=None, val_error=None, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_result.error_rate, total_train_loss=train_result.cross_entropy_loss, val_eval_iter=None, val_error=None, learning_rate=None)
                         self.train_stats_logger.log()
                     
                     if self.train_pct < 1.0:
-                        val_error, val_loss = self._error_rate_in_batches()
-                        self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_error}), step)
-                        logging.info('Validation error: %.3f' %(val_error))
-			logging.info('Validation loss: %.3f' %(val_loss))
+                        val_result = self._error_rate_in_batches()
+                        self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_result.error_rate}), step)
+                        logging.info('Validation error: %.3f' %(val_result.error_rate))
+			logging.info('Validation loss: %.3f' %(val_result.cross_entropy_loss))
                     sys.stdout.flush()
 
                     # update the TrainStatsLogger
                     if self.train_pct < 1.0:
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, val_loss=val_loss, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_loss=val_result.cross_entropy_loss, val_error=val_result.error_rate, learning_rate=None)
                     else:
                         self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, learning_rate=None)
 
@@ -444,17 +444,17 @@ class GQCNNTrainerTF(object):
                     self._launch_tensorboard()
 
             # get final errors and flush the stdout pipeline
-            final_val_error, final_val_loss = self._error_rate_in_batches()
-            logging.info('Final validation error: %.3f%%' %final_val_error)
-	    logging.info('Final validation loss: %.3f%%' %final_val_loss)
+            final_val_result = self._error_rate_in_batches()
+            logging.info('Final validation error: %.3f%%' %final_val_result.error_rate)
+	    logging.info('Final validation loss: %.3f' %final_val_result.cross_entropy_loss)
             if self.cfg['eval_total_train_error']:
-                final_train_error, final_train_loss = self._error_rate_in_batches(validation_set=False)
-                logging.info('Final training error: {}'.format(final_train_error))
-		logging.info('Final training loss: {}'.format(final_train_loss))
+                final_train_result = self._error_rate_in_batches(validation_set=False)
+                logging.info('Final training error: {}'.format(final_train_result.error_rate))
+		logging.info('Final training loss: {}'.format(final_train_result.cross_entropy_loss))
             sys.stdout.flush()
 
-            # update the TrainStatsLogger 
-            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=final_val_error, val_loss=final_val_loss, learning_rate=None)
+            # update the TrainStatsLogger
+            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_loss=final_val_result.cross_entropy_loss, val_error=final_val_result.error_rate, learning_rate=None)
 
             # log & save everything!
             self.train_stats_logger.log()
@@ -913,7 +913,9 @@ class GQCNNTrainerTF(object):
         self.target_metric_name = self.cfg['target_metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
         self.training_mode = self.cfg['training_mode']
-
+        if self.training_mode != TrainingMode.CLASSIFICATION:
+            raise ValueError('Training mode %s not currently supported!' %(self.training_mode))
+        
         # tensorboad
         self._tensorboard_port = self.cfg['tensorboard_port']
         
@@ -1346,13 +1348,11 @@ class GQCNNTrainerTF(object):
 
         Returns
         -------
-        : float
-            error
-	: float
-	    loss
+        :obj:'autolab_core.BinaryClassificationResult`
+            validation error
         """
-        error_rates = []
-	losses = []
+        all_predictions = []
+        all_labels = []
 
         # subsample files
         file_indices = np.arange(self.num_tensors)
@@ -1406,21 +1406,22 @@ class GQCNNTrainerTF(object):
                 
             # get predictions
             predictions = self.gqcnn.predict(images, poses)
+
             if self._angular_bins > 0:
                 predictions = predictions[pred_mask].reshape((-1, 2))            
 
-            # get error rate
-            if self.training_mode == TrainingMode.CLASSIFICATION:
-		classification_result = BinaryClassificationResult(predictions[:,1], labels) 
-                error_rates.append(classification_result.error_rate)
-		losses.append(classification_result.cross_entropy_loss)
-            else:
-                error_rates.append(RegressionResult(predictions, labels).error_rate)
-            
+            # update
+            all_predictions.extend(predictions[:,1].tolist())
+            all_labels.extend(labels.tolist())
+                            
             # clean up
             del images
             del poses
-            del labels
 
-        # return average error rate and loss over all files (assuming same size)
-        return np.mean(error_rates), np.mean(losses)
+        # get learning result
+        result = None
+        if self.training_mode == TrainingMode.CLASSIFICATION:
+            result = BinaryClassificationResult(all_predictions, all_labels)
+        else:
+            result = RegressionResult(all_predictions, all_labels)
+        return result

@@ -38,9 +38,9 @@ import time
 
 from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, BinaryImage, ColorImage, DepthImage, CameraIntrinsics
+from visualization import Visualizer2D as vis
 
 from gqcnn import UniformRandomGraspingPolicy, RgbdImageState
-from gqcnn import Visualizer as vis
 
 if __name__ == '__main__':
     # set up logger
@@ -61,7 +61,11 @@ if __name__ == '__main__':
     policy_config = config['policy']
 
     # read image
-    depth_im_arr = pkl.load(open(depth_im_filename, 'r'))
+    _, ext = os.path.splitext(depth_im_filename)
+    if ext.lower() == '.pkl':
+        depth_im_arr = pkl.load(open(depth_im_filename, 'r'))
+    else:
+        depth_im_arr = np.load(depth_im_filename)
     depth_im = DepthImage(depth_im_arr)
     color_im = ColorImage(np.zeros([depth_im.height,
                                     depth_im.width,

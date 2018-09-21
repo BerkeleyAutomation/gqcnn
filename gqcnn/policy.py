@@ -241,10 +241,11 @@ class GraspingPolicy(Policy):
         # save state
         if self._logging_dir is not None:
             policy_id = utils.gen_experiment_id()
-            self._policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
-            while os.path.exists(self._policy_dir):
+            policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' % (policy_id))
+            while os.path.exists(policy_dir):
                 policy_id = utils.gen_experiment_id()
-            self._policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' %(policy_id))
+                policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' % (policy_id))
+            self._policy_dir = policy_dir
             os.mkdir(self._policy_dir)
             state_dir = os.path.join(self._policy_dir, 'state')
             state.save(state_dir)
@@ -442,7 +443,7 @@ class RobustGraspingPolicy(GraspingPolicy):
                           grasp_center_size=10,
                           show_center=False,
                           show_axis=True,
-                          color=plt.cm.RdYlGn(q))
+                          color=plt.cm.RdYlBu(q))
                 vis.title('Sampled grasps')
                 self.show('grasp_candidates.png')
 
@@ -646,7 +647,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                               jaw_width=2.0,
                               show_center=False,
                               show_axis=True,
-                              color=plt.cm.RdYlGn(q))
+                              color=plt.cm.RdYlBu(q))
                 vis.title('Sampled grasps iter %d' %(j))
                 filename = None
                 if self._logging_dir is not None:
@@ -670,7 +671,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                            vmax=self.config['vis']['vmax'])
                 for grasp, q in zip(elite_grasps, norm_q_values):
                     vis.grasp(grasp, scale=1.5, show_center=False, show_axis=True,
-                              color=plt.cm.RdYlGn(q))
+                              color=plt.cm.RdYlBu(q))
                 vis.title('Elite grasps iter %d' %(j))
                 filename = None
                 if self._logging_dir is not None:
@@ -768,7 +769,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                           jaw_width=2.0,
                           show_center=False,
                           show_axis=True,
-                          color=plt.cm.RdYlGn(q))
+                          color=plt.cm.RdYlBu(q))
             vis.title('Final sampled grasps')
             filename = None
             if self._logging_dir is not None:

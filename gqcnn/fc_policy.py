@@ -35,12 +35,13 @@ from gqcnn import Grasp2D, SuctionPoint2D
 from perception import DepthImage
 from visualization import Visualizer2D as vis
 from policy import GraspingPolicy, GraspAction
+from .utils import NoValidGraspsException
 
 class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """ Abstract grasp sampling policy class using fully-convolutional GQ-CNN network """
     __metaclass__ = ABCMeta
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, filters=None):
         GraspingPolicy.__init__(self, cfg, init_sampler=False)
 
         # parse config
@@ -52,23 +53,31 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         self._gqcnn_recep_h = self._cfg['gqcnn_recep_h']
         self._gqcnn_recep_w = self._cfg['gqcnn_recep_w']
 
+        self._depth_offset = 0.0
+        if 'depth_offset' in self._cfg.keys():
+            self._depth_offset = self._cfg['depth_offset']
+
+        self._filters = filters
+        self._max_filtered_grasps = self._cfg['max_grasps_filter']
+        self._filter_grasps = self._cfg['filter_grasps']
+
         self._vis_config = self._cfg['policy_vis']
         self._num_vis_samples = self._vis_config['num_samples']
         self._vis = self._vis_config['vis']
         self._vis_3d = self._vis_config['vis_3d']
-        
+
     def _unpack_state(self, state):
         """ Unpack information from the RgbdImageState """
         return state.rgbd_im.depth, state.rgbd_im.depth._data, state.segmask.raw_data, state.camera_intr #TODO: don't access raw depth data like this
        
     def _sample_depths(self, raw_depth_im, raw_seg):
         """ Sample depths from the raw depth image  """
-        max_depth = np.max(raw_depth_im)
+        max_depth = np.max(raw_depth_im) + self._depth_offset
 
         # for sampling the min depth, we only sample from the portion of the depth image in the object segmask because sometimes the rim of the bin is not properly subtracted out of the depth image
         raw_depth_im_segmented = np.ones_like(raw_depth_im)
         raw_depth_im_segmented[np.where(raw_seg > 0)] = raw_depth_im[np.where(raw_seg > 0)]
-        min_depth = np.min(raw_depth_im_segmented)
+        min_depth = np.min(raw_depth_im_segmented) + self._depth_offset
 
         depth_bin_width = (max_depth - min_depth) / self._num_depth_bins
         depths = np.zeros((self._num_depth_bins, 1)) 
@@ -141,8 +150,25 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             vis.grasp(actions[i].grasp, scale=scale, show_axis=show_axis, color=plt.cm.RdYlGn(actions[i].q_value))
         vis.show()
 
+    def _filter(self, actions):
+	for action in actions:
+            valid = True
+	    for filter_name, is_valid in self._filters.iteritems():
+		if not is_valid(action.grasp):
+		    logging.info('Grasp {} is not valid with filter {}'.format(action.grasp, filter_name))
+                    valid = False
+                    break
+	    if valid:
+		return action
+	raise NoValidGraspsException('No grasps found after filtering!')
+
     def _action(self, state, num_actions=1):
         """ Plan action(s)  """
+        if self._filter_grasps:
+            assert self._filters, 'Trying to filter grasps but no filters were provided!'
+            assert num_actions == 1, 'Filtering support is only implemented for single actions!'
+            num_actions = self._max_filtered_grasps
+
         # unpack the RgbdImageState
         wrapped_depth, raw_depth, raw_seg, camera_intr = self._unpack_state(state)
 
@@ -168,6 +194,10 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         # wrap actions to be returned
         actions = self._get_actions(preds_success_only, sampled_ind, images, depths, camera_intr, num_actions_to_sample)
 
+        if self._filter_grasps:
+            actions.sort(reverse=True, key=lambda action: action.q_value)
+            actions = [self._filter(actions)]
+
         if self._vis:
             # visualize 3D
             if self._vis_3d:
@@ -177,7 +207,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             logging.info('Generating 2D visualization...')
             self._visualize_2d(actions, wrapped_depth, num_actions_to_sample, self._vis_config['scale'], self._vis_config['show_axis'])
 
-        return actions[-1] if num_actions == 1 else actions[-(num_actions+1):]
+        return actions[-1] if (self._filter_grasps or num_actions == 1) else actions[-(num_actions+1):]
 
     def action_set(self, state, num_actions):
         """ Plan a set of actions  """
@@ -185,8 +215,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
 class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPolicy):
     """ Parallel jaw grasp sampling policy using fully-convolutional GQ-CNN network """
-    def __init__(self, cfg):
-        FullyConvolutionalGraspingPolicy.__init__(self, cfg)
+    def __init__(self, cfg, filters=None):
+        FullyConvolutionalGraspingPolicy.__init__(self, cfg, filters=filters)
         self._width = self._cfg['gripper_width']
 
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
@@ -201,6 +231,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
             ang = math.pi / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
             depth = depths[im_idx]
+#            print(depth, h_idx, w_idx)
             grasp = Grasp2D(center, ang, depth, width=self._width, camera_intr=camera_intr)
             grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, ang_idx], DepthImage(images[im_idx]))
             actions.append(grasp_action)

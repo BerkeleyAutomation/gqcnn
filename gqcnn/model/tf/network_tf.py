@@ -320,7 +320,7 @@ class GQCNNTF(object):
             python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
             im_height, im_width, ... 
         """
-
+        
         ##################### PARSING GQCNN CONFIG #####################
         # load tensor params
         self._batch_size = gqcnn_config['batch_size']
@@ -352,7 +352,9 @@ class GQCNNTF(object):
         self._architecture = gqcnn_config['architecture']
 
         # get input depth mode
-        self._input_depth_mode = gqcnn_config['input_depth_mode']
+        self._input_depth_mode = InputDepthMode.POSE_STREAM
+        if 'input_depth_mode' in gqcnn_config.keys():
+            self._input_depth_mode = gqcnn_config['input_depth_mode']
         
         # load normalization constants
         self._normalization_radius = gqcnn_config['radius']
@@ -383,7 +385,9 @@ class GQCNNTF(object):
 	    self._im_std = 1
 
         # get number of angular bins
-        self._angular_bins = gqcnn_config['angular_bins']
+        self._angular_bins = 0
+        if 'angular_bins' in gqcnn_config.keys():
+            self._angular_bins = gqcnn_config['angular_bins']
 
         # if using angular bins, make sure output size of final fc layer is 2x # of angular bins
         if self._angular_bins > 0:
