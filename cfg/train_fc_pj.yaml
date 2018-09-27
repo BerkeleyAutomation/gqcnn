@@ -20,7 +20,7 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: 1.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
@@ -29,7 +29,7 @@ max_global_grad_norm: 100000000000
 
 # input params
 training_mode: classification
-image_field_name: tf_depth_ims_no_rot
+image_field_name: tf_depth_ims
 pose_field_name: grasps
 
 # label params

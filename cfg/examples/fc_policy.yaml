@@ -1,30 +1,31 @@
-# policy params
 policy:
-  num_depth_bins: 16
-  gripper_width: 0.05
-  gqcnn_stride: 4
-  gqcnn_recep_h: 96
-  gqcnn_recep_w: 96
+   type: fully_conv_pj
 
-  # metrics
-  metric:
-    type: fcgqcnn
-    gqcnn_model: models/gqcnn_fizzytablets_angular
-    gqcnn_backend: tf
-    fully_conv_gqcnn_config:
-     im_height: 500
-     im_width: 500 
+   sampling_method: top_k
+   num_depth_bins: 16
+   gripper_width: 0.05
+   gqcnn_stride: 4
+   gqcnn_recep_h: 96
+   gqcnn_recep_w: 96
 
-  # visualization
-  policy_vis:
-    scale: 0.5
-    show_axis: 1
-    top_k: 0
-    vis_top_k: 0
-    vis_3d: 0
+   # metrics
+   metric:
+     type: fcgqcnn
+     gqcnn_model: /home/vsatish/Workspace/dev/gqcnn/models/dex-net_4.0_pj_fc_image_wise
+     gqcnn_backend: tf
+     fully_conv_gqcnn_config:
+       im_height: 480
+       im_width: 640
 
-  vis:
-    final_grasp: 0
+   # visualization
+   policy_vis:
+     scale: 0.5
+     show_axis: 1
+     num_samples: 0
+     vis: 0
+     vis_3d: 0
+   vis:
+     final_grasp: 1
 
-# image proc params
+# image pre-processing before input to policy
 inpaint_rescale_factor: 0.5

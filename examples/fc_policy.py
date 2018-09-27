@@ -20,16 +20,15 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Displays robust grasps planned using a GQ-CNN-based policy on a set of saved RGB-D images.
-The default configuration is cfg/examples/policy.yaml.
+Displays robust grasps planned using an FC-GQ-CNN-based policy on a set of saved RGB-D images.
+The default configuration is cfg/examples/fc_policy.yaml.
 
 Author
 ------
-Jeff Mahler
+Jeff Mahler & Vishal Satish
 """
 import argparse
 import logging
-import IPython
 import numpy as np
 import os
 import sys
@@ -39,7 +38,7 @@ from autolab_core import RigidTransform, YamlConfig
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 
-from gqcnn import FullyConvolutionalAngularPolicyTopK, RgbdImageState
+from gqcnn import FullyConvolutionalGraspingPolicyParallelJaw, RgbdImageState
 
 if __name__ == '__main__':
     # set up logger
@@ -62,7 +61,11 @@ if __name__ == '__main__':
     if depth_im_filename is None:
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '..',
-                                         'data/examples/single_object/depth_0.npy')
+                                         'data/examples/clutter/depth_0.npy')
+    if segmask_filename is None:
+        segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        '..',
+                                        'data/examples/clutter/segmask_0.png')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
@@ -71,7 +74,7 @@ if __name__ == '__main__':
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                        '..',
                                        'cfg/examples/fc_policy.yaml')
-    
+   
     # read config
     config = YamlConfig(config_filename)
     inpaint_rescale_factor = config['inpaint_rescale_factor']
@@ -93,20 +96,20 @@ if __name__ == '__main__':
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
     color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
                           frame=camera_intr.frame)
-    
-    # optionally read a segmask
-    segmask = None
-    if segmask_filename is not None:
-        segmask = BinaryImage.open(segmask_filename)
-    
+    segmask = BinaryImage.open(segmask_filename)
+
+    # set policy input height and width
+    policy_config['metric']['fully_conv_gqcnn_config']['im_height'] = depth_im.shape[0]
+    policy_config['metric']['fully_conv_gqcnn_config']['im_width'] = depth_im.shape[1] 
+ 
     # create state
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
     state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
 
     # init policy
-    policy = FullyConvolutionalAngularPolicyTopK(policy_config)
+    policy = FullyConvolutionalGraspingPolicyParallelJaw(policy_config)
     policy_start = time.time()
-    action = policy(state, 0)
+    action = policy(state)
     logging.info('Planning took %.3f sec' %(time.time() - policy_start))
 
     # vis final grasp
@@ -114,5 +117,5 @@ if __name__ == '__main__':
         vis.figure(size=(10,10))
         vis.imshow(rgbd_im.depth, vmin=0.6, vmax=0.9)
         vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
+        vis.title('Planned grasp at depth {}m with Q={}'.format(action.grasp.depth[0], action.q_value))
         vis.show()
