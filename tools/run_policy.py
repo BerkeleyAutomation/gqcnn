@@ -25,16 +25,18 @@ Author: Jeff Mahler
 """
 import argparse
 import logging
+import IPython
+import numpy as np
 import os
 import random
 import sys
 import time
 
-import numpy as np
-
 from autolab_core import RigidTransform, YamlConfig
+
 from gqcnn import RgbdImageState, ParallelJawGrasp
 from gqcnn import CrossEntropyRobustGraspingPolicy
+
 from visualization import Visualizer2D as vis2d
 
 if __name__ == '__main__':

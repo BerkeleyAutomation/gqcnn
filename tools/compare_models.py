@@ -26,16 +26,16 @@ Author
 ------
 Jeff Mahler
 """
+import argparse
 import datetime
+import IPython
 import json
 import logging
+import matplotlib.pyplot as plt
+import numpy as np
 import os
 import sys
 import time
-import argparse
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig

@@ -24,8 +24,13 @@ Classes for sampling a set of grasps directly from images to generate data for a
 Author: Jeff Mahler, Sherdil Niyaz
 """
 from abc import ABCMeta, abstractmethod
+
 import copy
+import cv2
 import logging
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
 import os
 import random
 import sys
@@ -35,15 +40,13 @@ import scipy.spatial.distance as ssd
 import scipy.ndimage.filters as snf
 import scipy.stats as ss
 import sklearn.mixture
-import matplotlib.pyplot as plt
-import numpy as np
-import cv2
 
 from autolab_core import Point, RigidTransform
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, GdImage
 from visualization import Visualizer2D as vis
-from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import NoAntipodalPairsFoundException
+
+from . import Grasp2D, SuctionPoint2D
+from .utils import NoAntipodalPairsFoundException
 
 def force_closure(p1, p2, n1, n2, mu):
     """ Computes whether or not the point and normal pairs are in force closure. """

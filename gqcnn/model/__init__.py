@@ -20,25 +20,29 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Factory functions to obtain GQCNN/FCGQCNN class based on chosen auto-differentiation backend.
-Currently only Tensorflow is supported.
-Author: Vishal Satish
+Factory functions to obtain GQCNN/FCGQCNN class based on backend.
+
+Author
+------
+Vishal Satish
 """
 import logging
-from tf import *
+
+from gqcnn.model.tf.network_tf import GQCNNTF
+from gqcnn.model.tf.fc_network_tf import FCGQCNNTF
  
 def get_gqcnn_model(backend='tf'):
-    # return desired GQ-CNN instance based on backend
+    # return desired GQCNN instance based on backend
     if backend == 'tf':
-        logging.info('Initializing GQ-CNN with Tensorflow as backend...')
+        logging.info('Initializing GQCNN with Tensorflow as backend...')
         return GQCNNTF
     else:
         raise ValueError('Invalid backend: {}'.format(backend))
 
 def get_fc_gqcnn_model(backend='tf'):
-    # return desired Fully-Convolutional GQ-CNN instance based on backend
+    # return desired Fully-Convolutional GQCNN instance based on backend
     if backend == 'tf':
-        logging.info('Initializing FC-GQ-CNN with Tensorflow as backend...')
+        logging.info('Initializing FC-GQCNN with Tensorflow as backend...')
         return FCGQCNNTF
     else:
         raise ValueError('Invalid backend: {}'.format(backend))

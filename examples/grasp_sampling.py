@@ -26,15 +26,16 @@ Author: Jeff Mahler
 """
 import argparse
 import logging
+import IPython
+import numpy as np
 import os
 import sys
 
-import numpy as np
-
 from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory
-from visualization import Visualizer2D as vis
-from gqcnn.grasping.image_grasp_sampler import AntipodalDepthImageGraspSampler
+
+from gqcnn.image_grasp_sampler import AntipodalDepthImageGraspSampler
+from gqcnn import Visualizer as vis
 
 if __name__ == '__main__':
     # set up logger

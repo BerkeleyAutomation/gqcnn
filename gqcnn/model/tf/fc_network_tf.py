@@ -20,7 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-FC-GQ-CNN network implemented in Tensorflow
+FC-GQCNN network implemented in Tensorflow
 Author: Vishal Satish
 """
 import os
@@ -34,40 +34,40 @@ from network_tf import GQCNNTF
 from gqcnn.utils import TrainingMode, InputDepthMode
 
 class FCGQCNNTF(GQCNNTF):
-    """FC-GQ-CNN network implemented in Tensorflow. Note that this network is not directly trained,
-       but instead loaded from a trained GQ-CNN at inference time."""
+    """FC-GQCNN network implemented in Tensorflow"""
 
     def __init__(self, gqcnn_config, fc_config):
         super(FCGQCNNTF, self).__init__(gqcnn_config)
         super(FCGQCNNTF, self)._parse_config(gqcnn_config)
         self._parse_config(fc_config)
 
-        # check that conv layers of GQ-CNN were trained with VALID padding
+        # check that conv layers of gqcnn were trained with VALID padding
         for layer_name, layer_config in self._architecture['im_stream'].iteritems():
             if layer_config['type'] == 'conv':
-                assert layer_config['pad'] == 'VALID', 'GQ-CNN used for FC-GQ-CNN must have VALID padding for conv layers. Found layer: {} with padding: {}'.format(layer_name, layer_config['pad'])
+                assert layer_config['pad'] == 'VALID', 'GQCNN used for FC-GQCNN must have VALID padding for conv layers. Found layer {} with padding {}'.format(layer_name, layer_config['pad'])
 
     @staticmethod
     def load(model_dir, fc_config):
-        """Instantiate an FC-GQ-CNN from a trained GQ-CNN. 
+        """ Instantiates a Tensorflow FC-GQCNN using the model found in model_dir 
 
         Parameters
         ----------
-        model_dir : str
-            path to trained GQ-CNN
+        model_dir :obj: str
+            path to model directory where weights and architecture are stored
 
         Returns
         -------
         :obj:`FCGQCNNTF`
-            initialized FCGQCNNTF 
+            FCGQCNNTF initialized with the weights and architecture found in the specified model directory
         """
+        # get config dict with architecture and other basic configurations for GQCNN from config.json in model directory
         config_file = os.path.join(model_dir, 'config.json')
         with open(config_file) as data_file:    
             train_config = json.load(data_file, object_pairs_hook=OrderedDict)
 
         gqcnn_config = train_config['gqcnn']
         
-        # initialize weights and Tensorflow network
+        # create FCGQCNNTF object and initialize weights and network
         fcgqcnn = FCGQCNNTF(gqcnn_config, fc_config)
         fcgqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         fcgqcnn.init_mean_and_std(model_dir)
@@ -81,7 +81,7 @@ class FCGQCNNTF(GQCNNTF):
         return fcgqcnn
 
     def _parse_config(self, cfg):
-        # override GQ-CNN image height and width
+        # override input image height and width with that of fully-convolutional config
         self._im_width = cfg['im_width']
         self._im_height = cfg['im_height']
 
@@ -103,7 +103,7 @@ class FCGQCNNTF(GQCNNTF):
     def _build_fully_conv_layer(self, input_node, filter_dim, fc_name, final_fc_layer=False):
         logging.info('Converting fc layer {} to fully convolutional...'.format(fc_name))
         
-        # create new set of weights by reshaping fully connected layer weights
+        # create new set of weights by reshaping fully-connected layer weights
         fcW = self._weights.weights['{}_weights'.format(fc_name)]
         convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] / (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name))
         self._weights.weights['{}_fully_conv_weights'.format(fc_name)] = convW
@@ -172,7 +172,7 @@ class FCGQCNNTF(GQCNNTF):
             input_node = norm_sub_im
 
         output_node = input_node
-        prev_layer = "start" # dummy placeholder
+        prev_layer = "start"
         filter_dim = self._train_im_width
         last_index = len(layers.keys()) - 1
         for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
@@ -194,7 +194,7 @@ class FCGQCNNTF(GQCNNTF):
                 prev_layer = layer_type
                 filter_dim = 1 # because fully-convolutional layers at this point in the network have a filter_dim of 1
             elif layer_type == 'pc':
-                raise ValueError('Cannot have pose connected layer in image stream!')
+                raise ValueError('Cannot have pose-connected layer in image stream!')
             elif layer_type == 'fc_merge':
                 raise ValueError('Cannot have merge layer in image stream!')
             else:
@@ -206,9 +206,9 @@ class FCGQCNNTF(GQCNNTF):
         
         # first check if first layer is a merge layer
         if layers[layers.keys()[0]]['type'] != 'fc_merge':
-            raise ValueError('First layer in merge stream must be of type fc_merge!')
+            raise ValueError('First layer in merge stream must be a fc_merge layer!')
             
-        prev_layer = "start" # dummy placeholder
+        prev_layer = "start"
         last_index = len(layers.keys()) - 1
         filter_dim = 1 # because fully-convolutional layers at this point in the network have a filter_dim of 1
         fan_in = -1
@@ -223,10 +223,11 @@ class FCGQCNNTF(GQCNNTF):
                     output_node = self._build_fully_conv_layer(output_node, filter_dim, layer_name)
                 prev_layer = layer_type
             elif layer_type == 'pc':  
-                raise ValueError('Cannot have pose connected layer in merge stream!')
+                raise ValueError('Cannot have pose-connected layer in merge stream!')
             elif layer_type == 'fc_merge':
                 output_node = self._build_fully_conv_merge_layer(input_stream_1, input_stream_2, filter_dim, layer_name)
                 prev_layer = layer_type   
             else:
                 raise ValueError("Unsupported layer type: {}".format(layer_type))
         return output_node, fan_in
+

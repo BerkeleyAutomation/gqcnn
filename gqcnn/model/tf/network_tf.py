@@ -20,8 +20,8 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-GQ-CNN network implemented in Tensorflow.
-Authors: Vishal Satish, Jeff Mahler
+GQCNN network implemented in Tensorflow
+Author: Vishal Satish
 """
 
 import json
@@ -38,19 +38,20 @@ import tensorflow.contrib.framework as tcf
 from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode, InputDepthMode
 
 class GQCNNWeights(object):
-    """Helper struct for storing network weights."""
+    """ Struct helper for storing weights """
     def __init__(self):
         self.weights = {}
 
 class GQCNNTF(object):
-    """GQ-CNN network implemented in Tensorflow."""
+    """ GQCNN network implemented in Tensorflow """
 
     def __init__(self, gqcnn_config):
         """
         Parameters
         ----------
-        gqcnn_config : dict
-            python dictionary of network configuration parameters
+        gqcnn_config :obj: dict
+            python dictionary of configuration parameters such as architecture and basic data params such as batch_size for prediction,
+            im_height, im_width, ...
         """
         self._sess = None
         self._weights = GQCNNWeights()
@@ -59,23 +60,24 @@ class GQCNNTF(object):
 
     @staticmethod
     def load(model_dir):
-        """Instantiate a trained GQ-CNN for fine-tuning or inference. 
+        """ Instantiates a GQCNN object using the model found in model_dir 
 
         Parameters
         ----------
-        model_dir : str
-            path to trained GQ-CNN
+        model_dir :obj: str
+            path to model directory where weights and architecture are stored
 
         Returns
         -------
-        :obj:`GQCNNTF`
-            initialized GQ-CNN 
+        :obj:`GQCNN`
+            GQCNN object initialized with the weights and architecture found in the specified model directory
         """
+        # get config dict with architecture and other basic configurations for GQCNN from config.json in model directory
         config_file = os.path.join(model_dir, 'config.json')
         with open(config_file) as data_file:    
             train_config = json.load(data_file, object_pairs_hook=OrderedDict)
 
-        # support for legacy configs
+        # read gqcnn config with legacy support
         try:
             gqcnn_config = train_config['gqcnn']
         except:
@@ -84,8 +86,8 @@ class GQCNNTF(object):
             # convert old networks to new flexible arch format
             gqcnn_config['debug'] = 0
             gqcnn_config['seed'] = 0
-            gqcnn_config['num_angular_bins'] = 0 # legacy networks had no angular support
-            gqcnn_config['input_depth_mode'] = InputDepthMode.POSE_STREAM # legacy networks only supported depth integration through pose stream
+            gqcnn_config['num_angular_bins'] = 0
+            gqcnn_config['input_depth_mode'] = InputDepthMode.POSE_STREAM
             arch_config = gqcnn_config['architecture']
             if 'im_stream' not in arch_config.keys():
                 new_arch_config = OrderedDict()
@@ -160,7 +162,7 @@ class GQCNNTF(object):
 
                 gqcnn_config['architecture'] = new_arch_config
                 
-        # initialize weights and Tensorflow network
+        # create GQCNN object and initialize weights and network
         gqcnn = GQCNNTF(gqcnn_config)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         gqcnn.init_mean_and_std(model_dir)
@@ -174,12 +176,12 @@ class GQCNNTF(object):
         return gqcnn
 
     def init_mean_and_std(self, model_dir):
-        """Loads the means and stds of a trained GQ-CNN to use for data normalization during inference. 
+        """ Initializes the mean and std to use for data normalization during prediction 
 
         Parameters
         ----------
-        model_dir : str
-            path to trained GQ-CNN directory where means and standard deviations are stored
+        model_dir :obj: str
+            path to model directory where means and standard deviations are stored
         """
         # load in means and stds 
         if self._input_depth_mode == InputDepthMode.POSE_STREAM:
@@ -187,13 +189,13 @@ class GQCNNTF(object):
                 self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
                 self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
             except:
-                # support for legacy file naming convention
+                # for backwards compatibility
                 self._im_mean = np.load(os.path.join(model_dir, 'mean.npy'))
                 self._im_std = np.load(os.path.join(model_dir, 'std.npy'))
             self._pose_mean = np.load(os.path.join(model_dir, 'pose_mean.npy'))
             self._pose_std = np.load(os.path.join(model_dir, 'pose_std.npy'))
 
-            # fix legacy #TODO: @Jeff, what needs to be fixed here? Or did I add this in?
+            # fix legacy
             # read the certain parts of the pose mean/std that we desire
             if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] != self._pose_dim:
                 # handle multidim storage
@@ -206,19 +208,18 @@ class GQCNNTF(object):
         elif self._input_depth_mode == InputDepthMode.SUB:
             self._im_depth_sub_mean = np.load(os.path.join(model_dir, 'im_depth_sub_mean.npy')) 
             self._im_depth_sub_std = np.load(os.path.join(model_dir, 'im_depth_sub_std.npy'))
-        elif self._input_depth_mode == InputDepthMode.IM_ONLY:
-	        self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
-	        self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
-        else:
-            raise ValueError('Unsupported input depth mode: {}'.format(self._input_depth_mode))
+	elif self._input_depth_mode == InputDepthMode.IM_ONLY:
+	    self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
+	    self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
  
     def set_base_network(self, model_dir):
-        """Initialize network weights for the base network. Used during fine-tuning.
+        """ Initialize network weights from the base model.
+        Useful for fine-tuning
 
         Parameters
         ----------
         model_dir : str
-            path to GQ-CNN directory
+            path to the base model weights
         """
         # check architecture
         if 'base_model' not in self._architecture.keys():
@@ -284,11 +285,11 @@ class GQCNNTF(object):
                     self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name), name=full_var_name)
                     
     def init_weights_file(self, ckpt_file):
-        """Load trained GQ-CNN weights. 
+        """ Initialize network weights from the specified model 
 
         Parameters
         ----------
-        ckpt_file : str
+        ckpt_file :obj: str
             Tensorflow checkpoint file from which to load model weights
         """
         with self._graph.as_default():
@@ -311,12 +312,13 @@ class GQCNNTF(object):
                 self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name), name=full_var_name)
 
     def _parse_config(self, gqcnn_config):
-        """Parse configuration file.
+        """ Parses configuration file for this GQCNN 
 
         Parameters
         ----------
         gqcnn_config : dict
-            python dictionary of configuration parameters
+            python dictionary of configuration parameters such as architecure and basic data params such as batch_size for prediction,
+            im_height, im_width, ... 
         """
         
         ##################### PARSING GQCNN CONFIG #####################
@@ -330,7 +332,6 @@ class GQCNNTF(object):
         try:
             self._gripper_mode = gqcnn_config['gripper_mode']
         except:
-            # legacy support
             self._input_data_mode = gqcnn_config['input_data_mode']
             if self._input_data_mode == 'tf_image':
                 self._gripper_mode = GripperMode.LEGACY_PARALLEL_JAW
@@ -341,28 +342,28 @@ class GQCNNTF(object):
             elif self._input_data_mode == 'parallel_jaw':
                 self._gripper_mode = GripperMode.PARALLEL_JAW
             else:
-                raise ValueError('Legacy input data mode: {} not supported!'.format(self._input_data_mode))
-            logging.warning('Could not read gripper mode. Attempting legacy conversion to: {}'.format(self._gripper_mode))
+                raise ValueError('Input data mode {} not supported!'.format(self._input_data_mode))
+            logging.warning('Could not read gripper mode. Attempting legacy conversion to {}'.format(self._gripper_mode))
             
-        # setup gripper pose dimension depending on gripper mode
+        # setup correct pose dimensions
         self._pose_dim = pose_dim(self._gripper_mode)
 
         # load architecture
         self._architecture = gqcnn_config['architecture']
 
         # get input depth mode
-        self._input_depth_mode = InputDepthMode.POSE_STREAM # legacy support
+        self._input_depth_mode = InputDepthMode.POSE_STREAM
         if 'input_depth_mode' in gqcnn_config.keys():
             self._input_depth_mode = gqcnn_config['input_depth_mode']
         
-        # load network local response normalization layer constants
+        # load normalization constants
         self._normalization_radius = gqcnn_config['radius']
         self._normalization_alpha = gqcnn_config['alpha']
         self._normalization_beta = gqcnn_config['beta']
         self._normalization_bias = gqcnn_config['bias']
 
         # get ReLU coefficient
-        self._relu_coeff = 0.0 # legacy support
+        self._relu_coeff = 0.0
         if 'relu_coeff' in gqcnn_config.keys():
             self._relu_coeff = gqcnn_config['relu_coeff']
 
@@ -370,7 +371,7 @@ class GQCNNTF(object):
         self._debug = gqcnn_config['debug']
         self._rand_seed = gqcnn_config['seed']
 
-        # initialize means and standard deviations to be 0 and 1, respectively
+        # initialize means and standard deviation to be 0 and 1, respectively
         if self._input_depth_mode == InputDepthMode.POSE_STREAM:
             self._im_mean = 0
             self._im_std = 1
@@ -379,27 +380,25 @@ class GQCNNTF(object):
         elif self._input_depth_mode == InputDepthMode.SUB:
             self._im_depth_sub_mean = 0
             self._im_depth_sub_std = 1
-        elif self._input_depth_mode == InputDepthMode.IM_ONLY:
-            self._im_mean = 0
-            self._im_std = 1
+	elif self._input_depth_mode == InputDepthMode.IM_ONLY:
+	    self._im_mean = 0
+	    self._im_std = 1
 
         # get number of angular bins
-        self._angular_bins = 0 # legacy support
+        self._angular_bins = 0
         if 'angular_bins' in gqcnn_config.keys():
             self._angular_bins = gqcnn_config['angular_bins']
 
-        # if using angular bins, make sure output size of final fully connected layer is 2x number of angular bins(because of failure/success probs for each bin)
+        # if using angular bins, make sure output size of final fc layer is 2x # of angular bins
         if self._angular_bins > 0:
-            assert self._architecture.values()[-1].values()[-1]['out_size'] == 2 * self._angular_bins, 'When predicting angular outputs, output size of final fully connected layer must be 2x number of angular bins'
+            assert self._architecture.values()[-1].values()[-1]['out_size'] == 2*self._angular_bins, 'When predicting angular outputs, output size of final fc layer must be 2x # of angular bins'
 
-        # intermediate network feature handles
-        self._feature_tensors = {}
-  
-        #  base layer names for fine-tuning
+        # create empty holder for feature handles
         self._base_layer_names = []
- 
+        self._feature_tensors = {}
+    
     def initialize_network(self, train_im_node=None, train_pose_node=None, add_softmax=False, add_sigmoid=False):
-        """Set up input placeholders and build network.
+        """ Set up input placeholders and build network.
 
         Parameters
         ----------
@@ -421,7 +420,7 @@ class GQCNNTF(object):
                 self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels))
                 self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim))
             else:
-                # inference only using GQ-CNN instantiated from GQCNNTF.load()
+                # inference using model instantiated from GQCNN.load()
                 self._input_im_node = tf.placeholder(tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels))
                 self._input_pose_node = tf.placeholder(tf.float32, (self._batch_size, self._pose_dim))
             self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), ())
@@ -429,10 +428,10 @@ class GQCNNTF(object):
             # build network
             self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
             
-            # add softmax function to output of network(this is optional because 1) we might be doing regression or 2) we are training and Tensorflow has an optimized cross-entropy loss with the softmax already built-in)
+            # add softmax function to output of network if specified(for regression)
             if add_softmax:
                 self.add_softmax_to_output()
-            # add sigmoid function to output of network(for weighted cross-entropy loss)
+            # add sigmoid function to output of network if specified(for weighted cross-entropy loss)
             if add_sigmoid:
                 self.add_sigmoid_to_output()
 
@@ -441,34 +440,24 @@ class GQCNNTF(object):
         self._input_pose_arr = np.zeros((self._batch_size, self._pose_dim))
 
     def open_session(self):
-        """Open Tensorflow session."""
-        if self._sess is not None:
-            logging.warning('Found already initialized TF Session...')
-            return self._sess
+        """ Open tensorflow session """
         logging.info('Initializing TF Session...')
         with self._graph.as_default():
             init = tf.global_variables_initializer()
             self.tf_config = tf.ConfigProto()
-            # allow Tensorflow gpu_growth so Tensorflow does not lock-up all GPU memory
+            # allow tf gpu_growth so tf does not lock-up all GPU memory
             self.tf_config.gpu_options.allow_growth = True
             self._sess = tf.Session(graph=self._graph, config=self.tf_config)
             self._sess.run(init)
+            
         return self._sess
 
     def close_session(self):
-        """Close Tensorflow session."""
-        if self._sess is None:
-            logging.warning('No TF Session to close...')
-            return
+        """ Close tensorflow session """
         logging.info('Closing TF Session...')
         with self._graph.as_default():
             self._sess.close()
             self._sess = None
-
-    def __del__(self):
-        """Destructor that basically just makes sure the Tensorflow session has been closed."""
-        if self._sess is not None:
-            self.close_session()
 
     @property
     def input_depth_mode(self):
@@ -535,40 +524,36 @@ class GQCNNTF(object):
 
     @property
     def filters(self):
-        """Evaluate the filters of the first convolution layer.
+        """ Returns the set of conv1_1 filters 
         Returns
         -------
-        :obj:`numpy.ndarray`
-            filters(weights) from first convolution layer of the network
+        :obj:`tensorflow Tensor`
+            filters(weights) from conv1_1 of the network
         """
         close_sess = False
         if self._sess is None:
             close_sess = True
             self.open_session()
 
-        first_layer_name = self._architecture['im_stream'].keys()[0]
-        try:
-            filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_name)])
-        except:
-            # legacy support
-            filters = self._sess.run(self._weights.weights['{}W'.format(first_layer_im_stream)])
- 
+        first_layer_im_stream = self._architecture['im_stream'].keys()[0]
+        filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_im_stream)])
+
         if close_sess:
             self.close_session()
         return filters
 
     def set_im_mean(self, im_mean):
-        """Update image mean to be used for normalization during inference. 
+        """ Updates image mean to be used for normalization when predicting 
         
         Parameters
         ----------
         im_mean : float
-            image mean
+            image mean to be used
         """
         self._im_mean = im_mean
     
     def get_im_mean(self):
-        """Get the current image mean used for normalization during inference.
+        """ Get the current image mean to be used for normalization when predicting
 
         Returns
         -------
@@ -578,17 +563,17 @@ class GQCNNTF(object):
         return self.im_mean
 
     def set_im_std(self, im_std):
-        """Update image standard deviation to be used for normalization during inference. 
+        """ Updates image standard deviation to be used for normalization when predicting 
         
         Parameters
         ----------
         im_std : float
-            image standard deviation
+            image standard deviation to be used
         """
         self._im_std = im_std
 
     def get_im_std(self):
-        """Get the current image standard deviation to be used for normalization during inference.
+        """ Get the current image standard deviation to be used for normalization when predicting
 
         Returns
         -------
@@ -598,67 +583,53 @@ class GQCNNTF(object):
         return self.im_std
 
     def set_pose_mean(self, pose_mean):
-        """Update pose mean to be used for normalization during inference.
+        """ Updates pose mean to be used for normalization when predicting 
         
         Parameters
         ----------
-        pose_mean :obj:`numpy.ndarray`
-            pose mean
+        pose_mean :obj:`numpy ndarray`
+            pose mean to be used
         """
         self._pose_mean = pose_mean
 
     def get_pose_mean(self):
-        """Get the current pose mean to be used for normalization during inference.
+        """ Get the current pose mean to be used for normalization when predicting
 
         Returns
         -------
-        :obj:`numpy.ndarray`
+        :obj:`numpy ndarray`
             pose mean
         """
         return self._pose_mean
 
     def set_pose_std(self, pose_std):
-        """Update pose standard deviation to be used for normalization during inference.
+        """ Updates pose standard deviation to be used for normalization when predicting 
         
         Parameters
         ----------
-        pose_std :obj:`numpy.ndarray`
-            pose standard deviation
+        pose_std :obj:`numpy ndarray`
+            pose standard deviation to be used
         """
         self._pose_std = pose_std
 
     def get_pose_std(self):
-        """Get the current pose standard deviation to be used for normalization during inference.
+        """ Get the current pose standard deviation to be used for normalization when predicting
 
         Returns
         -------
-        :obj:`numpy.ndarray`
+        :obj:`numpy ndarray`
             pose standard deviation
         """
         return self._pose_std
 
     def set_im_depth_sub_mean(self, im_depth_sub_mean):
-        """Update mean of subtracted image and gripper depth to be used for normalization during inference.
-        
-        Parameters
-        ----------
-        im_depth_sub_mean : float
-            mean of subtracted image and gripper depth
-        """
         self._im_depth_sub_mean = im_depth_sub_mean
 
     def set_im_depth_sub_std(self, im_depth_sub_std):
-        """Update standard deviation of subtracted image and gripper depth to be used for normalization during inference.
-        
-        Parameters
-        ----------
-        im_depth_sub_std : float
-            standard deviation of subtracted image and gripper depth
-        """
         self._im_depth_sub_std = im_depth_sub_std
 
     def add_softmax_to_output(self):
-        """Adds softmax to output of network."""
+        """ Adds softmax to output of network """
         with tf.name_scope('softmax'):
             if self._angular_bins > 0:
                 logging.info('Building Pair-wise Softmax Layer...')
@@ -670,33 +641,47 @@ class GQCNNTF(object):
                 self._output_tensor = tf.nn.softmax(self._output_tensor)
 
     def add_sigmoid_to_output(self):
-        """Adds sigmoid to output of network."""
+        """ Adds sigmoid to output of network """
         with tf.name_scope('sigmoid'):
             logging.info('Building Sigmoid Layer...')
             self._output_tensor = tf.nn.sigmoid(self._output_tensor)
 
+    @property
+    def filters(self):
+        """ Returns the set of conv1_1 filters 
+        Returns
+        -------
+        :obj:`tensorflow Tensor`
+            filters(weights) from conv1_1 of the network
+        """
+        close_sess = False
+        if self._sess is None:
+            close_sess = True
+            self.open_session()
+
+        first_layer_im_stream = self._architecture['im_stream'].keys()[0]
+        try:
+            filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_im_stream)])
+        except:
+            logging.info('Attempting legacy conversion')
+            filters = self._sess.run(self._weights.weights['{}W'.format(first_layer_im_stream)])
+            
+
+        if close_sess:
+            self.close_session()
+        return filters
+            
     def update_batch_size(self, batch_size):
-        """Update the inference batch size. 
+        """ Updates the prediction batch size 
 
         Parameters
         ----------
         batch_size : float
-            batch size to be used for inference
+            batch size to be used for prediction
         """
         self._batch_size = batch_size
 
-    def _predict(self, image_arr, pose_arr, verbose=False):
-        """Query predictions from network.
-
-        Parameters
-        ----------
-        image_arr :obj:`numpy.ndarray`
-            input images
-        pose_arr :obj:`numpy.ndarray`
-            input gripper poses
-        verbose : bool
-            whether or not to log progress, useful to turn off during training
-        """       
+    def _predict(self, image_arr, pose_arr, verbose=False):       
         # get prediction start time
         start_time = time.time()
 
@@ -710,17 +695,17 @@ class GQCNNTF(object):
 
         output_arr = None
         if num_images != num_poses:
-            raise ValueError('Must provide same number of images as poses!')
+            raise ValueError('Must provide same number of images and poses')
 
-        # predict in batches
+        # predict by filling in image array in batches
         with self._graph.as_default():
             if self._sess is None:
-               raise RuntimeError('No TF Session open. Please call open_session() first.')
+               raise RuntimeError('No TF session open. Please call open_session() first.')
             i = 0
             batch_idx = 0
             while i < num_images:
                 if verbose:
-                    logging.info('Predicting batch {} of {}...'.format(batch_idx, num_batches))
+                    logging.info('Predicting batch {} of {}'.format(batch_idx, num_batches))
                 batch_idx += 1
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
@@ -729,20 +714,21 @@ class GQCNNTF(object):
                 if self._input_depth_mode == InputDepthMode.POSE_STREAM:
                     self._input_im_arr[:dim, ...] = (
                         image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std 
+                
                     self._input_pose_arr[:dim, :] = (
                         pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
                 elif self._input_depth_mode == InputDepthMode.SUB:
                     self._input_im_arr[:dim, ...] = image_arr[cur_ind:end_ind, ...] 
                     self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind, :]
-                elif self._input_depth_mode == InputDepthMode.IM_ONLY:
-                    self._input_im_arr[:dim, ...] = (
+		elif self._input_depth_mode == InputDepthMode.IM_ONLY:
+	 	    self._input_im_arr[:dim, ...] = (
                         image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std
 
                 gqcnn_output = self._sess.run(self._output_tensor,
-                                                feed_dict={self._input_im_node: self._input_im_arr,
-                                                           self._input_pose_node: self._input_pose_arr})
+                                                      feed_dict={self._input_im_node: self._input_im_arr,
+                                                                 self._input_pose_node: self._input_pose_arr})
 
-                # allocate output tensor
+                # allocate output tensor if needed
                 if output_arr is None:
                     output_arr = np.zeros([num_images] + list(gqcnn_output.shape[1:]))
 
@@ -751,8 +737,6 @@ class GQCNNTF(object):
         
         # get total prediction time
         pred_time = time.time() - start_time
-        if verbose:
-            logging.info('Prediction took {} seconds.'.format(pred_time))
 
         return output_arr
 
@@ -762,55 +746,35 @@ class GQCNNTF(object):
 
         Parameters
         ----------
-        image_arr :obj:`numpy ndarray`
-            4D tensor of depth images
-        pose_arr :obj:`numpy ndarray`
-            tensor of gripper poses
-        verbose : bool
-            whether or not to log progress
+        image_arr : :obj:`numpy ndarray`
+            4D Tensor of depth images
+        pose_arr : :obj:`numpy ndarray`
+            Tensor of gripper poses
         """
         return self._predict(image_arr, pose_arr, verbose=verbose)
    
-    def featurize(self, image_arr, pose_arr=None, feature_layer='conv1_1', verbose=False):
-        """Featurize a set of inputs.
-        
-        Parameters
-        ----------
-        image_arr :obj:`numpy ndarray` 
-            4D tensor of depth images
-        pose_arr :obj:`numpy ndarray`
-            optional tensor of gripper poses
-        feature_layer : str
-            the network layer to featurize
-        verbose : bool
-            whether or not to log progress
-        """
-        # get featurization start time
-        start_time = time.time()
-
-        if verbose:
-            logging.info('Featurizing...')
+    def featurize(self, image_arr, pose_arr=None, feature_layer='conv1_1'):
+        """ Featurize a set of images in batches """
 
         if feature_layer not in self._feature_tensors.keys():
-            raise ValueError('Feature layer: {} not recognized.'.format(feature_layer))
+            raise ValueError('Feature layer %s not recognized' %(feature_layer))
         
-        # setup for featurization
+        # setup for prediction
         num_images = image_arr.shape[0]
         if pose_arr is not None:
             num_poses = pose_arr.shape[0]
             if num_images != num_poses:
-                raise ValueError('Must provide same number of images as poses!')
+                raise ValueError('Must provide same number of images and poses')
         output_arr = None
 
-        # featurize in batches
+        # predict in batches
         with self._graph.as_default():
             if self._sess is None:
-               raise RuntimeError('No TF Session open. Please call open_session() first.')
+               raise RuntimeError('No TF session open. Please call open_session() first.')
 
             i = 0
             while i < num_images:
-                if verbose:
-                    logging.info('Featurizing {} of {}...'.format(i, num_images))
+                logging.debug('Predicting file %d' % (i))
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
                 end_ind = cur_ind + dim
@@ -834,11 +798,8 @@ class GQCNNTF(object):
 
                 i = end_ind
 
-        if verbose:
-            logging.info('Featurization took {} seconds'.format(time.time() - start_time))
-
         # truncate extraneous values off of end of output_arr
-        output_arr = output_arr[:num_images] #TODO: @Jeff, this isn't needed, right?
+        output_arr = output_arr[:num_images]
         return output_arr
     
     def _leaky_relu(self, x, alpha=.1):
@@ -851,12 +812,12 @@ class GQCNNTF(object):
             if '{}_weights'.format(name) in self._weights.weights.keys():
                 convW = self._weights.weights['{}_weights'.format(name)]
                 convb = self._weights.weights['{}_bias'.format(name)] 
-            elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
-                logging.info('Using old format for layer {}.'.format(name))
+            elif '{}W'.format(name) in self._weights.weights.keys():
+                logging.info('Using old format for layer {}'.format(name))
                 convW = self._weights.weights['{}W'.format(name)]
                 convb = self._weights.weights['{}b'.format(name)] 
             else:
-                logging.info('Reinitializing layer {}.'.format(name))
+                logging.info('Reinitializing layer {}'.format(name))
                 convW_shape = [filter_h, filter_w, input_channels, num_filt]
 
                 fan_in = filter_h * filter_w * input_channels
@@ -904,12 +865,12 @@ class GQCNNTF(object):
         if '{}_weights'.format(name) in self._weights.weights.keys():
             fcW = self._weights.weights['{}_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
-        elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
-            logging.info('Using old format for layer {}.'.format(name))
+        elif '{}W'.format(name) in self._weights.weights.keys():
+            logging.info('Using old format for layer {}'.format(name))
             fcW = self._weights.weights['{}W'.format(name)]
             fcb = self._weights.weights['{}b'.format(name)] 
         else:
-            logging.info('Reinitializing layer {}.'.format(name))
+            logging.info('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std), name='{}_weights'.format(name))
             if final_fc_layer:
@@ -936,15 +897,14 @@ class GQCNNTF(object):
 
         return fc, out_size
 
-    #TODO: This really doesn't need to it's own layer type...it does the same thing as _build_fc_layer()
     def _build_pc_layer(self, input_node, fan_in, out_size, name):
-        logging.info('Building Fully Connected Pose Layer: {}...'.format(name))
+        logging.info('Building Fully-Connected Pose Layer: {}...'.format(name))
         
         # initialize weights
         if '{}_weights'.format(name) in self._weights.weights.keys():
             pcW = self._weights.weights['{}_weights'.format(name)]
             pcb = self._weights.weights['{}_bias'.format(name)] 
-        elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
+        elif '{}W'.format(name) in self._weights.weights.keys():
             logging.info('Using old format for layer {}'.format(name))
             pcW = self._weights.weights['{}W'.format(name)]
             pcb = self._weights.weights['{}b'.format(name)] 
@@ -976,13 +936,13 @@ class GQCNNTF(object):
             input1W = self._weights.weights['{}_input_1_weights'.format(name)]
             input2W = self._weights.weights['{}_input_2_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
-        elif '{}W_im'.format(name) in self._weights.weights.keys(): # legacy support
-            logging.info('Using old format for layer {}.'.format(name))
+        elif '{}W_im'.format(name) in self._weights.weights.keys():
+            logging.info('Using old format for layer {}'.format(name))
             input1W = self._weights.weights['{}W_im'.format(name)]
             input2W = self._weights.weights['{}W_pose'.format(name)]
             fcb = self._weights.weights['{}b'.format(name)] 
         else:
-            logging.info('Reinitializing layer {}.'.format(name))
+            logging.info('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in_1 + fan_in_2))
             input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std), name='{}_input_1_weights'.format(name))
             input2W = tf.Variable(tf.truncated_normal([fan_in_2, out_size], stddev=std), name='{}_input_2_weights'.format(name))
@@ -1003,6 +963,7 @@ class GQCNNTF(object):
 
         return fc, out_size
 
+
     def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, layers, only_stream=False):
         logging.info('Building Image Stream...')
 
@@ -1014,7 +975,7 @@ class GQCNNTF(object):
             input_node = norm_sub_im
 
         output_node = input_node
-        prev_layer = "start" # dummy placeholder
+        prev_layer = "start"
         last_index = len(layers.keys()) - 1
         for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
             layer_type = layer_config['type']
@@ -1036,7 +997,7 @@ class GQCNNTF(object):
                     output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, prev_layer_is_conv, drop_rate)
                 prev_layer = layer_type
             elif layer_type == 'pc':
-                raise ValueError('Cannot have pose connected layer in image stream!')
+                raise ValueError('Cannot have pose-connected layer in image stream!')
             elif layer_type == 'fc_merge':
                 raise ValueError('Cannot have merge layer in image stream!')
             else:
@@ -1046,13 +1007,13 @@ class GQCNNTF(object):
     def _build_pose_stream(self, input_node, fan_in, layers):
         logging.info('Building Pose Stream...')
         output_node = input_node
-        prev_layer = "start" # dummy placeholder
+        prev_layer = "start"
         for layer_name, layer_config in layers.iteritems():
             layer_type = layer_config['type']
             if layer_type == 'conv':
                raise ValueError('Cannot have conv layer in pose stream')
             elif layer_type == 'fc':
-                raise ValueError('Cannot have fully connected layer in pose stream')
+                raise ValueError('Cannot have fc layer in pose stream')
             elif layer_type == 'pc':
                 if layer_config['out_size'] == 0:
                     continue
@@ -1088,7 +1049,7 @@ class GQCNNTF(object):
                     output_node, fan_in = self._build_fc_layer(output_node, fan_in, layer_config['out_size'], layer_name, False, drop_rate)
                 prev_layer = layer_type
             elif layer_type == 'pc':  
-                raise ValueError('Cannot have pose connected layer in merge stream!')
+                raise ValueError('Cannot have pose-connected layer in merge stream!')
             elif layer_type == 'fc_merge':
                 if layer_config['out_size'] == 0:
                     continue
@@ -1099,25 +1060,25 @@ class GQCNNTF(object):
         return output_node, fan_in
 
     def _build_network(self, input_im_node, input_pose_node, input_drop_rate_node):
-        """Build GQ-CNN.
+        """ Builds network 
 
         Parameters
         ----------
-        input_im_node :obj:`tf.placeholder`
-            image placeholder
-        input_pose_node :obj:`tf.placeholder`
-            gripper pose placeholder
-        input_drop_rate_node :obj:`tf.placeholder`
-            drop rate placeholder
+        input_im_node : :obj:`tensorflow Placeholder`
+            network input image placeholder
+        input_pose_node : :obj:`tensorflow Placeholder`
+            network input pose placeholder
+        input_drop_rate_node: :obj:`tensorflow Placeholder`
+            drop rate
 
         Returns
         -------
-        :obj:`tf.Tensor`
-            tensor output of network
+        :obj:`tensorflow Tensor`
+            output of network
         """
         logging.info('Building Network...')
         if self._input_depth_mode == InputDepthMode.POSE_STREAM:
-            assert 'pose_stream' in self._architecture.keys() and 'merge_stream' in self._architecture.keys(), 'When using input depth mode "pose_stream", both pose stream and merge stream must be present!'
+            assert 'pose_stream' in self._architecture.keys() and 'merge_stream' in self._architecture.keys(), 'When using input depth mode "pose_stream", both pose stream and merge stream must be present'
             with tf.name_scope('im_stream'):
                 output_im_stream, fan_out_im = self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'])
             with tf.name_scope('pose_stream'):
@@ -1125,7 +1086,7 @@ class GQCNNTF(object):
             with tf.name_scope('merge_stream'):
                 return self._build_merge_stream(output_im_stream, output_pose_stream, fan_out_im, fan_out_pose, input_drop_rate_node, self._architecture['merge_stream'])[0]
         elif self._input_depth_mode == InputDepthMode.SUB or self._input_depth_mode == InputDepthMode.IM_ONLY:
-            assert not ('pose_stream' in self._architecture.keys() or 'merge_stream' in self._architecture.keys()), 'When using input depth mode "{}", only im stream is allowed!'.format(self._input_depth_mode)
+            assert not ('pose_stream' in self._architecture.keys() or 'merge_stream' in self._architecture.keys()), 'When using input depth mode "{}", only im stream is allowed'.format(self._input_depth_mode)
             with tf.name_scope('im_stream'):
                 return self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'], only_stream=True)[0]
         

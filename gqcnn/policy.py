@@ -24,23 +24,25 @@ Grasping policies
 Author: Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
+
 import cPickle as pkl
 import logging
+import matplotlib.pyplot as plt
 import math
+import numpy as np
 import os
 import sys
 from time import time
 
 from sklearn.mixture import GaussianMixture
-import matplotlib.pyplot as plt
-import numpy as np
 
 import autolab_core.utils as utils
 from autolab_core import Point
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
-from gqcnn.utils import GripperMode, NoValidGraspsException
-from gqcnn.grasping import Grasp2D, SuctionPoint2D, GraspQualityFunctionFactory, GQCnnQualityFunction, ImageGraspSamplerFactory
+
+from . import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GraspQualityFunctionFactory, GQCnnQualityFunction
+from .utils import GripperMode, NoValidGraspsException
 
 FIGSIZE = 16
 SEED = 5234709
@@ -119,7 +121,8 @@ class RgbdImageState(object):
                               fully_observed=fully_observed)
             
 class GraspAction(object):
-    """ Action to encapsulate grasps."""
+    """ Action to encapsulate grasps.
+    """
     def __init__(self, grasp, q_value, image):
         self.grasp = grasp
         self.q_value = q_value
@@ -148,7 +151,7 @@ class GraspAction(object):
         return GraspAction(grasp, q_value, image)
         
 class Policy(object):
-    """Abstract policy class."""
+    """ Abstract policy class. """
     __metaclass__ = ABCMeta
 
     def __call__(self, state):
@@ -156,11 +159,12 @@ class Policy(object):
 
     @abstractmethod
     def action(self, state):
-        """ Returns an action for a given state."""
+        """ Returns an action for a given state.
+        """
         pass
 
 class GraspingPolicy(Policy):
-    """Policy for robust grasping with Grasp Quality Convolutional Neural Networks (GQ-CNN).
+    """ Policy for robust grasping with Grasp Quality Convolutional Neural Networks (GQ-CNN).
     Attributes
     ----------
     config : dict
@@ -212,26 +216,26 @@ class GraspingPolicy(Policy):
 
     @property
     def config(self):
-        """Returns the policy parameters."""
+        """ Returns the policy parameters. """
         return self._config
 
     @property
     def grasp_sampler(self):
-        """Returns the grasp sampler."""
+        """ Returns the grasp sampler. """
         return self._grasp_sampler
 
     @property
     def grasp_quality_fn(self):
-        """Returns the grasp sampler."""
+        """ Returns the grasp sampler. """
         return self._grasp_quality_fn
 
     @property
     def gqcnn(self):
-        """Returns the GQ-CNN."""
+        """ Returns the GQ-CNN. """
         return self._gqcnn
 
     def action(self, state):
-        """Returns an action for a given state.
+        """ Returns an action for a given state.
         Public handle to function.
         """
         # save state
@@ -257,11 +261,12 @@ class GraspingPolicy(Policy):
         
     @abstractmethod
     def _action(self, state):
-        """Returns an action for a given state."""
+        """ Returns an action for a given state.
+        """
         pass
     
     def show(self, filename=None, dpi=100):
-        """Show a figure."""
+        """ Show a figure. """
         if self._logging_dir is None:
             vis.show()
         else:
@@ -983,3 +988,4 @@ class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
 
         # return action
         return GraspAction(grasp, q_value, image)
+

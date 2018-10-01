@@ -29,13 +29,14 @@ Jeff Mahler
 """
 import argparse
 import logging
+import IPython
+import numpy as np
 import os
+import rosgraph.roslogging as rl
+import rospy
 import sys
 import time
 
-import numpy as np
-import rosgraph.roslogging as rl
-import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
 
@@ -43,8 +44,7 @@ from autolab_core import Point, RigidTransform, YamlConfig
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 
-from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D
-from gqcnn.grasping.policy import GraspAction
+from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D, GraspAction
 from gqcnn.msg import GQCNNGrasp, BoundingBox
 from gqcnn.srv import GQCNNGraspPlanner
 

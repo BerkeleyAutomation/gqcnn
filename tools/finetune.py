@@ -34,7 +34,8 @@ import os
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig
-from gqcnn import get_gqcnn_model, get_gqcnn_trainer
+from gqcnn.model import get_gqcnn_model
+from gqcnn.training import get_gqcnn_trainer
 from gqcnn import utils as gqcnn_utils
 
 if __name__ == '__main__':

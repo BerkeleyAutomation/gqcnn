@@ -20,15 +20,16 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Factory functions to obtain GQCNNTrainer class based on chosen auto-differentiation backend.
-Currently only Tensorflow is supported.
+Factory functions to obtain GQCNNTrainer class based on backend.
 
-Author: Vishal Satish
+Author
+------
+Vishal Satish
 """
-from tf import *
+from gqcnn.training.tf.trainer_tf import GQCNNTrainerTF
 
 def get_gqcnn_trainer(backend='tf'):
-    # return desired GQCNNTrainer instance based on backend
+    # return desired GQCNN training instance based on backend
     if backend == 'tf':
         return GQCNNTrainerTF
     else:
