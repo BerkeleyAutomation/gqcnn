@@ -115,18 +115,18 @@ inpaint_rescale_factor : float
 """
 import argparse
 import logging
-import IPython
-import numpy as np
 import os
 import random
 import sys
 import time
 
+import numpy as np
+
 from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory, PointCloudBoxDetector
-
-from gqcnn import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState
-from gqcnn import Visualizer as vis
+from visualization import Visualizer2D as vis
+from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState
+from gqcnn.grasping.policy.policy import RobustGraspingPolicy
 
 if __name__ == '__main__':
     # set up logger

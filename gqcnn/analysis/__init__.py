@@ -2,8 +2,7 @@
 """
 Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
 Permission to use, copy, modify, and distribute this software and its documentation for educational,
-research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
-hereby granted, provided that the above copyright notice, this paragraph and the following two
+research, and not-for-profit purposes, without fee and without a signed licensing agreement, ishereby granted, provided that the above copyright notice, this paragraph and the following two
 paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
 Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
 7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
@@ -19,7 +18,6 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from network_tf import GQCNNTF
-from fc_network_tf import FCGQCNNTF
+from analyzer import GQCNNAnalyzer
 
-__all__ = ['GQCNNTF', 'FCGQCNNTF']
+__all__ = ['GQCNNAnalyzer']

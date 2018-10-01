@@ -1,10 +1,7 @@
-argparse
 numpy
 opencv-python
 scipy
 matplotlib
 tensorflow
-tensorflow-tensorboard
-scikit-image
 scikit-learn
-pillow
+ipython

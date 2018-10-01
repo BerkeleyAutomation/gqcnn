@@ -32,11 +32,11 @@ model_dir : str
     Command line argument, the path to the model whose errors are to plotted. All plots and other metrics will
     be saved to this directory. 
 """
-import IPython
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'

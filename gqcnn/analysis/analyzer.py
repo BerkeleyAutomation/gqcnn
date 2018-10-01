@@ -27,25 +27,24 @@ import cPickle as pkl
 import copy
 import json
 import logging
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import random
 import shutil
-from skimage.feature import hog
-import scipy.misc as sm
 import sys
 import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.misc as sm
 
 import autolab_core.utils as utils
 from autolab_core import BinaryClassificationResult, Point, TensorDataset
 from autolab_core.constants import *
 from perception import DepthImage
 from visualization import Visualizer2D as vis2d
-from gqcnn.model import get_gqcnn_model
-
-from . import Grasp2D, SuctionPoint2D
-from .utils import GripperMode, ImageMode, GeneralConstants, read_pose_data
+from gqcnn import get_gqcnn_model
+from gqcnn.grasping import Grasp2D, SuctionPoint2D
+from gqcnn.utils import GripperMode, ImageMode, GeneralConstants, read_pose_data
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'

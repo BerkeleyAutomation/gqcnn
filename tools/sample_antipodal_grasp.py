@@ -30,17 +30,17 @@ Jeff Mahler
 import argparse
 import cPickle as pkl
 import logging
-import IPython
-import numpy as np
 import os
 import sys
 import time
 
+import numpy as np
+
 from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, BinaryImage, ColorImage, DepthImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
-
-from gqcnn import UniformRandomGraspingPolicy, RgbdImageState
+from gqcnn import RgbdImageState
+from gqcnn.grasping.policy.policy import UniformRandomGraspingPolicy
 
 if __name__ == '__main__':
     # set up logger

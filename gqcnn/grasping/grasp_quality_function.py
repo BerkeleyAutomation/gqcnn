@@ -24,21 +24,21 @@ Grasp quality functions: suction quality function and parallel jaw grasping qual
 Author: Jason Liu and Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
 import logging
-import IPython
 from time import time
 
 import scipy.ndimage.filters as snf
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import IPython
 
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
-from gqcnn.model import get_gqcnn_model, get_fc_gqcnn_model
-from . import Grasp2D, SuctionPoint2D
-from .utils import GripperMode
+from gqcnn import get_gqcnn_model, get_fc_gqcnn_model
+from gqcnn.grasping import Grasp2D, SuctionPoint2D
+from gqcnn.utils import GripperMode
 
 # constant for display
 FIGSIZE = 16
