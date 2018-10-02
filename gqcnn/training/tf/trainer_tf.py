@@ -839,11 +839,6 @@ class GQCNNTrainerTF(object):
             for f in old_files:
                 os.remove(os.path.join(self.summary_dir, f))
 
-        # setup filter directory
-        self.filter_dir = os.path.join(self.model_dir, 'filters')
-        if not os.path.exists(self.filter_dir):
-            os.mkdir(self.filter_dir)
-
         logging.info('Saving model to %s' %(self.model_dir))
             
     def _setup_logging(self):
@@ -893,7 +888,6 @@ class GQCNNTrainerTF(object):
         self.num_epochs = self.cfg['num_epochs']
         self.eval_frequency = self.cfg['eval_frequency']
         self.save_frequency = self.cfg['save_frequency']
-        self.vis_frequency = self.cfg['vis_frequency']
         self.log_frequency = self.cfg['log_frequency']
 
         # optimization
@@ -1014,7 +1008,6 @@ class GQCNNTrainerTF(object):
         # set params based on the number of training examples (convert epochs to steps)
         self.eval_frequency = int(np.ceil(self.eval_frequency * (float(self.num_train) / self.train_batch_size)))
         self.save_frequency = int(np.ceil(self.save_frequency * (float(self.num_train) / self.train_batch_size)))
-        self.vis_frequency = int(np.ceil(self.vis_frequency * (float(self.num_train) / self.train_batch_size)))
         self.decay_step = self.decay_step_multiplier * self.num_train
 
     def _setup_tensorflow(self):
