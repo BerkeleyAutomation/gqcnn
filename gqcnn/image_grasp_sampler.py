@@ -221,6 +221,14 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         self._w = self._config['depth_sample_win_width']
         self._depth_sampling_mode = self._config['depth_sampling_mode']
 
+        # perturbation
+        self._grasp_center_sigma = 0.0
+        if 'grasp_center_sigma' in self._config.keys():
+            self._grasp_center_sigma = self._config['grasp_center_sigma'] 
+        self._grasp_angle_sigma = 0.0
+        if 'grasp_angle_sigma' in self._config.keys():
+            self._grasp_angle_sigma = np.deg2rad(self._config['grasp_angle_sigma'])
+       
     def _surface_normals(self, depth_im, edge_pixels):
         """ Return an array of the surface normals at the edge pixels. """
         # compute the gradients
@@ -440,6 +448,12 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             if grasp_axis[1] != 0:
                 grasp_theta = np.arctan(grasp_axis[0] / grasp_axis[1])
             grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
+
+            # perturb
+            if self._grasp_center_sigma > 0.0:
+                grasp_center_pt = grasp_center_pt + ss.multivariate_normal.rvs(cov=self._grasp_center_sigma*np.diag(np.ones(2)))
+            if self._grasp_angle_sigma > 0.0:
+                grasp_theta = grasp_theta + ss.norm.rvs(scale=self._grasp_angle_sigma)
 
             # check center px dist from boundary
             if grasp_center[0] < self._min_dist_from_boundary or \
