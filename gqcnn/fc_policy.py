@@ -245,15 +245,27 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
         """ Generate the actions to be returned  """
         actions = []
+        depth_im = DepthImage(images[0], frame=camera_intr.frame)
+        point_cloud_im = camera_intr.deproject_to_image(depth_im)
+        normal_cloud_im = point_cloud_im.normal_cloud_im()        
+        
         for i in range(num_actions):
             im_idx = ind[i, 0]
             h_idx = ind[i, 1]
             w_idx = ind[i, 2]
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
-            depth = depths[im_idx]
-            grasp = SuctionPoint2D(center, depth=depth, camera_intr=camera_intr)
+            axis = -normal_cloud_im[center.y, center.x]
+            if np.linalg.norm(axis) == 0:
+                continue
+
+            depth = depth_im[center.y, center.x]
+            if depth == 0.0:
+                continue
+            
+            grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr)
             grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, 0], DepthImage(images[im_idx]))
             actions.append(grasp_action)
+
         return actions
 
     def _visualize_3d(self, actions, wrapped_depth_im, camera_intr, num_actions):
