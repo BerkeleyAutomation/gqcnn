@@ -26,15 +26,14 @@ Author: Vishal Satish
 from setuptools import setup
 
 requirements = [
-    'autolab_core',
-    'perception',
+    'autolab-core',
+    'autolab-perception',
     'visualization',
     'numpy',
     'scipy',
     'matplotlib',
     'opencv-python',
-    'tensorflow>=1.0',
-    'ipython',
+    'tensorflow>=1.3.0',
     'scikit-learn'
 ]
 

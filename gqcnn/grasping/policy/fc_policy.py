@@ -66,7 +66,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             self._depth_offset = self._cfg['depth_offset']
 
         self._filters = filters
-        self._max_filtered_grasps = self._cfg['max_grasps_filter']
+        self._max_filtered_grasps = self._cfg['max_filtered_grasps']
         self._filter_grasps = self._cfg['filter_grasps']
 
         self._vis_config = self._cfg['policy_vis']
@@ -260,7 +260,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
             ang_idx = ind[i, 3]
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
             ang = math.pi / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
-            depth = depths[im_idx]
+            depth = depths[im_idx, 0]
             grasp = Grasp2D(center, ang, depth, width=self._width, camera_intr=camera_intr)
             grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, ang_idx], DepthImage(images[im_idx]))
             actions.append(grasp_action)
@@ -281,7 +281,7 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
             h_idx = ind[i, 1]
             w_idx = ind[i, 2]
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
-            depth = depths[im_idx]
+            depth = depths[im_idx, 0]
             grasp = SuctionPoint2D(center, depth=depth, camera_intr=camera_intr)
             grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, 0], DepthImage(images[im_idx]))
             actions.append(grasp_action)

@@ -44,7 +44,6 @@ import numpy as np
 import scipy.misc as sm
 import scipy.stats as ss
 import tensorflow as tf
-import IPython
 
 from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset, YamlConfig
 from autolab_core.constants import *
@@ -374,10 +373,8 @@ class GQCNNTrainerTF(object):
                     logging.info('True nonzero ' + str(np.sum(batch_labels > 0.5)))
 
                 if np.isnan(l) or np.any(np.isnan(train_poses)):
-                    logging.info('Encountered NaN in loss or training poses!')
-                    IPython.embed()
-                    logging.info('Exiting...')
-                    break
+                    logging.error('Encountered NaN in loss or training poses!')
+                    raise Exception
                     
                 # log output
                 if step % self.log_frequency == 0:
@@ -615,7 +612,6 @@ class GQCNNTrainerTF(object):
             # check for invalid values
             if np.any(np.isnan(self.pose_mean)) or np.any(np.isnan(self.pose_std)):
                 logging.error('Pose mean or pose std is NaN! Check the input dataset')
-                IPython.embed()
                 exit(0)
 
         elif self.gqcnn.input_depth_mode == InputDepthMode.SUB:

@@ -34,7 +34,7 @@ import numpy as np
 from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory
 from visualization import Visualizer2D as vis
-from gqcnn.grasping.image_grasp_sampler import AntipodalDepthImageGraspSampler
+from gqcnn.grasping import AntipodalDepthImageGraspSampler
 
 if __name__ == '__main__':
     # set up logger

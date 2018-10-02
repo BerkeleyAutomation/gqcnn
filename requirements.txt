@@ -1,7 +1,9 @@
+autolab-core
+autolab-perception
+visualization
 numpy
 opencv-python
 scipy
 matplotlib
-tensorflow
+tensorflow>=1.3.0
 scikit-learn
-ipython

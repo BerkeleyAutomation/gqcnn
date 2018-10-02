@@ -20,6 +20,6 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 from fc_policy import FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
-from policy import CrossEntropyRobustGraspingPolicy, RgbdImageState, GraspAction
+from policy import CrossEntropyRobustGraspingPolicy, RgbdImageState, GraspAction, UniformRandomGraspingPolicy
 
-__all__ = ['FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'CrossEntropyRobustGraspingPolicy', 'RgbdImageState', 'GraspAction'] 
+__all__ = ['FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'CrossEntropyRobustGraspingPolicy', 'UniformRandomGraspingPolicy', 'RgbdImageState', 'GraspAction'] 

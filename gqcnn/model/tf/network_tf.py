@@ -23,7 +23,6 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 GQ-CNN network implemented in Tensorflow.
 Authors: Vishal Satish, Jeff Mahler
 """
-
 import json
 from collections import OrderedDict
 import logging

@@ -21,7 +21,7 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 from grasp import Grasp2D, SuctionPoint2D
 from grasp_quality_function import GraspQualityFunctionFactory, GQCnnQualityFunction
-from image_grasp_sampler import ImageGraspSamplerFactory
-from policy import CrossEntropyRobustGraspingPolicy, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, RgbdImageState
+from image_grasp_sampler import ImageGraspSamplerFactory, AntipodalDepthImageGraspSampler
+from policy import CrossEntropyRobustGraspingPolicy, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, UniformRandomGraspingPolicy, RgbdImageState, GraspAction
 
-__all__ = ['Grasp2D', 'SuctionPoint2D', 'GraspQualityFunctionFactory', 'GQCnnQualityFunction', 'ImageGraspSamplerFactory', 'CrossEntropyRobustGraspingPolicy', 'FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'RgbdImageState']
+__all__ = ['Grasp2D', 'SuctionPoint2D', 'GraspQualityFunctionFactory', 'GQCnnQualityFunction', 'ImageGraspSamplerFactory', 'AntipodalDepthImageGraspSampler', 'CrossEntropyRobustGraspingPolicy', 'FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'UniformRandomGraspingPolicy', 'RgbdImageState', 'GraspAction']
