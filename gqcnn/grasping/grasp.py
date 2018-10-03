@@ -240,7 +240,7 @@ class SuctionPoint2D(object):
     """
     def __init__(self, center, axis=None, depth=1.0, camera_intr=None):
         if axis is None:
-            axis = np.array([1,0,0])
+            axis = np.array([0,0,1])
 
         self.center = center
         self.axis = axis
