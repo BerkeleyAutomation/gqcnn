@@ -55,6 +55,7 @@ class TrainingMode:
 class GripperMode:
     PARALLEL_JAW = 'parallel_jaw'
     SUCTION = 'suction'
+    MULTI_SUCTION = 'multi_suction'
     LEGACY_PARALLEL_JAW = 'legacy_parallel_jaw'
     LEGACY_SUCTION = 'legacy_suction'
 

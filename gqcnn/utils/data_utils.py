@@ -65,6 +65,8 @@ def pose_dim(gripper_mode):
         return 1
     elif gripper_mode == GripperMode.SUCTION:
         return 2
+    elif gripper_mode == GripperMode.MULTI_SUCTION:
+        return 1
     elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
         return 1
     elif gripper_mode == GripperMode.LEGACY_SUCTION:
@@ -98,6 +100,11 @@ def read_pose_data(pose_arr, gripper_mode):
             return np.r_[pose_arr[2], pose_arr[4]]
         else:
             return np.c_[pose_arr[:,2], pose_arr[:,4]]
+    elif gripper_mode == GripperMode.MULTI_SUCTION:
+        if pose_arr.ndim == 1:
+            return pose_arr[2:3]
+        else:
+            return pose_arr[:,2:3]
     elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
         if pose_arr.ndim == 1:
             return pose_arr[2:3]
