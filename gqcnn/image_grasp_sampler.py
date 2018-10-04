@@ -592,11 +592,11 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
         # sample antipodal pairs in image space
         grasps = self._sample_suction_points(depth_im, camera_intr, num_samples,
-                                             segmask=segmask, visualize=visualize)
+                                             segmask=segmask, visualize=visualize, constraint_fn=constraint_fn)
         return grasps
 
     def _sample_suction_points(self, depth_im, camera_intr, num_samples,
-                               segmask=None, visualize=False):
+                               segmask=None, visualize=False, constraint_fn=None):
         """
         Sample a set of 2D suction point candidates from a depth image by
         choosing points on an object surface uniformly at random
@@ -685,7 +685,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
                 candidate = SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)
 
                 # check constraint satisfaction
-                if constraint_fn is not None and constraint_fn(candidate):
+                if constraint_fn is None or constraint_fn(candidate):
                     if visualize:
                         vis.figure()
                         vis.imshow(depth_im)
@@ -767,6 +767,8 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
             binary image segmenting out the object of interest
         visualize : bool
             whether or not to show intermediate samples (for debugging)
+        constraint_fn : :obj:`GraspConstraintFn`
+            constraint function to apply to grasps
  
         Returns
         -------
@@ -805,6 +807,8 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
             binary image segmenting out the object of interest
         visualize : bool
             whether or not to show intermediate samples (for debugging)
+        constraint_fn : :obj:`GraspConstraintFn`
+            constraint function to apply to grasps
  
         Returns
         -------
@@ -894,7 +898,7 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
                 candidate = MultiSuctionPoint2D(pose, camera_intr=camera_intr)
 
                 # check constraint satisfaction
-                if constraint_fn is not None and constraint_fn(candidate):
+                if constraint_fn is None or constraint_fn(candidate):
                     if visualize:
                         vis.figure()
                         vis.imshow(depth_im)
