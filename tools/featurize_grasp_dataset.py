@@ -30,14 +30,21 @@ if __name__ == '__main__':
     # parse args
     logging.getLogger().setLevel(logging.INFO)
     parser = argparse.ArgumentParser()
+    parser.add_argument('dataset_dir', type=str, default=None,
+                        help='path to the dataset to use for training and validation')
+    parser.add_argument('model_dir', type=str, default=None,
+                        help='path to the pre-trained model to fine-tune')
+    parser.add_argument('--split_name', type=str, default='image_wise',
+                        help='name of the split to train on')
     parser.add_argument('--config_filename', type=str, default='cfg/tools/featurize_grasp_dataset.yaml', help='Config file for tensor featurization')
     args = parser.parse_args()
+    dataset_dir = args.dataset_dir
+    model_dir = args.model_dir
+    split_name = args.split_name
     config_filename = args.config_filename
 
     # read config
     config = YamlConfig(config_filename)
-    tensor_dataset_dir = config['tensor_dataset']
-    split_name = config['split_name']
     
     # read featurization params
     feature_layers = config['feature_layers']
@@ -58,7 +65,7 @@ if __name__ == '__main__':
     font_size = config['font_size']
 
     # open dataset
-    dataset = TensorDataset.open(tensor_dataset_dir)
+    dataset = TensorDataset.open(dataset_dir)
     num_tensors = dataset.num_tensors
     num_datapoints = dataset.num_datapoints
     datapoints_per_file = dataset.datapoints_per_file
@@ -72,13 +79,12 @@ if __name__ == '__main__':
         num_val_datapoints = val_indices.shape[0]
 
     # open output directory
-    output_dir = os.path.join(tensor_dataset_dir, 'features')
+    output_dir = os.path.join(dataset_dir, 'features')
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
     # load a gqcnn
     logging.info('Loading GQ-CNN')
-    model_dir = config['gqcnn']
     gqcnn = get_gqcnn_model().load(model_dir)
     gqcnn.open_session()
 

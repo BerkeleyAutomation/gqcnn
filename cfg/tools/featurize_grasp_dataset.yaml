@@ -1,7 +1,4 @@
 # dataset params
-tensor_dataset: /mnt/data/diskstation/dexnet_4/v3/parallel_jaw
-split_name: image_wise
-
 image_type: tf_depth_ims
 gripper_mode: parallel_jaw
 metric_name: grasp_metrics
@@ -9,7 +6,7 @@ metric_thresh: 0.5
 gripper_width_px: 13.5
 
 # featurization params
-use_bhtsne: 0
+use_bhtsne: 1
 perplexity: 5
 max_num_samples: 10000
 
@@ -20,9 +17,6 @@ feature_layers:
   - fc3
   - fc4
 
-# gqcnn params
-gqcnn: models/GQ-CNN-4.0-PJ
-  
 # vis params
 figsize: 8
 point_size: 5
