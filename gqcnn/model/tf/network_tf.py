@@ -339,6 +339,8 @@ class GQCNNTF(object):
                 self._gripper_mode = GripperMode.LEGACY_SUCTION                
             elif self._input_data_mode == 'suction':
                 self._gripper_mode = GripperMode.SUCTION                
+            elif self._input_data_mode == 'multi_suction':
+                self._gripper_mode = GripperMode.MULTI_SUCTION                
             elif self._input_data_mode == 'parallel_jaw':
                 self._gripper_mode = GripperMode.PARALLEL_JAW
             else:

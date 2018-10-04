@@ -41,7 +41,7 @@ from autolab_core import Point
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
 
-from . import Grasp2D, SuctionPoint2D, ImageGraspSamplerFactory, GraspQualityFunctionFactory, GQCnnQualityFunction
+from . import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D, ImageGraspSamplerFactory, GraspQualityFunctionFactory, GQCnnQualityFunction, GraspConstraintFnFactory
 from .utils import GripperMode, NoValidGraspsException
 
 FIGSIZE = 16
@@ -208,6 +208,14 @@ class GraspingPolicy(Policy):
             self._grasp_sampler = ImageGraspSamplerFactory.sampler(sampler_type,
                                                                    self._sampling_config)
 
+        # init constraint function
+        self._constraint_function = None
+        if 'constraints' in self._config.keys():
+            self._constraint_config = self._config['constraints']
+            constraint_type = self._constraint_config['type']
+            self._constraint_function = GraspConstraintFnFactory.constraint_fn(constraint_type,
+                                                                               self._constraint_config)
+                    
         # init grasp quality function
         self._metric_config = config['metric']
         metric_type = self._metric_config['type']
@@ -230,10 +238,18 @@ class GraspingPolicy(Policy):
         return self._grasp_quality_fn
 
     @property
+    def grasp_constraint_fn(self):
+        """ Returns the grasp sampler. """
+        return self._grasp_constraint_fn
+        
+    @property
     def gqcnn(self):
         """ Returns the GQ-CNN. """
         return self._gqcnn
 
+    def set_constraint_fn(self, constraint_fn):
+        self._constraint_fn = constraint_fn    
+    
     def action(self, state):
         """ Returns an action for a given state.
         Public handle to function.
@@ -311,6 +327,7 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
                                             self._num_grasp_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
+                                            constraint_fn=self._constraint_fn,
                                             seed=None)
         num_grasps = len(grasps)
         if num_grasps == 0:
@@ -420,6 +437,7 @@ class RobustGraspingPolicy(GraspingPolicy):
                                             self._num_grasp_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
+                                            constraint_fn=self._constraint_fn,
                                             seed=None)
         num_grasps = len(grasps)
         if num_grasps == 0:
@@ -575,7 +593,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             i += 1
         raise NoValidGraspsException('No grasps satisfied filters')
 
-    def _action(self, state):
+    def _action_set(self, state):
         """ Plans the grasp with the highest probability of success on
         the given RGB-D image.
 
@@ -601,12 +619,26 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         segmask = state.segmask
         point_cloud_im = camera_intr.deproject_to_image(depth_im)
         normal_cloud_im = point_cloud_im.normal_cloud_im()
-        
+
+        if 'input_images' in self.config['vis'].keys() and self.config['vis']['input_images']:
+            vis.figure()
+            vis.subplot(1,2,1)
+            vis.imshow(depth_im)
+            vis.title('Depth')
+            vis.subplot(1,2,2)
+            vis.imshow(segmask)
+            vis.title('Segmask')
+            filename = None
+            if self._logging_dir is not None:
+                filename = os.path.join(self._logging_dir, 'input_images.png')
+            vis.show(filename)
+                  
         # sample grasps
         grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
                                             self._num_seed_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
+                                            constraint_fn=self._constraint_fn,
                                             seed=self._seed)
         
         num_grasps = len(grasps)
@@ -617,6 +649,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         grasp_type = 'parallel_jaw'
         if isinstance(grasps[0], SuctionPoint2D):
             grasp_type = 'suction'
+        elif isinstance(grasps[0], MultiSuctionPoint2D):
+            grasp_type = 'multi_suction'
 
         logging.info('Sampled %d grasps' %(len(grasps)))
         logging.info('Computing the seed set took %.3f sec' %(time() - seed_set_start))
@@ -637,12 +671,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
             if self.config['vis']['grasp_candidates']:
                 # display each grasp on the original image, colored by predicted success
-                norm_q_values = q_values #(q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
+                display_grasps_and_q_values = zip(grasps, q_values)
+                display_grasps_and_q_values.sort(key = lambda x: x[1])
                 vis.figure(size=(FIGSIZE,FIGSIZE))
                 vis.imshow(rgbd_im.depth,
                            vmin=self.config['vis']['vmin'],
                            vmax=self.config['vis']['vmax'])
-                for grasp, q in zip(grasps, norm_q_values):
+                for grasp, q in display_grasps_and_q_values:
                     vis.grasp(grasp, scale=2.0,
                               jaw_width=2.0,
                               show_center=False,
@@ -728,8 +763,21 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                                                 camera_intr=camera_intr,
                                                                 depth=grasp_depth,
                                                                 axis=grasp_axis)
-                    logging.debug('Feature vec took %.5f sec' %(time()-feature_start))
+                    elif grasp_type == 'multi_suction':
+                        # read depth and approach axis
+                        u = int(min(max(grasp_vec[1], 0), depth_im.height-1))
+                        v = int(min(max(grasp_vec[0], 0), depth_im.width-1))
+                        grasp_depth = depth_im[u, v]
 
+                        # approach_axis
+                        grasp_axis = -normal_cloud_im[u, v]
+                        
+                        # form grasp object
+                        grasp = MultiSuctionPoint2D.from_feature_vec(grasp_vec,
+                                                                     camera_intr=camera_intr,
+                                                                     depth=grasp_depth,
+                                                                     axis=grasp_axis)         
+                    logging.debug('Feature vec took %.5f sec' %(time()-feature_start))
                         
                     bounds_start = time()
                     # check in bounds
@@ -737,7 +785,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                         (grasp.center.y >= 0 and grasp.center.y < state.segmask.height and \
                          grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
                          np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0) and \
-                         grasp.approach_angle < self._max_approach_angle):
+                         grasp.approach_angle < self._max_approach_angle) and \
+                         (self._constraint_fn is not None and self._constraint_fn(grasp)):
 
                         # check validity according to filters
                         grasps.append(grasp)
@@ -759,23 +808,40 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
-            norm_q_values = q_values #(q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
+            display_grasps_and_q_values = zip(grasps, q_values)
+            display_grasps_and_q_values.sort(key = lambda x: x[1])
             vis.figure(size=(FIGSIZE,FIGSIZE))
             vis.imshow(rgbd_im.depth,
                        vmin=self.config['vis']['vmin'],
                        vmax=self.config['vis']['vmax'])
-            for grasp, q in zip(grasps, norm_q_values):
+            for grasp, q in display_grasps_and_q_values:
                 vis.grasp(grasp, scale=2.0,
                           jaw_width=2.0,
                           show_center=False,
                           show_axis=True,
                           color=plt.cm.RdYlBu(q))
-            vis.title('Final sampled grasps')
+            vis.title('Sampled grasps iter %d' %(j))
             filename = None
             if self._logging_dir is not None:
-                filename = os.path.join(self._logging_dir, 'final_grasps.png')
+                filename = os.path.join(self._logging_dir, 'cem_iter_%d.png' %(j))
             vis.show(filename)
 
+        return grasps, q_values
+
+    def _action(self, state):
+        """ Plans the grasp with the highest probability of success on
+        the given RGB-D image.
+
+        Attributes
+        ----------
+        state : :obj:`RgbdImageState`
+            image to plan grasps on
+
+        Returns
+        -------
+        :obj:`GraspAction`
+            grasp to execute
+        """            
         # select grasp
         index = self.select(grasps, q_values)
         grasp = grasps[index]
@@ -953,6 +1019,7 @@ class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
                                             self._num_seed_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
+                                            constraint_fn=self._constraint_fn,
                                             seed=self._seed)
         
         num_grasps = len(grasps)
