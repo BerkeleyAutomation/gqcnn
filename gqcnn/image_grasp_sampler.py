@@ -561,7 +561,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         self._depth_gaussian_sigma = self._config['depth_gaussian_sigma']
  
     def _sample(self, image, camera_intr, num_samples, segmask=None,
-                visualize=False):
+                visualize=False, constraint_fn=None):
         """
         Sample a set of 2D grasp candidates from a depth image.
 
