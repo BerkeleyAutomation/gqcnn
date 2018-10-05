@@ -1,5 +1,5 @@
 policy:
-  type: fully_conv_pj
+  type: fully_conv_suction
 
   sampling_method: top_k
   num_depth_bins: 16

@@ -25,16 +25,16 @@ WARNING: This is a READ-ONLY script and is not guaranteed to work. It is meant a
 Authors: Jeff, Jacky
 '''
 from abc import ABCMeta, abstractmethod
-import csv
 from datetime import datetime
-import IPython
 import logging
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import shutil
 import subprocess
 from time import time
+
+import matplotlib.pyplot as plt
+import csv
+import numpy as np
 
 from autolab_core import CSVModel, ExperimentLogger, YamlConfig
 from autolab_core.utils import gen_experiment_id

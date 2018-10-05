@@ -27,25 +27,24 @@ import cPickle as pkl
 import copy
 import json
 import logging
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import random
 import shutil
-from skimage.feature import hog
-import scipy.misc as sm
 import sys
 import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.misc as sm
 
 import autolab_core.utils as utils
 from autolab_core import BinaryClassificationResult, Point, TensorDataset
 from autolab_core.constants import *
 from perception import DepthImage
 from visualization import Visualizer2D as vis2d
-from gqcnn.model import get_gqcnn_model
-
-from . import Grasp2D, SuctionPoint2D
-from .utils import GripperMode, ImageMode, GeneralConstants, read_pose_data
+from gqcnn import get_gqcnn_model
+from gqcnn.grasping import Grasp2D, SuctionPoint2D
+from gqcnn.utils import GripperMode, ImageMode, GeneralConstants, read_pose_data
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'
@@ -281,7 +280,10 @@ class GQCNNAnalyzer(object):
         # get stats, plot curves
         logging.info('Model %s training error rate: %.3f' %(model_dir, train_result.error_rate))
         logging.info('Model %s validation error rate: %.3f' %(model_dir, val_result.error_rate))
-        
+
+        logging.info('Model %s training loss: %.3f' %(model_dir, train_result.cross_entropy_loss))
+        logging.info('Model %s validation loss: %.3f' %(model_dir, val_result.cross_entropy_loss))
+
         # save images
         vis2d.figure()
         example_dir = os.path.join(model_output_dir, 'examples')
@@ -456,7 +458,8 @@ class GQCNNAnalyzer(object):
         train_summary_stats = {
             'error_rate': train_result.error_rate,
             'ap_score': train_result.ap_score,
-            'auc_score': train_result.auc_score
+            'auc_score': train_result.auc_score,
+            'loss': train_result.cross_entropy_loss
         }
         train_stats_filename = os.path.join(model_output_dir, 'train_stats.json')
         json.dump(train_summary_stats, open(train_stats_filename, 'w'),
@@ -466,7 +469,8 @@ class GQCNNAnalyzer(object):
         val_summary_stats = {
             'error_rate': val_result.error_rate,
             'ap_score': val_result.ap_score,
-            'auc_score': val_result.auc_score
+            'auc_score': val_result.auc_score,
+            'loss': val_result.cross_entropy_loss            
         }
         val_stats_filename = os.path.join(model_output_dir, 'val_stats.json')
         json.dump(val_summary_stats, open(val_stats_filename, 'w'),

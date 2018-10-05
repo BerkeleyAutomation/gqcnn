@@ -20,44 +20,39 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Trains a GQCNN network using Tensorflow backend.
-Author: Vishal Satish and Jeff Mahler
+Trains a GQ-CNN network using Tensorflow backend.
+Authors: Vishal Satish, Jeff Mahler
 """
 import argparse
 import collections
 import copy
-import cv2
 import json
 import logging
-import matplotlib.pyplot as plt
-import numpy as np
 import cPickle as pkl
 import os
 import random
-import scipy.misc as sm
-import scipy.ndimage.filters as sf
-import scipy.ndimage.morphology as snm
-import scipy.stats as ss
 import shutil
 import signal
-import skimage.draw as sd
 import subprocess
 import sys
-import tensorflow as tf
 import threading
 import time
-import yaml
+
+import matplotlib.pyplot as plt
+import cv2
+import numpy as np
+import scipy.misc as sm
+import scipy.stats as ss
+import tensorflow as tf
 
 from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset, YamlConfig
 from autolab_core.constants import *
 import autolab_core.utils as utils
 
-from gqcnn.utils import ImageMode, TrainingMode, GripperMode, InputDepthMode, GeneralConstants
-from gqcnn.utils import TrainStatsLogger
-from gqcnn.utils import pose_dim, read_pose_data, weight_name_to_layer_name
+from gqcnn.utils import ImageMode, TrainingMode, GripperMode, InputDepthMode, GeneralConstants, TrainStatsLogger, pose_dim, read_pose_data, weight_name_to_layer_name
 
 class GQCNNTrainerTF(object):
-    """ Trains GQCNN with Tensorflow backend """
+    """Train GQ-CNN with Tensorflow backend."""
 
     def __init__(self, gqcnn,
                  dataset_dir,
@@ -69,7 +64,7 @@ class GQCNNTrainerTF(object):
         Parameters
         ----------
         gqcnn : :obj:`GQCNN`
-            grasp quality neural network to optimize
+            GQ-CNN to train
         dataset_dir : str
             path to the training / validation dataset
         split_name : str
@@ -91,7 +86,7 @@ class GQCNNTrainerTF(object):
     
         # check default split
         if split_name is None:
-            logging.warning('Using default image-wise split')
+            logging.warning('Using default image-wise split.')
             self.split_name = 'image_wise'
         
         # update cfg for saving
@@ -99,11 +94,11 @@ class GQCNNTrainerTF(object):
         self.cfg['split_name'] = self.split_name
             
     def _create_loss(self):
-        """ Creates a loss based on config file
+        """Build the loss.
 
         Returns
         -------
-        :obj:`tensorflow Tensor`
+        :obj:`tf.Operation`
             loss
         """
         if self.cfg['loss'] == 'l2':
@@ -122,23 +117,23 @@ class GQCNNTrainerTF(object):
                                                                            name=None))
 
     def _create_optimizer(self, loss, batch, var_list, learning_rate):
-        """ Create optimizer based on config file
+        """Build optimizer.
 
         Parameters
         ----------
-        loss : :obj:`tensorflow Tensor`
-            loss to use, generated with _create_loss()
+        loss : :obj:`tf.Operation`
+            loss fucntion, generated with self._create_loss()
         batch : :obj:`tf.Variable`
             variable to keep track of the current gradient step number
         var_list : :obj:`lst`
-            list of tf.Variable objects to update to minimize loss(ex. network weights)
+            list of tf.Variable objects to update on every gradient step(ex. network weights)
         learning_rate : float
             learning rate for training
 
         Returns
         -------
-        :obj:`tf.train.Optimizer`
-            optimizer
+        :obj:`tf.Operation`
+            Tensorflow operation to apply gradients
         """    
         # instantiate optimizer
         if self.cfg['optimizer'] == 'momentum':
@@ -148,7 +143,7 @@ class GQCNNTrainerTF(object):
         elif self.cfg['optimizer'] == 'rmsprop':
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
         else:
-            raise ValueError('Optimizer %s not supported' %(self.cfg['optimizer']))
+            raise ValueError('Optimizer: {} not supported'.format(self.cfg['optimizer']))
 
         # compute gradients
         gradients, variables = zip(*optimizer.compute_gradients(loss, var_list=var_list))
@@ -160,9 +155,9 @@ class GQCNNTrainerTF(object):
         return apply_grads, global_grad_norm
 
     def _check_dead_queue(self):
-        """ Checks to see if the queue is dead and if so closes the tensorflow session and cleans up the variables """
+        """Checks to see if the data prefetch queue is dead and if so closes the Tensorflow session and c           leans up the variables."""
         if self.dead_event.is_set():
-            # close self.session
+            # close the Tensorflow Session
             self.sess.close()
             
             # cleanup
@@ -172,24 +167,24 @@ class GQCNNTrainerTF(object):
             del self.sess
 
     def _launch_tensorboard(self):
-        """ Launches Tensorboard to visualize training """
+        """Launches Tensorboard to visualize training."""
         FNULL = open(os.devnull, 'w')
         logging.info(
             "Launching Tensorboard, Please navigate to localhost:{} in your favorite web browser to view summaries".format(self._tensorboard_port))
         self._tensorboard_proc = subprocess.Popen(['tensorboard', '--port', str(self._tensorboard_port),'--logdir', self.summary_dir], stdout=FNULL)
 
     def _close_tensorboard(self):
-        """ Closes Tensorboard """
-        logging.info('Closing Tensorboard')
+        """Closes Tensorboard process."""
+        logging.info('Closing Tensorboard.')
         self._tensorboard_proc.terminate()                        
 
     def train(self):
-        """ Perform optimization """
+        """Perform optimization."""
         with self.gqcnn.tf_graph.as_default():
             self._train()
         
     def _train(self):
-        """ Perform optimization """
+        """Perform optimization."""
         start_time = time.time()
 
         # run setup 
@@ -202,23 +197,23 @@ class GQCNNTrainerTF(object):
         self._optimize_weights()
 
     def finetune(self, base_model_dir):
-        """ Perform fine-tuning.
+        """Perform fine-tuning.
         
         Parameters
         ----------
         base_model_dir : str
-            path to the base model to use
+            path to the base GQ-CNN to use
         """
         with self.gqcnn.tf_graph.as_default():
             self._finetune(base_model_dir)
         
     def _finetune(self, base_model_dir):
-        """ Perform fine-tuning.
+        """Perform fine-tuning.
         
         Parameters
         ----------
         base_model_dir : str
-            path to the base model to use
+            path to the base GQ-CNN to use
         """
         # run setup 
         self._setup()
@@ -231,10 +226,10 @@ class GQCNNTrainerTF(object):
         self._optimize_weights(finetune=True)
         
     def _optimize_weights(self, finetune=False):
-        """ Optimize the network weights. """
+        """Optimize the network weights."""
         start_time = time.time()
 
-        # setup output
+        # setup output/training handles
         self.train_net_output = self.gqcnn.output
         if self.training_mode == TrainingMode.CLASSIFICATION:
             if self.cfg['loss'] == 'weighted_cross_entropy':
@@ -249,14 +244,15 @@ class GQCNNTrainerTF(object):
         drop_rate_in = self.gqcnn.input_drop_rate_node
         self.weights = self.gqcnn.weights
         
-        # once weights have been initialized create tf Saver for weights
+        # create tf.train.Saver for weights
         self.saver = tf.train.Saver()
 
         # form loss
         with tf.name_scope('loss'):
             # part 1: error
             loss = self._create_loss()
-
+            unregularized_loss = loss # handle to be used later during logging
+            
             # part 2: regularization
             layer_weights = self.weights.values()
             with tf.name_scope('regularization'):
@@ -292,7 +288,7 @@ class GQCNNTrainerTF(object):
             self.term_event.set()
 
             ### Forcefully Exit ####
-            # TODO: remove this and figure out why queue thread does not properly exit
+            # TODO: @Vishal remove this and figure out why data prefetch queue thread does not properly exit
             logging.info('Forcefully Exiting Optimization')
             self.forceful_exit = True
 
@@ -308,7 +304,6 @@ class GQCNNTrainerTF(object):
                 pass
 
             logging.info('Cleaning and Preparing to Exit Optimization')
-                
             # cleanup
             for layer_weights in self.weights.values():
                 del layer_weights
@@ -332,12 +327,12 @@ class GQCNNTrainerTF(object):
             self.queue_thread = threading.Thread(target=self._load_and_enqueue)
             self.queue_thread.start()
 
-            # init and run tf self.sessions
+            # initialize global variables
             init = tf.global_variables_initializer()
             self.sess.run(init)
-            logging.info('Beginning Optimization')
+            logging.info('Beginning Optimization...')
 
-            # create a TrainStatsLogger object to log training statistics at certain intervals
+            # create a TrainStatsLogger object to log training statistics
             self.train_stats_logger = TrainStatsLogger(self.model_dir)
 
             # loop through training steps
@@ -349,19 +344,19 @@ class GQCNNTrainerTF(object):
                 # run optimization
                 step_start = time.time()
                 if self._angular_bins > 0:
-                    _, l, lr, predictions, batch_labels, output, train_images, train_poses, pred_mask = self.sess.run([apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_pred_mask_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
+                    _, l, ur_l, lr, predictions, batch_labels, output, train_images, train_poses, pred_mask = self.sess.run([apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_pred_mask_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
  
                 else:
-                    _, l, lr, predictions, batch_labels, output, train_images, train_poses = self.sess.run(
-                        [apply_grad_op, loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
+                    _, l, ur_l, lr, predictions, batch_labels, output, train_images, train_poses = self.sess.run(
+                        [apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
                 step_stop = time.time()
-                logging.info('Step took %.3f sec' %(step_stop-step_start))
+                logging.info('Step took %.3f sec.' %(step_stop-step_start))
                 
                 if self.training_mode == TrainingMode.REGRESSION:
                     logging.info('Max ' +  str(np.max(predictions)))
                     logging.info('Min ' + str(np.min(predictions)))
                 elif self.cfg['loss'] != 'weighted_cross_entropy':
-                    if self._angular_bins == 0:
+                    if self._angular_bins == 0: #TODO: @Vishal update this to work with angular outputs
                         ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
                         softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 		        
@@ -378,10 +373,8 @@ class GQCNNTrainerTF(object):
                     logging.info('True nonzero ' + str(np.sum(batch_labels > 0.5)))
 
                 if np.isnan(l) or np.any(np.isnan(train_poses)):
-                    logging.info('Encountered NaN in loss or training poses!')
-                    IPython.embed()
-                    logging.info('Exiting...')
-                    break
+                    logging.error('Encountered NaN in loss or training poses!')
+                    raise Exception
                     
                 # log output
                 if step % self.log_frequency == 0:
@@ -409,28 +402,27 @@ class GQCNNTrainerTF(object):
                 # evaluate validation error
                 if step % self.eval_frequency == 0 and step > 0:
                     if self.cfg['eval_total_train_error']:
-                        train_error, train_loss = self._error_rate_in_batches(validation_set=False)
-                        logging.info('Training error: %.3f' %(train_error))
-			logging.info('Training loss: %.3f' %(train_loss))
+                        train_result = self._error_rate_in_batches(validation_set=False)
+                        logging.info('Training error: %.3f' %(train_result.error_rate))
 
                         # update the TrainStatsLogger and save
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_error, total_train_loss=train_loss, val_eval_iter=None, val_error=None, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=train_result.error_rate, total_train_loss=train_result.cross_entropy_loss, val_eval_iter=None, val_error=None, learning_rate=None)
                         self.train_stats_logger.log()
                     
                     if self.train_pct < 1.0:
-                        val_error, val_loss = self._error_rate_in_batches()
-                        self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_error}), step)
-                        logging.info('Validation error: %.3f' %(val_error))
-			logging.info('Validation loss: %.3f' %(val_loss))
+                        val_result = self._error_rate_in_batches()
+                        self.summary_writer.add_summary(self.sess.run(self.merged_eval_summaries, feed_dict={self.val_error_placeholder: val_result.error_rate}), step)
+                        logging.info('Validation error: %.3f' %(val_result.error_rate))
+			logging.info('Validation loss: %.3f' %(val_result.cross_entropy_loss))
                     sys.stdout.flush()
 
                     # update the TrainStatsLogger
                     if self.train_pct < 1.0:
-                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=val_error, val_loss=val_loss, learning_rate=None)
+                        self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_loss=val_result.cross_entropy_loss, val_error=val_result.error_rate, learning_rate=None)
                     else:
                         self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, learning_rate=None)
 
-                    # save everything!
+                    # save the logs
                     self.train_stats_logger.log()
 
                 # save the model
@@ -444,19 +436,19 @@ class GQCNNTrainerTF(object):
                     self._launch_tensorboard()
 
             # get final errors and flush the stdout pipeline
-            final_val_error, final_val_loss = self._error_rate_in_batches()
-            logging.info('Final validation error: %.3f%%' %final_val_error)
-	    logging.info('Final validation loss: %.3f%%' %final_val_loss)
+            final_val_result = self._error_rate_in_batches()
+            logging.info('Final validation error: %.3f%%' %final_val_result.error_rate)
+	    logging.info('Final validation loss: %.3f' %final_val_result.cross_entropy_loss)
             if self.cfg['eval_total_train_error']:
-                final_train_error, final_train_loss = self._error_rate_in_batches(validation_set=False)
-                logging.info('Final training error: {}'.format(final_train_error))
-		logging.info('Final training loss: {}'.format(final_train_loss))
+                final_train_result = self._error_rate_in_batches(validation_set=False)
+                logging.info('Final training error: {}'.format(final_train_result.error_rate))
+		logging.info('Final training loss: {}'.format(final_train_result.cross_entropy_loss))
             sys.stdout.flush()
 
-            # update the TrainStatsLogger 
-            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_error=final_val_error, val_loss=final_val_loss, learning_rate=None)
+            # update the TrainStatsLogger
+            self.train_stats_logger.update(train_eval_iter=None, train_loss=None, train_error=None, total_train_error=None, val_eval_iter=step, val_loss=final_val_result.cross_entropy_loss, val_error=final_val_result.error_rate, learning_rate=None)
 
-            # log & save everything!
+            # log & save everything one last time
             self.train_stats_logger.log()
             self.saver.save(self.sess, os.path.join(self.model_dir, 'model.ckpt'))
 
@@ -470,16 +462,15 @@ class GQCNNTrainerTF(object):
                 del self.sess
             raise
 
-        # check for dead queue
+        # check for dead data prefetch queue
         self._check_dead_queue()
 
-        # close sessions
         self.term_event.set()
 
-        # close tensorboard
+        # close Tensorboard
         self._close_tensorboard()
 
-        # TODO: remove this and figure out why queue thread does not properly exit
+        # TODO: @Vishal remove this and figure out why data prefetch queue thread does not properly exit
         self.sess.close()
 
         # pause and wait for queue thread to exit before continuing
@@ -500,7 +491,7 @@ class GQCNNTrainerTF(object):
         logging.info('Exiting Optimization')
 
     def _compute_data_metrics(self):
-        """ Calculate image mean, image std, pose mean, pose std, normalization params """
+        """Calculate input normalization statistics."""
         # subsample tensors (for faster runtime)
         random_file_indices = np.random.choice(self.num_tensors,
                                                size=self.num_random_files,
@@ -621,7 +612,6 @@ class GQCNNTrainerTF(object):
             # check for invalid values
             if np.any(np.isnan(self.pose_mean)) or np.any(np.isnan(self.pose_std)):
                 logging.error('Pose mean or pose std is NaN! Check the input dataset')
-                IPython.embed()
                 exit(0)
 
         elif self.gqcnn.input_depth_mode == InputDepthMode.SUB:
@@ -721,7 +711,7 @@ class GQCNNTrainerTF(object):
             pct_pos_train = np.load(pct_pos_train_filename)
             pct_pos_val = np.load(pct_pos_val_filename)
         else:
-            logging.info('Computing metric stats')
+            logging.info('Computing grasp quality metric stats')
             all_train_metrics = None
             all_val_metrics = None
     
@@ -766,7 +756,7 @@ class GQCNNTrainerTF(object):
             logging.info('Percent positive in val: ' + str(pct_pos_val))
 
         if self._angular_bins > 0:
-            logging.info('Calculating angular bin statistics...')
+            logging.info('Calculating angular bin statistics.')
             bin_counts = np.zeros((self._angular_bins,))
             for m in range(self.num_tensors):
                 pose_arr = self.dataset.tensor(self.pose_field_name, m).arr
@@ -785,7 +775,7 @@ class GQCNNTrainerTF(object):
             logging.info('Bin counts: {}'.format(bin_counts))
 
     def _compute_split_indices(self):
-        """ Compute train and validation indices for each tensor to speed data accesses"""
+        """Compute train and validation indices for each tensor to speed data accesses."""
         # read indices
         train_indices, val_indices, _ = self.dataset.split(self.split_name)
 
@@ -819,7 +809,7 @@ class GQCNNTrainerTF(object):
             self.val_index_map[i] = np.array(indices)
             
     def _setup_output_dirs(self):
-        """ Setup output directories """
+        """Setup output directories."""
         # create a directory for the model
         if self.model_name is None:
             model_id = utils.gen_experiment_id()
@@ -844,10 +834,10 @@ class GQCNNTrainerTF(object):
         if not os.path.exists(self.filter_dir):
             os.mkdir(self.filter_dir)
 
-        logging.info('Saving model to %s' %(self.model_dir))
+        logging.info('Saving model to: {}'.format(self.model_dir))
             
     def _setup_logging(self):
-        """ Copy the original config files """
+        """Setup logging and save training scripts & configs."""
         # save config
         out_config_filename = os.path.join(self.model_dir, 'config.json')
         tempOrderedDict = collections.OrderedDict()
@@ -877,7 +867,7 @@ class GQCNNTrainerTF(object):
                   indent=GeneralConstants.JSON_INDENT)
         
     def _read_training_params(self):
-        """ Read training parameters from configuration file """
+        """Read training parameters from configuration file."""
         # splits
         self.train_pct = self.cfg['train_pct']
         self.total_pct = self.cfg['total_pct']
@@ -906,14 +896,16 @@ class GQCNNTrainerTF(object):
         self.drop_rate = self.cfg['drop_rate']
         self.max_global_grad_norm = self.cfg['max_global_grad_norm']
         self.optimize_base_layers = False
-        if 'optimize_base_layers' in self.cfg.keys():
+        if 'optimize_base_layers' in self.cfg.keys(): # fine-tuning
             self.optimize_base_layers = self.cfg['optimize_base_layers']
+        self.training_mode = self.cfg['training_mode']
+        if self.training_mode != TrainingMode.CLASSIFICATION:
+            raise ValueError('Training mode %s not currently supported!' %(self.training_mode))
         
-        # metrics
+        # grasp quality metric
         self.target_metric_name = self.cfg['target_metric_name']
         self.metric_thresh = self.cfg['metric_thresh']
-        self.training_mode = self.cfg['training_mode']
-
+       
         # tensorboad
         self._tensorboard_port = self.cfg['tensorboard_port']
         
@@ -921,7 +913,7 @@ class GQCNNTrainerTF(object):
         self.preproc_log_frequency = self.cfg['preproc_log_frequency']
         self.num_random_files = self.cfg['num_random_files']
 
-        # re-weighting positives / negatives
+        # re-weighting positives / negatives (optional)
         self.pos_weight = 0.0
         if 'pos_weight' in self.cfg.keys():
             self.pos_weight = self.cfg['pos_weight']
@@ -938,7 +930,8 @@ class GQCNNTrainerTF(object):
         if self.total_pct < 0 or self.total_pct > 1:
             raise ValueError('Total percentage must be in range [0,1]')
 
-        # normalization
+        # toggle normalization of inputs
+        #TODO: @Vishal integrate this in a cleaner fashion
         self._norm_inputs = True
         if self.gqcnn.input_depth_mode == InputDepthMode.SUB:
             self._norm_inputs = False       
@@ -948,11 +941,11 @@ class GQCNNTrainerTF(object):
 
         # during angular training, make sure symmetrization in denoising is turned off and also set the angular bin width
         if self._angular_bins > 0:
-            assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training'
+            assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training!'
             self._bin_width = GeneralConstants.PI / self._angular_bins
 
     def _setup_denoising_and_synthetic(self):
-        """ Setup denoising and synthetic data parameters """
+        """Setup denoising and data augmentation parameters."""
         # multiplicative denoising
         if self.cfg['multiplicative_denoising']:
             self.gamma_shape = self.cfg['gamma_shape']
@@ -983,7 +976,7 @@ class GQCNNTrainerTF(object):
         self._compute_split_indices()
         
     def _compute_data_params(self):
-        """ Compute parameters of the dataset """
+        """Compute parameters of the dataset."""
         # image params
         self.im_field_name = self.cfg['image_field_name']
         self.im_height = self.dataset.config['fields'][self.im_field_name]['height']
@@ -1016,10 +1009,9 @@ class GQCNNTrainerTF(object):
         self.decay_step = self.decay_step_multiplier * self.num_train
 
     def _setup_tensorflow(self):
-        """Setup Tensorflow placeholders, session, and queue """
-
+        """Setup Tensorflow placeholders, session, and queue."""
         # setup nodes
-        with tf.name_scope('train_data_node'):
+        with tf.name_scope('train_image_node'):
             self.train_data_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.im_channels))
         with tf.name_scope('train_pose_node'):
             self.train_poses_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.pose_dim))
@@ -1033,7 +1025,7 @@ class GQCNNTrainerTF(object):
                 train_label_dtype = tf.float32
                 self.numpy_dtype = np.float32            
         else:
-            raise ValueError('Training mode %s not supported' %(self.training_mode))
+            raise ValueError('Training mode: {} not supported!'.format(self.training_mode))
         with tf.name_scope('train_labels_node'):
             self.train_labels_batch = tf.placeholder(train_label_dtype, (self.train_batch_size,))
         if self._angular_bins > 0:
@@ -1052,10 +1044,10 @@ class GQCNNTrainerTF(object):
                 self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
                 self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
 
-        # get weights
+        # get GQ-CNN weights
         self.weights = self.gqcnn.weights
             
-        # open a tf session for the gqcnn object and store it also as the optimizer session
+        # open a Tensorflow session for the GQ-CNN and store it also as the optimizer session
         self.sess = self.gqcnn.open_session()
 
         # setup term event/dead event
@@ -1065,16 +1057,13 @@ class GQCNNTrainerTF(object):
         self.dead_event.clear()
 
     def _setup_summaries(self):
-        """ Sets up placeholders for summary values and creates summary writer """
-        # we create placeholders for our python values because summary_scalar expects
-        # a placeholder, not simply a python value 
+        """Sets up placeholders for summary values and creates summary writer."""
         self.val_error_placeholder = tf.placeholder(tf.float32, [])
         self.minibatch_error_placeholder = tf.placeholder(tf.float32, [])
         self.minibatch_loss_placeholder = tf.placeholder(tf.float32, [])
         self.learning_rate_placeholder = tf.placeholder(tf.float32, [])
 
-        # we create summary scalars with tags that allow us to group them together so we can write different batches
-        # of summaries at different intervals
+        # we create summary scalars with tags that allow us to group them together so we can write different batches of summaries at different intervals
         tf.summary.scalar('val_error', self.val_error_placeholder, collections=["eval_frequency"])
         tf.summary.scalar('minibatch_error', self.minibatch_error_placeholder, collections=["log_frequency"])
         tf.summary.scalar('minibatch_loss', self.minibatch_loss_placeholder, collections=["log_frequency"])
@@ -1090,12 +1079,12 @@ class GQCNNTrainerTF(object):
             tf.global_variables_initializer().run()
         
     def _setup(self):
-        """ Setup for optimization """
+        """Setup for training."""
 
-        # set up logger
+        # set up logger level
         logging.getLogger().setLevel(logging.INFO)
 
-        # initialize thread exit booleans
+        # initialize data prefetch queue thread exit booleans
         self.queue_thread_exited = False
         self.forceful_exit = False
 
@@ -1112,16 +1101,16 @@ class GQCNNTrainerTF(object):
         # read training parameters from config file
         self._read_training_params()
 
-        # setup image and pose data files
-        self._open_dataset() 
+        # setup dataset metadata
+        self._open_dataset() #TODO: @Vishal rename this because it doesn't really open the dataset, which happens in self._load_and_enqueue()
 
         # compute data parameters
         self._compute_data_params()
  
-        # setup denoising and synthetic data parameters
+        # setup denoising and synthetic data augmentation parameters
         self._setup_denoising_and_synthetic()
           
-        # compute means, std's, and normalization metrics
+        # compute means, std's, and other normalization metrics
         self._compute_data_metrics()
 
         # setup tensorflow session/placeholders/queue
@@ -1131,7 +1120,8 @@ class GQCNNTrainerTF(object):
         self._setup_summaries()
 
     def _load_and_enqueue(self):
-        """ Loads and Enqueues a batch of images for training """
+        """Loads a batch of training images & poses from the dataset and sends it to the prefetch queue."""
+        #TODO: @Vishal refactor this function to refer to 'tensor' instead of 'file'
         # open dataset
         dataset = TensorDataset.open(self.dataset_dir)
 
@@ -1158,7 +1148,7 @@ class GQCNNTrainerTF(object):
                 # compute num remaining
                 num_remaining = self.train_batch_size - num_queued
                 
-                # gen file index uniformly at random
+                # get tensor index uniformly at random
                 file_num = np.random.choice(self.num_tensors, size=1)[0]
 
                 read_start = time.time()
@@ -1169,7 +1159,7 @@ class GQCNNTrainerTF(object):
                 logging.debug('Reading data took %.3f sec' %(read_stop - read_start))
                 logging.debug('File num: %d' %(file_num))
                 
-                # get batch indices uniformly at random
+                # get training indices corresponding to this tensor
                 train_ind = self.train_index_map[file_num]
                 np.random.shuffle(train_ind)
                 if self.gripper_mode == GripperMode.LEGACY_SUCTION:
@@ -1193,7 +1183,7 @@ class GQCNNTrainerTF(object):
                 ind = train_ind[:upper]
                 num_loaded = ind.shape[0]
                 if num_loaded == 0:
-                    logging.debug('Loaded zero examples!!!!')
+                    logging.warning('Queueing zero examples!!!!')
                     continue
                 
                 # subsample data
@@ -1217,18 +1207,20 @@ class GQCNNTrainerTF(object):
                                                                             interp='bicubic', mode='F')
                     train_images_arr = resized_train_images_arr
                 
-                # add noises to images
+                # add noise to images
                 train_images_arr, train_poses_arr = self._distort(train_images_arr, train_poses_arr)
 
-                # slice poses
+                # slice poses with respect to gripper configuration mode
                 train_poses_arr = read_pose_data(train_poses_arr,
                                                  self.gripper_mode)
 
-                # standardize inputs and outputs
+                # standardize inputs
                 if self._norm_inputs:
                     train_images_arr = (train_images_arr - self.im_mean) / self.im_std
-		    if self.gqcnn.input_depth_mode == InputDepthMode.POSE_STREAM:
-                    	train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
+                    if self.gqcnn.input_depth_mode == InputDepthMode.POSE_STREAM:
+                        train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
+
+                # threshold labels
                 train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                 train_label_arr = train_label_arr.astype(self.numpy_dtype)
 
@@ -1289,15 +1281,14 @@ class GQCNNTrainerTF(object):
         del train_poses
         del train_labels
         self.dead_event.set()
-        logging.info('Queue Thread Exiting')
+        logging.info('Queue Thread Exiting...')
         self.queue_thread_exited = True
 
     def _distort(self, image_arr, pose_arr):
-        """ Adds noise to a batch of images """
-        # read params
+        """Augment a batch of images and poses with noise."""
         num_images = image_arr.shape[0]
         
-        # denoising and synthetic data generation
+        # apply multiplicative denoising
         if self.cfg['multiplicative_denoising']:
             mult_samples = ss.gamma.rvs(self.gamma_shape, scale=self.gamma_scale, size=num_images)
             mult_samples = mult_samples[:,np.newaxis,np.newaxis,np.newaxis]
@@ -1341,18 +1332,18 @@ class GQCNNTrainerTF(object):
                 image_arr[i,:,:,0] = train_image
         return image_arr, pose_arr
 
+    #TODO: @Vishal this needs to be renamed as it now returns an object that can be queried for various statistics, not just the error rate
+    #TODO: @Vishal this needs to be refactored to reference a 'tensor' instead of a 'file'
     def _error_rate_in_batches(self, num_files_eval=None, validation_set=True):
-        """ Compute error and loss over either training or validation set
+        """Compute statistics on either the training or validation set. This calls the predict() functionof self.gqcnn to get predictions in batches.
 
         Returns
         -------
-        : float
-            error
-	: float
-	    loss
+        :obj: `autolab_core.BinaryClassificationResult` or `autolab_core.RegressionResult`
+            analysis object that can be queried for statistics
         """
-        error_rates = []
-	losses = []
+        all_predictions = []
+        all_labels = []
 
         # subsample files
         file_indices = np.arange(self.num_tensors)
@@ -1369,11 +1360,11 @@ class GQCNNTrainerTF(object):
             raw_poses = np.array(poses, copy=True)
             labels = self.dataset.tensor(self.label_field_name, i).arr
 
-            # if no datapoints from this file are in validation then just continue
             if validation_set:
                 indices = self.val_index_map[i]
             else:
-                indices = self.train_index_map[i]                    
+                indices = self.train_index_map[i]
+            # if no datapoints from this file are in the validation set then just continue, there better be training datapoints in the file
             if len(indices) == 0:
                 continue
 
@@ -1406,21 +1397,21 @@ class GQCNNTrainerTF(object):
                 
             # get predictions
             predictions = self.gqcnn.predict(images, poses)
+
             if self._angular_bins > 0:
                 predictions = predictions[pred_mask].reshape((-1, 2))            
 
-            # get error rate
-            if self.training_mode == TrainingMode.CLASSIFICATION:
-		classification_result = BinaryClassificationResult(predictions[:,1], labels) 
-                error_rates.append(classification_result.error_rate)
-		losses.append(classification_result.cross_entropy_loss)
-            else:
-                error_rates.append(RegressionResult(predictions, labels).error_rate)
-            
+            # add to all predictions
+            all_predictions.extend(predictions[:,1].tolist())
+            all_labels.extend(labels.tolist())
+                            
             # clean up
             del images
             del poses
-            del labels
 
-        # return average error rate and loss over all files (assuming same size)
-        return np.mean(error_rates), np.mean(losses)
+        # build an analysis object that can be queried for statistics
+        if self.training_mode == TrainingMode.CLASSIFICATION:
+            result = BinaryClassificationResult(all_predictions, all_labels)
+        else:
+            result = RegressionResult(all_predictions, all_labels)
+        return result

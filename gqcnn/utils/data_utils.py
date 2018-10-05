@@ -20,31 +20,36 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Simple utility functions
+Simple utility functions.
 Authors: Jeff Mahler, Vishal Satish, Lucas Manuelli
 """
-import numpy as np
 import os
+import logging
 
-from .enums import GripperMode
+import numpy as np
+
+from enums import GripperMode
 
 def set_cuda_visible_devices(gpu_list):
     """
-    Sets CUDA_VISIBLE_DEVICES environment variable to only show certain gpus
-    If gpu_list is empty does nothing
-    :param gpu_list: list of gpus to set as visible
-    :return: None
+    Sets CUDA_VISIBLE_DEVICES environment variable to only show certain gpus.
+    If gpu_list is empty does nothing.
+
+    Parameters
+    ----------
+    gpu_list : list
+        list of gpus to set as visible
     """
 
     if len(gpu_list) == 0:
         return
 
-    cuda_visible_devices = ""
+    cuda_visible_devices = ''
     for gpu in gpu_list:
-        cuda_visible_devices += str(gpu) + ","
+        cuda_visible_devices += str(gpu) + ','
 
-    print "setting CUDA_VISIBLE_DEVICES = ", cuda_visible_devices
-    os.environ["CUDA_VISIBLE_DEVICES"] = cuda_visible_devices
+    logging.info('Setting CUDA_VISIBLE_DEVICES = {}'.format(cuda_visible_devices))
+    os.environ['CUDA_VISIBLE_DEVICES'] = cuda_visible_devices
 
 def pose_dim(gripper_mode):
     """ Returns the dimensions of the pose vector for the given
@@ -53,7 +58,7 @@ def pose_dim(gripper_mode):
     Parameters
     ----------
     gripper_mode: :obj:`GripperMode`
-        enum for gripper mode, see optimizer_constants.py for all
+        enum for gripper mode, see enums.py for all
         possible gripper modes 
 
     Returns
@@ -73,14 +78,14 @@ def pose_dim(gripper_mode):
         raise ValueError('Gripper mode %s not supported.' %(gripper_mode))
     
 def read_pose_data(pose_arr, gripper_mode):
-    """ Read the pose data and slice it according to the specified gripper_mode
+    """ Read the pose data and slice it according to the specified gripper_mode.
     
     Parameters
     ----------
     pose_arr: :obj:`numpy.ndarray`
-        full pose data array read in from file
+        full pose data array
     gripper_mode: :obj:`GripperMode`
-        enum for gripper mode, see optimizer_constants.py for all
+        enum for gripper mode, see enums.py for all
         possible gripper modes 
 
     Returns
@@ -112,23 +117,24 @@ def read_pose_data(pose_arr, gripper_mode):
         raise ValueError('Gripper mode %s not supported.' %(gripper_mode))
 
 def reduce_shape(shape):
-    """ Get shape of a layer for flattening """
+    """Reduce shape."""
     shape = [x.value for x in shape[1:]]
     f = lambda x, y: 1 if y is None else x * y
     return reduce(f, shape, 1)
 
 def weight_name_to_layer_name(weight_name):
-    """ Convert the name of weights to the layer name """
+    """Extract the layer name from a weight name."""
     tokens = weight_name.split('_')
     type_name = tokens[-1]
 
     # modern naming convention
     if type_name == 'weights' or type_name == 'bias':
+        if len(tokens) >= 3 and tokens[-3] == 'input':
+            return weight_name[:weight_name.rfind('input')-1]            
         return weight_name[:weight_name.rfind(type_name)-1]
-    # legacy
+    # legacy support
     if type_name == 'im':
         return weight_name[:-4]
     if type_name == 'pose':
         return weight_name[:-6]
     return weight_name[:-1]
-    

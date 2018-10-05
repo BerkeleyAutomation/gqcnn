@@ -1,11 +1,3 @@
-# sensor params
-sensor:
-  image_dir: data/rgbd/multiple_objects
-  type: virtual_primesense
-  frame: primesense_overhead
-calib_dir: data/calib
-
-# policy params
 policy:
   # optimization params
   num_seed_samples: 200

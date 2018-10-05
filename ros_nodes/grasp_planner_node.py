@@ -21,24 +21,24 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """ 
-ROS Server for planning GQCNN grasps 
+ROS server for planning GQCNN grasps 
 Author: Vishal Satish
 """
 import math
-import numpy as np
-import rospy
 import time
 
+import numpy as np
+import rospy
 from cv_bridge import CvBridge, CvBridgeError
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Header
 
 from autolab_core import YamlConfig
-from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D
-from gqcnn import NoValidGraspsException
 from perception import CameraIntrinsics, ColorImage, DepthImage, BinaryImage, RgbdImage
 from visualization import Visualizer2D as vis
 
-from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import Header
+from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D
+from gqcnn import NoValidGraspsException
 from gqcnn.srv import GQCNNGraspPlanner
 from gqcnn.msg import GQCNNGrasp
 
