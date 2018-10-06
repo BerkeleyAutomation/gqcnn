@@ -209,11 +209,11 @@ class GraspingPolicy(Policy):
                                                                    self._sampling_config)
 
         # init constraint function
-        self._constraint_function = None
+        self._grasp_constraint_fn = None
         if 'constraints' in self._config.keys():
             self._constraint_config = self._config['constraints']
             constraint_type = self._constraint_config['type']
-            self._constraint_function = GraspConstraintFnFactory.constraint_fn(constraint_type,
+            self._grasp_constraint_fn = GraspConstraintFnFactory.constraint_fn(constraint_type,
                                                                                self._constraint_config)
                     
         # init grasp quality function
@@ -248,7 +248,7 @@ class GraspingPolicy(Policy):
         return self._gqcnn
 
     def set_constraint_fn(self, constraint_fn):
-        self._constraint_fn = constraint_fn    
+        self._grasp_constraint_fn = constraint_fn    
     
     def action(self, state):
         """ Returns an action for a given state.
@@ -327,7 +327,7 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
                                             self._num_grasp_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
-                                            constraint_fn=self._constraint_fn,
+                                            constraint_fn=self._grasp_constraint_fn,
                                             seed=None)
         num_grasps = len(grasps)
         if num_grasps == 0:
@@ -437,7 +437,7 @@ class RobustGraspingPolicy(GraspingPolicy):
                                             self._num_grasp_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
-                                            constraint_fn=self._constraint_fn,
+                                            constraint_fn=self._grasp_constraint_fn,
                                             seed=None)
         num_grasps = len(grasps)
         if num_grasps == 0:
@@ -463,13 +463,16 @@ class RobustGraspingPolicy(GraspingPolicy):
                           show_axis=True,
                           color=plt.cm.RdYlBu(q))
                 vis.title('Sampled grasps')
-                self.show('grasp_candidates.png')
+            filename = None
+            if self._logging_dir is not None:
+                filename = os.path.join(self._logging_dir, 'grasp_candidates.png')
+            vis.show(filename)
 
         # select grasp
         index = self.select(grasps, q_values)
         grasp = grasps[index]
         q_value = q_values[index]
-        if self.config['vis']['grasp_plane']:
+        if self.config['vis']['grasp_plan']:
             vis.figure()
             vis.imshow(rgbd_im.depth,
                        vmin=self.config['vis']['vmin'],
@@ -638,7 +641,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                             self._num_seed_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
-                                            constraint_fn=self._constraint_fn,
+                                            constraint_fn=self._grasp_constraint_fn,
                                             seed=self._seed)
         
         num_grasps = len(grasps)
@@ -786,7 +789,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                          grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
                          np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0) and \
                          grasp.approach_angle < self._max_approach_angle) and \
-                         (self._constraint_fn is not None and self._constraint_fn(grasp)):
+                         (self._grasp_constraint_fn is None or self._grasp_constraint_fn(grasp)):
 
                         # check validity according to filters
                         grasps.append(grasp)
@@ -841,7 +844,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         -------
         :obj:`GraspAction`
             grasp to execute
-        """            
+        """
+        # plan grasps
+        grasps, q_values = self._action_set(state)
+
         # select grasp
         index = self.select(grasps, q_values)
         grasp = grasps[index]
@@ -1019,7 +1025,7 @@ class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
                                             self._num_seed_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
-                                            constraint_fn=self._constraint_fn,
+                                            constraint_fn=self._grasp_constraint_fn,
                                             seed=self._seed)
         
         num_grasps = len(grasps)

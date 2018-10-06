@@ -361,6 +361,9 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         if num_pixels == 0:
             return []
 
+        # compute point cloud
+        point_cloud_im = camera_intr.deproject_to_image(depth_im_mask)
+        
         # compute_max_depth
         min_depth = np.min(depth_im_mask.data[depth_im_mask.data > 0]) + self._min_depth_offset
         max_depth = np.max(depth_im_mask.data[depth_im_mask.data > 0]) + self._max_depth_offset
@@ -457,9 +460,15 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
             grasp_theta = np.pi / 2
             if grasp_axis[1] != 0:
-                grasp_theta = np.arctan(grasp_axis[0] / grasp_axis[1])
+                grasp_theta = np.arctan2(grasp_axis[0], grasp_axis[1])
             grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
 
+            # compute grasp points in 3D
+            x1 = point_cloud_im[p1[0], p1[1]]
+            x2 = point_cloud_im[p2[0], p2[1]]
+            if np.linalg.norm(x2-x1) > self._gripper_width:
+                continue
+            
             # perturb
             if self._grasp_center_sigma > 0.0:
                 grasp_center_pt = grasp_center_pt + ss.multivariate_normal.rvs(cov=self._grasp_center_sigma*np.diag(np.ones(2)))

@@ -32,6 +32,7 @@ import logging
 import IPython
 import numpy as np
 import os
+import skimage
 import sys
 import time
 
@@ -39,7 +40,7 @@ from autolab_core import RigidTransform, YamlConfig
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 
-from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState
+from gqcnn import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState
 
 if __name__ == '__main__':
     # set up logger
@@ -80,7 +81,7 @@ if __name__ == '__main__':
     # make relative paths absolute
     if model_dir is not None:
         policy_config['metric']['gqcnn_model'] = model_dir
-    if not os.path.isabs(policy_config['metric']['gqcnn_model']):
+    if 'gqcnn_model' in policy_config['metric'].keys() and not os.path.isabs(policy_config['metric']['gqcnn_model']):
         policy_config['metric']['gqcnn_model'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                               '..',
                                                               policy_config['metric']['gqcnn_model'])
@@ -89,22 +90,72 @@ if __name__ == '__main__':
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
         
     # read images
-    depth_im = DepthImage.open(depth_im_filename, frame=camera_intr.frame)
-    depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
+    depth_data = np.load(depth_im_filename)
+    depth_data = depth_data.astype(np.float32) / 1000.0
+    depth_im = DepthImage(depth_data, frame=camera_intr.frame)
     color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
                           frame=camera_intr.frame)
     
     # optionally read a segmask
-    segmask = None
+    mask = np.zeros(
+        (camera_intr.height, camera_intr.width, 1), dtype=np.uint8)
+    c = np.array([165, 460, 500, 135])
+    r = np.array([165, 165, 370, 370])
+    rr, cc = skimage.draw.polygon(r, c, shape=mask.shape)
+    mask[rr, cc, 0] = 255
+    segmask = BinaryImage(mask)
     if segmask_filename is not None:
         segmask = BinaryImage.open(segmask_filename)
+    valid_px_mask = depth_im.invalid_pixel_mask().inverse()
+    if segmask is None:
+        segmask = valid_px_mask
+    else:
+        segmask = segmask.mask_binary(valid_px_mask)
     
+    # inpaint
+    depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
+        
+    if 'input_images' in policy_config['vis'].keys() and policy_config['vis']['input_images']:
+        vis.figure(size=(10,10))
+        num_plot = 1
+        if segmask is not None:
+            num_plot = 2
+        vis.subplot(1,num_plot,1)
+        vis.imshow(depth_im)
+        if segmask is not None:
+            vis.subplot(1,num_plot,2)
+            vis.imshow(segmask)
+        vis.show()
+        
+        from autolab_core import PointCloud, RigidTransform
+        from visualization import Visualizer3D as vis3d
+        R = RigidTransform.y_axis_rotation(-np.pi/32)
+        R = RigidTransform.x_axis_rotation(27*np.pi/32).dot(R)
+        t = np.array([0, 0, 0.525])
+        T_world_camera = RigidTransform(rotation=R,
+                                        translation=t,
+                                        from_frame='world',
+                                        to_frame=camera_intr.frame)
+        
+        point_cloud = camera_intr.deproject(depth_im)
+        vis3d.figure()
+        vis3d.points(point_cloud, subsample=3, random=True, color=(0,0,1), scale=0.001)
+        vis3d.pose(RigidTransform())
+        vis3d.pose(T_world_camera)
+        vis3d.show()
+        
     # create state
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
     state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
 
     # init policy
-    policy = CrossEntropyRobustGraspingPolicy(policy_config)
+    policy_type = 'cem'
+    if 'type' in policy_config.keys():
+        policy_type = policy_config['type']
+    if policy_type == 'ranking':
+        policy = RobustGraspingPolicy(policy_config)
+    else:
+        policy = CrossEntropyRobustGraspingPolicy(policy_config)
     policy_start = time.time()
     action = policy(state)
     logging.info('Planning took %.3f sec' %(time.time() - policy_start))
@@ -112,7 +163,9 @@ if __name__ == '__main__':
     # vis final grasp
     if policy_config['vis']['final_grasp']:
         vis.figure(size=(10,10))
-        vis.imshow(rgbd_im.depth, vmin=0.6, vmax=0.9)
+        vis.imshow(rgbd_im.depth,
+                   vmin=policy_config['vis']['vmin'],
+                   vmax=policy_config['vis']['vmax'])
         vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
         vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
         vis.show()
