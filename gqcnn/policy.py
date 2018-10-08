@@ -637,6 +637,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             vis.show(filename)
                   
         # sample grasps
+        logging.info('Sampling seed set')
         grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
                                             self._num_seed_samples,
                                             segmask=segmask,

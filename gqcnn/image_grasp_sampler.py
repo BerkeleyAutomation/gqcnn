@@ -357,10 +357,6 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         logging.debug('Depth edge detection took %.3f sec' %(time() - edge_start))
         logging.debug('Found %d edge pixels' %(num_pixels))
 
-        # exit if no edge pixels
-        if num_pixels == 0:
-            return []
-
         # compute point cloud
         point_cloud_im = camera_intr.deproject_to_image(depth_im_mask)
         
@@ -396,6 +392,10 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             vis.title('Segmask')
             vis.show()
 
+        # exit if no edge pixels
+        if num_pixels == 0:
+            return []
+            
         # form set of valid candidate point pairs
         pruning_start = time()
         max_grasp_width_px = Grasp2D(Point(np.zeros(2)), 0.0, min_depth,

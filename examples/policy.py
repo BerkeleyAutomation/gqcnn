@@ -91,19 +91,12 @@ if __name__ == '__main__':
         
     # read images
     depth_data = np.load(depth_im_filename)
-    depth_data = depth_data.astype(np.float32) / 1000.0
     depth_im = DepthImage(depth_data, frame=camera_intr.frame)
     color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
                           frame=camera_intr.frame)
     
     # optionally read a segmask
-    mask = np.zeros(
-        (camera_intr.height, camera_intr.width, 1), dtype=np.uint8)
-    c = np.array([165, 460, 500, 135])
-    r = np.array([165, 165, 370, 370])
-    rr, cc = skimage.draw.polygon(r, c, shape=mask.shape)
-    mask[rr, cc, 0] = 255
-    segmask = BinaryImage(mask)
+    segmask = None
     if segmask_filename is not None:
         segmask = BinaryImage.open(segmask_filename)
     valid_px_mask = depth_im.invalid_pixel_mask().inverse()
@@ -126,23 +119,6 @@ if __name__ == '__main__':
             vis.subplot(1,num_plot,2)
             vis.imshow(segmask)
         vis.show()
-        
-        from autolab_core import PointCloud, RigidTransform
-        from visualization import Visualizer3D as vis3d
-        R = RigidTransform.y_axis_rotation(-np.pi/32)
-        R = RigidTransform.x_axis_rotation(27*np.pi/32).dot(R)
-        t = np.array([0, 0, 0.525])
-        T_world_camera = RigidTransform(rotation=R,
-                                        translation=t,
-                                        from_frame='world',
-                                        to_frame=camera_intr.frame)
-        
-        point_cloud = camera_intr.deproject(depth_im)
-        vis3d.figure()
-        vis3d.points(point_cloud, subsample=3, random=True, color=(0,0,1), scale=0.001)
-        vis3d.pose(RigidTransform())
-        vis3d.pose(T_world_camera)
-        vis3d.show()
         
     # create state
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
