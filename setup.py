@@ -27,12 +27,14 @@ from setuptools import setup
 
 requirements = [
     'autolab_core',
-    'numpy',
+    'autolab_perception'
+    'visualization',
+    'numpy<=1.14.1',
     'scipy',
-    'matplotlib',
+    'matplotlib<=2.2.0',
     'opencv-python',
     'tensorflow==1.3.0',
-    'ipython',
+    'ipython==5.5.0',
     'scikit-image',
     'scikit-learn'
 ]
