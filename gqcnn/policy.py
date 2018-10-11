@@ -123,10 +123,11 @@ class RgbdImageState(object):
 class GraspAction(object):
     """ Action to encapsulate grasps.
     """
-    def __init__(self, grasp, q_value, image):
+    def __init__(self, grasp, q_value, image, policy_name=None):
         self.grasp = grasp
         self.q_value = q_value
         self.image = image
+        self.policy_name = policy_name
 
     def save(self, save_dir):
         if not os.path.exists(save_dir):
@@ -595,8 +596,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 return index
             i += 1
         raise NoValidGraspsException('No grasps satisfied filters')
-
-    def _action_set(self, state):
+    
+    def action_set(self, state):
         """ Plans the grasp with the highest probability of success on
         the given RGB-D image.
 
@@ -847,7 +848,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             grasp to execute
         """
         # plan grasps
-        grasps, q_values = self._action_set(state)
+        grasps, q_values = self.action_set(state)
 
         # select grasp
         index = self.select(grasps, q_values)
@@ -1063,3 +1064,131 @@ class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
         # return action
         return GraspAction(grasp, q_value, image)
 
+class CompositeGraspingPolicy(Policy):
+    """Grasping policy composed of multiple sub-policies
+
+    Attributes
+    ----------
+    policies : dict mapping str to `gqcnn.GraspingPolicy`
+        key-value dict mapping policy names to grasping policies
+    """
+    def __init__(self, policies):
+        self._policies = policies
+
+    @property
+    def policies(self):
+        return self._policies
+
+    def subpolicy(self, name):
+        return self._policies[name]
+
+    def set_constraint_fn(self, constraint_fn):
+        for policy in self._policies:
+            policy.set_constraint_fn(constraint_fn)
+    
+class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
+    def __init__(self, policies, priority_list):
+        # check validity
+        for name in priority_list:
+            if str(name) not in policies.keys():
+                raise ValueError('Policy named %s is not in the list of policies!' %(name))
+
+        self._priority_list = priority_list
+        CompositeGraspingPolicy.__init__(self, policies)
+
+    @property
+    def priority_list(self):
+        return self._priority_list
+        
+    def action(self, state, policy_subset=None, min_q_value=-1.0):
+        """ Returns an action for a given state.
+        """
+        action = None
+        i = 0
+        max_q = min_q_value
+        while action is None and max_q <= min_q_value and i < len(self._priority_list):
+            name = self._priority_list[i]
+            if policy_subset is not None and name not in policy_subset:
+                i += 1
+                continue
+            try:
+                action = self.policies[policy_name].action(state)
+                action.policy_name = name
+                max_q = action.q_value
+            except NoValidGraspsException:
+                pass
+            i += 1
+        if action is None:
+            raise NoValidGraspsException()
+        return action
+
+    def action_set(self, state, policy_subset=None, min_q_value=-1.0):
+        """ Returns an action for a given state.
+        """
+        actions = None
+        q_values = None
+        i = 0
+        max_q = min_q_value
+        while actions is None and max_q <= min_q_value and i < len(self._priority_list):
+            name = self._priority_list[i]
+            if policy_subset is not None and name not in policy_subset:
+                i += 1
+                continue
+            try:
+                actions, q_values = self.policies[name].action_set(state)
+                for action in actions:
+                    action.policy_name = name
+                max_q = np.max(q_values)
+            except NoValidGraspsException:
+                pass
+            i += 1
+        if actions is None:
+            raise NoValidGraspsException()
+        return actions, q_values    
+
+class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
+    def __init__(self, policies):
+        CompositeGraspingPolicy.__init__(self, policies)
+
+    def action(self, state, policy_subset=None, min_q_value=-1.0):
+        """ Returns an action for a given state.
+        """
+        # compute all possible actions
+        actions = []
+        for name, policy in self.policies.iteritems():
+            if policy_subset is not None and name not in policy_subset:
+                continue
+            try:
+                action = policy.action(state)
+                action.policy_name = name
+                actions.append()
+            except NoActionFoundException:
+                pass
+
+        if len(actions) == 0:
+            raise NoValidGraspsException()
+            
+        # rank based on q value
+        actions.sort(key = lambda x: x.q_value, reverse=True)
+        return actions[0]
+
+    def action_set(self, state, policy_subset=None, min_q_value=-1.0):
+        """ Returns an action for a given state.
+        """
+        actions = []
+        q_values = []
+        for name, policy in self.policies.iteritems():
+            if policy_subset is not None and name not in policy_subset:
+                continue
+            try:
+                action_set, q_vals = self.policies[name].action_set(state)
+                for action in action_set:
+                    action.policy_name = name
+                actions.extend(action_set)
+                q_values.extend(q_vals)
+            except NoValidGraspsException:
+                continue
+        if actions is None:
+            raise NoValidGraspsException()
+        return actions, q_values
+    
