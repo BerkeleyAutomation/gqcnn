@@ -27,7 +27,7 @@ from setuptools import setup
 
 requirements = [
     'autolab_core',
-    'autolab_perception'
+    'autolab_perception',
     'visualization',
     'numpy<=1.14.1',
     'scipy',
