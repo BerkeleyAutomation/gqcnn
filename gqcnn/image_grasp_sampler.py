@@ -631,7 +631,11 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         """
         # compute edge pixels
         filter_start = time()
-        depth_im_mask = depth_im.copy()
+        if self._depth_gaussian_sigma > 0:
+            depth_im_mask = depth_im.apply(snf.gaussian_filter,
+                                           sigma=self._depth_gaussian_sigma)
+        else:
+            depth_im_mask = depth_im.copy()
         if segmask is not None:
             depth_im_mask = depth_im.mask_binary(segmask)
         logging.debug('Filtering took %.3f sec' %(time() - filter_start)) 
@@ -653,7 +657,6 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         if num_nonzero_px == 0:
             return []
         logging.debug('Normal cloud took %.3f sec' %(time() - cloud_start)) 
-
         
         # randomly sample points and add to image
         sample_start = time()
@@ -826,7 +829,11 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
         """
         # compute edge pixels
         filter_start = time()
-        depth_im_mask = depth_im.copy()
+        if self._depth_gaussian_sigma > 0:
+            depth_im_mask = depth_im.apply(snf.gaussian_filter,
+                                           sigma=self._depth_gaussian_sigma)
+        else:
+            depth_im_mask = depth_im.copy()
         if segmask is not None:
             depth_im_mask = depth_im.mask_binary(segmask)
         logging.debug('Filtering took %.3f sec' %(time() - filter_start)) 
@@ -849,7 +856,6 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
             return []
         logging.debug('Normal cloud took %.3f sec' %(time() - cloud_start)) 
 
-        
         # randomly sample points and add to image
         sample_start = time()
         suction_points = []

@@ -35,6 +35,7 @@ import sys
 from time import time
 
 from sklearn.mixture import GaussianMixture
+import scipy.ndimage.filters as snf
 
 import autolab_core.utils as utils
 from autolab_core import Point
@@ -536,6 +537,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         self._gmm_component_frac = self.config['gmm_component_frac']
         self._gmm_reg_covar = self.config['gmm_reg_covar']
 
+        self._depth_gaussian_sigma = 0.0
+        if 'depth_gaussian_sigma' in self.config.keys():
+            self._depth_gaussian_sigma = self.config['depth_gaussian_sigma']
+        
         self._max_grasps_filter = 1
         if 'max_grasps_filter' in self.config.keys():
             self._max_grasps_filter = self.config['max_grasps_filter']
@@ -621,7 +626,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         depth_im = rgbd_im.depth
         camera_intr = state.camera_intr
         segmask = state.segmask
-        point_cloud_im = camera_intr.deproject_to_image(depth_im)
+
+        if self._depth_gaussian_sigma > 0:
+            depth_im_filtered = depth_im.apply(snf.gaussian_filter,
+                                               sigma=self._depth_gaussian_sigma)
+        else:
+            depth_im_filtered = depth_im
+        point_cloud_im = camera_intr.deproject_to_image(depth_im_filtered)
         normal_cloud_im = point_cloud_im.normal_cloud_im()
 
         if 'input_images' in self.config['vis'].keys() and self.config['vis']['input_images']:
@@ -847,6 +858,12 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         :obj:`GraspAction`
             grasp to execute
         """
+        # parse state
+        rgbd_im = state.rgbd_im
+        depth_im = rgbd_im.depth
+        camera_intr = state.camera_intr
+        segmask = state.segmask
+
         # plan grasps
         grasps, q_values = self.action_set(state)
 
