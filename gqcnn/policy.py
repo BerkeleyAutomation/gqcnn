@@ -1123,7 +1123,8 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
         action = None
         i = 0
         max_q = min_q_value
-        while action is None and max_q <= min_q_value and i < len(self._priority_list):
+
+        while action is None or (max_q <= min_q_value and i < len(self._priority_list)):
             name = self._priority_list[i]
             if policy_subset is not None and name not in policy_subset:
                 i += 1
@@ -1145,8 +1146,8 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
         actions = None
         q_values = None
         i = 0
-        max_q = min_q_value
-        while actions is None and max_q <= min_q_value and i < len(self._priority_list):
+        max_q = min_q_value        
+        while actions is None or (max_q <= min_q_value and i < len(self._priority_list)):
             name = self._priority_list[i]
             if policy_subset is not None and name not in policy_subset:
                 i += 1
