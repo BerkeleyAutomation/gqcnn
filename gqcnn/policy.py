@@ -1129,6 +1129,7 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
             if policy_subset is not None and name not in policy_subset:
                 i += 1
                 continue
+            logging.info('Planning action for sub-policy {}'.format(name))
             try:
                 action = self.policies[policy_name].action(state)
                 action.policy_name = name
@@ -1152,6 +1153,7 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
             if policy_subset is not None and name not in policy_subset:
                 i += 1
                 continue
+            logging.info('Planning action set for sub-policy {}'.format(name))
             try:
                 actions, q_values = self.policies[name].action_set(state)
                 for action in actions:
