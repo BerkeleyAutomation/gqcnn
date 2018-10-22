@@ -33,7 +33,7 @@ requirements = [
     'scipy',
     'matplotlib<=2.2.0',
     'opencv-python',
-    'tensorflow==1.3.0',
+    'tensorflow==1.8.0',
     'ipython==5.5.0',
     'scikit-image',
     'scikit-learn'
