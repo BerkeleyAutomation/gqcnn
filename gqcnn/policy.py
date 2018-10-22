@@ -124,7 +124,7 @@ class RgbdImageState(object):
 class GraspAction(object):
     """ Action to encapsulate grasps.
     """
-    def __init__(self, grasp, q_value, image, policy_name=None):
+    def __init__(self, grasp, q_value, image=None, policy_name=None):
         self.grasp = grasp
         self.q_value = q_value
         self.image = image
@@ -138,7 +138,8 @@ class GraspAction(object):
         image_filename = os.path.join(save_dir, 'tf_image.npy')
         pkl.dump(self.grasp, open(grasp_filename, 'wb'))
         pkl.dump(self.q_value, open(q_value_filename, 'wb'))
-        self.image.save(image_filename)
+        if self.image is not None:
+            self.image.save(image_filename)
 
     @staticmethod
     def load(save_dir):
@@ -149,7 +150,9 @@ class GraspAction(object):
         image_filename = os.path.join(save_dir, 'tf_image.npy')
         grasp = pkl.load(open(grasp_filename, 'rb'))
         q_value = pkl.load(open(q_value_filename, 'rb'))
-        image = DepthImage.open(image_filename)
+        image = None
+        if os.path.exists(image_filename):
+            image = DepthImage.open(image_filename)
         return GraspAction(grasp, q_value, image)
         
 class Policy(object):
