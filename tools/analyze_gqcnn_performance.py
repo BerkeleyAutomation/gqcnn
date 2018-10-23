@@ -46,10 +46,16 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_config_filename', type=str, default=None, help='path to a configuration file for testing on a custom dataset')
     parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
     args = parser.parse_args()
-    model_dir = args.model_dir
+    model_dir = [args.model_dir]
     output_dir = args.output_dir
     dataset_config_filename = args.dataset_config_filename
     config_filename = args.config_filename
+
+    # if model_dir contains many models, analyze each of them
+    if 'config.json' not in os.listdir(model_dir[0]):
+        logging.warning('Found multiple models in model_dir, analyzing all of them...')
+        models = os.listdir(model_dir[0])
+        model_dir = [os.path.join(model_dir[0], model) for model in models]
 
     # set defaults
     if output_dir is None:
@@ -80,5 +86,6 @@ if __name__ == '__main__':
         dataset_config = YamlConfig(dataset_config_filename)
     
     # run the analyzer
-    analyzer = GQCNNAnalyzer(config)
-    analyzer.analyze(model_dir, output_dir, dataset_config)
+    analyzer = GQCNNAnalyzer(config, plot_backend='pdf')
+    for model in model_dir:
+        analyzer.analyze(model, output_dir, dataset_config)
