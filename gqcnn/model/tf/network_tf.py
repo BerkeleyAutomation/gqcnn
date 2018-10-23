@@ -25,16 +25,17 @@ Authors: Vishal Satish, Jeff Mahler
 """
 import json
 from collections import OrderedDict
-import logging
 import os
 import math
 import time
+import operator
+import sys
 
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf
 
-from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode, InputDepthMode
+from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode, InputDepthMode, get_logger
 
 class GQCNNWeights(object):
     """Helper struct for storing network weights."""
@@ -44,7 +45,7 @@ class GQCNNWeights(object):
 class GQCNNTF(object):
     """GQ-CNN network implemented in Tensorflow."""
 
-    def __init__(self, gqcnn_config):
+    def __init__(self, gqcnn_config, verbose=True, logger=None):
         """
         Parameters
         ----------
@@ -52,12 +53,18 @@ class GQCNNTF(object):
             python dictionary of network configuration parameters
         """
         self._sess = None
-        self._weights = GQCNNWeights()
         self._graph = tf.Graph()
+        self._logger = logger
+
+        # set up logger
+        if self._logger is None:
+            self._logger = get_logger(self.__class__.__name__, log_stream=(sys.stdout if verbose else None))
+
+        self._weights = GQCNNWeights()
         self._parse_config(gqcnn_config)
 
     @staticmethod
-    def load(model_dir):
+    def load(model_dir, verbose=True, logger=None):
         """Instantiate a trained GQ-CNN for fine-tuning or inference. 
 
         Parameters
@@ -160,7 +167,7 @@ class GQCNNTF(object):
                 gqcnn_config['architecture'] = new_arch_config
                 
         # initialize weights and Tensorflow network
-        gqcnn = GQCNNTF(gqcnn_config)
+        gqcnn = GQCNNTF(gqcnn_config, verbose=verbose, logger=logger)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         gqcnn.init_mean_and_std(model_dir)
         training_mode = train_config['training_mode']
@@ -221,7 +228,7 @@ class GQCNNTF(object):
         """
         # check architecture
         if 'base_model' not in self._architecture.keys():
-            logging.warning('Architecuture has no base model. The network has not been modified')
+            self._logger.warning('Architecuture has no base model. The network has not been modified')
             return False
         base_model_config = self._architecture['base_model']
         output_layer = base_model_config['output_layer']
@@ -341,7 +348,7 @@ class GQCNNTF(object):
                 self._gripper_mode = GripperMode.PARALLEL_JAW
             else:
                 raise ValueError('Legacy input data mode: {} not supported!'.format(self._input_data_mode))
-            logging.warning('Could not read gripper mode. Attempting legacy conversion to: {}'.format(self._gripper_mode))
+            self._logger.warning('Could not read gripper mode. Attempting legacy conversion to: {}'.format(self._gripper_mode))
             
         # setup gripper pose dimension depending on gripper mode
         self._pose_dim = pose_dim(self._gripper_mode)
@@ -442,9 +449,9 @@ class GQCNNTF(object):
     def open_session(self):
         """Open Tensorflow session."""
         if self._sess is not None:
-            logging.warning('Found already initialized TF Session...')
+            self._logger.warning('Found already initialized TF Session...')
             return self._sess
-        logging.info('Initializing TF Session...')
+        self._logger.info('Initializing TF Session...')
         with self._graph.as_default():
             init = tf.global_variables_initializer()
             self.tf_config = tf.ConfigProto()
@@ -457,9 +464,9 @@ class GQCNNTF(object):
     def close_session(self):
         """Close Tensorflow session."""
         if self._sess is None:
-            logging.warning('No TF Session to close...')
+            self._logger.warning('No TF Session to close...')
             return
-        logging.info('Closing TF Session...')
+        self._logger.info('Closing TF Session...')
         with self._graph.as_default():
             self._sess.close()
             self._sess = None
@@ -531,6 +538,10 @@ class GQCNNTF(object):
     @property
     def angular_bins(self):
         return self._angular_bins
+
+    @property
+    def stride(self):
+        return reduce(operator.mul, [layer['pool_stride'] for layer in self._architecture['im_stream'].values() if layer['type']=='conv'])
 
     @property
     def filters(self):
@@ -660,18 +671,18 @@ class GQCNNTF(object):
         """Adds softmax to output of network."""
         with tf.name_scope('softmax'):
             if self._angular_bins > 0:
-                logging.info('Building Pair-wise Softmax Layer...')
+                self._logger.info('Building Pair-wise Softmax Layer...')
                 binwise_split_output = tf.split(self._output_tensor, self._angular_bins, axis=-1)
                 binwise_split_output_soft = [tf.nn.softmax(s) for s in binwise_split_output]
                 self._output_tensor = tf.concat(binwise_split_output_soft, -1)
             else:
-                logging.info('Building Softmax Layer...')
+                self._logger.info('Building Softmax Layer...')
                 self._output_tensor = tf.nn.softmax(self._output_tensor)
 
     def add_sigmoid_to_output(self):
         """Adds sigmoid to output of network."""
         with tf.name_scope('sigmoid'):
-            logging.info('Building Sigmoid Layer...')
+            self._logger.info('Building Sigmoid Layer...')
             self._output_tensor = tf.nn.sigmoid(self._output_tensor)
 
     def update_batch_size(self, batch_size):
@@ -700,7 +711,7 @@ class GQCNNTF(object):
         start_time = time.time()
 
         if verbose:
-            logging.info('Predicting...')
+            self._logger.info('Predicting...')
 
         # setup for prediction
         num_batches = math.ceil(image_arr.shape[0] / self._batch_size)
@@ -719,7 +730,7 @@ class GQCNNTF(object):
             batch_idx = 0
             while i < num_images:
                 if verbose:
-                    logging.info('Predicting batch {} of {}...'.format(batch_idx, num_batches))
+                    self._logger.info('Predicting batch {} of {}...'.format(batch_idx, num_batches))
                 batch_idx += 1
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
@@ -751,7 +762,7 @@ class GQCNNTF(object):
         # get total prediction time
         pred_time = time.time() - start_time
         if verbose:
-            logging.info('Prediction took {} seconds.'.format(pred_time))
+            self._logger.info('Prediction took {} seconds.'.format(pred_time))
 
         return output_arr
 
@@ -788,7 +799,7 @@ class GQCNNTF(object):
         start_time = time.time()
 
         if verbose:
-            logging.info('Featurizing...')
+            self._logger.info('Featurizing...')
 
         if feature_layer not in self._feature_tensors.keys():
             raise ValueError('Feature layer: {} not recognized.'.format(feature_layer))
@@ -809,7 +820,7 @@ class GQCNNTF(object):
             i = 0
             while i < num_images:
                 if verbose:
-                    logging.info('Featurizing {} of {}...'.format(i, num_images))
+                    self._logger.info('Featurizing {} of {}...'.format(i, num_images))
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
                 end_ind = cur_ind + dim
@@ -834,7 +845,7 @@ class GQCNNTF(object):
                 i = end_ind
 
         if verbose:
-            logging.info('Featurization took {} seconds'.format(time.time() - start_time))
+            self._logger.info('Featurization took {} seconds'.format(time.time() - start_time))
 
         # truncate extraneous values off of end of output_arr
         output_arr = output_arr[:num_images] #TODO: @Jeff, this isn't needed, right?
@@ -844,18 +855,18 @@ class GQCNNTF(object):
         return tf.maximum(alpha * x, x)
     
     def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, pad='SAME'):
-        logging.info('Building convolutional layer: {}...'.format(name))       
+        self._logger.info('Building convolutional layer: {}...'.format(name))       
         with tf.name_scope(name):
             # initialize weights
             if '{}_weights'.format(name) in self._weights.weights.keys():
                 convW = self._weights.weights['{}_weights'.format(name)]
                 convb = self._weights.weights['{}_bias'.format(name)] 
             elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
-                logging.info('Using old format for layer {}.'.format(name))
+                self._logger.info('Using old format for layer {}.'.format(name))
                 convW = self._weights.weights['{}W'.format(name)]
                 convb = self._weights.weights['{}b'.format(name)] 
             else:
-                logging.info('Reinitializing layer {}.'.format(name))
+                self._logger.info('Reinitializing layer {}.'.format(name))
                 convW_shape = [filter_h, filter_w, input_channels, num_filt]
 
                 fan_in = filter_h * filter_w * input_channels
@@ -897,18 +908,18 @@ class GQCNNTF(object):
             return pool, out_height, out_width, out_channels
 
     def _build_fc_layer(self, input_node, fan_in, out_size, name, input_is_multi, drop_rate, final_fc_layer=False):
-        logging.info('Building fully connected layer: {}...'.format(name))
+        self._logger.info('Building fully connected layer: {}...'.format(name))
         
         # initialize weights
         if '{}_weights'.format(name) in self._weights.weights.keys():
             fcW = self._weights.weights['{}_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
         elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
-            logging.info('Using old format for layer {}.'.format(name))
+            self._logger.info('Using old format for layer {}.'.format(name))
             fcW = self._weights.weights['{}W'.format(name)]
             fcb = self._weights.weights['{}b'.format(name)] 
         else:
-            logging.info('Reinitializing layer {}.'.format(name))
+            self._logger.info('Reinitializing layer {}.'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std), name='{}_weights'.format(name))
             if final_fc_layer:
@@ -937,18 +948,18 @@ class GQCNNTF(object):
 
     #TODO: This really doesn't need to it's own layer type...it does the same thing as _build_fc_layer()
     def _build_pc_layer(self, input_node, fan_in, out_size, name):
-        logging.info('Building Fully Connected Pose Layer: {}...'.format(name))
+        self._logger.info('Building Fully Connected Pose Layer: {}...'.format(name))
         
         # initialize weights
         if '{}_weights'.format(name) in self._weights.weights.keys():
             pcW = self._weights.weights['{}_weights'.format(name)]
             pcb = self._weights.weights['{}_bias'.format(name)] 
         elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
-            logging.info('Using old format for layer {}'.format(name))
+            self._logger.info('Using old format for layer {}'.format(name))
             pcW = self._weights.weights['{}W'.format(name)]
             pcb = self._weights.weights['{}b'.format(name)] 
         else:
-            logging.info('Reinitializing layer {}'.format(name))
+            self._logger.info('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             pcW = tf.Variable(tf.truncated_normal([fan_in, out_size],
                                                stddev=std), name='{}_weights'.format(name))
@@ -968,7 +979,7 @@ class GQCNNTF(object):
         return pc, out_size
 
     def _build_fc_merge(self, input_fc_node_1, input_fc_node_2, fan_in_1, fan_in_2, out_size, drop_rate, name):
-        logging.info('Building Merge Layer: {}...'.format(name))
+        self._logger.info('Building Merge Layer: {}...'.format(name))
         
         # initialize weights
         if '{}_input_1_weights'.format(name) in self._weights.weights.keys():
@@ -976,12 +987,12 @@ class GQCNNTF(object):
             input2W = self._weights.weights['{}_input_2_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
         elif '{}W_im'.format(name) in self._weights.weights.keys(): # legacy support
-            logging.info('Using old format for layer {}.'.format(name))
+            self._logger.info('Using old format for layer {}.'.format(name))
             input1W = self._weights.weights['{}W_im'.format(name)]
             input2W = self._weights.weights['{}W_pose'.format(name)]
             fcb = self._weights.weights['{}b'.format(name)] 
         else:
-            logging.info('Reinitializing layer {}.'.format(name))
+            self._logger.info('Reinitializing layer {}.'.format(name))
             std = np.sqrt(2.0 / (fan_in_1 + fan_in_2))
             input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std), name='{}_input_1_weights'.format(name))
             input2W = tf.Variable(tf.truncated_normal([fan_in_2, out_size], stddev=std), name='{}_input_2_weights'.format(name))
@@ -1003,7 +1014,7 @@ class GQCNNTF(object):
         return fc, out_size
 
     def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, layers, only_stream=False):
-        logging.info('Building Image Stream...')
+        self._logger.info('Building Image Stream...')
 
         if self._input_depth_mode == InputDepthMode.SUB:
             sub_mean = tf.constant(self._im_depth_sub_mean, dtype=tf.float32)
@@ -1043,7 +1054,7 @@ class GQCNNTF(object):
         return output_node, fan_in
 
     def _build_pose_stream(self, input_node, fan_in, layers):
-        logging.info('Building Pose Stream...')
+        self._logger.info('Building Pose Stream...')
         output_node = input_node
         prev_layer = "start" # dummy placeholder
         for layer_name, layer_config in layers.iteritems():
@@ -1065,7 +1076,7 @@ class GQCNNTF(object):
         return output_node, fan_in
 
     def _build_merge_stream(self, input_stream_1, input_stream_2, fan_in_1, fan_in_2, drop_rate, layers):
-        logging.info('Building Merge Stream...')
+        self._logger.info('Building Merge Stream...')
         
         # first check if first layer is a merge layer
         if layers[layers.keys()[0]]['type'] != 'fc_merge':
@@ -1114,7 +1125,7 @@ class GQCNNTF(object):
         :obj:`tf.Tensor`
             tensor output of network
         """
-        logging.info('Building Network...')
+        self._logger.info('Building Network...')
         if self._input_depth_mode == InputDepthMode.POSE_STREAM:
             assert 'pose_stream' in self._architecture.keys() and 'merge_stream' in self._architecture.keys(), 'When using input depth mode "pose_stream", both pose stream and merge stream must be present!'
             with tf.name_scope('im_stream'):
@@ -1126,5 +1137,4 @@ class GQCNNTF(object):
         elif self._input_depth_mode == InputDepthMode.SUB or self._input_depth_mode == InputDepthMode.IM_ONLY:
             assert not ('pose_stream' in self._architecture.keys() or 'merge_stream' in self._architecture.keys()), 'When using input depth mode "{}", only im stream is allowed!'.format(self._input_depth_mode)
             with tf.name_scope('im_stream'):
-                return self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'], only_stream=True)[0]
-        
+                return self._build_im_stream(input_im_node, input_pose_node, self._im_height, self._im_width, self._num_channels, input_drop_rate_node, self._architecture['im_stream'], only_stream=True)[0]        

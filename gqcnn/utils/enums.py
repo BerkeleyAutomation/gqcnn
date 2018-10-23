@@ -63,3 +63,9 @@ class InputDepthMode:
     POSE_STREAM = 'pose_stream'
     SUB = 'im_depth_sub'
     IM_ONLY = 'im_only'
+
+# enum for training status
+class GQCNNTrainingStatus:
+    NOT_STARTED = 'not_started'
+    SETTING_UP = 'setting_up'
+    TRAINING = 'training'

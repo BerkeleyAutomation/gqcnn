@@ -26,13 +26,13 @@ Author: Jeff Mahler
 import cPickle as pkl
 import copy
 import json
-import logging
 import os
 import random
 import shutil
 import sys
 import time
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.misc as sm
@@ -44,7 +44,7 @@ from perception import DepthImage
 from visualization import Visualizer2D as vis2d
 from gqcnn import get_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import GripperMode, ImageMode, GeneralConstants, read_pose_data
+from gqcnn.utils import GripperMode, ImageMode, GeneralConstants, read_pose_data, get_logger
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'
@@ -58,7 +58,7 @@ MAX_LOSS = 5.0
 class GQCNNAnalyzer(object):
     """ Analyzes GQCNN models """
 
-    def __init__(self, config):
+    def __init__(self, config, verbose=True, plot_backend='TkAgg'):
         """
         Parameters
         ----------
@@ -70,6 +70,9 @@ class GQCNNAnalyzer(object):
             dictionary of configuration parameters
         """
         self.cfg = config
+        self.verbose = verbose
+
+        plt.switch_backend(plot_backend) # we might want to use a non-interactive backend such as 'pdf' in cases when we are only saving plots and running in a background process because 'TkAgg' sometimes runs into problems where it can't connect to the localhost
         self._parse_config()
 
     def _parse_config(self):
@@ -113,8 +116,11 @@ class GQCNNAnalyzer(object):
         if not os.path.exists(model_output_dir):
             os.mkdir(model_output_dir)
 
-        logging.info('Analyzing model %s' %(model_name))
-        logging.info('Saving output to %s' %(output_dir))
+        # set up logger
+        self.logger = get_logger(self.__class__.__name__, log_file=os.path.join(model_output_dir, 'analysis.log'), log_stream=(sys.stdout if self.verbose else None))
+
+        self.logger.info('Analyzing model %s' %(model_name))
+        self.logger.info('Saving output to %s' %(output_dir))
             
         # run predictions
         train_result, val_result = self._run_prediction_single_model(model_dir,
@@ -122,12 +128,12 @@ class GQCNNAnalyzer(object):
                                                                      dataset_config)
 
         # finally plot curves
-        self._plot(model_dir,
-                   model_output_dir,
-                   train_result,
-                   val_result)
+        init_train_error, final_train_error, init_train_loss, final_train_loss, init_val_error, final_val_error, norm_final_val_error = self._plot(model_dir,
+                                                              model_output_dir,
+                                                              train_result,
+                                                              val_result)
 
-        return train_result, val_result
+        return train_result, val_result, init_train_error, final_train_error, init_train_loss, final_train_loss, init_val_error, final_val_error, norm_final_val_error 
 
     def _plot_grasp(self, datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=None):
         """ Plots a single grasp represented as a datapoint. """
@@ -169,8 +175,8 @@ class GQCNNAnalyzer(object):
             model_config = json.load(data_file)
 
         # load model
-        logging.info('Loading model %s' %(model_dir))
-        gqcnn = get_gqcnn_model().load(model_dir)
+        self.logger.info('Loading model %s' %(model_dir))
+        gqcnn = get_gqcnn_model(verbose=self.verbose).load(model_dir, verbose=self.verbose, logger=self.logger)
         gqcnn.open_session()
         gripper_mode = gqcnn.gripper_mode
         angular_bins = gqcnn.angular_bins
@@ -192,7 +198,7 @@ class GQCNNAnalyzer(object):
             metric_thresh = dataset_config['metric_thresh']
             gripper_mode = dataset_config['gripper_mode']
             
-        logging.info('Loading dataset %s' %(dataset_dir))
+        self.logger.info('Loading dataset %s' %(dataset_dir))
         dataset = TensorDataset.open(dataset_dir)
         train_indices, val_indices, _ = dataset.split(split_name)
         
@@ -216,7 +222,7 @@ class GQCNNAnalyzer(object):
         for i in range(dataset.num_tensors):
             # log progress
             if i % self.log_rate == 0:
-                logging.info('Predicting tensor %d of %d' %(i+1, dataset.num_tensors))
+                self.logger.info('Predicting tensor %d of %d' %(i+1, dataset.num_tensors))
 
             # read in data
             image_arr = dataset.tensor(image_field_name, i).arr
@@ -278,11 +284,11 @@ class GQCNNAnalyzer(object):
         val_result.save(os.path.join(model_output_dir, 'val_result.cres'))
 
         # get stats, plot curves
-        logging.info('Model %s training error rate: %.3f' %(model_dir, train_result.error_rate))
-        logging.info('Model %s validation error rate: %.3f' %(model_dir, val_result.error_rate))
+        self.logger.info('Model %s training error rate: %.3f' %(model_dir, train_result.error_rate))
+        self.logger.info('Model %s validation error rate: %.3f' %(model_dir, val_result.error_rate))
 
-        logging.info('Model %s training loss: %.3f' %(model_dir, train_result.cross_entropy_loss))
-        logging.info('Model %s validation loss: %.3f' %(model_dir, val_result.cross_entropy_loss))
+        self.logger.info('Model %s training loss: %.3f' %(model_dir, train_result.cross_entropy_loss))
+        self.logger.info('Model %s validation loss: %.3f' %(model_dir, val_result.cross_entropy_loss))
 
         # save images
         vis2d.figure()
@@ -291,7 +297,7 @@ class GQCNNAnalyzer(object):
             os.mkdir(example_dir)
 
         # train
-        logging.info('Saving training examples')
+        self.logger.info('Saving training examples')
         train_example_dir = os.path.join(example_dir, 'train')
         if not os.path.exists(train_example_dir):
             os.mkdir(train_example_dir)
@@ -373,7 +379,7 @@ class GQCNNAnalyzer(object):
             vis2d.savefig(os.path.join(train_example_dir, 'false_negative_%03d.png' %(i)))
 
         # val
-        logging.info('Saving validation examples')
+        self.logger.info('Saving validation examples')
         val_example_dir = os.path.join(example_dir, 'val')
         if not os.path.exists(val_example_dir):
             os.mkdir(val_example_dir)
@@ -481,7 +487,7 @@ class GQCNNAnalyzer(object):
 
     def _plot(self, model_dir, model_output_dir, train_result, val_result):
         """ Plot analysis curves """
-        logging.info('Plotting')
+        self.logger.info('Plotting')
 
         _, model_name = os.path.split(model_output_dir)
         
@@ -667,15 +673,17 @@ class GQCNNAnalyzer(object):
             vis2d.savefig(figname, dpi=self.dpi)
             
             # log
-            logging.info('TRAIN')
-            logging.info('Original error: %.3f' %(train_errors[0]))
-            logging.info('Final error: %.3f' %(train_result.error_rate))
-            logging.info('Orig loss: %.3f' %(train_losses[0]))
-            logging.info('Final loss: %.3f' %(train_losses[-1]))
+            self.logger.info('TRAIN')
+            self.logger.info('Original error: %.3f' %(train_errors[0]))
+            self.logger.info('Final error: %.3f' %(train_result.error_rate))
+            self.logger.info('Orig loss: %.3f' %(train_losses[0]))
+            self.logger.info('Final loss: %.3f' %(train_losses[-1]))
             
-            logging.info('VAL')
-            logging.info('Original error: %.3f' %(pct_pos_val))
-            logging.info('Final error: %.3f' %(val_result.error_rate))
-            logging.info('Normalized error: %.3f' %(norm_final_val_error))
+            self.logger.info('VAL')
+            self.logger.info('Original error: %.3f' %(pct_pos_val))
+            self.logger.info('Final error: %.3f' %(val_result.error_rate))
+            self.logger.info('Normalized error: %.3f' %(norm_final_val_error))
+
+            return train_errors[0], train_result.error_rate, train_losses[0], train_losses[-1], pct_pos_val, val_result.error_rate, norm_final_val_error
         except:
-            logging.error('Failed to plot training curves!')
+            self.logger.error('Failed to plot training curves!')

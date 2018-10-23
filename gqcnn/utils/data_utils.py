@@ -30,6 +30,28 @@ import numpy as np
 
 from enums import GripperMode
 
+def get_logger(name, log_file=None, log_stream=None):
+    # remove the root logger's handle to stdout so we have full control over logging
+    root_logger_hdlrs = logging.getLogger().handlers
+    if len(root_logger_hdlrs) > 0:
+        # assume the only one there is the stdout handler
+        logging.getLogger().removeHandler(root_logger_hdlrs[0])
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    
+    if log_file is not None:
+        hdlr = logging.FileHandler(log_file)
+        formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+        hdlr.setFormatter(formatter)
+        logger.addHandler(hdlr)
+    if log_stream is not None:
+        hdlr = logging.StreamHandler(log_stream)
+        formatter = logging.Formatter('%(name)s:%(levelname)s:%(message)s')
+        hdlr.setFormatter(formatter)
+        logger.addHandler(hdlr)
+    return logger
+
 def set_cuda_visible_devices(gpu_list):
     """
     Sets CUDA_VISIBLE_DEVICES environment variable to only show certain gpus.

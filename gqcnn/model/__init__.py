@@ -24,21 +24,29 @@ Factory functions to obtain GQCNN/FCGQCNN class based on chosen auto-differentia
 Currently only Tensorflow is supported.
 Author: Vishal Satish
 """
-import logging
+import sys
+
 from tf import *
+from gqcnn.utils import get_logger
  
-def get_gqcnn_model(backend='tf'):
+def get_gqcnn_model(backend='tf', verbose=True):
+    # set up logger
+    logger = get_logger('GQCNNModelFactory', log_stream=(sys.stdout if verbose else None))
+
     # return desired GQ-CNN instance based on backend
     if backend == 'tf':
-        logging.info('Initializing GQ-CNN with Tensorflow as backend...')
+        logger.info('Initializing GQ-CNN with Tensorflow as backend...')
         return GQCNNTF
     else:
         raise ValueError('Invalid backend: {}'.format(backend))
 
-def get_fc_gqcnn_model(backend='tf'):
-    # return desired Fully-Convolutional GQ-CNN instance based on backend
+def get_fc_gqcnn_model(backend='tf', verbose=True):
+    # set up logger
+    logger = get_logger('FCGQCNNModelFactory', log_stream=(sys.stdout if verbose else None))
+
+  # return desired Fully-Convolutional GQ-CNN instance based on backend
     if backend == 'tf':
-        logging.info('Initializing FC-GQ-CNN with Tensorflow as backend...')
+        logger.info('Initializing FC-GQ-CNN with Tensorflow as backend...')
         return FCGQCNNTF
     else:
         raise ValueError('Invalid backend: {}'.format(backend))

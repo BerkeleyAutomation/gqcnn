@@ -25,21 +25,24 @@ Author: Vishal Satish
 """
 import os
 import json
-import logging
 from collections import OrderedDict
+import sys
 
 import tensorflow as tf
 
 from network_tf import GQCNNTF
-from gqcnn.utils import TrainingMode, InputDepthMode
+from gqcnn.utils import TrainingMode, InputDepthMode, get_logger
 
 class FCGQCNNTF(GQCNNTF):
     """FC-GQ-CNN network implemented in Tensorflow. Note that this network is not directly trained,
        but instead loaded from a trained GQ-CNN at inference time."""
 
-    def __init__(self, gqcnn_config, fc_config):
-        super(FCGQCNNTF, self).__init__(gqcnn_config)
-        super(FCGQCNNTF, self)._parse_config(gqcnn_config)
+    def __init__(self, gqcnn_config, fc_config, verbose=True):
+        # set up logger
+        self._logger = get_logger(self.__class__.__name__, log_stream=(sys.stdout if verbose else None))
+
+        super(FCGQCNNTF, self).__init__(gqcnn_config, logger=self._logger)
+        super(FCGQCNNTF, self)._parse_config(gqcnn_config) #TODO: @Vishal this is redundant, right?
         self._parse_config(fc_config)
 
         # check that conv layers of GQ-CNN were trained with VALID padding
@@ -101,7 +104,7 @@ class FCGQCNNTF(GQCNNTF):
         return packed
 
     def _build_fully_conv_layer(self, input_node, filter_dim, fc_name, final_fc_layer=False):
-        logging.info('Converting fc layer {} to fully convolutional...'.format(fc_name))
+        self._logger.info('Converting fc layer {} to fully convolutional...'.format(fc_name))
         
         # create new set of weights by reshaping fully connected layer weights
         fcW = self._weights.weights['{}_weights'.format(fc_name)]
@@ -130,7 +133,7 @@ class FCGQCNNTF(GQCNNTF):
         return convh
 
     def _build_fully_conv_merge_layer(self, input_node_im, input_node_pose, filter_dim, fc_name):
-        logging.info('Converting fc merge layer {} to fully convolutional...'.format(fc_name))
+        self._logger.info('Converting fc merge layer {} to fully convolutional...'.format(fc_name))
 
         # create new set of weights for image stream by reshaping fully-connected layer weights
         fcW_im = self._weights.weights['{}_input_1_weights'.format(fc_name)]
@@ -162,7 +165,7 @@ class FCGQCNNTF(GQCNNTF):
         return convh
 
     def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, layers, only_stream=False):
-        logging.info('Building Image Stream...')
+        self._logger.info('Building Image Stream...')
 
         if self._input_depth_mode == InputDepthMode.SUB:
             sub_mean = tf.constant(self._im_depth_sub_mean, dtype=tf.float32)
@@ -202,7 +205,7 @@ class FCGQCNNTF(GQCNNTF):
         return output_node, -1
 
     def _build_merge_stream(self, input_stream_1, input_stream_2, fan_in_1, fan_in_2, drop_rate, layers):
-        logging.info('Building Merge Stream...')
+        self._logger.info('Building Merge Stream...')
         
         # first check if first layer is a merge layer
         if layers[layers.keys()[0]]['type'] != 'fc_merge':
