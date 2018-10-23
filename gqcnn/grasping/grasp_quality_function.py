@@ -829,7 +829,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         self._gqcnn_model_dir = config['gqcnn_model']
         self._crop_height = config['crop_height']
         self._crop_width = config['crop_width']
-
+ 
         # init GQ-CNN
         self._gqcnn = get_gqcnn_model().load(self._gqcnn_model_dir)
 
@@ -849,8 +849,20 @@ class GQCnnQualityFunction(GraspQualityFunction):
         return self._gqcnn
 
     @property
+    def gqcnn_recep_height(self):
+        return self._gqcnn.im_height
+
+    @property
+    def gqcnn_recep_width(self):
+        return self._gqcnn.im_width
+
+    @property
+    def gqcnn_stride(self):
+        return self._gqcnn.stride
+
+    @property
     def config(self):
-        """ Returns the GQCNN suction quality function parameters. """
+        """ Returns the GQCNN quality function parameters. """
         return self._config
 
     def grasps_to_tensors(self, grasps, state):
