@@ -308,7 +308,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
             ang = math.pi / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
             depth = depths[im_idx, 0]
-            grasp = Grasp2D(center, ang, depth, width=self._width, camera_intr=camera_intr)
+            grasp = Grasp2D(center, ang, depth, width=self._gripper_width, camera_intr=camera_intr)
             grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, ang_idx], DepthImage(images[im_idx]))
             actions.append(grasp_action)
         return actions
