@@ -58,7 +58,7 @@ MAX_LOSS = 5.0
 class GQCNNAnalyzer(object):
     """ Analyzes GQCNN models """
 
-    def __init__(self, config, verbose=True, plot_backend='TkAgg'):
+    def __init__(self, config, verbose=True, plot_backend='pdf'):
         """
         Parameters
         ----------
@@ -72,7 +72,7 @@ class GQCNNAnalyzer(object):
         self.cfg = config
         self.verbose = verbose
 
-        plt.switch_backend(plot_backend) # we might want to use a non-interactive backend such as 'pdf' in cases when we are only saving plots and running in a background process because 'TkAgg' sometimes runs into problems where it can't connect to the localhost
+        plt.switch_backend(plot_backend) # by default we want to use a non-interactive backend(ex. pdf) because the GQCNNAnalyzer anyways only saves plots to disk, and interactive backends sometimes cause issues with localhost when run remotely in screen 
         self._parse_config()
 
     def _parse_config(self):
