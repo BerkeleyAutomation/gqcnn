@@ -19,10 +19,17 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from model import get_gqcnn_model, get_fc_gqcnn_model 
-from training import get_gqcnn_trainer
-from grasping import CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
-from analysis import GQCNNAnalyzer
-from search import GQCNNSearch
+"""
+Enums for hyper-parameter search.
 
-__all__ = ['get_gqcnn_model', 'get_fc_gqcnn_model', 'get_gqcnn_trainer', 'GQCNNAnalyzer', 'CrossEntropyRobustGraspingPolicy', 'RgbdImageState','FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction']
+Author: Vishal Satish
+"""
+
+class TrialConstants:
+    TRIAL_CPU_LOAD = 100 # decrease this to get more aggressize CPU utilization
+    TRIAL_GPU_LOAD = 20 # decrease this to get more aggressize GPU utilization
+    TRIAL_GPU_MEM = 2000 # this really depends on model size(TRIAL_GPU_LOAD does too,but it's not a hard limit per se). Ideally we would initialize models one by one and monitor the space left, but because model initialization comes after some metric calculation, we set this to be some upper bound based on the largest model and do batch initalizations from there.
+
+class SearchConstants:
+    SEARCH_THREAD_SLEEP = 2 
+    MIN_TIME_BETWEEN_SCHEDULE_ATTEMPTS = 20

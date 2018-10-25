@@ -19,10 +19,6 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from model import get_gqcnn_model, get_fc_gqcnn_model 
-from training import get_gqcnn_trainer
-from grasping import CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
-from analysis import GQCNNAnalyzer
-from search import GQCNNSearch
+from model_search import GQCNNSearch
 
-__all__ = ['get_gqcnn_model', 'get_fc_gqcnn_model', 'get_gqcnn_trainer', 'GQCNNAnalyzer', 'CrossEntropyRobustGraspingPolicy', 'RgbdImageState','FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction']
+__all__ = ['GQCNNSearch']
