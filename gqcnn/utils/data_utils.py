@@ -26,6 +26,7 @@ Authors: Jeff Mahler, Vishal Satish, Lucas Manuelli
 import os
 import logging
 
+import colorlog
 import numpy as np
 
 from enums import GripperMode
@@ -42,12 +43,23 @@ def get_logger(name, log_file=None, log_stream=None):
     
     if log_file is not None:
         hdlr = logging.FileHandler(log_file)
-        formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+        formatter = logging.Formatter('%(asctime)s %(name)-10s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M:%S')
         hdlr.setFormatter(formatter)
         logger.addHandler(hdlr)
     if log_stream is not None:
         hdlr = logging.StreamHandler(log_stream)
-        formatter = logging.Formatter('%(name)s:%(levelname)s:%(message)s')
+        formatter = colorlog.ColoredFormatter(
+                            '%(asctime)s %(purple)s%(name)-10s %(log_color)s%(levelname)-8s%(reset)s %(white)s%(message)s',
+                            datefmt='%m-%d %H:%M:%S',
+                            reset=True,
+                            log_colors={
+                                'DEBUG': 'cyan',
+                                'INFO': 'green',
+                                'WARNING': 'yellow',
+                                'ERROR': 'red',
+                                'CRITICAL': 'red,bg_white',
+                            },
+                                            )
         hdlr.setFormatter(formatter)
         logger.addHandler(hdlr)
     return logger
