@@ -28,7 +28,6 @@ Author
 Jeff Mahler and Vishal Satish
 """
 import argparse
-import logging
 import os
 import sys
 import time
@@ -39,10 +38,11 @@ from autolab_core import RigidTransform, YamlConfig
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
+from gqcnn.utils import get_logger
 
 if __name__ == '__main__':
     # set up logger
-    logging.getLogger().setLevel(logging.INFO)
+    logger = get_logger('ExamplePolicy', log_stream=sys.stdout)
 
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         policy = CrossEntropyRobustGraspingPolicy(policy_config)
     policy_start = time.time()
     action = policy(state)
-    logging.info('Planning took %.3f sec' %(time.time() - policy_start))
+    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
     # vis final grasp
     if policy_config['vis']['final_grasp']:

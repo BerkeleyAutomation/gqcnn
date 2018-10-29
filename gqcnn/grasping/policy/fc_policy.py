@@ -344,7 +344,7 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
             axis = -normal_cloud_im[center.y, center.x]
             if np.linalg.norm(axis) == 0:
                 continue
-            depth = depth_im[center.y, center.x]
+            depth = depth_im[center.y, center.x, 0]
             if depth == 0.0:
                 continue
             grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr)

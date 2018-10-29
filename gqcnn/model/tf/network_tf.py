@@ -45,7 +45,7 @@ class GQCNNWeights(object):
 class GQCNNTF(object):
     """GQ-CNN network implemented in Tensorflow."""
 
-    def __init__(self, gqcnn_config, verbose=True, logger=None):
+    def __init__(self, gqcnn_config, verbose=True, log_file=None):
         """
         Parameters
         ----------
@@ -54,17 +54,15 @@ class GQCNNTF(object):
         """
         self._sess = None
         self._graph = tf.Graph()
-        self._logger = logger
 
         # set up logger
-        if self._logger is None:
-            self._logger = get_logger(self.__class__.__name__, log_stream=(sys.stdout if verbose else None))
+        self._logger = get_logger(self.__class__.__name__, log_file=log_file, log_stream=(sys.stdout if verbose else None))
 
         self._weights = GQCNNWeights()
         self._parse_config(gqcnn_config)
 
     @staticmethod
-    def load(model_dir, verbose=True, logger=None):
+    def load(model_dir, verbose=True, log_file=None):
         """Instantiate a trained GQ-CNN for fine-tuning or inference. 
 
         Parameters
@@ -167,7 +165,7 @@ class GQCNNTF(object):
                 gqcnn_config['architecture'] = new_arch_config
                 
         # initialize weights and Tensorflow network
-        gqcnn = GQCNNTF(gqcnn_config, verbose=verbose, logger=logger)
+        gqcnn = GQCNNTF(gqcnn_config, verbose=verbose, log_file=log_file)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         gqcnn.init_mean_and_std(model_dir)
         training_mode = train_config['training_mode']

@@ -24,21 +24,20 @@ Grasp quality functions: suction quality function and parallel jaw grasping qual
 Author: Jason Liu and Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
-import logging
 from time import time
+import sys
 
 import scipy.ndimage.filters as snf
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-import IPython
 
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
 from gqcnn import get_gqcnn_model, get_fc_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import GripperMode
+from gqcnn.utils import GripperMode, get_logger
 
 # constant for display
 FIGSIZE = 16
@@ -46,6 +45,10 @@ FIGSIZE = 16
 class GraspQualityFunction(object):
     """Abstract grasp quality class. """
     __metaclass__ = ABCMeta
+
+    def __init__(self):
+        # set up logger
+        self._logger = get_logger(self.__class__.__name__, log_stream=sys.stdout)
 
     def __call__(self, state, actions, params=None):
         """ Evaluates grasp quality for a set of actions given a state. """
@@ -96,6 +99,8 @@ class ParallelJawQualityFunction(GraspQualityFunction):
     """Abstract wrapper class for parallel jaw quality functions (only image based metrics for now). """
     def __init__(self, config):
         """Create a suction quality function. """
+        GraspQualityFunction.__init__(self)
+
         # read parameters
         self._friction_coef = config['friction_coef']
         self._max_friction_cone_angle = np.arctan(self._friction_coef)
@@ -179,6 +184,8 @@ class SuctionQualityFunction(GraspQualityFunction):
     """Abstract wrapper class for suction quality functions (only image based metrics for now). """
     def __init__(self, config):
         """Create a suction quality function. """
+        GraspQualityFunction.__init(self)
+
         # read parameters
         self._window_size = config['window_size']
         self._sample_rate = config['sample_rate']
@@ -213,7 +220,7 @@ class SuctionQualityFunction(GraspQualityFunction):
         try:
             w, _, _, _ = np.linalg.lstsq(A, b) 
         except np.linalg.LinAlgError:
-            logging.warning('Could not find a best-fit plane!')
+            self._logger.warning('Could not find a best-fit plane!')
             raise
         return w
 
@@ -824,6 +831,8 @@ class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction
 class GQCnnQualityFunction(GraspQualityFunction):
     def __init__(self, config):
         """Create a GQCNN suction quality function. """
+        GraspQualityFunction.__init__(self)
+
         # store parameters
         self._config = config
         self._gqcnn_model_dir = config['gqcnn_model']
@@ -916,7 +925,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
             else:
                 raise ValueError('Gripper mode %s not supported' %(gripper_mode))
-        logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
+        self._logger.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
         return image_tensor, pose_tensor
 
     def quality(self, state, actions, params): 
@@ -939,7 +948,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         # form tensors
         tensor_start = time()
         image_tensor, pose_tensor = self.grasps_to_tensors(actions, state)
-        logging.info('Image transformation took %.3f sec' %(time() - tensor_start))
+        self._logger.info('Image transformation took %.3f sec' %(time() - tensor_start))
         if params is not None and params['vis']['tf_images']:
             # read vis params
             k = params['vis']['k']
@@ -959,7 +968,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
         q_values = output_arr[:,-1]
-        logging.info('Inference took %.3f sec' %(time() - predict_start))
+        self._logger.info('Inference took %.3f sec' %(time() - predict_start))
         return q_values.tolist()
 
 class NoMagicQualityFunction(GraspQualityFunction):
@@ -971,6 +980,8 @@ class NoMagicQualityFunction(GraspQualityFunction):
         from tensorpack.predict import OfflinePredictor
         import json
         import os
+        
+        GraspQualityFunction.__init(self)
         
         # store parameters
         self._model_path = config['gqcnn_model']
@@ -1058,7 +1069,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
             else:
                 raise ValueError('Gripper mode %s not supported' %(gripper_mode))
-        logging.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
+        self._logger.debug('Tensor conversion took %.3f sec' %(time()-tensor_start))
         return image_tensor, pose_tensor
 
     def quality(self, state, actions, params): 
@@ -1107,12 +1118,14 @@ class NoMagicQualityFunction(GraspQualityFunction):
             cur_i = end_i
             end_i = cur_i + min(self._batch_size, num_actions - cur_i)
         q_values = output_arr[:,-1]
-        logging.debug('Prediction took %.3f sec' %(time()-predict_start))
+        self._logger.debug('Prediction took %.3f sec' %(time()-predict_start))
         return q_values.tolist()
 
 class FCGQCnnQualityFunction(GraspQualityFunction):
     def __init__(self, config):
-        """ Grasp quality function usinng the fully-convolutional gqcnn """
+        """ Grasp quality function using the fully-convolutional gqcnn """
+        GraspQualityFunction.__init__(self)
+
         # store parameters
         self._config = config
         self._model_dir = config['gqcnn_model']

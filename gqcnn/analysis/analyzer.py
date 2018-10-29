@@ -31,6 +31,7 @@ import random
 import shutil
 import sys
 import time
+import logging
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -176,7 +177,11 @@ class GQCNNAnalyzer(object):
 
         # load model
         self.logger.info('Loading model %s' %(model_dir))
-        gqcnn = get_gqcnn_model(verbose=self.verbose).load(model_dir, verbose=self.verbose, logger=self.logger)
+        log_file = None
+        for handler in self.logger.handlers:
+            if isinstance(handler, logging.FileHandler):
+                log_file = handler.baseFilename
+        gqcnn = get_gqcnn_model(verbose=self.verbose).load(model_dir, verbose=self.verbose, log_file=log_file)
         gqcnn.open_session()
         gripper_mode = gqcnn.gripper_mode
         angular_bins = gqcnn.angular_bins
@@ -685,5 +690,5 @@ class GQCNNAnalyzer(object):
             self.logger.info('Normalized error: %.3f' %(norm_final_val_error))
 
             return train_errors[0], train_result.error_rate, train_losses[0], train_losses[-1], pct_pos_val, val_result.error_rate, norm_final_val_error
-        except:
-            self.logger.error('Failed to plot training curves!')
+        except Exception as e:
+            self.logger.error('Failed to plot training curves!\n' + str(e))
