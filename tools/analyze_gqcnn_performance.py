@@ -27,17 +27,18 @@ Author
 Vishal Satish and Jeff Mahler
 """
 import argparse
-import logging
 import os
 import time
 import os
+import sys
 
 from autolab_core import YamlConfig
 from gqcnn import GQCNNAnalyzer
+from gqcnn.utils import get_logger
 
 if __name__ == '__main__':
     # setup logger
-    logging.getLogger().setLevel(logging.INFO)
+    logger = get_logger('analyze_gqcnn_performance.py', log_stream=sys.stdout)
 
     # parse args
     parser = argparse.ArgumentParser(description='Analyze a Grasp Quality Convolutional Neural Network with TensorFlow')
@@ -53,7 +54,7 @@ if __name__ == '__main__':
 
     # if model_dir contains many models, analyze each of them
     if 'config.json' not in os.listdir(model_dir[0]):
-        logging.warning('Found multiple models in model_dir, analyzing all of them...')
+        logger.warning('Found multiple models in model_dir, analyzing all of them...')
         models = os.listdir(model_dir[0])
         model_dir = [os.path.join(model_dir[0], model) for model in models]
 

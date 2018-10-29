@@ -27,7 +27,6 @@ Author
 Vishal Satish & Jeff Mahler
 """
 import argparse
-import logging
 import os
 import time
 import os
@@ -39,7 +38,7 @@ from gqcnn import utils as gqcnn_utils
 
 if __name__ == '__main__':
     # setup logger
-    logging.getLogger().setLevel(logging.INFO)
+    logger = get_logger('finetune.py', log_stream=sys.stdout)
 
     # parse args
     parser = argparse.ArgumentParser(description='Fine-Tune a pre-trained Grasp Quality Convolutional Neural Network with TensorFlow')
@@ -126,4 +125,4 @@ if __name__ == '__main__':
                                          train_config,
                                          name=name)
     trainer.finetune(model_dir)
-    logging.info('Total Fine-tuning Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 
+    logger.info('Total Fine-tuning Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 

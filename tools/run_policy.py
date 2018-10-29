@@ -24,7 +24,6 @@ Script to run saved policy output from a user run
 Author: Jeff Mahler
 """
 import argparse
-import logging
 import os
 import random
 import sys
@@ -35,11 +34,12 @@ import numpy as np
 from autolab_core import RigidTransform, YamlConfig
 from gqcnn import RgbdImageState, ParallelJawGrasp
 from gqcnn import CrossEntropyRobustGraspingPolicy
+from gqcnn.utils import get_logger
 from visualization import Visualizer2D as vis2d
 
 if __name__ == '__main__':
     # set up logger
-    logging.getLogger().setLevel(logging.DEBUG)
+    logger = get_logger('run_policy.py', log_stream=sys.stdout)
 
     # parse args
     parser = argparse.ArgumentParser(description='Run a saved test case through a GQ-CNN policy. For debugging purposes only.')
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     # query policy
     policy_start = time.time()
     action = policy(state)
-    logging.info('Planning took %.3f sec' %(time.time() - policy_start))
+    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
     # vis final grasp
     if policy_config['vis']['final_grasp']:
