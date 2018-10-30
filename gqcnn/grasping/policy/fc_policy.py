@@ -232,7 +232,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # visualize
         if self._vis_actions_3d:
-            self._logger.logging.info('Generating 3D Visualization...')
+            self._logger.info('Generating 3D Visualization...')
             self._visualize_3d(actions, wrapped_depth, camera_intr, num_actions_to_sample)
         if self._vis_actions_2d:
             self._logger.info('Generating 2D visualization...')
