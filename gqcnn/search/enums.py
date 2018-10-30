@@ -20,33 +20,16 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Factory functions to obtain GQCNN/FCGQCNN class based on chosen auto-differentiation backend.
-Currently only Tensorflow is supported.
+Enums for hyper-parameter search.
+
 Author: Vishal Satish
 """
-import sys
 
-from tf import *
-from gqcnn.utils import get_logger
- 
-def get_gqcnn_model(backend='tf', verbose=True):
-    # set up logger
-    logger = get_logger('GQCNNModelFactory', log_stream=(sys.stdout if verbose else None))
+class TrialConstants:
+    TRIAL_CPU_LOAD = 100 # decrease this to get more aggressize CPU utilization
+    TRIAL_GPU_LOAD = 20 # decrease this to get more aggressize GPU utilization
+    TRIAL_GPU_MEM = 2000 # this really depends on model size(TRIAL_GPU_LOAD does too,but it's not a hard limit per se). Ideally we would initialize models one by one and monitor the space left, but because model initialization comes after some metric calculation, we set this to be some upper bound based on the largest model and do batch initalizations from there.
 
-    # return desired GQ-CNN instance based on backend
-    if backend == 'tf':
-        logger.info('Initializing GQ-CNN with Tensorflow as backend...')
-        return GQCNNTF
-    else:
-        raise ValueError('Invalid backend: {}'.format(backend))
-
-def get_fc_gqcnn_model(backend='tf', verbose=True):
-    # set up logger
-    logger = get_logger('FCGQCNNModelFactory', log_stream=(sys.stdout if verbose else None))
-
-  # return desired Fully-Convolutional GQ-CNN instance based on backend
-    if backend == 'tf':
-        logger.info('Initializing FC-GQ-CNN with Tensorflow as backend...')
-        return FCGQCNNTF
-    else:
-        raise ValueError('Invalid backend: {}'.format(backend))
+class SearchConstants:
+    SEARCH_THREAD_SLEEP = 2 
+    MIN_TIME_BETWEEN_SCHEDULE_ATTEMPTS = 20

@@ -20,33 +20,11 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Factory functions to obtain GQCNN/FCGQCNN class based on chosen auto-differentiation backend.
-Currently only Tensorflow is supported.
+Enums for GQ-CNN policies.
+
 Author: Vishal Satish
 """
-import sys
 
-from tf import *
-from gqcnn.utils import get_logger
- 
-def get_gqcnn_model(backend='tf', verbose=True):
-    # set up logger
-    logger = get_logger('GQCNNModelFactory', log_stream=(sys.stdout if verbose else None))
-
-    # return desired GQ-CNN instance based on backend
-    if backend == 'tf':
-        logger.info('Initializing GQ-CNN with Tensorflow as backend...')
-        return GQCNNTF
-    else:
-        raise ValueError('Invalid backend: {}'.format(backend))
-
-def get_fc_gqcnn_model(backend='tf', verbose=True):
-    # set up logger
-    logger = get_logger('FCGQCNNModelFactory', log_stream=(sys.stdout if verbose else None))
-
-  # return desired Fully-Convolutional GQ-CNN instance based on backend
-    if backend == 'tf':
-        logger.info('Initializing FC-GQ-CNN with Tensorflow as backend...')
-        return FCGQCNNTF
-    else:
-        raise ValueError('Invalid backend: {}'.format(backend))
+class SamplingMethod:
+    TOP_K = 'top_k'
+    UNIFORM = 'uniform'

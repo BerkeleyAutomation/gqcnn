@@ -30,6 +30,7 @@ import math
 import os
 import sys
 from time import time
+import copy
 
 from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
@@ -498,6 +499,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         GraspingPolicy.__init__(self, config)
         self._parse_config()
         self._filters = filters
+
+        self._case_counter = 0
         
     def _parse_config(self):
         """ Parses the parameters of the policy. """
@@ -535,7 +538,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             self._logging_dir = self.config['logging_dir']
             if not os.path.exists(self._logging_dir):
                 os.mkdir(self._logging_dir)
-            
+            self._state_counter = 0 # used for logging state data
+
+        # affordance map visualization
+        self._vis_grasp_affordance_map = False
+        if 'grasp_affordance_map' in self.config['vis'].keys():
+            self._vis_grasp_affordance_map = self.config['vis']['grasp_affordance_map']
+ 
     def select(self, grasps, q_values):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
@@ -569,6 +578,78 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 return index
             i += 1
         raise NoValidGraspsException('No grasps satisfied filters')
+    
+    def _mask_predictions(self, pred_map, segmask):
+        logging.info('Masking predictions...')
+        assert pred_map.shape == segmask.shape, 'Prediction map shape {} does not match shape of segmask {}.'.format(pred_map.shape, segmask.shape)
+        preds_masked = np.zeros_like(pred_map)
+        nonzero_ind = np.where(segmask > 0)
+        preds_masked[nonzero_ind] = pred_map[nonzero_ind]
+        return preds_masked
+
+    def _gen_grasp_affordance_map(self, state, stride=1):
+        logging.info('Generating grasp affordance map...')
+        
+        # generate grasps at points to evaluate(this is just the interface to GraspQualityFunction)
+        crop_candidate_start_time = time()
+        point_cloud_im = state.camera_intr.deproject_to_image(state.rgbd_im.depth)
+        normal_cloud_im = point_cloud_im.normal_cloud_im()
+
+        q_vals = []
+        gqcnn_recep_h_half = self._grasp_quality_fn.gqcnn_recep_height / 2
+        gqcnn_recep_w_half = self._grasp_quality_fn.gqcnn_recep_width / 2
+        im_h = state.rgbd_im.height
+        im_w = state.rgbd_im.width
+        for i in range(gqcnn_recep_h_half - 1, im_h - gqcnn_recep_h_half, stride):
+            grasps = []
+            for j in range(gqcnn_recep_w_half - 1, im_w - gqcnn_recep_w_half, stride): 
+                if self.config['sampling']['type'] == 'suction': #TODO: @Vishal find a better way to find policy type
+                    grasps.append(SuctionPoint2D(Point(np.array([j, i])), axis=-normal_cloud_im[i, j], depth=state.rgbd_im.depth[i, j], camera_intr=state.camera_intr))
+                else:
+                    raise NotImplementedError('Parallel Jaw Grasp Affordance Maps Not Supported!')
+            q_vals.extend(self._grasp_quality_fn(state, grasps)) 
+        logging.info('Generating crop grasp candidates took {} sec.'.format(time() - crop_candidate_start_time))
+
+        # mask out predictions not in the segmask(we don't really care about them)
+        pred_map = np.array(q_vals).reshape((im_h - gqcnn_recep_h_half * 2) / stride + 1, (im_w - gqcnn_recep_w_half * 2) / stride + 1)
+        tf_segmask = state.segmask.crop(im_h - gqcnn_recep_h_half * 2, im_w - gqcnn_recep_w_half * 2).resize(1.0 / stride, interp='nearest')._data.squeeze() #TODO: @Vishal don't access the raw data like this!
+        if tf_segmask.shape != pred_map.shape:
+            new_tf_segmask = np.zeros_like(pred_map)
+            smaller_i = min(pred_map.shape[0], tf_segmask.shape[0])
+            smaller_j = min(pred_map.shape[1], tf_segmask.shape[1])
+            new_tf_segmask[:smaller_i, :smaller_j] = tf_segmask[:smaller_i, :smaller_j]
+            tf_segmask = new_tf_segmask
+        pred_map_masked = self._mask_predictions(pred_map, tf_segmask)
+        return pred_map_masked
+
+    def _plot_grasp_affordance_map(self, state, affordance_map, stride=1, grasps=None, q_values=None, plot_max=True, title=None, scale=1.0, save_fname=None, save_path=None):
+        gqcnn_recep_h_half = self._grasp_quality_fn.gqcnn_recep_height / 2
+        gqcnn_recep_w_half = self._grasp_quality_fn.gqcnn_recep_width / 2
+        im_h = state.rgbd_im.height
+        im_w = state.rgbd_im.width
+
+        # plot
+        vis.figure()
+        tf_depth_im = state.rgbd_im.depth.crop(im_h - gqcnn_recep_h_half * 2, im_w - gqcnn_recep_w_half * 2).resize(1.0 / stride, interp='nearest')
+        vis.imshow(tf_depth_im)
+        plt.imshow(affordance_map, cmap=plt.cm.RdYlGn, alpha=0.3) 
+        if grasps is not None:
+            grasps = copy.deepcopy(grasps)
+            for grasp, q in zip(grasps, q_values):
+                grasp.center.data[0] -= gqcnn_recep_w_half
+                grasp.center.data[1] -= gqcnn_recep_h_half
+                vis.grasp(grasp, scale=scale,
+                                   show_center=False,
+                                   show_axis=True,
+                                   color=plt.cm.RdYlGn(q))
+        if plot_max:
+            affordance_argmax = np.unravel_index(np.argmax(affordance_map), affordance_map.shape)
+            plt.scatter(affordance_argmax[1], affordance_argmax[0], c='black', marker='.', s=scale*25) 
+        if title is not None:
+            vis.title(title)
+        if save_path is not None:
+            save_path = os.path.join(save_path, save_fname)
+        vis.show(save_path) 
 
     def _action(self, state):
         """ Plans the grasp with the highest probability of success on
@@ -588,6 +669,13 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if not isinstance(state, RgbdImageState):
             raise ValueError('Must provide an RGB-D image state.')
 
+        state_output_dir = None
+        if self._logging_dir is not None:
+            state_output_dir = os.path.join(self._logging_dir, 'state_{}'.format(str(self._state_counter).zfill(5)))
+            if not os.path.exists(state_output_dir):
+                os.makedirs(state_output_dir)
+            self._state_counter += 1
+
         # parse state
         seed_set_start = time()
         rgbd_im = state.rgbd_im
@@ -596,14 +684,19 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         segmask = state.segmask
         point_cloud_im = camera_intr.deproject_to_image(depth_im)
         normal_cloud_im = point_cloud_im.normal_cloud_im()
-        
+       
+        # vis grasp affordance map
+        if self._vis_grasp_affordance_map:
+            grasp_affordance_map = self._gen_grasp_affordance_map(state)
+            self._plot_grasp_affordance_map(state, grasp_affordance_map, title='Grasp Affordance Map', save_fname='affordance_map.png', save_path=state_output_dir) 
+
         # sample grasps
         grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
                                             self._num_seed_samples,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
                                             seed=self._seed)
-        
+
         num_grasps = len(grasps)
         if num_grasps == 0:
             logging.warning('No valid grasps could be found')
@@ -633,21 +726,25 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             if self.config['vis']['grasp_candidates']:
                 # display each grasp on the original image, colored by predicted success
                 norm_q_values = q_values #(q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
-                vis.figure(size=(FIGSIZE,FIGSIZE))
-                vis.imshow(rgbd_im.depth,
-                           vmin=self.config['vis']['vmin'],
-                           vmax=self.config['vis']['vmax'])
-                for grasp, q in zip(grasps, norm_q_values):
-                    vis.grasp(grasp, scale=2.0,
-                              jaw_width=2.0,
-                              show_center=False,
-                              show_axis=True,
-                              color=plt.cm.RdYlBu(q))
-                vis.title('Sampled grasps iter %d' %(j))
-                filename = None
-                if self._logging_dir is not None:
-                    filename = os.path.join(self._logging_dir, 'cem_iter_%d.png' %(j))
-                vis.show(filename)
+                title = 'Sampled Grasps Iter %d' %(j)
+                if self._vis_grasp_affordance_map:
+                    self._plot_grasp_affordance_map(state, grasp_affordance_map, grasps=grasps, q_values=norm_q_values, scale=2.0, title=title, save_fname='cem_iter_{}.png'.format(j), save_path=state_output_dir)
+                else:
+                    vis.figure(size=(FIGSIZE, FIGSIZE))
+                    vis.imshow(rgbd_im.depth,
+                               vmin=self.config['vis']['vmin'],
+                               vmax=self.config['vis']['vmax'])
+                    for grasp, q in zip(grasps, norm_q_values):
+                        vis.grasp(grasp, scale=2.0,
+                                  jaw_width=2.0,
+                                  show_center=False,
+                                  show_axis=True,
+                                  color=plt.cm.RdYlBu(q))
+                    vis.title(title)
+                    filename = None
+                    if self._logging_dir is not None:
+                        filename = os.path.join(self._logging_dir, 'cem_iter_%d.png' %(j))
+                    vis.show(filename)
                 
             # fit elite set
             elite_start = time()
@@ -755,38 +852,45 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
             norm_q_values = q_values #(q_values - np.min(q_values)) / (np.max(q_values) - np.min(q_values))
-            vis.figure(size=(FIGSIZE,FIGSIZE))
-            vis.imshow(rgbd_im.depth,
-                       vmin=self.config['vis']['vmin'],
-                       vmax=self.config['vis']['vmax'])
-            for grasp, q in zip(grasps, norm_q_values):
-                vis.grasp(grasp, scale=2.0,
-                          jaw_width=2.0,
-                          show_center=False,
-                          show_axis=True,
-                          color=plt.cm.RdYlBu(q))
-            vis.title('Final sampled grasps')
-            filename = None
-            if self._logging_dir is not None:
-                filename = os.path.join(self._logging_dir, 'final_grasps.png')
-            vis.show(filename)
+            title = 'Final Sampled Grasps'
+            if self._vis_grasp_affordance_map:
+                self._plot_grasp_affordance_map(state, grasp_affordance_map, grasps=grasps, q_values=norm_q_values, scale=2.0, title=title, save_fname='final_sampled_grasps.png'.format(j), save_path=state_output_dir)
+            else:
+                vis.figure(size=(FIGSIZE,FIGSIZE))
+                vis.imshow(rgbd_im.depth,
+                           vmin=self.config['vis']['vmin'],
+                           vmax=self.config['vis']['vmax'])
+                for grasp, q in zip(grasps, norm_q_values):
+                    vis.grasp(grasp, scale=2.0,
+                              jaw_width=2.0,
+                              show_center=False,
+                              show_axis=True,
+                              color=plt.cm.RdYlBu(q))
+                vis.title(title)
+                filename = None
+                if self._logging_dir is not None:
+                    filename = os.path.join(self._logging_dir, 'final_grasps.png')
+                vis.show(filename)
 
         # select grasp
         index = self.select(grasps, q_values)
         grasp = grasps[index]
         q_value = q_values[index]
         if self.config['vis']['grasp_plan']:
-            vis.figure()
-            vis.imshow(rgbd_im.depth,
-                       vmin=self.config['vis']['vmin'],
-                       vmax=self.config['vis']['vmax'])
-            vis.grasp(grasp, scale=5.0, show_center=False, show_axis=True, jaw_width=1.0, grasp_axis_width=0.2)
-            vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth,
-                                                     q_value))
-            filename = None
-            if self._logging_dir is not None:
-                filename = os.path.join(self._logging_dir, 'planned_grasp.png')
-            vis.show(filename)
+            title = 'Best Grasp: d=%.3f, q=%.3f' %(grasp.depth, q_value)
+            if self._vis_grasp_affordance_map:
+                self._plot_grasp_affordance_map(state, grasp_affordance_map, grasps=[grasp], q_values=[q_value], scale=2.0, title=title, save_fname=os.path.join(case_output_dir, 'best_grasp.png'))
+            else:
+                vis.figure()
+                vis.imshow(rgbd_im.depth,
+                           vmin=self.config['vis']['vmin'],
+                           vmax=self.config['vis']['vmax'])
+                vis.grasp(grasp, scale=5.0, show_center=False, show_axis=True, jaw_width=1.0, grasp_axis_width=0.2)
+                vis.title(title)
+                filename = None
+                if self._logging_dir is not None:
+                    filename = os.path.join(self._logging_dir, 'planned_grasp.png')
+                vis.show(filename)
 
         # form return image
         image = state.rgbd_im.depth

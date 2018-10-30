@@ -26,9 +26,43 @@ Authors: Jeff Mahler, Vishal Satish, Lucas Manuelli
 import os
 import logging
 
+import colorlog
 import numpy as np
 
 from enums import GripperMode
+
+def get_logger(name, log_file=None, log_stream=None):
+    # remove the root logger's handle to stdout so we have full control over logging
+    root_logger_hdlrs = logging.getLogger().handlers
+    if len(root_logger_hdlrs) > 0:
+        # assume the only one there is the stdout handler
+        logging.getLogger().removeHandler(root_logger_hdlrs[0])
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    
+    if log_file is not None:
+        hdlr = logging.FileHandler(log_file)
+        formatter = logging.Formatter('%(asctime)s %(name)-10s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M:%S')
+        hdlr.setFormatter(formatter)
+        logger.addHandler(hdlr)
+    if log_stream is not None:
+        hdlr = logging.StreamHandler(log_stream)
+        formatter = colorlog.ColoredFormatter(
+                            '%(asctime)s %(purple)s%(name)-10s %(log_color)s%(levelname)-8s%(reset)s %(white)s%(message)s',
+                            datefmt='%m-%d %H:%M:%S',
+                            reset=True,
+                            log_colors={
+                                'DEBUG': 'cyan',
+                                'INFO': 'green',
+                                'WARNING': 'yellow',
+                                'ERROR': 'red',
+                                'CRITICAL': 'red,bg_white',
+                            },
+                                            )
+        hdlr.setFormatter(formatter)
+        logger.addHandler(hdlr)
+    return logger
 
 def set_cuda_visible_devices(gpu_list):
     """
