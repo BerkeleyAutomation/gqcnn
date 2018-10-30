@@ -28,7 +28,6 @@ Jeff Mahler
 """
 import datetime
 import json
-import logging
 import os
 import sys
 import time
@@ -39,6 +38,7 @@ import numpy as np
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig
+import gqcnn.utils as gqcnn_utils
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'
@@ -168,7 +168,7 @@ def analyze_model(model_dir):
                          
 if __name__ == '__main__':
     # initialize logging
-    logging.getLogger().setLevel(logging.INFO)
+    logger = gqcnn_utils.get_logger('compare_models.py', log_stream=sys.stdout)
 
     # parse args
     parser = argparse.ArgumentParser(description='Rollout a policy for bin picking in order to evaluate performance')
@@ -205,14 +205,14 @@ if __name__ == '__main__':
     analyses = {}
     for model_subdir in model_subdirs:
         _, model_name = os.path.split(model_subdir)
-        logging.info('Analyzing %s' %(model_name))
+        logger.info('Analyzing %s' %(model_name))
         try:
             analysis = analyze_model(model_subdir)
             analyses[model_name] = analysis            
-            logging.info('Conv1_1: {}'.format(analysis.architecture['conv1_1']))
-            logging.info('Conv2_1: {}'.format(analysis.architecture['conv2_1']['pool_size']))
-            logging.info('Conv2_2: {}'.format(analysis.architecture['conv2_2']['pool_size']))
-            logging.info('FC: {}'.format(analysis.architecture['fc3']))
+            logger.info('Conv1_1: {}'.format(analysis.architecture['conv1_1']))
+            logger.info('Conv2_1: {}'.format(analysis.architecture['conv2_1']['pool_size']))
+            logger.info('Conv2_2: {}'.format(analysis.architecture['conv2_2']['pool_size']))
+            logger.info('FC: {}'.format(analysis.architecture['fc3']))
         except:
             pass
 
@@ -224,14 +224,14 @@ if __name__ == '__main__':
     compare_config = config['compare']
     num_colors = len(compare_config.values())
     for model_prefix, label in compare_config.iteritems():
-        logging.info('Plotting %s' %(model_prefix))
+        logger.info('Plotting %s' %(model_prefix))
         color = cm(1.*i / num_colors)
         analysis = None
         for model_name, model_analysis in analyses.iteritems():
             if model_name.startswith(model_prefix):
                 analysis = model_analysis
                 break
-        logging.info('Train time %.3f' %(analysis.train_time))
+        logger.info('Train time %.3f' %(analysis.train_time))
         analysis.plot_norm_val_errors(color=color,
                                       label=str(label))
         i += 1
@@ -249,7 +249,7 @@ if __name__ == '__main__':
     
     plt.figure(figsize=(12,12))
     for model_name, analysis in analyses.iteritems():
-        logging.info('Plotting %s' %(model_name))
+        logger.info('Plotting %s' %(model_name))
         color = cm(1.*i / num_colors)
         analysis.plot_norm_val_errors(color=color,
                                       label=model_name)

@@ -25,7 +25,6 @@ Perform hyper-parameter search over a set of GQ-CNN model/training parameters. A
 Author: Vishal Satish
 """
 import multiprocessing
-import logging
 import math
 import time
 import operator

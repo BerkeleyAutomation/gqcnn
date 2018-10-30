@@ -9,13 +9,13 @@ policy:
   gqcnn_recep_w: 96
 
   # filtering params
-  max_filtered_grasps: 50
+  max_grasps_to_filter: 50
   filter_grasps: 0
 
   # metrics
   metric:
     type: fcgqcnn
-    gqcnn_model: /path/to/model
+    gqcnn_model: /path/to/your/FC-GQ-Image-Wise
     gqcnn_backend: tf
     fully_conv_gqcnn_config:
       im_height: 480
@@ -26,8 +26,9 @@ policy:
     scale: 0.5
     show_axis: 1
     num_samples: 0
-    vis: 0
-    vis_3d: 0
+    actions_2d: 0
+    actions_3d: 0
+    affordance_map: 0
   vis:
     final_grasp: 1
 

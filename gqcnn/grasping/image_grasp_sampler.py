@@ -25,7 +25,6 @@ Author: Jeff Mahler, Sherdil Niyaz
 """
 from abc import ABCMeta, abstractmethod
 import copy
-import logging
 import os
 import random
 import sys
@@ -43,7 +42,7 @@ from autolab_core import Point, RigidTransform
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, GdImage
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import NoAntipodalPairsFoundException
+from gqcnn.utils import get_logger, NoAntipodalPairsFoundException
 
 def force_closure(p1, p2, n1, n2, mu):
     """ Computes whether or not the point and normal pairs are in force closure. """
@@ -80,6 +79,9 @@ class ImageGraspSampler(object):
         # set params
         self._config = config
 
+        # setup logger
+        self._logger = get_logger(self.__class__.__name__, log_stream=sys.stdout)
+
     def sample(self, rgbd_im, camera_intr, num_samples,
                segmask=None, seed=None, visualize=False):
         """
@@ -111,13 +113,13 @@ class ImageGraspSampler(object):
             np.random.seed(seed)
 
         # sample an initial set of grasps (without depth)
-        logging.debug('Sampling 2d candidates')
+        self._logger.debug('Sampling 2d candidates')
         sampling_start = time()
         grasps = self._sample(rgbd_im, camera_intr, num_samples,
                               segmask=segmask, visualize=visualize)
         sampling_stop = time()
-        logging.debug('Sampled %d grasps from image' %(len(grasps)))
-        logging.debug('Sampling grasps took %.3f sec' %(sampling_stop - sampling_start))
+        self._logger.debug('Sampled %d grasps from image' %(len(grasps)))
+        self._logger.debug('Sampling grasps took %.3f sec' %(sampling_stop - sampling_start))
         return grasps
 
     @abstractmethod
@@ -322,7 +324,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         # re-threshold edges if there are too few
         if edge_pixels.shape[0] < self._min_num_edge_pixels:
-            logging.info('Too few edge pixels!')
+            self._logger.info('Too few edge pixels!')
             depth_im_threshed = depth_im.threshold_gradients(self._depth_grad_thresh)
             edge_pixels = depth_im_threshed.zero_pixels()            
             edge_pixels = edge_pixels.astype(np.int16)
@@ -332,8 +334,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                 depth_im_mask = depth_im.mask_binary(segmask)
 
         num_pixels = edge_pixels.shape[0]
-        logging.debug('Depth edge detection took %.3f sec' %(time() - edge_start))
-        logging.debug('Found %d edge pixels' %(num_pixels))
+        self._logger.debug('Depth edge detection took %.3f sec' %(time() - edge_start))
+        self._logger.debug('Found %d edge pixels' %(num_pixels))
 
         # exit if no edge pixels
         if num_pixels == 0:
@@ -346,7 +348,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # compute surface normals
         normal_start = time()
         edge_normals = self._surface_normals(depth_im, edge_pixels)
-        logging.debug('Normal computation took %.3f sec' %(time() - normal_start))
+        self._logger.debug('Normal computation took %.3f sec' %(time() - normal_start))
 
         if visualize:
             edge_pixels = edge_pixels[::2,:]
@@ -383,7 +385,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         dists = ssd.squareform(ssd.pdist(edge_pixels))
         valid_indices = np.where((normal_ip < -np.cos(np.arctan(self._friction_coef))) & (dists < max_grasp_width_px) & (dists > 0.0))
         valid_indices = np.c_[valid_indices[0], valid_indices[1]]
-        logging.debug('Normal pruning %.3f sec' %(time() - pruning_start))
+        self._logger.debug('Normal pruning %.3f sec' %(time() - pruning_start))
 
         # raise exception if no antipodal pairs
         num_pairs = valid_indices.shape[0]
@@ -417,7 +419,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         grasp_indices = np.random.choice(antipodal_indices,
                                          size=sample_size,
                                          replace=False)
-        logging.debug('Grasp comp took %.3f sec' %(time() - pruning_start))
+        self._logger.debug('Grasp comp took %.3f sec' %(time() - pruning_start))
 
         # compute grasps
         sample_start = time()
@@ -478,7 +480,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                     
                 grasps.append(candidate_grasp)
         # return sampled grasps
-        logging.debug('Loop took %.3f sec' %(time() - sample_start))
+        self._logger.debug('Loop took %.3f sec' %(time() - sample_start))
         return grasps
 
 class DepthImageSuctionPointSampler(ImageGraspSampler):
@@ -600,7 +602,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         depth_im_mask = depth_im.copy()
         if segmask is not None:
             depth_im_mask = depth_im.mask_binary(segmask)
-        logging.debug('Filtering took %.3f sec' %(time() - filter_start)) 
+        self._logger.debug('Filtering took %.3f sec' %(time() - filter_start)) 
             
         if visualize:
             vis.figure()
@@ -618,7 +620,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         num_nonzero_px = nonzero_px.shape[0]
         if num_nonzero_px == 0:
             return []
-        logging.debug('Normal cloud took %.3f sec' %(time() - cloud_start)) 
+        self._logger.debug('Normal cloud took %.3f sec' %(time() - cloud_start)) 
 
         
         # randomly sample points and add to image
@@ -665,7 +667,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
                     vis.show()
 
                 suction_points.append(candidate)
-        logging.debug('Loop took %.3f sec' %(time() - sample_start))
+        self._logger.debug('Loop took %.3f sec' %(time() - sample_start))
         return suction_points
         
 class ImageGraspSamplerFactory(object):

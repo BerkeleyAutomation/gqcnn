@@ -25,7 +25,6 @@ Author: Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
 import cPickle as pkl
-import logging
 import math
 import os
 import sys
@@ -40,7 +39,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
-from gqcnn.utils import GripperMode, NoValidGraspsException
+from gqcnn.utils import GripperMode, NoValidGraspsException, get_logger
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, GraspQualityFunctionFactory, GQCnnQualityFunction, ImageGraspSamplerFactory
 
 FIGSIZE = 16
@@ -185,11 +184,18 @@ class GraspingPolicy(Policy):
         if 'gripper_width' in config.keys():
             self._gripper_width = config['gripper_width']
 
-        # set the logging dir
+        # set the logging dir and possibly log file
         self._logging_dir = None
+        log_file = None
         if 'logging_dir' in self.config.keys():
             self._logging_dir = self.config['logging_dir']
-            
+            if not os.path.exists(self._logging_dir):
+                os.makedirs(self._logging_dir)
+            log_file = os.path.join(self._logging_dir, 'policy.log')
+
+        # setup logger
+        self._logger = get_logger(self.__class__.__name__, log_file=log_file, log_stream=sys.stdout)
+    
         # init grasp sampler
         if init_sampler:
             self._sampling_config = config['sampling']
@@ -208,8 +214,7 @@ class GraspingPolicy(Policy):
         # init grasp quality function
         self._metric_config = config['metric']
         metric_type = self._metric_config['type']
-        self._grasp_quality_fn = GraspQualityFunctionFactory.quality_function(metric_type,
-                                                                              self._metric_config)
+        self._grasp_quality_fn = GraspQualityFunctionFactory.quality_function(metric_type, self._metric_config)
 
     @property
     def config(self):
@@ -310,7 +315,7 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
                                             seed=None)
         num_grasps = len(grasps)
         if num_grasps == 0:
-            logging.warning('No valid grasps could be found')
+            self._logger.warning('No valid grasps could be found')
             raise NoValidGraspsException()
 
         # set grasp
@@ -371,7 +376,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             return grasps_and_predictions[0][0]
         
         # filter grasps
-        logging.info('Filtering grasps')
+        self._logger.info('Filtering grasps')
         i = 0
         while i < self._max_grasps_filter and i < len(grasps_and_predictions):
             index = grasps_and_predictions[i][0]
@@ -379,7 +384,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             valid = True
             for filter_name, is_valid in self._filters.iteritems():
                 valid = is_valid(grasp) 
-                logging.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                self._logger.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
                 if not valid:
                     valid = False
                     break
@@ -419,13 +424,13 @@ class RobustGraspingPolicy(GraspingPolicy):
                                             seed=None)
         num_grasps = len(grasps)
         if num_grasps == 0:
-            logging.warning('No valid grasps could be found')
+            self._logger.warning('No valid grasps could be found')
             raise NoValidGraspsException()
         
         # compute grasp quality
         compute_start = time()
         q_values = self._grasp_quality_fn(state, grasps, params=self._config)
-        logging.debug('Grasp evaluation took %.3f sec' %(time()-compute_start))
+        self._logger.debug('Grasp evaluation took %.3f sec' %(time()-compute_start))
         
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
@@ -532,25 +537,19 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if 'gripper_width' in self.config.keys():
             self._gripper_width = self.config['gripper_width']
 
-        # optional, logging dir
-        self._logging_dir = None
-        if 'logging_dir' in self.config.keys():
-            self._logging_dir = self.config['logging_dir']
-            if not os.path.exists(self._logging_dir):
-                os.mkdir(self._logging_dir)
-            self._state_counter = 0 # used for logging state data
-
         # affordance map visualization
         self._vis_grasp_affordance_map = False
         if 'grasp_affordance_map' in self.config['vis'].keys():
             self._vis_grasp_affordance_map = self.config['vis']['grasp_affordance_map']
  
+        self._state_counter = 0 # used for logging state data
+
     def select(self, grasps, q_values):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
         """ 
         # sort
-        logging.info('Sorting grasps')
+        self._logger.info('Sorting grasps')
         num_grasps = len(grasps)
         if num_grasps == 0:
             raise NoValidGraspsException('Zero grasps')
@@ -562,7 +561,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             return grasps_and_predictions[0][0]
         
         # filter grasps
-        logging.info('Filtering grasps')
+        self._logger.info('Filtering grasps')
         i = 0
         while i < self._max_grasps_filter and i < len(grasps_and_predictions):
             index = grasps_and_predictions[i][0]
@@ -570,7 +569,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             valid = True
             for filter_name, is_valid in self._filters.iteritems():
                 valid = is_valid(grasp) 
-                logging.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
+                self._logger.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
                 if not valid:
                     valid = False
                     break
@@ -580,7 +579,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         raise NoValidGraspsException('No grasps satisfied filters')
     
     def _mask_predictions(self, pred_map, segmask):
-        logging.info('Masking predictions...')
+        self._logger.info('Masking predictions...')
         assert pred_map.shape == segmask.shape, 'Prediction map shape {} does not match shape of segmask {}.'.format(pred_map.shape, segmask.shape)
         preds_masked = np.zeros_like(pred_map)
         nonzero_ind = np.where(segmask > 0)
@@ -588,7 +587,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         return preds_masked
 
     def _gen_grasp_affordance_map(self, state, stride=1):
-        logging.info('Generating grasp affordance map...')
+        self._logger.info('Generating grasp affordance map...')
         
         # generate grasps at points to evaluate(this is just the interface to GraspQualityFunction)
         crop_candidate_start_time = time()
@@ -608,7 +607,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 else:
                     raise NotImplementedError('Parallel Jaw Grasp Affordance Maps Not Supported!')
             q_vals.extend(self._grasp_quality_fn(state, grasps)) 
-        logging.info('Generating crop grasp candidates took {} sec.'.format(time() - crop_candidate_start_time))
+        self._logger.info('Generating crop grasp candidates took {} sec.'.format(time() - crop_candidate_start_time))
 
         # mask out predictions not in the segmask(we don't really care about them)
         pred_map = np.array(q_vals).reshape((im_h - gqcnn_recep_h_half * 2) / stride + 1, (im_w - gqcnn_recep_w_half * 2) / stride + 1)
@@ -696,27 +695,26 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
                                             seed=self._seed)
-
         num_grasps = len(grasps)
         if num_grasps == 0:
-            logging.warning('No valid grasps could be found')
+            self._logger.warning('No valid grasps could be found')
             raise NoValidGraspsException()
 
         grasp_type = 'parallel_jaw'
         if isinstance(grasps[0], SuctionPoint2D):
             grasp_type = 'suction'
 
-        logging.info('Sampled %d grasps' %(len(grasps)))
-        logging.info('Computing the seed set took %.3f sec' %(time() - seed_set_start))
+        self._logger.info('Sampled %d grasps' %(len(grasps)))
+        self._logger.info('Computing the seed set took %.3f sec' %(time() - seed_set_start))
 
         # iteratively refit and sample
         for j in range(self._num_iters):
-            logging.info('CEM iter %d' %(j))
+            self._logger.info('CEM iter %d' %(j))
 
             # predict grasps
             predict_start = time()
             q_values = self._grasp_quality_fn(state, grasps, params=self._config)
-            logging.info('Prediction took %.3f sec' %(time()-predict_start))
+            self._logger.info('Prediction took %.3f sec' %(time()-predict_start))
 
             # sort grasps
             resample_start = time()
@@ -775,7 +773,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             elite_grasp_std = np.std(elite_grasp_arr, axis=0)
             elite_grasp_std[elite_grasp_std == 0] = 1e-6
             elite_grasp_arr = (elite_grasp_arr - elite_grasp_mean) / elite_grasp_std
-            logging.info('Elite set computation took %.3f sec' %(time()-elite_start))
+            self._logger.info('Elite set computation took %.3f sec' %(time()-elite_start))
 
             # fit a GMM to the top samples
             num_components = max(int(np.ceil(self._gmm_component_frac * num_refit)), 1)
@@ -785,7 +783,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                   reg_covar=self._gmm_reg_covar)
             train_start = time()
             gmm.fit(elite_grasp_arr)
-            logging.info('GMM fitting with %d components took %.3f sec' %(num_components, time()-train_start))
+            self._logger.info('GMM fitting with %d components took %.3f sec' %(num_components, time()-train_start))
 
             # sample the next grasps
             grasps = []
@@ -796,7 +794,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 sample_start = time()
                 grasp_vecs, _ = gmm.sample(n_samples=self._num_gmm_samples)
                 grasp_vecs = elite_grasp_std * grasp_vecs + elite_grasp_mean
-                logging.info('GMM sampling took %.3f sec' %(time()-sample_start))
+                self._logger.info('GMM sampling took %.3f sec' %(time()-sample_start))
 
                 # convert features to grasps and store if in segmask
                 for k, grasp_vec in enumerate(grasp_vecs):
@@ -810,7 +808,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                         # read depth and approach axis
                         u = int(min(max(grasp_vec[1], 0), depth_im.height-1))
                         v = int(min(max(grasp_vec[0], 0), depth_im.width-1))
-                        grasp_depth = depth_im[u, v]
+                        grasp_depth = depth_im[u, v, 0]
 
                         # approach_axis
                         grasp_axis = -normal_cloud_im[u, v]
@@ -820,7 +818,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                                                 camera_intr=camera_intr,
                                                                 depth=grasp_depth,
                                                                 axis=grasp_axis)
-                    logging.debug('Feature vec took %.5f sec' %(time()-feature_start))
+                    self._logger.debug('Feature vec took %.5f sec' %(time()-feature_start))
 
                         
                     bounds_start = time()
@@ -833,21 +831,21 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
                         # check validity according to filters
                         grasps.append(grasp)
-                    logging.debug('Bounds took %.5f sec' %(time()-bounds_start))
+                    self._logger.debug('Bounds took %.5f sec' %(time()-bounds_start))
                     num_tries += 1
                     
             # check num grasps
             num_grasps = len(grasps)
             if num_grasps == 0:
-                logging.warning('No valid grasps could be found')
+                self._logger.warning('No valid grasps could be found')
                 raise NoValidGraspsException()
-            logging.info('Resample loop took %.3f sec' %(time()-loop_start))
-            logging.info('Resampling took %.3f sec' %(time()-resample_start))
+            self._logger.info('Resample loop took %.3f sec' %(time()-loop_start))
+            self._logger.info('Resampling took %.3f sec' %(time()-resample_start))
 
         # predict final set of grasps
         predict_start = time()
         q_values = self._grasp_quality_fn(state, grasps, params=self._config)
-        logging.info('Final prediction took %.3f sec' %(time()-predict_start))
+        self._logger.info('Final prediction took %.3f sec' %(time()-predict_start))
 
         if self.config['vis']['grasp_candidates']:
             # display each grasp on the original image, colored by predicted success
@@ -1032,11 +1030,11 @@ class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
         """
         # take the greedy action with prob 1 - epsilon
         if np.random.rand() > self.epsilon:
-            logging.debug('Taking greedy action')
+            self._logger.debug('Taking greedy action')
             return CrossEntropyRobustGraspingPolicy.action(self, state)
 
         # otherwise take a random action
-        logging.debug('Taking random action')
+        self._logger.debug('Taking random action')
 
         # check valid input
         if not isinstance(state, RgbdImageState):
@@ -1056,7 +1054,7 @@ class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
         
         num_grasps = len(grasps)
         if num_grasps == 0:
-            logging.warning('No valid grasps could be found')
+            self._logger.warning('No valid grasps could be found')
             raise NoValidGraspsException()
 
         # choose a grasp uniformly at random

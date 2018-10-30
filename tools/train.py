@@ -27,9 +27,9 @@ Author
 Vishal Satish & Jeff Mahler
 """
 import argparse
-import logging
 import os
 import time
+import sys
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig
@@ -37,7 +37,7 @@ from gqcnn import get_gqcnn_model, get_gqcnn_trainer, utils as gqcnn_utils
 
 if __name__ == '__main__':
     # setup logger
-    logging.getLogger().setLevel(logging.INFO)
+    logger = gqcnn_utils.get_logger('train.py', log_stream=sys.stdout)
 
     # parse args
     parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network from scratch with TensorFlow')
@@ -119,4 +119,4 @@ if __name__ == '__main__':
                                            train_config,
                                            name=name)
     trainer.train()
-    logging.info('Total Training Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 
+    logger.info('Total Training Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 

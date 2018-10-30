@@ -38,9 +38,11 @@ def get_logger(name, log_file=None, log_stream=None):
         # assume the only one there is the stdout handler
         logging.getLogger().removeHandler(root_logger_hdlrs[0])
 
+    # create the logger and set the logging level
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    
+
+    # set up handlers    
     if log_file is not None:
         hdlr = logging.FileHandler(log_file)
         formatter = logging.Formatter('%(asctime)s %(name)-10s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M:%S')
@@ -49,8 +51,7 @@ def get_logger(name, log_file=None, log_stream=None):
     if log_stream is not None:
         hdlr = logging.StreamHandler(log_stream)
         formatter = colorlog.ColoredFormatter(
-                            '%(asctime)s %(purple)s%(name)-10s %(log_color)s%(levelname)-8s%(reset)s %(white)s%(message)s',
-                            datefmt='%m-%d %H:%M:%S',
+                            '%(purple)s%(name)-10s %(log_color)s%(levelname)-8s%(reset)s %(white)s%(message)s',
                             reset=True,
                             log_colors={
                                 'DEBUG': 'cyan',
@@ -62,6 +63,11 @@ def get_logger(name, log_file=None, log_stream=None):
                                             )
         hdlr.setFormatter(formatter)
         logger.addHandler(hdlr)
+
+    if len(logger.handlers) == 0:
+        # if no handlers were added, add the NullHandler to squelch output complaining about no handlers
+        logger.addHandler(logging.NullHandler())
+
     return logger
 
 def set_cuda_visible_devices(gpu_list):
