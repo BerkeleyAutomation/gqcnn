@@ -31,12 +31,14 @@ import numpy as np
 
 from enums import GripperMode
 
+def clear_root_logger():
+    # clear the root logger's handlers so we have full control over logging
+    for hdlr in logging.getLogger().handlers:
+        logging.getLogger().removeHandler(hdlr)
+
 def get_logger(name, log_file=None, log_stream=None):
-    # remove the root logger's handle to stdout so we have full control over logging
-    root_logger_hdlrs = logging.getLogger().handlers
-    if len(root_logger_hdlrs) > 0:
-        # assume the only one there is the stdout handler
-        logging.getLogger().removeHandler(root_logger_hdlrs[0])
+    # clear the root logger's handlers
+    clear_root_logger()
 
     # create the logger and set the logging level
     logger = logging.getLogger(name)
