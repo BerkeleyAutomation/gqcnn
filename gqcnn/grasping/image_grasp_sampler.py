@@ -39,10 +39,11 @@ import numpy as np
 import cv2
 
 from autolab_core import Point, RigidTransform
+from autolab_core.utils import get_logger
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, GdImage
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import get_logger, NoAntipodalPairsFoundException
+from gqcnn.utils import NoAntipodalPairsFoundException
 
 def force_closure(p1, p2, n1, n2, mu):
     """ Computes whether or not the point and normal pairs are in force closure. """

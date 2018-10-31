@@ -27,7 +27,7 @@ Author: Vishal Satish
 import sys
 
 from tf import *
-from gqcnn.utils import get_logger
+from autolab_core.utils import get_logger
  
 def get_gqcnn_model(backend='tf', verbose=True):
     # set up logger

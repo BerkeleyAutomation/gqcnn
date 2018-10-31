@@ -2,8 +2,8 @@ import argparse
 import sys
 
 from gqcnn import GQCNNSearch
-from gqcnn.utils import get_logger
 from autolab_core import YamlConfig
+from autolab_core.utils import get_logger
 
 if __name__ == '__main__':
     # set up logger

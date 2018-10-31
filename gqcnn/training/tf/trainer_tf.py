@@ -48,7 +48,7 @@ from autolab_core import BinaryClassificationResult, RegressionResult, TensorDat
 from autolab_core.constants import *
 import autolab_core.utils as utils
 
-from gqcnn.utils import ImageMode, TrainingMode, GripperMode, InputDepthMode, GeneralConstants, TrainStatsLogger, pose_dim, read_pose_data, weight_name_to_layer_name, get_logger, GQCNNTrainingStatus
+from gqcnn.utils import ImageMode, TrainingMode, GripperMode, InputDepthMode, GeneralConstants, TrainStatsLogger, pose_dim, read_pose_data, weight_name_to_layer_name, GQCNNTrainingStatus
 
 class GQCNNTrainerTF(object):
     """Train GQ-CNN with Tensorflow backend."""
@@ -95,7 +95,7 @@ class GQCNNTrainerTF(object):
             os.mkdir(self.model_dir)
 
         # set up logger
-        self.logger = get_logger(self.__class__.__name__, log_file=os.path.join(self.model_dir, 'training.log'), log_stream=(sys.stdout if verbose else None))
+        self.logger = utils.get_logger(self.__class__.__name__, log_file=os.path.join(self.model_dir, 'training.log'), log_stream=(sys.stdout if verbose else None))
 
         # check default split
         if split_name is None:

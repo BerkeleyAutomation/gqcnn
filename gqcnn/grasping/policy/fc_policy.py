@@ -32,12 +32,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from autolab_core import Point
+from autolab_core.utils import get_logger
 from perception import DepthImage
 from visualization import Visualizer2D as vis
-from policy import GraspingPolicy, GraspAction
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import get_logger, NoValidGraspsException
+from gqcnn.utils import NoValidGraspsException
+
 from enums import SamplingMethod
+from policy import GraspingPolicy, GraspAction
 
 class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """Abstract grasp sampling policy class using Fully-Convolutional GQ-CNN network."""

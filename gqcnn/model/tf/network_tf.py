@@ -35,7 +35,8 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf
 
-from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode, InputDepthMode, get_logger
+from autolab_core.utils import get_logger
+from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode, InputDepthMode
 
 class GQCNNWeights(object):
     """Helper struct for storing network weights."""

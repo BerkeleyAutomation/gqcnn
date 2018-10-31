@@ -34,7 +34,7 @@ import numpy as np
 import psutil
 import GPUtil
 
-from gqcnn.utils import get_logger
+from autolab_core.utils import get_logger
 
 CPU_LOAD_SAMPLE_INTERVAL = 4.0
 CPU_LOAD_OFFSET = 50 # this is a hack because it seems that psutil is returning a lower load than htop, which could be because htop takes into account queued tasks

@@ -32,9 +32,9 @@ import time
 import numpy as np
 
 from autolab_core import RigidTransform, YamlConfig
+from autolab_core.utils import get_logger
 from gqcnn import RgbdImageState, ParallelJawGrasp
 from gqcnn import CrossEntropyRobustGraspingPolicy
-from gqcnn.utils import get_logger
 from visualization import Visualizer2D as vis2d
 
 if __name__ == '__main__':

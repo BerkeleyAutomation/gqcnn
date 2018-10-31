@@ -39,7 +39,7 @@ import autolab_core.utils as utils
 from autolab_core import Point
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
-from gqcnn.utils import GripperMode, NoValidGraspsException, get_logger
+from gqcnn.utils import GripperMode, NoValidGraspsException
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, GraspQualityFunctionFactory, GQCnnQualityFunction, ImageGraspSamplerFactory
 
 FIGSIZE = 16
@@ -194,7 +194,7 @@ class GraspingPolicy(Policy):
             log_file = os.path.join(self._logging_dir, 'policy.log')
 
         # setup logger
-        self._logger = get_logger(self.__class__.__name__, log_file=log_file, log_stream=sys.stdout)
+        self._logger = utils.get_logger(self.__class__.__name__, log_file=log_file, log_stream=sys.stdout)
     
         # init grasp sampler
         if init_sampler:

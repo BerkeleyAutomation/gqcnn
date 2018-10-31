@@ -45,7 +45,7 @@ from perception import DepthImage
 from visualization import Visualizer2D as vis2d
 from gqcnn import get_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import GripperMode, ImageMode, GeneralConstants, read_pose_data, get_logger
+from gqcnn.utils import GripperMode, ImageMode, GeneralConstants, read_pose_data
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'
@@ -118,7 +118,7 @@ class GQCNNAnalyzer(object):
             os.mkdir(model_output_dir)
 
         # set up logger
-        self.logger = get_logger(self.__class__.__name__, log_file=os.path.join(model_output_dir, 'analysis.log'), log_stream=(sys.stdout if self.verbose else None))
+        self.logger = utils.get_logger(self.__class__.__name__, log_file=os.path.join(model_output_dir, 'analysis.log'), log_stream=(sys.stdout if self.verbose else None))
 
         self.logger.info('Analyzing model %s' %(model_name))
         self.logger.info('Saving output to %s' %(output_dir))

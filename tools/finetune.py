@@ -39,7 +39,7 @@ from gqcnn import utils as gqcnn_utils
 
 if __name__ == '__main__':
     # setup logger
-    logger = gqcnn_utils.get_logger('finetune.py', log_stream=sys.stdout)
+    logger = utils.get_logger('finetune.py', log_stream=sys.stdout)
 
     # parse args
     parser = argparse.ArgumentParser(description='Fine-Tune a pre-trained Grasp Quality Convolutional Neural Network with TensorFlow')

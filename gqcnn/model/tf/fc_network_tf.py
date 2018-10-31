@@ -31,7 +31,8 @@ import sys
 import tensorflow as tf
 
 from network_tf import GQCNNTF
-from gqcnn.utils import TrainingMode, InputDepthMode, get_logger
+from autolab_core.utils import get_logger
+from gqcnn.utils import TrainingMode, InputDepthMode
 
 class FCGQCNNTF(GQCNNTF):
     """FC-GQ-CNN network implemented in Tensorflow. Note that this network is not directly trained,

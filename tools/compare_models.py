@@ -38,7 +38,6 @@ import numpy as np
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig
-import gqcnn.utils as gqcnn_utils
 
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'
@@ -168,7 +167,7 @@ def analyze_model(model_dir):
                          
 if __name__ == '__main__':
     # initialize logging
-    logger = gqcnn_utils.get_logger('compare_models.py', log_stream=sys.stdout)
+    logger = utils.get_logger('compare_models.py', log_stream=sys.stdout)
 
     # parse args
     parser = argparse.ArgumentParser(description='Rollout a policy for bin picking in order to evaluate performance')

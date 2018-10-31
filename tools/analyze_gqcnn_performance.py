@@ -33,8 +33,8 @@ import os
 import sys
 
 from autolab_core import YamlConfig
+from autolab_core.utils import get_logger
 from gqcnn import GQCNNAnalyzer
-from gqcnn.utils import get_logger
 
 if __name__ == '__main__':
     # setup logger
