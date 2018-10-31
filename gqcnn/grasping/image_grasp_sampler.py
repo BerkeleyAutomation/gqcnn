@@ -352,17 +352,20 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         self._logger.debug('Normal computation took %.3f sec' %(time() - normal_start))
 
         if visualize:
+            edge_pixels = edge_pixels[::2,:]
+            edge_normals = edge_normals[::2,:]
+
             vis.figure()
             vis.subplot(1,3,1)            
             vis.imshow(depth_im)
             if num_pixels > 0:
-                vis.scatter(edge_pixels[:,1], edge_pixels[:,0], s=10, c='b')
+                vis.scatter(edge_pixels[:,1], edge_pixels[:,0], s=2, c='b')
 
             X = [pix[1] for pix in edge_pixels]
             Y = [pix[0] for pix in edge_pixels]
-            U = [10*pix[1] for pix in edge_normals]
-            V = [-10*pix[0] for pix in edge_normals]
-            plt.quiver(X, Y, U, V, units='x', scale=0.5, zorder=2, color='g')
+            U = [3*pix[1] for pix in edge_normals]
+            V = [-3*pix[0] for pix in edge_normals]
+            plt.quiver(X, Y, U, V, units='x', scale=0.25, width=0.5, zorder=2, color='r')
             vis.title('Edge pixels and normals')
 
             vis.subplot(1,3,2)

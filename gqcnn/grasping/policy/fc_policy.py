@@ -135,6 +135,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
                 return np.argpartition(preds_flat, -1 * num_samples)[-1 * num_samples:]
             elif self._sampling_method == 'uniform':
                 nonzero_ind = np.where(preds_flat > 0)[0]
+                if nonzero_ind.shape[0] == 0:
+                    raise NoValidGraspsException('No grasps with nonzero quality')
                 return np.random.choice(nonzero_ind, size=num_samples)
             else:
                 raise ValueError('Invalid sampling method: {}'.format(self._sampling_method))
