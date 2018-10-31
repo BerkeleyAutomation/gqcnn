@@ -46,7 +46,7 @@ class GQCNNWeights(object):
 class GQCNNTF(object):
     """GQ-CNN network implemented in Tensorflow."""
 
-    def __init__(self, gqcnn_config, verbose=True, log_file=None, logger=None):
+    def __init__(self, gqcnn_config, verbose=True, log_file=None):
         """
         Parameters
         ----------
@@ -57,9 +57,7 @@ class GQCNNTF(object):
         self._graph = tf.Graph()
 
         # set up logger
-        self._logger = logger
-        if self._logger is None:
-            self._logger = get_logger(self.__class__.__name__, log_file=log_file, log_stream=(sys.stdout if verbose else None))
+        self._logger = get_logger(self.__class__.__name__, log_file=log_file, log_stream=(sys.stdout if verbose else None))
             
         self._weights = GQCNNWeights()
         self._parse_config(gqcnn_config)
@@ -325,7 +323,7 @@ class GQCNNTF(object):
         gqcnn_config : dict
             python dictionary of configuration parameters
         """
-        
+        self._logger.info('Parsing GQCNN config!') 
         ##################### PARSING GQCNN CONFIG #####################
         # load tensor params
         self._batch_size = gqcnn_config['batch_size']

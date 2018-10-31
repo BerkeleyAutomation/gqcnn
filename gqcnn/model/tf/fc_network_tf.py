@@ -38,13 +38,10 @@ class FCGQCNNTF(GQCNNTF):
     """FC-GQ-CNN network implemented in Tensorflow. Note that this network is not directly trained,
        but instead loaded from a trained GQ-CNN at inference time."""
 
-    def __init__(self, gqcnn_config, fc_config, verbose=True):
-        # set up logger
-        self._logger = get_logger(self.__class__.__name__, log_stream=(sys.stdout if verbose else None))
-
-        super(FCGQCNNTF, self).__init__(gqcnn_config, logger=self._logger)
-        super(FCGQCNNTF, self)._parse_config(gqcnn_config) #TODO: @Vishal this is redundant, right?
-        self._parse_config(fc_config)
+    def __init__(self, gqcnn_config, fc_config, verbose=True, log_file=None):
+        super(FCGQCNNTF, self).__init__(gqcnn_config, log_file=log_file)
+        super(FCGQCNNTF, self)._parse_config(gqcnn_config) 
+        self._parse_config(fc_config) # we call this again(even though it gets called in the parent constructor on line 42) because the call to the parent _parse_config() on line 43 overwrites our first call
 
         # check that conv layers of GQ-CNN were trained with VALID padding
         for layer_name, layer_config in self._architecture['im_stream'].iteritems():
@@ -52,7 +49,7 @@ class FCGQCNNTF(GQCNNTF):
                 assert layer_config['pad'] == 'VALID', 'GQ-CNN used for FC-GQ-CNN must have VALID padding for conv layers. Found layer: {} with padding: {}'.format(layer_name, layer_config['pad'])
 
     @staticmethod
-    def load(model_dir, fc_config):
+    def load(model_dir, fc_config, log_file=None):
         """Instantiate an FC-GQ-CNN from a trained GQ-CNN. 
 
         Parameters
@@ -72,7 +69,7 @@ class FCGQCNNTF(GQCNNTF):
         gqcnn_config = train_config['gqcnn']
         
         # initialize weights and Tensorflow network
-        fcgqcnn = FCGQCNNTF(gqcnn_config, fc_config)
+        fcgqcnn = FCGQCNNTF(gqcnn_config, fc_config, log_file=log_file)
         fcgqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         fcgqcnn.init_mean_and_std(model_dir)
         training_mode = train_config['training_mode']
@@ -85,6 +82,7 @@ class FCGQCNNTF(GQCNNTF):
         return fcgqcnn
 
     def _parse_config(self, cfg):
+        self._logger.info('Parsing FCGQCNN config!')
         # override GQ-CNN image height and width
         self._im_width = cfg['im_width']
         self._im_height = cfg['im_height']
