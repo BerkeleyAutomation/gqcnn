@@ -31,15 +31,14 @@ import time
 
 import numpy as np
 
-from autolab_core import RigidTransform, YamlConfig
-from autolab_core.utils import get_logger
+from autolab_core import RigidTransform, YamlConfig, Logger
 from gqcnn import RgbdImageState, ParallelJawGrasp
 from gqcnn import CrossEntropyRobustGraspingPolicy
 from visualization import Visualizer2D as vis2d
 
 if __name__ == '__main__':
     # set up logger
-    logger = get_logger('run_policy.py', log_stream=sys.stdout)
+    logger = Logger.get_logger('run_policy.py')
 
     # parse args
     parser = argparse.ArgumentParser(description='Run a saved test case through a GQ-CNN policy. For debugging purposes only.')

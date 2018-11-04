@@ -34,15 +34,14 @@ import time
 
 import numpy as np
 
-from autolab_core import RigidTransform, YamlConfig
-from autolab_core.utils import get_logger
+from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
 
 if __name__ == '__main__':
     # set up logger
-    logger = get_logger('examples/policy.py', log_stream=sys.stdout)
+    logger = Logger.get_logger('examples/policy.py')
 
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')

@@ -39,7 +39,7 @@ import numpy as np
 import scipy.misc as sm
 
 import autolab_core.utils as utils
-from autolab_core import BinaryClassificationResult, Point, TensorDataset
+from autolab_core import BinaryClassificationResult, Point, TensorDataset, Logger
 from autolab_core.constants import *
 from perception import DepthImage
 from visualization import Visualizer2D as vis2d
@@ -118,7 +118,7 @@ class GQCNNAnalyzer(object):
             os.mkdir(model_output_dir)
 
         # set up logger
-        self.logger = utils.get_logger(self.__class__.__name__, log_file=os.path.join(model_output_dir, 'analysis.log'), log_stream=(sys.stdout if self.verbose else None))
+        self.logger = Logger.get_logger(self.__class__.__name__, log_file=os.path.join(model_output_dir, 'analysis.log'), silence=(not self.verbose), global_log_file=self.verbose)
 
         self.logger.info('Analyzing model %s' %(model_name))
         self.logger.info('Saving output to %s' %(output_dir))

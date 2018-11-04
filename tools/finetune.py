@@ -33,13 +33,13 @@ import os
 import sys
 
 import autolab_core.utils as utils
-from autolab_core import YamlConfig
+from autolab_core import YamlConfig, Logger
 from gqcnn import get_gqcnn_model, get_gqcnn_trainer
 from gqcnn import utils as gqcnn_utils
 
 if __name__ == '__main__':
     # setup logger
-    logger = utils.get_logger('finetune.py', log_stream=sys.stdout)
+    logger = Logger.get_logger('finetune.py')
 
     # parse args
     parser = argparse.ArgumentParser(description='Fine-Tune a pre-trained Grasp Quality Convolutional Neural Network with TensorFlow')

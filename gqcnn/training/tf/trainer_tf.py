@@ -44,7 +44,7 @@ import scipy.misc as sm
 import scipy.stats as ss
 import tensorflow as tf
 
-from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset, YamlConfig
+from autolab_core import BinaryClassificationResult, RegressionResult, TensorDataset, YamlConfig, Logger
 from autolab_core.constants import *
 import autolab_core.utils as utils
 
@@ -95,7 +95,7 @@ class GQCNNTrainerTF(object):
             os.mkdir(self.model_dir)
 
         # set up logger
-        self.logger = utils.get_logger(self.__class__.__name__, log_file=os.path.join(self.model_dir, 'training.log'), log_stream=(sys.stdout if verbose else None))
+        self.logger = Logger.get_logger(self.__class__.__name__, log_file=os.path.join(self.model_dir, 'training.log'), silence=(not verbose), global_log_file=verbose)
 
         # check default split
         if split_name is None:

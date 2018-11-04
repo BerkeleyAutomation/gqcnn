@@ -31,8 +31,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-from autolab_core import Point
-from autolab_core.utils import get_logger
+from autolab_core import Point, Logger
 from perception import DepthImage
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
@@ -57,7 +56,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         GraspingPolicy.__init__(self, cfg, init_sampler=False)
 
         # init logger
-        self._logger = get_logger(self.__class__.__name__, log_stream=sys.stdout)
+        self._logger = Logger.get_logger(self.__class__.__name__)
 
         self._cfg = cfg
         self._sampling_method = self._cfg['sampling_method']

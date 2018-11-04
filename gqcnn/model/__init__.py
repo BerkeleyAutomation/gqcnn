@@ -27,11 +27,11 @@ Author: Vishal Satish
 import sys
 
 from tf import *
-from autolab_core.utils import get_logger
+from autolab_core import Logger
  
 def get_gqcnn_model(backend='tf', verbose=True):
     # set up logger
-    logger = get_logger('GQCNNModelFactory', log_stream=(sys.stdout if verbose else None))
+    logger = Logger.get_logger('GQCNNModelFactory', silence=(not verbose))
 
     # return desired GQ-CNN instance based on backend
     if backend == 'tf':
@@ -42,7 +42,7 @@ def get_gqcnn_model(backend='tf', verbose=True):
 
 def get_fc_gqcnn_model(backend='tf', verbose=True):
     # set up logger
-    logger = get_logger('FCGQCNNModelFactory', log_stream=(sys.stdout if verbose else None))
+    logger = Logger.get_logger('FCGQCNNModelFactory', silence=(not verbose))
 
   # return desired Fully-Convolutional GQ-CNN instance based on backend
     if backend == 'tf':

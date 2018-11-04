@@ -32,13 +32,12 @@ import time
 import os
 import sys
 
-from autolab_core import YamlConfig
-from autolab_core.utils import get_logger
+from autolab_core import YamlConfig, Logger
 from gqcnn import GQCNNAnalyzer
 
 if __name__ == '__main__':
     # setup logger
-    logger = get_logger('analyze_gqcnn_performance.py', log_stream=sys.stdout)
+    logger = Logger.get_logger('analyze_gqcnn_performance.py')
 
     # parse args
     parser = argparse.ArgumentParser(description='Analyze a Grasp Quality Convolutional Neural Network with TensorFlow')

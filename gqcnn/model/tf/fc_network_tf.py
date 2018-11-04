@@ -31,7 +31,6 @@ import sys
 import tensorflow as tf
 
 from network_tf import GQCNNTF
-from autolab_core.utils import get_logger
 from gqcnn.utils import TrainingMode, InputDepthMode
 
 class FCGQCNNTF(GQCNNTF):
@@ -82,7 +81,6 @@ class FCGQCNNTF(GQCNNTF):
         return fcgqcnn
 
     def _parse_config(self, cfg):
-        self._logger.info('Parsing FCGQCNN config!')
         # override GQ-CNN image height and width
         self._im_width = cfg['im_width']
         self._im_height = cfg['im_height']

@@ -33,7 +33,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import autolab_core.utils as utils
-from autolab_core import Point, PointCloud, RigidTransform
+from autolab_core import Point, PointCloud, RigidTransform, Logger
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
 from gqcnn import get_gqcnn_model, get_fc_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
@@ -48,7 +48,7 @@ class GraspQualityFunction(object):
 
     def __init__(self):
         # set up logger
-        self._logger = utils.get_logger(self.__class__.__name__, log_stream=sys.stdout)
+        self._logger = Logger.get_logger(self.__class__.__name__)
 
     def __call__(self, state, actions, params=None):
         """ Evaluates grasp quality for a set of actions given a state. """

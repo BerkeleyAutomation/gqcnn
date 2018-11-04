@@ -38,8 +38,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
-from autolab_core import Point, RigidTransform
-from autolab_core.utils import get_logger
+from autolab_core import Point, RigidTransform, Logger
 from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, GdImage
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
@@ -81,7 +80,7 @@ class ImageGraspSampler(object):
         self._config = config
 
         # setup logger
-        self._logger = get_logger(self.__class__.__name__, log_stream=sys.stdout)
+        self._logger = Logger.get_logger(self.__class__.__name__)
 
     def sample(self, rgbd_im, camera_intr, num_samples,
                segmask=None, seed=None, visualize=False):

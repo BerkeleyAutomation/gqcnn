@@ -37,7 +37,7 @@ from trial import GQCNNTrainingAndAnalysisTrial
 from utils import gen_trial_params, gen_timestamp, log_trial_status
 from enums import TrialConstants, SearchConstants
 
-from autolab_core.utils import get_logger
+from autolab_core import Logger
 from gqcnn.utils import GQCNNTrainingStatus
 
 class GQCNNSearch(object):
@@ -54,7 +54,7 @@ class GQCNNSearch(object):
             os.makedirs(self._trial_output_dir)
 
         # set up logger
-        self._logger = get_logger(self.__class__.__name__, log_file=os.path.join(self._trial_output_dir, 'search.log'), log_stream=sys.stdout)
+        self._logger = Logger.get_logger(self.__class__.__name__, log_file=os.path.join(self._trial_output_dir, 'search.log'), global_log_file=True)
 
         # init resource manager
         self._resource_manager = ResourceManager(TrialConstants.TRIAL_CPU_LOAD, TrialConstants.TRIAL_GPU_LOAD, TrialConstants.TRIAL_GPU_MEM, monitor_cpu=monitor_cpu, monitor_gpu=monitor_gpu, cpu_cores=cpu_cores, gpu_devices=gpu_devices)

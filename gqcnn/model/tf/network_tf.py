@@ -35,7 +35,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf
 
-from autolab_core.utils import get_logger
+from autolab_core import Logger
 from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode, InputDepthMode
 
 class GQCNNWeights(object):
@@ -57,7 +57,7 @@ class GQCNNTF(object):
         self._graph = tf.Graph()
 
         # set up logger
-        self._logger = get_logger(self.__class__.__name__, log_file=log_file, log_stream=(sys.stdout if verbose else None))
+        self._logger = Logger.get_logger(self.__class__.__name__, log_file=log_file, silence=(not verbose), global_log_file=verbose)
             
         self._weights = GQCNNWeights()
         self._parse_config(gqcnn_config)
@@ -323,7 +323,7 @@ class GQCNNTF(object):
         gqcnn_config : dict
             python dictionary of configuration parameters
         """
-        self._logger.info('Parsing GQCNN config!') 
+        
         ##################### PARSING GQCNN CONFIG #####################
         # load tensor params
         self._batch_size = gqcnn_config['batch_size']
