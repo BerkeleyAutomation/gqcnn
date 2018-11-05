@@ -49,6 +49,9 @@ WINDOW = 1000
 
 IGNORE_MODELS = ['GQ-Adv', 'GQ-Image-Wise', 'GQ-Suction']
 
+# initialize logging
+logger = Logger.get_logger('tools/compare_models.py')
+
 class GQCnnAnalysis(object):
     def __init__(self, config,
                  train_errors,
@@ -166,9 +169,6 @@ def analyze_model(model_dir):
                          train_time)
                          
 if __name__ == '__main__':
-    # initialize logging
-    logger = Logger.get_logger('compare_models.py')
-
     # parse args
     parser = argparse.ArgumentParser(description='Rollout a policy for bin picking in order to evaluate performance')
     parser.add_argument('model_dir', type=str, default=None, help='directory containing the models to compare')

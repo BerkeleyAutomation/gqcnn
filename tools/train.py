@@ -35,10 +35,10 @@ import autolab_core.utils as utils
 from autolab_core import YamlConfig, Logger
 from gqcnn import get_gqcnn_model, get_gqcnn_trainer
 
-if __name__ == '__main__':
-    # setup logger
-    logger = Logger.get_logger('train.py')
+# setup logger
+logger = Logger.get_logger('tools/train.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network from scratch with TensorFlow')
     parser.add_argument('dataset_dir', type=str, default=None,

@@ -35,10 +35,10 @@ import sys
 from autolab_core import YamlConfig, Logger
 from gqcnn import GQCNNAnalyzer
 
-if __name__ == '__main__':
-    # setup logger
-    logger = Logger.get_logger('analyze_gqcnn_performance.py')
+# setup logger
+logger = Logger.get_logger('tools/analyze_gqcnn_performance.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Analyze a Grasp Quality Convolutional Neural Network with TensorFlow')
     parser.add_argument('model_dir', type=str, default=None, help='path to the model to analyze')

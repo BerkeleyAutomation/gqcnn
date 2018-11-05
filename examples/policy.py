@@ -39,10 +39,10 @@ from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, Rg
 from visualization import Visualizer2D as vis
 from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
 
-if __name__ == '__main__':
-    # set up logger
-    logger = Logger.get_logger('examples/policy.py')
+# set up logger
+logger = Logger.get_logger('examples/policy.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
     parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')

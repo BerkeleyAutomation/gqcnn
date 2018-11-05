@@ -36,10 +36,10 @@ from gqcnn import RgbdImageState, ParallelJawGrasp
 from gqcnn import CrossEntropyRobustGraspingPolicy
 from visualization import Visualizer2D as vis2d
 
-if __name__ == '__main__':
-    # set up logger
-    logger = Logger.get_logger('run_policy.py')
+# set up logger
+logger = Logger.get_logger('tools/run_policy.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Run a saved test case through a GQ-CNN policy. For debugging purposes only.')
     parser.add_argument('test_case_path', type=str, default=None, help='path to test case')

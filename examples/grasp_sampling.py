@@ -25,21 +25,20 @@ GQ-CNN-based grasping policy
 Author: Jeff Mahler
 """
 import argparse
-import logging
 import os
 import sys
 
 import numpy as np
 
-from autolab_core import RigidTransform, YamlConfig
+from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import RgbdImage, RgbdSensorFactory
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import AntipodalDepthImageGraspSampler
 
-if __name__ == '__main__':
-    # set up logger
-    logging.getLogger().setLevel(logging.DEBUG)
+# set up logger
+logger = Logger.get_logger('examples/grasp_sampling.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Capture a set of test images from the Kinect2')
     parser.add_argument('--config_filename', type=str, default='cfg/examples/grasp_sampling.yaml', help='path to configuration file to use')

@@ -28,7 +28,6 @@ Author
 Jeff Mahler
 """
 import argparse
-import logging
 import os
 import sys
 import time
@@ -48,10 +47,10 @@ from gqcnn.grasping.policy import GraspAction
 from gqcnn.msg import GQCNNGrasp, BoundingBox
 from gqcnn.srv import GQCNNGraspPlanner
 
-if __name__ == '__main__':
-    # set up logger
-    logging.getLogger().setLevel(logging.INFO)
+# set up logger
+logger = Logger.get_logger('examples/grasp_planning_service.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
     parser.add_argument('--color_image', type=str, default=None, help='path to a test color image stored as a .png file')
@@ -70,7 +69,7 @@ if __name__ == '__main__':
 
     # initialize the ROS node
     rospy.init_node('grasp_planning_example')
-    logging.getLogger().addHandler(rl.RosStreamHandler())
+    logger.addHandler(rl.RosStreamHandler())
 
     # setup filenames
     if color_im_filename is None:
@@ -154,8 +153,8 @@ if __name__ == '__main__':
                                                        desired_encoding="passthrough"),
                                frame=camera_intr.frame)
     except CVBridgeError as e:
-        logging.error(e)
-        logging.error('Failed to convert image')
+        logger.error(e)
+        logger.error('Failed to convert image')
         sys.exit(1)
     action = GraspAction(grasp_2d, grasp.q_value, thumbnail)
     

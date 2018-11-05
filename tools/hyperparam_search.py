@@ -4,10 +4,10 @@ import sys
 from gqcnn import GQCNNSearch
 from autolab_core import YamlConfig, Logger
 
-if __name__ == '__main__':
-    # set up logger
-    logger = Logger.get_logger('hyperparam_search.py') 
+# set up logger
+logger = Logger.get_logger('tools/hyperparam_search.py') 
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Hyper-parameter search for GQ-CNN.')
     parser.add_argument('dataset', type=str, default=None, help='path to dataset')
