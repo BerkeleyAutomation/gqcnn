@@ -131,7 +131,7 @@ def parse_master_train_config(train_config):
 def gen_timestamp():
     return str(datetime.now()).split('.')[0].replace(' ', '_')
 
-def gen_trial_params(master_train_configs, datasets, split_names):
+def gen_trial_params_train(master_train_configs, datasets, split_names):
     trial_params = []
     for master_train_config, dataset, split_name in zip(master_train_configs, datasets, split_names):
         train_configs = parse_master_train_config(master_train_config)
@@ -139,6 +139,22 @@ def gen_trial_params(master_train_configs, datasets, split_names):
             trial_name = '{}_{}_trial_{}_{}'.format(dataset.split('/')[-3], split_name, i, gen_timestamp())
             trial_params.append((trial_name, hyperparam_summary_dict, train_config, dataset, split_name))
     return trial_params
+
+def gen_trial_params_finetune(master_train_configs, datasets, base_models, split_names):
+    trial_params = []
+    for master_train_config, dataset, base_model, split_name in zip(master_train_configs, datasets, base_models, split_names):
+        train_configs = parse_master_train_config(master_train_config)
+        for i, (hyperparam_summary_dict, train_config) in enumerate(train_configs):
+            trial_name = '{}_{}_trial_{}_{}'.format(dataset.split('/')[-3], split_name, i, gen_timestamp())
+            trial_params.append((trial_name, hyperparam_summary_dict, train_config, dataset, base_model, split_name))
+    return trial_params
+
+
+def gen_trial_params(master_train_configs, datasets, split_names, base_models=[]):
+    if len(base_models) > 0:
+        return gen_trial_params_finetune(master_train_configs, datasets, base_models, split_names)
+    else:
+        return gen_trial_params_train(master_train_configs, datasets, split_names)
 
 def log_trial_status(trials):
    status_str = '--------------------TRIAL STATUS--------------------'

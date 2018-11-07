@@ -28,6 +28,7 @@ import multiprocessing
 import sys
 import os
 import json
+from abc import abstractmethod, ABCMeta
 
 import numpy as np
 
@@ -43,7 +44,9 @@ class TrialStatus:
     FINISHED = 'finished'
     EXCEPTION = 'exception'
 
-class GQCNNTrainingAndAnalysisTrial(object):
+class GQCNNTrialWithAnalysis(object):
+    __metaclass__ = ABCMeta
+
     def __init__(self, analysis_cfg, train_cfg, dataset_dir, split_name, output_dir, model_name, hyperparam_summary):
         self._analysis_cfg = analysis_cfg
         self._train_cfg = train_cfg
@@ -65,6 +68,10 @@ class GQCNNTrainingAndAnalysisTrial(object):
         progress_dict = self._manager.dict(status=TrialStatus.PENDING)
         return progress_dict
 
+    @abstractmethod
+    def _run(self, trainer):
+        pass
+
     def _run_trial(self, analysis_config, train_config, dataset_dir, split_name, output_dir, model_name, train_progress_dict, trial_progress_dict, hyperparam_summary, gpu_avail="", cpu_cores_avail=[], backend='tf'):
         trial_progress_dict['status'] = TrialStatus.RUNNING
         try:
@@ -80,7 +87,7 @@ class GQCNNTrainingAndAnalysisTrial(object):
                                                  name=model_name,
                                                  progress_dict=train_progress_dict,
                                                  verbose=False)
-            trainer.train()
+            self._run(trainer)
 
             with open(os.path.join(output_dir, model_name, 'hyperparam_summary.json'), 'wb') as fhandle:
                 json.dump(hyperparam_summary, fhandle, indent=GeneralConstants.JSON_INDENT)
@@ -136,3 +143,16 @@ class GQCNNTrainingAndAnalysisTrial(object):
         if self.training_status == 'finished':
             trial_str += ', Initial train error: {}, Final train error: {}, Initial train loss: {}, Final train loss: {}, Initial val error: {}, Final val error: {}, Norm final val error: {}'.format(self._train_progress_dict['analysis']['init_train_error'], self._train_progress_dict['analysis']['final_train_error'], self._train_progress_dict['analysis']['init_train_loss'], self._train_progress_dict['analysis']['final_train_loss'], self._train_progress_dict['analysis']['init_val_error'], self._train_progress_dict['analysis']['final_val_error'], self._train_progress_dict['analysis']['norm_final_val_error'])
         return trial_str
+
+class GQCNNTrainingAndAnalysisTrial(GQCNNTrialWithAnalysis):
+    def _run(self, trainer):
+        trainer.train()
+
+class GQCNNFineTuningAndAnalysisTrial(GQCNNTrialWithAnalysis):
+    def __init__(self, analysis_cfg, train_cfg, dataset_dir, base_model_dir, split_name, output_dir, model_name, hyperparam_summary):
+        GQCNNTrialWithAnalysis.__init__(self, analysis_cfg, train_cfg, dataset_dir, split_name, output_dir, model_name, hyperparam_summary)
+        
+        self._base_model_dir = base_model_dir
+
+    def _run(self, trainer):
+        trainer.finetune(self._base_model_dir)

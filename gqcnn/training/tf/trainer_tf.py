@@ -85,6 +85,7 @@ class GQCNNTrainerTF(object):
         self.tensorboard_has_launched = False
         self.model_name = name
         self.progress_dict = progress_dict
+        self.finetuning = False
 
         # create a directory for the model
         if self.model_name is None:
@@ -232,6 +233,10 @@ class GQCNNTrainerTF(object):
         base_model_dir : str
             path to the base GQ-CNN to use
         """
+        # set flag and base model for fine-tuning
+        self.finetuning = True
+        self.base_model_dir = base_model_dir
+
         # run setup 
         self._setup()
         
@@ -240,6 +245,8 @@ class GQCNNTrainerTF(object):
         self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node)
         
         # optimize weights
+        if self.progress_dict is not None:
+            self.progress_dict['training_status'] = GQCNNTrainingStatus.TRAINING
         self._optimize_weights(finetune=True)
         
     def _optimize_weights(self, finetune=False):
@@ -850,6 +857,10 @@ class GQCNNTrainerTF(object):
             
     def _save_configs(self):
         """Save training configuration."""
+        # update config for fine-tuning
+        if self.finetuning:
+            self.cfg['base_model_dir'] = self.base_model_dir            
+
         # save config
         out_config_filename = os.path.join(self.model_dir, 'config.json')
         tempOrderedDict = collections.OrderedDict()

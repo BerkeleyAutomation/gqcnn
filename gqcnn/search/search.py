@@ -33,7 +33,7 @@ from Queue import Queue
 import sys
 
 from resource_manager import ResourceManager
-from trial import GQCNNTrainingAndAnalysisTrial
+from trial import GQCNNTrainingAndAnalysisTrial, GQCNNFineTuningAndAnalysisTrial
 from utils import gen_trial_params, gen_timestamp, log_trial_status
 from enums import TrialConstants, SearchConstants
 
@@ -41,12 +41,12 @@ from autolab_core import Logger
 from gqcnn.utils import GQCNNTrainingStatus
 
 class GQCNNSearch(object):
-    def __init__(self, analysis_config, train_configs, datasets, split_names, output_dir=None, search_name=None, monitor_cpu=True, monitor_gpu=True, cpu_cores=[], gpu_devices=[]):
+    def __init__(self, analysis_config, train_configs, datasets, split_names, base_models=[], output_dir=None, search_name=None, monitor_cpu=True, monitor_gpu=True, cpu_cores=[], gpu_devices=[]):
         self._analysis_cfg = analysis_config
         
         # create trial output dir if not specified
         if search_name is None:
-            search_name = 'gqcnn_hyperparam_search_{}'.format(gen_timestamp())    
+            search_name = 'gqcnn_hyperparam_search_{}'.format(gen_timestamp())  
         if output_dir is None:
             output_dir = 'models'
         self._trial_output_dir = os.path.join(output_dir, search_name)
@@ -60,14 +60,21 @@ class GQCNNSearch(object):
         self._resource_manager = ResourceManager(TrialConstants.TRIAL_CPU_LOAD, TrialConstants.TRIAL_GPU_LOAD, TrialConstants.TRIAL_GPU_MEM, monitor_cpu=monitor_cpu, monitor_gpu=monitor_gpu, cpu_cores=cpu_cores, gpu_devices=gpu_devices)
         
         # parse train configs and generate individual trial parameters
-        assert len(train_configs) == len(datasets) == len(split_names), 'Must have equal number of training configs, datasets, and split_names!'
+        if len(base_models) > 0:
+            assert len(train_configs) == len(datasets) == len(split_names) == len(base_models), 'Must have equal number of training configs, datasets, split_names, and base models!'
+        else:
+            assert len(train_configs) == len(datasets) == len(split_names), 'Must have equal number of training configs, datasets, and split_names!'
         self._logger.info('Generating trial parameters...')
-        trial_params = gen_trial_params(train_configs, datasets, split_names)
+        trial_params = gen_trial_params(train_configs, datasets, split_names, base_models=base_models)
 
         # create pending trial queue
         self._trials_pending_queue = Queue()
-        for trial_name, hyperparam_summary, train_cfg, dataset, split_name in trial_params:
-            self._trials_pending_queue.put(GQCNNTrainingAndAnalysisTrial(self._analysis_cfg, train_cfg, dataset, split_name, self._trial_output_dir, trial_name, hyperparam_summary))
+        if len(base_models) > 0:
+            for trial_name, hyperparam_summary, train_cfg, dataset, base_model, split_name in trial_params:
+                self._trials_pending_queue.put(GQCNNFineTuningAndAnalysisTrial(self._analysis_cfg, train_cfg, dataset, base_model, split_name, self._trial_output_dir, trial_name, hyperparam_summary))
+        else:
+            for trial_name, hyperparam_summary, train_cfg, dataset, split_name in trial_params:
+                self._trials_pending_queue.put(GQCNNTrainingAndAnalysisTrial(self._analysis_cfg, train_cfg, dataset, split_name, self._trial_output_dir, trial_name, hyperparam_summary))
 
         # create containers to hold running, finished, and errored-out trials
         self._trials_running = []
