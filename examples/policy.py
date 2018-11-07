@@ -65,19 +65,19 @@ if __name__ == '__main__':
         if fully_conv:
             depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              '..',
-                                             'data/examples/clutter/depth_0.npy')
+                                             'data/examples/clutter/primesense/depth_0.npy')
         else:
             depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              '..',
-                                             'data/examples/single_object/depth_0.npy')
+                                             'data/examples/single_object/primesense/depth_0.npy')
     if fully_conv and segmask_filename is None:
         segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                         '..',
-                                        'data/examples/clutter/segmask_0.png')
+                                        'data/examples/clutter/primesense/segmask_0.png')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
-                                            'data/calib/primesense.intr')    
+                                            'data/calib/primesense/primesense.intr')    
     if config_filename is None:
         if fully_conv:
             config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),

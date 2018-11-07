@@ -13,7 +13,7 @@ policy:
   # metrics
   metric:
     type: fcgqcnn
-    gqcnn_model: /path/to/your/FC-GQ-Image-Wise-Suction
+    gqcnn_model: models/FCGQCNN-4.0-SUCTION
     gqcnn_backend: tf
     fully_conv_gqcnn_config:
       im_height: 480

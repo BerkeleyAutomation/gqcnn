@@ -20,7 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Demonstrates image-based grasp candidate sampling, which is used in the
+Demonstrates image-based antipodal grasp candidate sampling, which is used in the
 GQ-CNN-based grasping policy
 Author: Jeff Mahler
 """
@@ -36,12 +36,12 @@ from visualization import Visualizer2D as vis
 from gqcnn.grasping import AntipodalDepthImageGraspSampler
 
 # set up logger
-logger = Logger.get_logger('examples/grasp_sampling.py')
+logger = Logger.get_logger('examples/antipodal_grasp_sampling.py')
 
 if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Capture a set of test images from the Kinect2')
-    parser.add_argument('--config_filename', type=str, default='cfg/examples/grasp_sampling.yaml', help='path to configuration file to use')
+    parser.add_argument('--config_filename', type=str, default='cfg/examples/antipodal_grasp_sampling.yaml', help='path to configuration file to use')
     args = parser.parse_args()
     config_filename = args.config_filename
 

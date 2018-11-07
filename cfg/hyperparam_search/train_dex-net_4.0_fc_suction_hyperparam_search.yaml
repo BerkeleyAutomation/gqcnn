@@ -20,11 +20,11 @@ loss: sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
-decay_step_multiplier: [0.8, 1.5]   # number of times to go through training datapoints before stepping down decay rate (in epochs)
+decay_step_multiplier: 0.5   # number of times to go through training datapoints before stepping down decay rate (in epochs)
 decay_rate: 0.95
 momentum_rate: 0.9
 max_training_examples_per_load: 128
-drop_rate: [0.0, 0.25, 0.5]
+drop_rate: 0.0
 max_global_grad_norm: 100000000000
 
 # input params
@@ -85,8 +85,8 @@ gqcnn:
     im_stream:
       conv1_1:
         type: conv
-        filt_dim: 9
-        num_filt: ['anchor_num_filt', 5, 8, 12, 16]
+        filt_dim: ['anchor_filt_dim', 6, 9, 9]
+        num_filt: ['anchor_num_filts', 8, 12, 16, 20]
         pool_size: 1
         pool_stride: 1
         pad: VALID
@@ -94,8 +94,8 @@ gqcnn:
         norm_type: local_response
       conv1_2:
         type: conv
-        filt_dim: 5
-        num_filt: ['anchor_num_filt', 5, 8, 12, 16]
+        filt_dim: ['anchor_filt_dim', 3, 5, 5]
+        num_filt: ['anchor_num_filts', 8, 12, 16, 20]
         pool_size: 2
         pool_stride: 2
         pad: VALID
@@ -103,8 +103,8 @@ gqcnn:
         norm_type: local_response
       conv2_1:
         type: conv
-        filt_dim: 5
-        num_filt: ['anchor_num_filt', 5, 8, 12, 16]
+        filt_dim: ['anchor_filt_dim', 3, 5, 3]
+        num_filt: ['anchor_num_filts', 8, 12, 16, 20]
         pool_size: 1
         pool_stride: 1
         pad: VALID
@@ -112,8 +112,8 @@ gqcnn:
         norm_type: local_response
       conv2_2:
         type: conv
-        filt_dim: 5
-        num_filt: ['anchor_num_filt', 5, 8, 12, 16]
+        filt_dim: ['anchor_filt_dim', 3, 5, 3]
+        num_filt: ['anchor_num_filts', 8, 12, 16, 20]
         pool_size: 2
         pool_stride: 2
         pad: VALID
@@ -121,10 +121,10 @@ gqcnn:
         norm_type: local_response
       fc3:
         type: fc
-        out_size: ['anchor_fc_size', 32, 64, 128]
+        out_size: ['anchor_fc_out_size', 32, 64, 128]
       fc4:
         type: fc
-        out_size: ['anchor_fc_size', 32, 64, 128]
+        out_size: ['anchor_fc_out_size', 32, 64, 128]
       fc5:
         type: fc
         out_size: 2

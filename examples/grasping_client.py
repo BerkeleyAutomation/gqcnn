@@ -48,7 +48,7 @@ from gqcnn.msg import GQCNNGrasp, BoundingBox
 from gqcnn.srv import GQCNNGraspPlanner
 
 # set up logger
-logger = Logger.get_logger('examples/grasp_planning_service.py')
+logger = Logger.get_logger('examples/grasping_client.py')
 
 if __name__ == '__main__':
     # parse args
@@ -75,23 +75,23 @@ if __name__ == '__main__':
     if color_im_filename is None:
         color_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '..',
-                                         'data/examples/single_object/color_0.png')
+                                         'data/examples/single_object/primesense/color_0.png')
     if depth_im_filename is None:
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '..',
-                                         'data/examples/single_object/depth_0.npy')
+                                         'data/examples/single_object/primesense/depth_0.npy')
     if segmask_filename is None:
         segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                         '..',
-                                        'data/examples/single_object/segmask_0.png')
+                                        'data/examples/single_object/primesense/segmask_0.png')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
-                                            'data/calib/primesense.intr')    
+                                            'data/calib/primesense/primesense.intr')    
     if config_filename is None:
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                        '..',
-                                       'cfg/examples/grasp_planning_service.yaml')
+                                       'cfg/examples/grasping_client.yaml')
     
     # read config
     config = YamlConfig(config_filename)
