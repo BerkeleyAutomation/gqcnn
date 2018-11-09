@@ -365,7 +365,7 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
         # plot
         vis.figure()
         vis.imshow(tf_depth_im)
-        plt.imshow(affordance_map, cmap=plt.cm.RdYlGn, alpha=0.3)
+        plt.imshow(affordance_map, cmap=plt.cm.RdYlGn, alpha=0.3, vmin=0.0, vmax=1.0)
         if plot_max:
             affordance_argmax = np.unravel_index(np.argmax(affordance_map), affordance_map.shape)
             plt.scatter(affordance_argmax[1], affordance_argmax[0], c='black', marker='.', s=scale*25)
