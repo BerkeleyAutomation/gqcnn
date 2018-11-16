@@ -46,7 +46,7 @@ from visualization import Visualizer2D as vis
 
 from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D, GraspAction
 from gqcnn.msg import GQCNNGrasp, BoundingBox
-from gqcnn.srv import GQCNNGraspPlanner
+from gqcnn.srv import GQCNNGraspPlanner, GQCNNGraspPlannerBoundingBox, GQCNNGraspPlannerSegmask
 
 if __name__ == '__main__':
     # set up logger
@@ -92,14 +92,14 @@ if __name__ == '__main__':
     if config_filename is None:
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                        '..',
-                                       'cfg/examples/grasp_planning_service.yaml')
+                                       'cfg/ros_nodes/dex-net_2.0.yaml')
     
     # read config
     config = YamlConfig(config_filename)
 
     # wait for Grasp Planning Service and create Service Proxy
-    rospy.wait_for_service('grasping_policy')
-    plan_grasp = rospy.ServiceProxy('grasping_policy', GQCNNGraspPlanner)
+    rospy.wait_for_service('grasp_planner')
+    plan_grasp = rospy.ServiceProxy('grasp_planner', GQCNNGraspPlanner)
     cv_bridge = CvBridge()    
 
     # setup sensor
@@ -109,25 +109,10 @@ if __name__ == '__main__':
     color_im = ColorImage.open(color_im_filename, frame=camera_intr.frame)
     depth_im = DepthImage.open(depth_im_filename, frame=camera_intr.frame)
     
-    # optionally read a segmask
-    segmask = BinaryImage(255 * np.ones(depth_im.shape).astype(np.uint8),
-                          frame=camera_intr.frame)
-    if segmask_filename is not None:
-        segmask = BinaryImage.open(segmask_filename)
-
-    # optionally set a bounding box
-    bounding_box = BoundingBox()
-    bounding_box.minY = 0
-    bounding_box.minX = 0
-    bounding_box.maxY = color_im.height
-    bounding_box.maxX = color_im.width
-    
     # plan grasp
     grasp_resp = plan_grasp(color_im.rosmsg,
                             depth_im.rosmsg,
-                            camera_intr.rosmsg,
-                            bounding_box,
-                            segmask.rosmsg)
+                            camera_intr.rosmsg)
     grasp = grasp_resp.grasp
     
     # convert to a grasp action
