@@ -3,6 +3,7 @@
 # PARALLEL JAW
 wget -O data/training/example_training_dataset_pj.zip https://berkeley.box.com/shared/static/wpo8jbushrdq0adwjdsampui2tu1w1xz.zip
 
+mkdir -p data/training
 cd data/training
 unzip example_training_dataset_pj.zip
 mv grasps example_pj
