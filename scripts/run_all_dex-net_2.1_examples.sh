@@ -14,3 +14,4 @@ python examples/policy.py --depth_image data/examples/clutter/primesense/depth_3
 
 echo "RUNNING EXAMPLE 4"
 python examples/policy.py --depth_image data/examples/clutter/primesense/depth_4.npy --segmask data/examples/clutter/primesense/segmask_4.png --config_filename cfg/examples/replication/dex-net_2.1.yaml
+

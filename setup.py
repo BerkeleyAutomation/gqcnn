@@ -25,6 +25,16 @@ Author: Vishal Satish
 """
 from setuptools import setup
 
+class PostDevelopCmd(develop):
+    def run(self):
+        os.system('sh scripts/download_data.sh')
+        develop.run(self)
+
+class PostInstallCmd(install):
+    def run(self):
+        os.system('sh scripts/download_data.sh')
+        install.run(self)
+
 requirements = [
     'autolab-core',
     'autolab-perception',
@@ -33,7 +43,8 @@ requirements = [
     'scipy',
     'matplotlib<=2.2.0',
     'opencv-python',
-    'tensorflow>=1.3.0',
+    'tensorflow>=1.4.0',
+    'scikit-image',
     'scikit-learn'
 ]
 
@@ -64,5 +75,9 @@ setup(name='gqcnn',
           'sphinxcontrib-napoleon',
           'sphinx_rtd_theme'
       ],
+      },
+      cmdclass={
+        'install': PostInstallCmd,
+        'develop': PostDevelopCmd
       }
 )

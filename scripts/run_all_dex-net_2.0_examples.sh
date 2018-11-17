@@ -29,3 +29,4 @@ python examples/policy.py --depth_image data/examples/single_object/primesense/d
 
 echo "RUNNING EXAMPLE 9"
 python examples/policy.py --depth_image data/examples/single_object/primesense/depth_9.npy --segmask data/examples/single_object/primesense/segmask_9.png --config_filename cfg/examples/replication/dex-net_2.0.yaml
+

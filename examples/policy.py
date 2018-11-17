@@ -86,7 +86,7 @@ if __name__ == '__main__':
             config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                            '..',
                                            'cfg/examples/policy.yaml')
-    
+   
     # read config
     config = YamlConfig(config_filename)
     inpaint_rescale_factor = config['inpaint_rescale_factor']

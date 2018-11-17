@@ -359,8 +359,12 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         point_cloud_im = camera_intr.deproject_to_image(depth_im_mask)
         
         # compute_max_depth
-        min_depth = np.min(depth_im_mask.data[depth_im_mask.data > 0]) + self._min_depth_offset
-        max_depth = np.max(depth_im_mask.data[depth_im_mask.data > 0]) + self._max_depth_offset
+        depth_data = depth_im_mask.data[depth_im_mask.data > 0]
+        if depth_data.shape[0] == 0:
+            return []
+        
+        min_depth = np.min(depth_data) + self._min_depth_offset
+        max_depth = np.max(depth_data) + self._max_depth_offset
 
         # compute surface normals
         normal_start = time()
