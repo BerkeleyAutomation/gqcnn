@@ -24,8 +24,10 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 ROS Server for planning GQCNN grasps 
 Author: Vishal Satish
 """
+import json
 import math
 import numpy as np
+import os
 import rospy
 import time
 
@@ -34,6 +36,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from autolab_core import YamlConfig
 from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D
 from gqcnn import NoValidGraspsException
+from gqcnn.utils import GripperMode
 from perception import CameraIntrinsics, ColorImage, DepthImage, BinaryImage, RgbdImage
 from visualization import Visualizer2D as vis
 
@@ -295,8 +298,41 @@ if __name__ == '__main__':
     cv_bridge = CvBridge()
 
     # get configs
-    cfg = YamlConfig(rospy.get_param('~config'))
-    model_dir = rospy.get_param('~model_dir')
+    model_name = rospy.get_param('~model_name')
+    model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                             '../models',
+                             model_name)
+    model_config = json.load(open(os.path.join(model_dir, 'config.json'), 'r'))
+    try:
+        gqcnn_config = model_config['gqcnn']
+        gripper_mode = gqcnn_config['gripper_mode']
+    except:
+        gqcnn_config = model_config['gqcnn_config']
+        input_data_mode = gqcnn_config['input_data_mode']
+        if input_data_mode == 'tf_image':
+            gripper_mode = GripperMode.LEGACY_PARALLEL_JAW
+        elif input_data_mode == 'tf_image_suction':
+            gripper_mode = GripperMode.LEGACY_SUCTION                
+        elif input_data_mode == 'suction':
+            gripper_mode = GripperMode.SUCTION                
+        elif input_data_mode == 'multi_suction':
+            gripper_mode = GripperMode.MULTI_SUCTION                
+        elif input_data_mode == 'parallel_jaw':
+            gripper_mode = GripperMode.PARALLEL_JAW
+        else:
+            raise ValueError('Input data mode {} not supported!'.format(input_data_mode))
+
+    # set config
+    config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   '..',
+                                   'cfg/policies/gqcnn_suction.yaml')
+    if gripper_mode == GripperMode.LEGACY_PARALLEL_JAW or gripper_mode == GripperMode.LEGACY_SUCTION:
+        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                       '..',
+                                       'cfg/policies/gqcnn_pj.yaml')
+    
+    # read config
+    cfg = YamlConfig(config_filename)
     policy_cfg = cfg['policy']
     policy_cfg['metric']['gqcnn_model'] = model_dir
 
