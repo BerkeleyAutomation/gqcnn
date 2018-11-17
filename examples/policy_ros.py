@@ -57,16 +57,16 @@ if __name__ == '__main__':
     parser.add_argument('--color_image', type=str, default=None, help='path to a test color image stored as a .png file')
     parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')
     parser.add_argument('--segmask', type=str, default=None, help='path to an optional segmask to use')
-    parser.add_argument('--camera_intrinsics', type=str, default=None, help='path to the camera intrinsics')
+    parser.add_argument('--camera_intr', type=str, default=None, help='path to the camera intrinsics')
     parser.add_argument('--gripper_width', type=float, default=0.05, help='width of the gripper to plan for')
-    parser.add_argument('--config_filename', type=str, default=None, help='path to configuration file to use')
+    parser.add_argument('--vis_grasp', type=bool, default=True, help='whether or not to visualize the grasp')
     args = parser.parse_args()
     color_im_filename = args.color_image
     depth_im_filename = args.depth_image
     segmask_filename = args.segmask
-    camera_intr_filename = args.camera_intrinsics
+    camera_intr_filename = args.camera_intr
     gripper_width = args.gripper_width
-    config_filename = args.config_filename
+    vis_grasp = args.vis_grasp
 
     # initialize the ROS node
     rospy.init_node('grasp_planning_example')
@@ -81,25 +81,16 @@ if __name__ == '__main__':
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '..',
                                          'data/examples/single_object/depth_0.npy')
-    if segmask_filename is None:
-        segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        '..',
-                                        'data/examples/single_object/segmask_0.png')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
                                             'data/calib/primesense.intr')    
-    if config_filename is None:
-        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       '..',
-                                       'cfg/policies/dex-net_2.0.yaml')
-    
-    # read config
-    config = YamlConfig(config_filename)
 
     # wait for Grasp Planning Service and create Service Proxy
     rospy.wait_for_service('grasp_planner')
+    rospy.wait_for_service('grasp_planner_segmask')
     plan_grasp = rospy.ServiceProxy('grasp_planner', GQCNNGraspPlanner)
+    plan_grasp_segmask = rospy.ServiceProxy('grasp_planner_segmask', GQCNNGraspPlannerSegmask)
     cv_bridge = CvBridge()    
 
     # setup sensor
@@ -108,11 +99,18 @@ if __name__ == '__main__':
     # read images
     color_im = ColorImage.open(color_im_filename, frame=camera_intr.frame)
     depth_im = DepthImage.open(depth_im_filename, frame=camera_intr.frame)
-    
-    # plan grasp
-    grasp_resp = plan_grasp(color_im.rosmsg,
-                            depth_im.rosmsg,
-                            camera_intr.rosmsg)
+
+    # read segmask
+    if segmask_filename is not None:
+        segmask = BinaryImage.open(segmask_filename, frame=camera_intr.frame)
+        grasp_resp = plan_grasp_segmask(color_im.rosmsg,
+                                        depth_im.rosmsg,
+                                        camera_intr.rosmsg,
+                                        segmask.rosmsg)
+    else:
+        grasp_resp = plan_grasp(color_im.rosmsg,
+                                depth_im.rosmsg,
+                                camera_intr.rosmsg)
     grasp = grasp_resp.grasp
     
     # convert to a grasp action
@@ -145,7 +143,7 @@ if __name__ == '__main__':
     action = GraspAction(grasp_2d, grasp.q_value, thumbnail)
     
     # vis final grasp
-    if config['vis']['final_grasp']:
+    if vis_grasp:
         vis.figure(size=(10,10))
         vis.imshow(depth_im, vmin=0.6, vmax=0.9)
         vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)

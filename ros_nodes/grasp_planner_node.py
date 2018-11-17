@@ -326,11 +326,11 @@ if __name__ == '__main__':
     config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                    '..',
                                    'cfg/policies/gqcnn_suction.yaml')
-    if gripper_mode == GripperMode.LEGACY_PARALLEL_JAW or gripper_mode == GripperMode.LEGACY_SUCTION:
+    if gripper_mode == GripperMode.LEGACY_PARALLEL_JAW or gripper_mode == GripperMode.PARALLEL_JAW:
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                        '..',
                                        'cfg/policies/gqcnn_pj.yaml')
-    
+
     # read config
     cfg = YamlConfig(config_filename)
     policy_cfg = cfg['policy']
