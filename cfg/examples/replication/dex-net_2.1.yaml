@@ -56,8 +56,8 @@ policy:
     grasp_plan: 0
     final_grasp: 1
 
-    vmin: 0.6
-    vmax: 0.9
+    vmin: 0.5
+    vmax: 0.8
 
     k: 25
 

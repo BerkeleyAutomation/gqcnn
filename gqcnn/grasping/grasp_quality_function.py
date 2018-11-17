@@ -25,7 +25,6 @@ Author: Jason Liu and Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
 from time import time
-import sys
 
 import scipy.ndimage.filters as snf
 import cv2
@@ -919,6 +918,8 @@ class GQCnnQualityFunction(GraspQualityFunction):
                 pose_tensor[i] = grasp.depth
             elif gripper_mode == GripperMode.SUCTION:
                 pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
+            elif gripper_mode == GripperMode.MULTI_SUCTION:
+                pose_tensor[i] = grasp.depth
             elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
             elif gripper_mode == GripperMode.LEGACY_SUCTION:

@@ -29,11 +29,10 @@ Vishal Satish & Jeff Mahler
 import argparse
 import os
 import time
-import sys
 
 import autolab_core.utils as utils
 from autolab_core import YamlConfig, Logger
-from gqcnn import get_gqcnn_model, get_gqcnn_trainer
+from gqcnn import get_gqcnn_model, get_gqcnn_trainer, utils as gqcnn_utils
 
 # setup logger
 logger = Logger.get_logger('tools/train.py')

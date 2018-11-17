@@ -1,0 +1,42 @@
+# policy params
+policy:
+  # general params
+  deterministic: 1
+  gripper_width: 0.05
+
+  # sampling params
+  sampling:
+    # type
+    type: antipodal_depth
+
+    # antipodality
+    friction_coef: 0.5
+    depth_grad_thresh: 0.0025
+    depth_grad_gaussian_sigma: 1.0
+    downsample_rate: 4
+    max_rejection_samples: 4000
+
+    # distance
+    max_dist_from_center: 1000
+    min_dist_from_boundary: 45
+    min_grasp_dist: 10.0
+    angle_dist_weight: 5.0
+
+    # depth sampling
+    depth_sampling_mode: uniform
+    depth_samples_per_grasp: 1
+    depth_sample_win_height: 1
+    depth_sample_win_width: 1
+    min_depth_offset: 0.015
+    max_depth_offset: 0.05
+
+  # metrics
+  metric:
+    type: zero
+
+  # visualization
+  vis:
+    grasp_sampling: 0
+    final_grasp: 1
+    vmin: 0.4
+    vmax: 1.0

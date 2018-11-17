@@ -1,0 +1,25 @@
+# dataset params
+image_type: tf_depth_ims
+gripper_mode: parallel_jaw
+metric_name: grasp_metrics
+metric_thresh: 0.5
+gripper_width_px: 13.5
+
+# featurization params
+use_bhtsne: 1
+perplexity: 5
+max_num_samples: 10000
+
+save_raw_features: 0
+num_pca_components: 100
+feature_layers:
+  - conv2_2
+  - fc3
+  - fc4
+
+# vis params
+figsize: 8
+point_size: 5
+font_size: 15
+vis:
+  features: 0

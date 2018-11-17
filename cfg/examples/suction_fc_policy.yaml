@@ -30,5 +30,8 @@ policy:
   vis:
     final_grasp: 1
 
+    vmin: 0.5
+    vmax: 0.8
+
 # image pre-processing before input to policy
 inpaint_rescale_factor: 0.5

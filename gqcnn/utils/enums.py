@@ -20,7 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Class for storing constants/enums
+Constants/enums.
 Author: Vishal Satish
 """
 import tensorflow as tf
@@ -55,6 +55,7 @@ class TrainingMode:
 class GripperMode:
     PARALLEL_JAW = 'parallel_jaw'
     SUCTION = 'suction'
+    MULTI_SUCTION = 'multi_suction'
     LEGACY_PARALLEL_JAW = 'legacy_parallel_jaw'
     LEGACY_SUCTION = 'legacy_suction'
 

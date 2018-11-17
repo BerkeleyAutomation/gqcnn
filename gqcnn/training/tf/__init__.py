@@ -21,4 +21,4 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 from trainer_tf import GQCNNTrainerTF
 
-__all__ = ['GQCNNTrainerTF'] 
+__all__ = ['GQCNNTrainerTF']

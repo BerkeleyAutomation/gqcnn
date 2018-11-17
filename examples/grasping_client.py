@@ -20,8 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Displays robust grasps planned using a GQ-CNN-based policy on a set of saved RGB-D images.
-The default configuration is cfg/examples/policy.yaml.
+Example Python ROS client for GQ-CNN ROS node.
 
 Author
 ------
@@ -38,7 +37,7 @@ import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
 
-from autolab_core import Point, RigidTransform, YamlConfig
+from autolab_core import Point, RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 

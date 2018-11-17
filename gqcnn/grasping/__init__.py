@@ -19,9 +19,11 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from grasp import Grasp2D, SuctionPoint2D
+from grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 from grasp_quality_function import GraspQualityFunctionFactory, GQCnnQualityFunction
 from image_grasp_sampler import ImageGraspSamplerFactory, AntipodalDepthImageGraspSampler
-from policy import CrossEntropyRobustGraspingPolicy, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, UniformRandomGraspingPolicy, RgbdImageState, GraspAction
+from constraint_fn import GraspConstraintFnFactory
+from policy import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, UniformRandomGraspingPolicy, RgbdImageState, GraspAction
+from actions import NoAction, ParallelJawGrasp3D, SuctionGrasp3D, MultiSuctionGrasp3D
 
-__all__ = ['Grasp2D', 'SuctionPoint2D', 'GraspQualityFunctionFactory', 'GQCnnQualityFunction', 'ImageGraspSamplerFactory', 'AntipodalDepthImageGraspSampler', 'CrossEntropyRobustGraspingPolicy', 'FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'UniformRandomGraspingPolicy', 'RgbdImageState', 'GraspAction']
+__all__ = ['Grasp2D', 'SuctionPoint2D', 'MultiSuctionPoint2D', 'GraspQualityFunctionFactory', 'GQCnnQualityFunction', 'ImageGraspSamplerFactory', 'AntipodalDepthImageGraspSampler', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'UniformRandomGraspingPolicy', 'RgbdImageState', 'GraspAction', 'GraspConstraintFnFactory', 'NoAction', 'ParallelJawGrasp3D', 'SuctionGrasp3D', 'MultiSuctionGrasp3D']

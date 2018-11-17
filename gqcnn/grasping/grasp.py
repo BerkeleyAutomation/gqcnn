@@ -21,7 +21,7 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
 Classes to encapsulate parallel-jaw grasps in image space
-Author: Jeff
+Author: Jeff Mahler
 """
 import numpy as np
 
@@ -74,6 +74,10 @@ class Grasp2D(object):
         """ Returns the grasp axis. """
         return np.array([np.cos(self.angle), np.sin(self.angle)])        
 
+    @property
+    def approach_axis(self):
+        return np.array([0,0,1])
+        
     @property
     def approach_angle(self):
         """ The angle between the grasp approach axis and camera optical axis. """
@@ -289,12 +293,14 @@ class SuctionPoint2D(object):
         return np.arccos(dot)
 
     @property
+    def approach_axis(self):
+        return self.axis
+        
+    @property
     def feature_vec(self):
         """ Returns the feature vector for the suction point.
         v = [center, axis, depth]
         """
-        #return np.r_[self.center.data, self.axis, self.depth]
-        #return np.r_[self.center.data, self.axis]
         return self.center.data
         
     @staticmethod
@@ -398,3 +404,173 @@ class SuctionPoint2D(object):
         axis_dist = np.arccos(dot)
 
         return point_dist + alpha * axis_dist
+
+class MultiSuctionPoint2D(object):
+    """
+    Multi-Cup Suction grasp in image space. Equivalent to projecting a 6D pose to image space.
+
+    Attributes
+    ----------
+    pose : :obj:`autolab_core.RigidTransform`
+        pose in 3D camera space
+    camera_intr : :obj:`perception.CameraIntrinsics`
+        frame of reference for camera that the suction point corresponds to
+    """
+    def __init__(self, pose, camera_intr=None):
+        self._pose = pose
+
+        frame = 'image'
+        if camera_intr is not None:
+            frame = camera_intr.frame
+
+        # if camera_intr is none use default primesense camera intrinsics
+        if not camera_intr:
+            self.camera_intr = CameraIntrinsics('primesense_overhead', fx=525, fy=525, cx=319.5, cy=239.5, width=640, height=480)
+        else: 
+            self.camera_intr = camera_intr
+
+    def pose(self):
+        return self._pose
+            
+    @property
+    def frame(self):
+        """ The name of the frame of reference for the grasp. """
+        if self.camera_intr is None:
+            raise ValueError('Must specify camera intrinsics')
+        return self.camera_intr.frame
+
+    @property
+    def center(self):
+        center_camera = Point(self._pose.translation, frame=self.camera_intr.frame)
+        center_px = self.camera_intr.project(center_camera)        
+        return center_px
+        
+    @property
+    def axis(self):
+        return self._pose.x_axis
+
+    @property
+    def approach_axis(self):
+        return self.axis
+    
+    @property
+    def approach_angle(self):
+        """ The angle between the grasp approach axis and camera optical axis. """
+        dot = max(min(self.axis.dot(np.array([0,0,1])), 1.0), -1.0)
+        return np.arccos(dot)
+
+    @property
+    def angle(self):
+        g_axis = self._pose.y_axis
+        g_axis_im = np.array([g_axis[0], g_axis[1], 0])
+        if np.linalg.norm(g_axis_im) == 0:
+            return 0
+        theta = np.arctan2(g_axis[1], g_axis[0])
+        return theta
+
+    @property
+    def depth(self):
+        return self._pose.translation[2]
+        
+    @property
+    def orientation(self):
+        x_axis = self.axis
+        y_axis = np.array([x_axis[1], -x_axis[0], 0])
+        if np.linalg.norm(y_axis) == 0:
+            y_axis = np.array([1,0,0])
+        y_axis = y_axis / np.linalg.norm(y_axis)
+        z_axis = np.cross(x_axis, y_axis)
+        R = np.array([x_axis, y_axis, z_axis]).T
+        delta_R = R.T.dot(self._pose.rotation)
+        orientation = np.arccos(delta_R[1,1])
+        if delta_R[1,2] > 0:
+            orientation = 2*np.pi-orientation
+        return orientation
+            
+    @property
+    def feature_vec(self):
+        """ Returns the feature vector for the suction point.
+        v = [center, axis, depth]
+        """
+        return np.r_[self.center.data, np.cos(self.orientation), np.sin(self.orientation)]
+        
+    @staticmethod
+    def from_feature_vec(v, camera_intr=None, angle=None, depth=None, axis=None):
+        """ Creates a SuctionPoint2D obj from a feature vector and additional parameters.
+
+        Parameters
+        ----------
+        v : :obj:`numpy.ndarray`
+            feature vector, see Grasp2D.feature_vec
+        camera_intr : :obj:`perception.CameraIntrinsics`
+            frame of reference for camera that the grasp corresponds to
+        depth : float
+            hard-set the depth for the suction grasp
+        axis : :obj:`numpy.ndarray`
+            normalized 3-vector specifying the approach direction
+        """
+        # read feature vec
+        center_px = v[:2]
+
+        grasp_angle = 0
+        if v.shape > 2 and angle is None:
+            #grasp_angle = v[2]
+            grasp_vec = v[2:]
+            grasp_vec = grasp_vec / np.linalg.norm(grasp_vec)
+            grasp_angle = np.arctan2(grasp_vec[1], grasp_vec[0])
+        elif angle is not None:
+            grasp_angle = angle
+
+        grasp_axis = np.array([1,0,0])
+        if axis is not None:
+            grasp_axis = axis
+            
+        grasp_depth = 0.5    
+        if depth is not None:
+            grasp_depth = depth
+
+        x_axis = grasp_axis
+        y_axis = np.array([grasp_axis[1], -grasp_axis[0], 0])
+        if np.linalg.norm(y_axis) == 0:
+            y_axis = np.array([1,0,0])
+        y_axis = y_axis / np.linalg.norm(y_axis)
+        z_axis = np.cross(x_axis, y_axis)
+
+        R = np.array([x_axis, y_axis, z_axis]).T
+        R = R.dot(RigidTransform.x_axis_rotation(grasp_angle))
+        t = camera_intr.deproject_pixel(grasp_depth, Point(center_px, frame=camera_intr.frame)).data
+        T = RigidTransform(rotation=R,
+                           translation=t,
+                           from_frame='grasp',
+                           to_frame=camera_intr.frame)
+        
+        # compute center and angle
+        return MultiSuctionPoint2D(T, camera_intr=camera_intr)
+
+    @staticmethod
+    def image_dist(g1, g2, alpha=1.0):
+        """ Computes the distance between grasps in image space.
+        Euclidean distance with alpha weighting of angles
+
+        Parameters
+        ----------
+        g1 : :obj:`SuctionPoint2D`
+            first suction point
+        g2 : :obj:`SuctionPoint2D`
+            second suction point
+        alpha : float
+            weight of angle distance (rad to meters)
+
+        Returns
+        -------
+        float
+            distance between grasps
+        """
+        # point to point distances
+        point_dist = np.linalg.norm(g1.center.data - g2.center.data)
+
+        # axis distances
+        dot = max(min(np.abs(g1.axis.dot(g2.axis)), 1.0), -1.0)
+        axis_dist = np.arccos(dot)
+
+        return point_dist + alpha * axis_dist    
