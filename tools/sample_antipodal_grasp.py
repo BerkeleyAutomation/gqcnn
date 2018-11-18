@@ -29,23 +29,20 @@ Jeff Mahler
 """
 import argparse
 import cPickle as pkl
-import logging
-import IPython
-import numpy as np
 import os
-import sys
 import time
 
-from autolab_core import RigidTransform, YamlConfig
+import numpy as np
+
+from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import RgbdImage, BinaryImage, ColorImage, DepthImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
-
 from gqcnn import UniformRandomGraspingPolicy, RgbdImageState
 
-if __name__ == '__main__':
-    # set up logger
-    logging.getLogger().setLevel(logging.DEBUG)
+# set up logger
+logger = Logger.get_logger('tools/sample_antipodal_grasp.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Run the GQ-CNN policy on an example')
     parser.add_argument('depth_im_filename', type=str, default=None, help='path to the depth image to run')
@@ -80,7 +77,7 @@ if __name__ == '__main__':
     policy = UniformRandomGraspingPolicy(policy_config)
     policy_start = time.time()
     action = policy(state)
-    logging.info('Planning took %.3f sec' %(time.time() - policy_start))
+    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
     # vis final grasp
     if policy_config['vis']['final_grasp']:

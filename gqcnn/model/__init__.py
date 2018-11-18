@@ -26,23 +26,28 @@ Author
 ------
 Vishal Satish
 """
-import logging
+from tf import *
 
-from gqcnn.model.tf.network_tf import GQCNNTF
-from gqcnn.model.tf.fc_network_tf import FCGQCNNTF
+from autolab_core import Logger
  
-def get_gqcnn_model(backend='tf'):
-    # return desired GQCNN instance based on backend
+def get_gqcnn_model(backend='tf', verbose=True):
+    # set up logger
+    logger = Logger.get_logger('GQCNNModelFactory', silence=(not verbose))
+
+    # return desired GQ-CNN instance based on backend
     if backend == 'tf':
-        logging.info('Initializing GQCNN with Tensorflow as backend...')
+        logger.info('Initializing GQ-CNN with Tensorflow as backend...')
         return GQCNNTF
     else:
         raise ValueError('Invalid backend: {}'.format(backend))
 
-def get_fc_gqcnn_model(backend='tf'):
-    # return desired Fully-Convolutional GQCNN instance based on backend
+def get_fc_gqcnn_model(backend='tf', verbose=True):
+    # set up logger
+    logger = Logger.get_logger('FCGQCNNModelFactory', silence=(not verbose))
+
+    # return desired Fully-Convolutional GQ-CNN instance based on backend
     if backend == 'tf':
-        logging.info('Initializing FC-GQCNN with Tensorflow as backend...')
+        logger.info('Initializing FC-GQ-CNN with Tensorflow as backend...')
         return FCGQCNNTF
     else:
         raise ValueError('Invalid backend: {}'.format(backend))

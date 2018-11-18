@@ -36,15 +36,14 @@ class PostInstallCmd(install):
         install.run(self)
 
 requirements = [
-    'autolab_core',
-    'autolab_perception',
+    'autolab-core',
+    'autolab-perception',
     'visualization',
     'numpy<=1.14.1',
     'scipy',
     'matplotlib<=2.2.0',
     'opencv-python',
     'tensorflow>=1.4.0',
-    'ipython==5.5.0',
     'scikit-image',
     'scikit-learn'
 ]

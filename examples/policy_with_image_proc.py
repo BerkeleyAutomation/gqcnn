@@ -28,29 +28,26 @@ Author
 Jeff Mahler
 """
 import argparse
-import logging
-import IPython
-import numpy as np
 import os
-import pcl
-import skimage
-import sys
 import time
 
-from autolab_core import PointCloud, RigidTransform, YamlConfig
+import pcl
+import skimage
+import numpy as np
+
+from autolab_core import PointCloud, RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage, SegmentationImage
 from visualization import Visualizer2D as vis
-
 from gqcnn import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState
 
 CLUSTER_TOL = 0.0015
 MIN_CLUSTER_SIZE = 100
 MAX_CLUSTER_SIZE = 1000000
 
-if __name__ == '__main__':
-    # set up logger
-    logging.getLogger().setLevel(logging.INFO)
+# set up logger
+logger = Logger.get_logger('tools/policy_with_image_proc.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
     parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')
@@ -194,7 +191,7 @@ if __name__ == '__main__':
         policy = CrossEntropyRobustGraspingPolicy(policy_config)
     policy_start = time.time()
     action = policy(state)
-    logging.info('Planning took %.3f sec' %(time.time() - policy_start))
+    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
     # vis final grasp
     if policy_config['vis']['final_grasp']:

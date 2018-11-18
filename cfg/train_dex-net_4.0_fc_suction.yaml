@@ -44,7 +44,7 @@ preproc_log_frequency: 100 # how often to log preprocessing (in steps)
 multiplicative_denoising: 0
 gamma_shape: 1000.00
 
-symmetrize: 0
+symmetrize: 1
 
 gaussian_process_denoising: 0
 gaussian_process_rate: 0.5

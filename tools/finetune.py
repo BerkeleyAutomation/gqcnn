@@ -27,21 +27,20 @@ Author
 Vishal Satish & Jeff Mahler
 """
 import argparse
-import logging
 import os
 import time
 import os
+import sys
 
 import autolab_core.utils as utils
-from autolab_core import YamlConfig
-from gqcnn.model import get_gqcnn_model
-from gqcnn.training import get_gqcnn_trainer
+from autolab_core import YamlConfig, Logger
+from gqcnn import get_gqcnn_model, get_gqcnn_trainer
 from gqcnn import utils as gqcnn_utils
 
-if __name__ == '__main__':
-    # setup logger
-    logging.getLogger().setLevel(logging.INFO)
+# setup logger
+logger = Logger.get_logger('tools/finetune.py')
 
+if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Fine-Tune a pre-trained Grasp Quality Convolutional Neural Network with TensorFlow')
     parser.add_argument('dataset_dir', type=str, default=None,
@@ -127,4 +126,4 @@ if __name__ == '__main__':
                                          train_config,
                                          name=name)
     trainer.finetune(model_dir)
-    logging.info('Total Fine-tuning Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 
+    logger.info('Total Fine-tuning Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 

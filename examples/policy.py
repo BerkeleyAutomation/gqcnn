@@ -21,31 +21,27 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
 Displays robust grasps planned using a GQ-CNN-based policy on a set of saved RGB-D images.
-The default configuration is cfg/examples/policy.yaml.
+The default configuration for the standard GQ-CNN policy is cfg/examples/policy.yaml. The default configuration for the Fully-Convolutional GQ-CNN policy is cfg/examples/fc_policy.yaml.
 
 Author
 ------
-Jeff Mahler
+Jeff Mahler and Vishal Satish
 """
 import argparse
-import logging
-import IPython
-import numpy as np
 import os
-import skimage
-import sys
 import time
 
-from autolab_core import RigidTransform, YamlConfig
+import numpy as np
+
+from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
+from gqcnn import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
 
-from gqcnn import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState
+# set up logger
+logger = Logger.get_logger('examples/policy.py')
 
 if __name__ == '__main__':
-    # set up logger
-    logging.getLogger().setLevel(logging.INFO)
-
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
     parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')
@@ -53,32 +49,50 @@ if __name__ == '__main__':
     parser.add_argument('--camera_intrinsics', type=str, default=None, help='path to the camera intrinsics')
     parser.add_argument('--model_dir', type=str, default=None, help='path to a trained model to run')
     parser.add_argument('--config_filename', type=str, default=None, help='path to configuration file to use')
+    parser.add_argument('--fully_conv', action='store_true', help='run Fully-Convolutional GQ-CNN policy instead of standard GQ-CNN policy')
     args = parser.parse_args()
     depth_im_filename = args.depth_image
     segmask_filename = args.segmask
     camera_intr_filename = args.camera_intrinsics
     model_dir = args.model_dir
     config_filename = args.config_filename
+    fully_conv = args.fully_conv
+
+    assert not (fully_conv and depth_im_filename is not None and segmask_filename is None), 'Fully-Convolutional policy expects a segmask.'
 
     if depth_im_filename is None:
-        depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                         '..',
-                                         'data/examples/single_object/depth_0.npy')
+        if fully_conv:
+            depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                             '..',
+                                             'data/examples/clutter/primesense/depth_0.npy')
+        else:
+            depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                             '..',
+                                             'data/examples/single_object/primesense/depth_0.npy')
+    if fully_conv and segmask_filename is None:
+        segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        '..',
+                                        'data/examples/clutter/primesense/segmask_0.png')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
-                                            'data/calib/primesense.intr')    
+                                            'data/calib/primesense/primesense.intr')    
     if config_filename is None:
-        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       '..',
-                                       'cfg/policies/dex-net_2.0.yaml')
-    
+        if fully_conv:
+            config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                           '..',
+                                           'cfg/examples/fc_policy.yaml')
+        else:
+            config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                           '..',
+                                           'cfg/examples/policy.yaml')
+   
     # read config
     config = YamlConfig(config_filename)
     inpaint_rescale_factor = config['inpaint_rescale_factor']
     policy_config = config['policy']
 
-    # make relative paths absolute
+    # set model if provided and make relative paths absolute
     if model_dir is not None:
         policy_config['metric']['gqcnn_model'] = model_dir
     if 'gqcnn_model' in policy_config['metric'].keys() and not os.path.isabs(policy_config['metric']['gqcnn_model']):
@@ -124,17 +138,35 @@ if __name__ == '__main__':
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
     state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
 
+    # set input sizes for fully-convolutional policy
+    if fully_conv:
+        policy_config['metric']['fully_conv_gqcnn_config']['im_height'] = depth_im.shape[0]
+        policy_config['metric']['fully_conv_gqcnn_config']['im_width'] = depth_im.shape[1]
+
     # init policy
-    policy_type = 'cem'
-    if 'type' in policy_config.keys():
-        policy_type = policy_config['type']
-    if policy_type == 'ranking':
-        policy = RobustGraspingPolicy(policy_config)
+    if fully_conv:
+        #TODO: @Vishal we should really be doing this in some factory policy
+        if policy_config['type'] == 'fully_conv_suction':
+            policy = FullyConvolutionalGraspingPolicySuction(policy_config)
+        elif policy_config['type'] == 'fully_conv_pj':
+            policy = FullyConvolutionalGraspingPolicyParallelJaw(policy_config)
+        else:
+            raise ValueError('Invalid fully-convolutional policy type: {}'.format(policy_config['type']))
     else:
-        policy = CrossEntropyRobustGraspingPolicy(policy_config)
+        policy_type = 'cem'
+        if 'type' in policy_config.keys():
+            policy_type = policy_config['type']
+        if policy_type == 'ranking':
+            policy = RobustGraspingPolicy(policy_config)
+        elif policy_type == 'cem':
+            policy = CrossEntropyRobustGraspingPolicy(policy_config)
+        else:
+            raise ValueError('Invalid policy type: {}'.format(policy_type))
+
+    # query policy
     policy_start = time.time()
     action = policy(state)
-    logging.info('Planning took %.3f sec' %(time.time() - policy_start))
+    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
     # vis final grasp
     if policy_config['vis']['final_grasp']:
@@ -143,5 +175,5 @@ if __name__ == '__main__':
                    vmin=policy_config['vis']['vmin'],
                    vmax=policy_config['vis']['vmax'])
         vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
+        vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
         vis.show()
