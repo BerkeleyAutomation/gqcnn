@@ -7,4 +7,4 @@ __all__ = ['set_cuda_visible_devices', 'pose_dim', 'read_pose_data', 'reduce_sha
            'weight_name_to_layer_name', 'ImageMode', 'TrainingMode', 
            'GripperMode', 'InputDepthMode', 'GeneralConstants', 'GQCNNTrainingStatus', 
            'NoValidGraspsException', 'NoAntipodalPairsFoundException', 
-           'TrainStatsLogger']
+          'TrainStatsLogger']

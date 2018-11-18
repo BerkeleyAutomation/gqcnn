@@ -56,10 +56,18 @@ policy:
     grasp_plan: 0
     final_grasp: 1
 
-    vmin: 0.5
-    vmax: 0.8
+    vmin: 0.6
+    vmax: 0.9
 
     k: 25
 
+# visualization
+vis:
+  rgbd_state: 0
+  color_image: 0
+  depth_image: 0
+  segmask: 0
+  final_grasp: 1
+  
 # image proc params
 inpaint_rescale_factor: 0.5

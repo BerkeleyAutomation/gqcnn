@@ -21,7 +21,7 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
 Demonstrates image-based antipodal grasp candidate sampling, which is used in the
-GQ-CNN-based grasping policy
+GQ-CNN-based grasping policy. Samples images from a BerkeleyAutomation/perception RgbdSensor.
 Author: Jeff Mahler
 """
 import argparse
@@ -40,7 +40,7 @@ logger = Logger.get_logger('examples/antipodal_grasp_sampling.py')
 
 if __name__ == '__main__':
     # parse args
-    parser = argparse.ArgumentParser(description='Capture a set of test images from the Kinect2')
+    parser = argparse.ArgumentParser(description='Sample antipodal grasps on a depth image from an RgbdSensor')
     parser.add_argument('--config_filename', type=str, default='cfg/examples/antipodal_grasp_sampling.yaml', help='path to configuration file to use')
     args = parser.parse_args()
     config_filename = args.config_filename

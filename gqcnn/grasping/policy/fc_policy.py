@@ -26,7 +26,6 @@ Author: Vishal Satish
 import math
 from abc import abstractmethod, ABCMeta
 import os
-import sys
 
 import numpy as np
 import matplotlib.pyplot as plt

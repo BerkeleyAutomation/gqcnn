@@ -38,6 +38,8 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
+from autolab_core import Logger
+
 PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
 TRAIN_LOSS_FILENAME = 'train_losses.npy'
 TRAIN_ERRORS_FILENAME = 'train_errors.npy'
@@ -46,6 +48,9 @@ VAL_ERRORS_FILENAME = 'val_errors.npy'
 TRAIN_ITERS_FILENAME = 'train_eval_iters.npy'
 VAL_ITERS_FILENAME = 'val_eval_iters.npy'
 WINDOW = 10
+
+# set up logger
+logger = Logger.get_logger('tools/plot_training_losses.py')
 
 if __name__ == '__main__':
     result_dir = sys.argv[1]
@@ -98,19 +103,19 @@ if __name__ == '__main__':
     if pct_pos_val > 0:
         norm_final_val_error = val_errors[-1] / pct_pos_val        
 
-    print 'TRAIN'    
-    print 'Original Error', train_errors[0]
-    print 'Final Error', train_errors[-1]
-    print 'Orig loss', train_losses[0]
-    print 'Final loss', train_losses[-1]
+    logger.info('TRAIN')    
+    logger.info('Original Error {}'.format(train_errors[0]))
+    logger.info('Final Error {}'.format(train_errors[-1]))
+    logger.info('Orig loss {}'.format(train_losses[0]))
+    logger.info('Final loss {}'.format(train_losses[-1]))
 
-    print 'VAL'
-    print 'Original error', pct_pos_val
-    print 'Final error', val_errors[-1]
-    print 'Normalized error', norm_final_val_error
+    logger.info('VAL')
+    logger.info('Original error {}'.format(pct_pos_val))
+    logger.info('Final error {}'.format(val_errors[-1]))
+    logger.info('Normalized error {}'.format(norm_final_val_error))
     if val_losses is not None:
-        print 'Orig loss', val_losses[0]
-        print 'Final loss', val_losses[-1]
+        logger.info('Orig loss {}'.format(val_losses[0]))
+        logger.info('Final loss {}'.format(val_losses[-1]))
 
     plt.figure()
     plt.plot(train_iters, train_errors, linewidth=4, color='b')

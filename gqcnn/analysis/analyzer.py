@@ -28,7 +28,6 @@ import copy
 import json
 import os
 import random
-import shutil
 import sys
 import time
 import logging
@@ -43,6 +42,7 @@ from autolab_core import BinaryClassificationResult, Point, TensorDataset, Logge
 from autolab_core.constants import *
 from perception import DepthImage
 from visualization import Visualizer2D as vis2d
+
 from gqcnn import get_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
 from gqcnn.utils import GripperMode, ImageMode, GeneralConstants, read_pose_data

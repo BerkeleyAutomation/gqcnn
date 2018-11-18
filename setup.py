@@ -20,20 +20,31 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Setup gqcnn module.
+Setup of gqcnn python codebase
 Author: Vishal Satish
 """
 from setuptools import setup
+
+class PostDevelopCmd(develop):
+    def run(self):
+        os.system('sh scripts/download_data.sh')
+        develop.run(self)
+
+class PostInstallCmd(install):
+    def run(self):
+        os.system('sh scripts/download_data.sh')
+        install.run(self)
 
 requirements = [
     'autolab-core',
     'autolab-perception',
     'visualization',
-    'numpy',
+    'numpy<=1.14.1',
     'scipy',
-    'matplotlib',
+    'matplotlib<=2.2.0',
     'opencv-python',
-    'tensorflow>=1.3.0',
+    'tensorflow>=1.4.0',
+    'scikit-image',
     'scikit-learn'
 ]
 
@@ -51,16 +62,22 @@ setup(name='gqcnn',
           'Development Status :: 4 - Beta',
           'Programming Language :: Python',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
           'Natural Language :: English',
           'Topic :: Scientific/Engineering'
       ],      
       packages=['gqcnn'], 
-      setup_requires = requirements,
+      setup_requres = requirements,
       install_requires = requirements,
       extras_require = { 'docs' : [
           'sphinx',
           'sphinxcontrib-napoleon',
           'sphinx_rtd_theme'
       ],
+      },
+      cmdclass={
+        'install': PostInstallCmd,
+        'develop': PostDevelopCmd
       }
 )

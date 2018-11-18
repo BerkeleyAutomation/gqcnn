@@ -163,35 +163,3 @@ def log_trial_status(trials):
        status_str += '[{}]'.format(str(trial))
    return status_str
 
-"""
-class GQCNNTrainingProgress(object):
-    def __init__(self, total_epochs):
-        self._training_status = GQCNNTrainingStatus.NOT_STARTED
-        self._epoch = np.nan
-        self._total_epochs = total_epochs
-#        self._train_error = np.nan
-#        self._val_error = np.nan
-#        self._train_loss = np.nan
-#        self._val_loss = np.nan
-
-    @property
-    def training_status(self):
-        return self._training_status
-
-    @property
-    def epoch(self):
-        return self._epoch
-
-    @property
-    def total_epochs(self):
-        return self._total_epochs
-
-    @training_status.setter
-    def training_status(self, status):
-        assert status in GQCNNTrainingStatus.__dict__.keys(), 'Invalid training status "{}"'.format(status) #TODO: @Vishal this is kind of jank but still works
-        self._training_status = training_status
-
-    @epoch.setter
-    def epoch(self, epoch):
-        self._epoch = epoch
-"""
