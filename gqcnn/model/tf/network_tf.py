@@ -391,6 +391,11 @@ class GQCNNTF(object):
         if 'angular_bins' in gqcnn_config.keys():
             self._angular_bins = gqcnn_config['angular_bins']
 
+        # get max angle
+        self._max_angle = np.pi
+        if 'max_angle' in gqcnn_config.keys():
+            self._max_angle = np.deg2rad(gqcnn_config['max_angle'])
+            
         # if using angular bins, make sure output size of final fc layer is 2x # of angular bins
         if self._angular_bins > 0:
             assert self._architecture.values()[-1].values()[-1]['out_size'] == 2*self._angular_bins, 'When predicting angular outputs, output size of final fc layer must be 2x # of angular bins'
@@ -523,6 +528,10 @@ class GQCNNTF(object):
     @property
     def angular_bins(self):
         return self._angular_bins
+
+    @property
+    def max_angle(self):
+        return self._max_angle
 
     @property
     def filters(self):
