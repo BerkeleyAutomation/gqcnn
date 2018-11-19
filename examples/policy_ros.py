@@ -44,7 +44,7 @@ from autolab_core import Point, RigidTransform, YamlConfig
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 
-from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D, GraspAction
+from gqcnn.grasping import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D, GraspAction
 from gqcnn.msg import GQCNNGrasp, BoundingBox
 from gqcnn.srv import GQCNNGraspPlanner, GQCNNGraspPlannerBoundingBox, GQCNNGraspPlannerSegmask
 
@@ -76,15 +76,15 @@ if __name__ == '__main__':
     if color_im_filename is None:
         color_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '..',
-                                         'data/examples/single_object/color_0.png')
+                                         'data/examples/single_object/primesense/color_0.png')
     if depth_im_filename is None:
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '..',
-                                         'data/examples/single_object/depth_0.npy')
+                                         'data/examples/single_object/primesense/depth_0.npy')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
-                                            'data/calib/primesense.intr')    
+                                            'data/calib/primesense/primesense.intr')    
 
     # wait for Grasp Planning Service and create Service Proxy
     rospy.wait_for_service('grasp_planner')

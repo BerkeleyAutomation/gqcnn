@@ -34,9 +34,8 @@ import time
 from cv_bridge import CvBridge, CvBridgeError
 
 from autolab_core import YamlConfig
-from gqcnn import CrossEntropyRobustGraspingPolicy, RgbdImageState, Grasp2D, SuctionPoint2D
-from gqcnn import NoValidGraspsException
-from gqcnn.utils import GripperMode
+from gqcnn.grasping import Grasp2D, SuctionPoint2D, CrossEntropyRobustGraspingPolicy, RgbdImageState
+from gqcnn.utils import GripperMode, NoValidGraspsException
 from perception import CameraIntrinsics, ColorImage, DepthImage, BinaryImage, RgbdImage
 from visualization import Visualizer2D as vis
 
