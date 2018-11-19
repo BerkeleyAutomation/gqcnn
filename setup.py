@@ -24,6 +24,9 @@ Setup of gqcnn python codebase
 Author: Vishal Satish
 """
 from setuptools import setup
+from setuptools.command.develop import develop
+from setuptools.command.install import install
+import os
 
 class PostDevelopCmd(develop):
     def run(self):
