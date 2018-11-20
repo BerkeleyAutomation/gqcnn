@@ -7,6 +7,8 @@ wget -O models/GQCNN-2.1.zip https://berkeley.box.com/shared/static/zr1gohe29r2d
 wget -O models/GQCNN-3.0.zip https://berkeley.box.com/shared/static/8l47knzbzffu8zb9y5u46q0g0rvtuk74.zip
 wget -O models/GQCNN-4.0-PJ.zip https://berkeley.box.com/shared/static/boe4ilodi50hy5as5zun431s1bs7t97l.zip
 wget -O models/GQCNN-4.0-SUCTION.zip https://berkeley.box.com/shared/static/kzg19axnflhwys9t7n6bnuqsn18zj9wy.zip
+wget -O models/FC-GQCNN-4.0-PJ.zip https://berkeley.box.com/shared/static/h5uihnp3d2uupp9visaaua06vmhm1zwg.zip
+wget -O models/FC-GQCNN-4.0-SUCTION.zip https://berkeley.box.com/shared/static/ys3twpohgugc0inkij637hhdaknw1x12.zip
 
 cd models
 unzip -a GQCNN-2.0.zip
@@ -17,6 +19,8 @@ unzip -a GQCNN-3.0.zip
 mv GQ-Suction GQCNN-3.0
 unzip -a GQCNN-4.0-PJ.zip
 unzip -a GQCNN-4.0-SUCTION.zip
+unzip -a FC-GQCNN-4.0-PJ.zip
+unzip -a FC-GQCNN-4.0-SUCTION.zip
 cd ..
 
 # DOWNLOAD DATASETS
