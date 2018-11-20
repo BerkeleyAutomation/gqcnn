@@ -48,7 +48,9 @@ requirements = [
     'opencv-python',
     'tensorflow>=1.4.0',
     'scikit-image',
-    'scikit-learn'
+    'scikit-learn',
+    'psutil',
+    'gputil'
 ]
 
 exec(open('gqcnn/version.py').read())

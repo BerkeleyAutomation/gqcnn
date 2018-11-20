@@ -120,8 +120,8 @@ class GQCNNSearch(object):
             # check if trials have started training
             if waiting_for_trial_init:
                 training_has_started = [trial.training_status == GQCNNTrainingStatus.TRAINING for trial in self._trials_running]
-            if all(training_has_started):
-                waiting_for_trial_init = False
+                if all(training_has_started):
+                    waiting_for_trial_init = False
 
             # log trial status
             if len(self._trials_running) > 0:
