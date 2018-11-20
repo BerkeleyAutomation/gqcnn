@@ -1,0 +1,6 @@
+model_checkpoint_path: "/mnt/data/jmahler/parallel_jaws/models/dexnet_4/model_rcxjxghxhz/model.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/parallel_jaws/models/dexnet_4/model_rcxjxghxhz/model_324237.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/parallel_jaws/models/dexnet_4/model_rcxjxghxhz/model_648474.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/parallel_jaws/models/dexnet_4/model_rcxjxghxhz/model_972711.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/parallel_jaws/models/dexnet_4/model_rcxjxghxhz/model_1296948.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/parallel_jaws/models/dexnet_4/model_rcxjxghxhz/model.ckpt"

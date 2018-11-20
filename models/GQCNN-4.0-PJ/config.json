@@ -1,0 +1,138 @@
+{
+  "train_batch_size": 64, 
+  "val_batch_size": 64, 
+  "num_epochs": 50, 
+  "eval_frequency": 10, 
+  "save_frequency": 10, 
+  "vis_frequency": 10000, 
+  "log_frequency": 1, 
+  "train_pct": 0.8, 
+  "total_pct": 1.0, 
+  "eval_total_train_error": 0, 
+  "max_files_eval": 1000, 
+  "loss": "sparse", 
+  "optimizer": "momentum", 
+  "train_l2_regularizer": 0.0005, 
+  "base_lr": 0.01, 
+  "decay_step_multiplier": 0.5, 
+  "decay_rate": 0.95, 
+  "momentum_rate": 0.9, 
+  "max_training_examples_per_load": 128, 
+  "drop_rate": 0.0, 
+  "max_global_grad_norm": 100000000000, 
+  "fine_tune": 0, 
+  "update_fc_only": 0, 
+  "update_conv0_only": 0, 
+  "reinit_pc1": 0, 
+  "reinit_fc3": 0, 
+  "reinit_fc4": 0, 
+  "reinit_fc5": 0, 
+  "training_mode": "classification", 
+  "image_field_name": "tf_depth_ims", 
+  "pose_field_name": "grasps", 
+  "target_metric_name": "grasp_metrics", 
+  "metric_thresh": 0.5, 
+  "num_random_files": 10000, 
+  "preproc_log_frequency": 100, 
+  "multiplicative_denoising": 0, 
+  "gamma_shape": 1000.0, 
+  "symmetrize": 1, 
+  "gaussian_process_denoising": 0, 
+  "gaussian_process_rate": 0.5, 
+  "gaussian_process_scaling_factor": 4.0, 
+  "gaussian_process_sigma": 0.005, 
+  "drop_fc3": 1, 
+  "fc3_drop_rate": 0.5, 
+  "drop_fc4": 1, 
+  "fc4_drop_rate": 0.5, 
+  "tensorboard_port": 6006, 
+  "debug": 0, 
+  "debug_num_files": 1000000000, 
+  "seed": 57, 
+  "gqcnn": {
+    "im_height": 96, 
+    "im_width": 96, 
+    "im_channels": 1, 
+    "debug": 0, 
+    "seed": 24098, 
+    "gripper_mode": "parallel_jaw", 
+    "batch_size": 64,
+    "input_depth_mode": "pose_stream",
+    "angular_bins": 0, 
+    "architecture": {
+      "im_stream": {
+        "conv1_1": {
+          "type": "conv", 
+          "filt_dim": 9, 
+          "num_filt": 16, 
+          "pool_size": 1, 
+          "pool_stride": 1, 
+          "pad": "VALID", 
+          "norm": 0, 
+          "norm_type": "local_response"
+        }, 
+        "conv1_2": {
+          "type": "conv", 
+          "filt_dim": 5, 
+          "num_filt": 16, 
+          "pool_size": 2, 
+          "pool_stride": 2, 
+          "pad": "VALID", 
+          "norm": 0, 
+          "norm_type": "local_response"
+        }, 
+        "conv2_1": {
+          "type": "conv", 
+          "filt_dim": 5, 
+          "num_filt": 16, 
+          "pool_size": 1, 
+          "pool_stride": 1, 
+          "pad": "VALID", 
+          "norm": 0, 
+          "norm_type": "local_response"
+        }, 
+        "conv2_2": {
+          "type": "conv", 
+          "filt_dim": 5, 
+          "num_filt": 16, 
+          "pool_size": 2, 
+          "pool_stride": 2, 
+          "pad": "VALID", 
+          "norm": 0, 
+          "norm_type": "local_response"
+        }, 
+        "fc3": {
+          "type": "fc", 
+          "out_size": 128
+        }
+      }, 
+      "pose_stream": {
+        "pc1": {
+          "type": "pc", 
+          "out_size": 16
+        }, 
+        "pc2": {
+          "type": "pc", 
+          "out_size": 0
+        }
+      }, 
+      "merge_stream": {
+        "fc4": {
+          "type": "fc_merge", 
+          "out_size": 128
+        }, 
+        "fc5": {
+          "type": "fc", 
+          "out_size": 2
+        }
+      }
+    }, 
+    "radius": 2, 
+    "alpha": 2e-05, 
+    "beta": 0.75, 
+    "bias": 1.0, 
+    "relu_coeff": 0.0
+  }, 
+  "dataset_dir": "/mnt/data/diskstation/dexnet_4/v3/parallel_jaw/", 
+  "split_name": "image_wise"
+}

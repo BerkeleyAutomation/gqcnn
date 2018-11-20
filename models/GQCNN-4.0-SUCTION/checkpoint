@@ -1,0 +1,6 @@
+model_checkpoint_path: "/mnt/data/jmahler/suction/models/dexnet_4/model_ywecrumalo/model.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/suction/models/dexnet_4/model_ywecrumalo/model_307392.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/suction/models/dexnet_4/model_ywecrumalo/model_614784.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/suction/models/dexnet_4/model_ywecrumalo/model_922176.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/suction/models/dexnet_4/model_ywecrumalo/model_1229568.ckpt"
+all_model_checkpoint_paths: "/mnt/data/jmahler/suction/models/dexnet_4/model_ywecrumalo/model.ckpt"

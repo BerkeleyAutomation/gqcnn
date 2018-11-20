@@ -1,0 +1,3 @@
+model_checkpoint_path: "/home/benno/Github/gqcnn/tools/../models/gqcnn_example_pj/model.ckpt"
+all_model_checkpoint_paths: "/home/benno/Github/gqcnn/tools/../models/gqcnn_example_pj/model_02172.ckpt"
+all_model_checkpoint_paths: "/home/benno/Github/gqcnn/tools/../models/gqcnn_example_pj/model.ckpt"
