@@ -298,9 +298,11 @@ if __name__ == '__main__':
 
     # get configs
     model_name = rospy.get_param('~model_name')
-    model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                             '../models',
-                             model_name)
+    model_dir = rospy.get_param('~model_dir')
+    if model_dir.lower() == 'default':
+        model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                 '../models')
+    model_dir = os.path.join(model_dir, model_name)
     model_config = json.load(open(os.path.join(model_dir, 'config.json'), 'r'))
     try:
         gqcnn_config = model_config['gqcnn']

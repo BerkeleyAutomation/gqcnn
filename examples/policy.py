@@ -28,6 +28,7 @@ Author
 Jeff Mahler and Vishal Satish
 """
 import argparse
+import json
 import os
 import time
 
@@ -36,7 +37,9 @@ import numpy as np
 from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
-from gqcnn import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
+
+from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
+from gqcnn.utils import GripperMode, NoValidGraspsException
 
 # set up logger
 logger = Logger.get_logger('examples/policy.py')
@@ -44,16 +47,18 @@ logger = Logger.get_logger('examples/policy.py')
 if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
+    parser.add_argument('model_name', type=str, default=None, help='name of a trained model to run')
     parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')
     parser.add_argument('--segmask', type=str, default=None, help='path to an optional segmask to use')
-    parser.add_argument('--camera_intrinsics', type=str, default=None, help='path to the camera intrinsics')
-    parser.add_argument('--model_dir', type=str, default=None, help='path to a trained model to run')
+    parser.add_argument('--camera_intr', type=str, default=None, help='path to the camera intrinsics')
+    parser.add_argument('--model_dir', type=str, default=None, help='path to the folder in which the model is stored')
     parser.add_argument('--config_filename', type=str, default=None, help='path to configuration file to use')
     parser.add_argument('--fully_conv', action='store_true', help='run Fully-Convolutional GQ-CNN policy instead of standard GQ-CNN policy')
     args = parser.parse_args()
+    model_name = args.model_name
     depth_im_filename = args.depth_image
     segmask_filename = args.segmask
-    camera_intr_filename = args.camera_intrinsics
+    camera_intr_filename = args.camera_intr
     model_dir = args.model_dir
     config_filename = args.config_filename
     fully_conv = args.fully_conv
@@ -77,29 +82,69 @@ if __name__ == '__main__':
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
                                             'data/calib/primesense/primesense.intr')    
+   
+
+    # set model if provided 
+    if model_dir is None:
+        model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                 '../models')
+    model_path = os.path.join(model_dir, model_name)
+
+    # get configs
     if config_filename is None:
+        model_config = json.load(open(os.path.join(model_path, 'config.json'), 'r'))
+    try:
+        gqcnn_config = model_config['gqcnn']
+        gripper_mode = gqcnn_config['gripper_mode']
+    except:
+        gqcnn_config = model_config['gqcnn_config']
+        input_data_mode = gqcnn_config['input_data_mode']
+        if input_data_mode == 'tf_image':
+            gripper_mode = GripperMode.LEGACY_PARALLEL_JAW
+        elif input_data_mode == 'tf_image_suction':
+            gripper_mode = GripperMode.LEGACY_SUCTION                
+        elif input_data_mode == 'suction':
+            gripper_mode = GripperMode.SUCTION                
+        elif input_data_mode == 'multi_suction':
+            gripper_mode = GripperMode.MULTI_SUCTION                
+        elif input_data_mode == 'parallel_jaw':
+            gripper_mode = GripperMode.PARALLEL_JAW
+        else:
+            raise ValueError('Input data mode {} not supported!'.format(input_data_mode))
+    
+    # set config
+    config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   '..',
+                                   'cfg/policies/gqcnn_suction.yaml')
+    if gripper_mode == GripperMode.LEGACY_PARALLEL_JAW or gripper_mode == GripperMode.PARALLEL_JAW:
         if fully_conv:
             config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                            '..',
-                                           'cfg/examples/fc_policy.yaml')
+                                           'cfg/policies/fc_gqcnn_pj.yaml')
         else:
             config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                            '..',
-                                           'cfg/examples/policy.yaml')
-   
+                                           'cfg/policies/gqcnn_pj.yaml')
+    elif gripper_mode == GripperMode.LEGACY_SUCTION or gripper_mode == GripperMode.SUCTION:
+        if fully_conv:
+            config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                           '..',
+                                           'cfg/policies/fc_gqcnn_suction.yaml')
+
+            
     # read config
     config = YamlConfig(config_filename)
     inpaint_rescale_factor = config['inpaint_rescale_factor']
     policy_config = config['policy']
 
-    # set model if provided and make relative paths absolute
-    if model_dir is not None:
-        policy_config['metric']['gqcnn_model'] = model_dir
-    if 'gqcnn_model' in policy_config['metric'].keys() and not os.path.isabs(policy_config['metric']['gqcnn_model']):
-        policy_config['metric']['gqcnn_model'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                              '..',
-                                                              policy_config['metric']['gqcnn_model'])
-
+    # make relative paths absolute
+    if 'gqcnn_model' in policy_config['metric'].keys():
+        policy_config['metric']['gqcnn_model'] = model_path
+        if not os.path.isabs(policy_config['metric']['gqcnn_model']):
+            policy_config['metric']['gqcnn_model'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                                  '..',
+                                                                  policy_config['metric']['gqcnn_model'])
+            
     # setup sensor
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
         

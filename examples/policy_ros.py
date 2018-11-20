@@ -54,18 +54,18 @@ if __name__ == '__main__':
 
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
-    parser.add_argument('--color_image', type=str, default=None, help='path to a test color image stored as a .png file')
     parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')
     parser.add_argument('--segmask', type=str, default=None, help='path to an optional segmask to use')
     parser.add_argument('--camera_intr', type=str, default=None, help='path to the camera intrinsics')
     parser.add_argument('--gripper_width', type=float, default=0.05, help='width of the gripper to plan for')
+    parser.add_argument('--namespace', type=str, default='gqcnn', help='namespace of the ROS grasp planning service')
     parser.add_argument('--vis_grasp', type=bool, default=True, help='whether or not to visualize the grasp')
     args = parser.parse_args()
-    color_im_filename = args.color_image
     depth_im_filename = args.depth_image
     segmask_filename = args.segmask
     camera_intr_filename = args.camera_intr
     gripper_width = args.gripper_width
+    namespace = args.namespace
     vis_grasp = args.vis_grasp
 
     # initialize the ROS node
@@ -73,10 +73,6 @@ if __name__ == '__main__':
     logging.getLogger().addHandler(rl.RosStreamHandler())
 
     # setup filenames
-    if color_im_filename is None:
-        color_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                         '..',
-                                         'data/examples/single_object/primesense/color_0.png')
     if depth_im_filename is None:
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '..',
@@ -87,18 +83,19 @@ if __name__ == '__main__':
                                             'data/calib/primesense/primesense.intr')    
 
     # wait for Grasp Planning Service and create Service Proxy
-    rospy.wait_for_service('grasp_planner')
-    rospy.wait_for_service('grasp_planner_segmask')
-    plan_grasp = rospy.ServiceProxy('grasp_planner', GQCNNGraspPlanner)
-    plan_grasp_segmask = rospy.ServiceProxy('grasp_planner_segmask', GQCNNGraspPlannerSegmask)
+    rospy.wait_for_service('%s/grasp_planner' %(namespace))
+    rospy.wait_for_service('%s/grasp_planner_segmask' %(namespace))
+    plan_grasp = rospy.ServiceProxy('%s/grasp_planner' %(namespace), GQCNNGraspPlanner)
+    plan_grasp_segmask = rospy.ServiceProxy('%s/grasp_planner_segmask' %(namespace), GQCNNGraspPlannerSegmask)
     cv_bridge = CvBridge()    
 
     # setup sensor
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
         
     # read images
-    color_im = ColorImage.open(color_im_filename, frame=camera_intr.frame)
     depth_im = DepthImage.open(depth_im_filename, frame=camera_intr.frame)
+    color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
+                          frame=camera_intr.frame)
 
     # read segmask
     if segmask_filename is not None:
