@@ -41,17 +41,26 @@ logger = Logger.get_logger('tools/analyze_gqcnn_performance.py')
 if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Analyze a Grasp Quality Convolutional Neural Network with TensorFlow')
-    parser.add_argument('model_dir', type=str, default=None, help='model to analyze')
+    parser.add_argument('model_name', type=str, default=None, help='name of model to analyze')
     parser.add_argument('--output_dir', type=str, default=None, help='path to save the analysis')
     parser.add_argument('--dataset_config_filename', type=str, default=None, help='path to a configuration file for testing on a custom dataset')
     parser.add_argument('--config_filename', type=str, default=None, help='path to the configuration file to use')
+    parser.add_argument('--model_dir', type=str, default=None, help='path to the model')
     args = parser.parse_args()
-    model_dir = [args.model_dir]
+    model_name = args.model_name
     output_dir = args.output_dir
     dataset_config_filename = args.dataset_config_filename
     config_filename = args.config_filename
+    model_dir = args.model_dir
 
+    # create model dir
+    if model_dir is None:
+        model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                 '../models')
+    model_dir = os.path.join(model_dir, model_name)
+        
     # if model_dir contains many models, analyze each of them
+    model_dir = [model_dir]
     if 'config.json' not in os.listdir(model_dir[0]):
         logger.warning('Found multiple models in model_dir, analyzing all of them...')
         models = os.listdir(model_dir[0])
