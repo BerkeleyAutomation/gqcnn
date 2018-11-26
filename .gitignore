@@ -90,3 +90,9 @@ ENV/
 *~
 .#*
 #*
+
+# Dataset
+data/hsr/
+
+# Ignore models/ because of too large files
+models/
