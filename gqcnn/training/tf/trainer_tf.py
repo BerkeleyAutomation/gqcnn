@@ -36,6 +36,8 @@ import subprocess
 import sys
 import threading
 import time
+import multiprocessing as mp
+import Queue
 
 import matplotlib.pyplot as plt
 import cv2
@@ -168,18 +170,6 @@ class GQCNNTrainerTF(object):
 
         return apply_grads, global_grad_norm
 
-    def _check_dead_queue(self):
-        """ Checks to see if the queue is dead and if so closes the tensorflow session and cleans up the variables """
-        if self.dead_event.is_set():
-            # close self.session
-            self.sess.close()
-            
-            # cleanup
-            for layer_weights in self.weights.values():
-                del layer_weights
-            del self.saver
-            del self.sess
-
     def _launch_tensorboard(self):
         """ Launches Tensorboard to visualize training """
         FNULL = open(os.devnull, 'w')
@@ -189,7 +179,7 @@ class GQCNNTrainerTF(object):
 
     def _close_tensorboard(self):
         """Closes Tensorboard process."""
-        self.logger.info('Closing Tensorboard.')
+        self.logger.info('Closing Tensorboard...')
         self._tensorboard_proc.terminate()                        
 
     def train(self):
@@ -307,49 +297,23 @@ class GQCNNTrainerTF(object):
         with tf.name_scope('optimizer'):
             apply_grad_op, global_grad_norm = self._create_optimizer(loss, batch, var_list, learning_rate)
 
+        # add a handler for SIGINT for graceful exit
         def handler(signum, frame):
             self.logger.info('caught CTRL+C, exiting...')
-            self.term_event.set()
-
-            ### Forcefully Exit ####
-            # TODO: @Vishal remove this and figure out why data prefetch queue thread does not properly exit
-            self.logger.info('Forcefully Exiting Optimization')
-            self.forceful_exit = True
-
-            # forcefully kill the session to terminate any current graph ops that are stalling because the enqueue op has ended
-            self.sess.close()
-
-            # close tensorboard
-            self._close_tensorboard()
-
-            # pause and wait for queue thread to exit before continuing
-            self.logger.info('Waiting for Queue Thread to Exit')
-            while not self.queue_thread_exited:
-                pass
-
-            # cleanup
-            self.logger.info('Cleaning and Preparing to Exit Optimization')
-            for layer_weights in self.weights.values():
-                del layer_weights
-            del self.saver
-            del self.sess
-
-            # exit
-            self.logger.info('Exiting Optimization')
-
-            # forcefully exit the script
+            self._cleanup()
             exit(0)
-
         signal.signal(signal.SIGINT, handler)
 
-        # now that everything in our graph is set up we write the graph to the summary event so 
-        # it can be visualized in tensorboard
+        # now that everything in our graph is set up, we write the graph to the summary event so it can be visualized in tensorboard
         self.summary_writer.add_graph(self.gqcnn.tf_graph)
 
         # begin optimization loop
         try:
-            self.queue_thread = threading.Thread(target=self._load_and_enqueue)
-            self.queue_thread.start()
+            self.prefetch_q_workers = []
+            for i in range(self.num_prefetch_q_workers):
+                p = mp.Process(target=self._load_and_enqueue)
+                p.start()
+                self.prefetch_q_workers.append(p)
 
             # init and run tf self.sessions
             init = tf.global_variables_initializer()
@@ -362,17 +326,14 @@ class GQCNNTrainerTF(object):
             # loop through training steps
             training_range = xrange(int(self.num_epochs * self.num_train) // self.train_batch_size)
             for step in training_range:
-                # check for dead queue
-                self._check_dead_queue()
-
                 # run optimization
                 step_start = time.time()
                 if self._angular_bins > 0:
-                    _, l, ur_l, lr, predictions, batch_labels, output, train_images, train_poses, pred_mask = self.sess.run([apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node, self.train_pred_mask_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
- 
+                    images, poses, labels, masks = self.prefetch_q.get()
+                    _, l, ur_l, lr, predictions, raw_net_output = self.sess.run([apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_net_output], feed_dict={drop_rate_in: self.drop_rate, self.input_im_node: images, self.input_pose_node: poses, self.train_labels_node: labels, self.train_pred_mask_node: masks}, options=GeneralConstants.timeout_option)
                 else:
-                    _, l, ur_l, lr, predictions, batch_labels, output, train_images, train_poses = self.sess.run(
-                        [apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_labels_node, self.train_net_output, self.input_im_node, self.input_pose_node], feed_dict={drop_rate_in: self.drop_rate}, options=GeneralConstants.timeout_option)
+                    images, poses, labels = self.prefetch_q.get()
+                    _, l, ur_l, lr, predictions, raw_net_output = self.sess.run([apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_net_output], feed_dict={drop_rate_in: self.drop_rate, self.input_im_node: images, self.input_pose_node: poses, self.train_labels_node: labels}, options=GeneralConstants.timeout_option)
                 step_stop = time.time()
                 self.logger.info('Step took %.3f sec.' %(step_stop-step_start))
                
@@ -381,22 +342,22 @@ class GQCNNTrainerTF(object):
                     self.logger.info('Min ' + str(np.min(predictions)))
                 elif self.cfg['loss'] != 'weighted_cross_entropy':
                     if self._angular_bins == 0:
-                        ex = np.exp(output - np.tile(np.max(output, axis=1)[:,np.newaxis], [1,2]))
+                        ex = np.exp(raw_net_output - np.tile(np.max(raw_net_output, axis=1)[:,np.newaxis], [1,2]))
                         softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 		        
                         self.logger.info('Max ' +  str(np.max(softmax[:,1])))
                         self.logger.info('Min ' + str(np.min(softmax[:,1])))
                         self.logger.info('Pred nonzero ' + str(np.sum(softmax[:,1] > 0.5)))
-                        self.logger.info('True nonzero ' + str(np.sum(batch_labels)))
+                        self.logger.info('True nonzero ' + str(np.sum(labels)))
                    
                 else:
-                    sigmoid = 1.0 / (1.0 + np.exp(-output))
+                    sigmoid = 1.0 / (1.0 + np.exp(-raw_net_output))
                     self.logger.info('Max ' +  str(np.max(sigmoid)))
                     self.logger.info('Min ' + str(np.min(sigmoid)))
                     self.logger.info('Pred nonzero ' + str(np.sum(sigmoid > 0.5)))
-                    self.logger.info('True nonzero ' + str(np.sum(batch_labels > 0.5)))
+                    self.logger.info('True nonzero ' + str(np.sum(labels > 0.5)))
 
-                if np.isnan(l) or np.any(np.isnan(train_poses)):
+                if np.isnan(l) or np.any(np.isnan(poses)):
                     self.logger.error('Encountered NaN in loss or training poses!')
                     raise Exception
                     
@@ -414,8 +375,8 @@ class GQCNNTrainerTF(object):
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
                         if self._angular_bins > 0:
-                            predictions = predictions[pred_mask.astype(bool)].reshape((-1, 2))
-                        classification_result = BinaryClassificationResult(predictions[:,1], batch_labels)
+                            predictions = predictions[masks.astype(bool)].reshape((-1, 2))
+                        classification_result = BinaryClassificationResult(predictions[:,1], labels)
                         train_error = classification_result.error_rate
                         
                     self.logger.info('Minibatch error: %.3f' %(train_error))
@@ -480,43 +441,10 @@ class GQCNNTrainerTF(object):
             self.saver.save(self.sess, os.path.join(self.model_dir, 'model.ckpt'))
 
         except Exception as e:
-            self.term_event.set()
-            if not self.forceful_exit:
-                self.sess.close() 
-                for layer_weights in self.weights.values():
-                    del layer_weights
-                del self.saver
-                del self.sess
+            self._cleanup()
             raise
 
-        # check for dead queue
-        self._check_dead_queue()
-
-        # close sessions
-        self.term_event.set()
-
-        # close tensorboard
-        self._close_tensorboard()
-
-        # TODO: remove this and figure out why queue thread does not properly exit
-        self.sess.close()
-
-        # pause and wait for queue thread to exit before continuing
-        self.logger.info('Waiting for Queue Thread to Exit')
-        while not self.queue_thread_exited:
-            pass
-
-        self.logger.info('Cleaning and Preparing to Exit Optimization')
-        self.sess.close()
-            
-        # cleanup
-        for layer_weights in self.weights.values():
-            del layer_weights
-        del self.saver
-        del self.sess
-
-        # exit
-        self.logger.info('Exiting Optimization')
+        self._cleanup()
 
     def _compute_data_metrics(self):
         """ Calculate image mean, image std, pose mean, pose std, normalization params """
@@ -928,6 +856,12 @@ class GQCNNTrainerTF(object):
         # preproc
         self.preproc_log_frequency = self.cfg['preproc_log_frequency']
         self.num_random_files = self.cfg['num_random_files']
+        self.max_prefetch_q_size = GeneralConstants.MAX_PREFETCH_Q_SIZE
+        if 'max_prefetch_q_size' in self.cfg.keys():
+            self.max_prefetch_q_size = self.cfg['max_prefetch_q_size']
+        self.num_prefetch_q_workers = GeneralConstants.NUM_PREFETCH_Q_WORKERS
+        if 'num_prefetch_q_workers' in self.cfg.keys():
+            self.num_prefetch_q_workers = self.cfg['num_prefetch_q_workers']
 
         # re-weighting positives / negatives
         self.pos_weight = 0.0
@@ -1025,11 +959,7 @@ class GQCNNTrainerTF(object):
     def _setup_tensorflow(self):
         """Setup Tensorflow placeholders, session, and queue """
 
-        # setup nodes
-        with tf.name_scope('train_data_node'):
-            self.train_data_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.im_channels))
-        with tf.name_scope('train_pose_node'):
-            self.train_poses_batch = tf.placeholder(tf.float32, (self.train_batch_size, self.pose_dim))
+        # set up training label and numpy datatypes
         if self.training_mode == TrainingMode.REGRESSION:
             train_label_dtype = tf.float32
             self.numpy_dtype = np.float32
@@ -1041,23 +971,16 @@ class GQCNNTrainerTF(object):
                 self.numpy_dtype = np.float32            
         else:
             raise ValueError('Training mode %s not supported' %(self.training_mode))
-        with tf.name_scope('train_labels_node'):
-            self.train_labels_batch = tf.placeholder(train_label_dtype, (self.train_batch_size,))
-        if self._angular_bins > 0:
-            self.train_pred_mask_batch = tf.placeholder(tf.int32, (self.train_batch_size, self._angular_bins*2))
 
-        # create queue
-        with tf.name_scope('data_queue'):
-            if self._angular_bins > 0:
-                self.q = tf.FIFOQueue(GeneralConstants.QUEUE_CAPACITY, [tf.float32, tf.float32, train_label_dtype, tf.int32], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.im_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,), (self.train_batch_size, self._angular_bins * 2)])
-                self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch, self.train_pred_mask_batch])
-                self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
-                self.input_im_node, self.input_pose_node, self.train_labels_node, self.train_pred_mask_node = self.q.dequeue()
-            else:
-                self.q = tf.FIFOQueue(GeneralConstants.QUEUE_CAPACITY, [tf.float32, tf.float32, train_label_dtype], shapes=[(self.train_batch_size, self.im_height, self.im_width, self.im_channels), (self.train_batch_size, self.pose_dim), (self.train_batch_size,)])
-                self.enqueue_op = self.q.enqueue([self.train_data_batch, self.train_poses_batch, self.train_labels_batch])
-                self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
-                self.input_im_node, self.input_pose_node, self.train_labels_node = self.q.dequeue()
+        # set up placeholders
+        self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
+        self.input_im_node = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.im_channels))
+        self.input_pose_node = tf.placeholder(tf.float32, (self.train_batch_size, self.pose_dim))
+        if self._angular_bins > 0:
+            self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self._angular_bins * 2))
+ 
+        # create data prefetch queue
+        self.prefetch_q = mp.Queue(self.max_prefetch_q_size)
 
         # get weights
         self.weights = self.gqcnn.weights
@@ -1065,11 +988,9 @@ class GQCNNTrainerTF(object):
         # open a tf session for the gqcnn object and store it also as the optimizer session
         self.sess = self.gqcnn.open_session()
 
-        # setup term event/dead event
-        self.term_event = threading.Event()
+        # setup data prefetch queue worker termination event
+        self.term_event = mp.Event()
         self.term_event.clear()
-        self.dead_event = threading.Event()
-        self.dead_event.clear()
 
     def _setup_summaries(self):
         """ Sets up placeholders for summary values and creates summary writer """
@@ -1095,7 +1016,40 @@ class GQCNNTrainerTF(object):
         # initialize the variables again now that we have added some new ones
         with self.sess.as_default():
             tf.global_variables_initializer().run()
+ 
+    def _cleanup(self):
+        self.logger.info('Cleaning and preparing to exit optimization...')
         
+        # set termination even for prefetch queue workers
+        self.logger.info('Terminating prefetch queue workers...')
+        self.term_event.set()
+
+        # flush prefetch queue
+        #NOTE: this prevents a deadlock with the worker process queue buffers
+        self._flush_prefetch_queue()
+
+        # join prefetch queue worker processes
+        for p in self.prefetch_q_workers:
+            p.join()
+
+        # close tensorboard
+        self._close_tensorboard()
+
+        # close tensorflow session
+        self.gqcnn.close_session()
+            
+        # cleanup
+        for layer_weights in self.weights.values():
+            del layer_weights
+        del self.saver
+        del self.sess
+      
+    def _flush_prefetch_queue(self):
+        """Flush prefetch queue."""
+        self.logger.info('Flushing prefetch queue...')
+        for i in range(self.prefetch_q.qsize()):
+            self.prefetch_q.get()
+ 
     def _setup(self):
         """Setup for training."""
         # initialize data prefetch queue thread exit booleans
@@ -1135,13 +1089,12 @@ class GQCNNTrainerTF(object):
 
     def _load_and_enqueue(self):
         """ Loads and Enqueues a batch of images for training """
+        signal.signal(signal.SIGINT, signal.SIG_IGN) # when the parent process receives a SIGINT, it will itself handle cleaning up child processes
+
         # open dataset
         dataset = TensorDataset.open(self.dataset_dir)
 
         while not self.term_event.is_set():
-            # sleep between reads
-            time.sleep(GeneralConstants.QUEUE_SLEEP)
-
             # loop through data
             num_queued = 0
             start_i = 0
@@ -1161,7 +1114,7 @@ class GQCNNTrainerTF(object):
                 # compute num remaining
                 num_remaining = self.train_batch_size - num_queued
                 
-                # gen file index uniformly at random
+                # gen tensor index uniformly at random
                 file_num = np.random.choice(self.num_tensors, size=1)[0]
 
                 read_start = time.time()
@@ -1230,8 +1183,8 @@ class GQCNNTrainerTF(object):
                 # standardize inputs and outputs
                 if self._norm_inputs:
                     train_images_arr = (train_images_arr - self.im_mean) / self.im_std
-		    if self.gqcnn.input_depth_mode == InputDepthMode.POSE_STREAM:
-                    	train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
+                    if self.gqcnn.input_depth_mode == InputDepthMode.POSE_STREAM:
+                        train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
                 train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                 train_label_arr = train_label_arr.astype(self.numpy_dtype)
 
@@ -1276,24 +1229,18 @@ class GQCNNTrainerTF(object):
             if not self.term_event.is_set():
                 try:
                     if self._angular_bins > 0:
-                        self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_images,
-                                                              self.train_poses_batch: train_poses,
-                                                              self.train_labels_batch: train_labels,
-                                                              self.train_pred_mask_batch: train_pred_mask})                       
+                        self.prefetch_q.put_nowait((train_images, train_poses, train_labels, train_pred_mask))                       
                     else:
-                        self.sess.run(self.enqueue_op, feed_dict={self.train_data_batch: train_images,
-                                                              self.train_poses_batch: train_poses,
-                                                              self.train_labels_batch: train_labels})
-                    queue_stop = time.time()
-                    self.logger.debug('Queue batch took %.3f sec' %(queue_stop - queue_start))
-                except:
-                    pass
-        del train_images
-        del train_poses
-        del train_labels
-        self.dead_event.set()
-        self.logger.info('Queue Thread Exiting...')
-        self.queue_thread_exited = True
+                        self.prefetch_q.put_nowait((train_images, train_poses, train_labels)) 
+                except Queue.Full:
+                    time.sleep(GeneralConstants.QUEUE_SLEEP)
+                queue_stop = time.time()
+                self.logger.debug('Queue batch took %.3f sec' %(queue_stop - queue_start))
+            del train_images
+            del train_poses
+            del train_labels
+            if self._angular_bins > 0:
+                del train_pred_mask
 
     def _distort(self, image_arr, pose_arr):
         """ Adds noise to a batch of images """

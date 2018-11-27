@@ -31,7 +31,8 @@ class GeneralConstants:
     SEED = 3472134
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
     JSON_INDENT = 2
-    QUEUE_CAPACITY = 1000
+    MAX_PREFETCH_Q_SIZE = 250
+    NUM_PREFETCH_Q_WORKERS = 3
     QUEUE_SLEEP = 0.001
     PI = math.pi
     
