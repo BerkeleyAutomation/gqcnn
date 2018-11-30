@@ -1,0 +1,96 @@
+policy:
+  # optimization params
+  num_seed_samples: 200
+  num_gmm_samples: 50
+  num_iters: 3
+  gmm_refit_p: 0.25
+  gmm_component_frac: 0.4
+  gmm_reg_covar: 0.01
+
+  # general params
+  deterministic: 1
+  gripper_width: 0.05
+  crop_height: 96
+  crop_width: 96
+
+  # sampling params
+  sampling:
+    # type
+    type: suction
+
+    # params
+    max_suction_dir_optical_axis_angle: 30
+    delta_theta: 5
+    delta_phi: 5
+    sigma_depth: 0.0025
+    min_suction_dist: 1.0
+    angle_dist_weight: 5.0
+    depth_gaussian_sigma: 1.0
+    num_grasp_samples: 1000
+
+    max_dist_from_center: 260
+    max_num_samples: 10000
+
+  # metric params
+  metric:
+    type: gqcnn
+    gqcnn_model: models/GQCNN-4.0-SUCTION
+
+    crop_height: 96
+    crop_width: 96
+
+  # visualization
+  vis:
+    grasp_sampling : 0
+    tf_images: 0
+    plane: 0
+    grasp_candidates: 0
+    elite_grasps: 0
+    grasp_ranking: 0
+    grasp_plan: 0
+    grasp_affordance_map: 0
+    final_grasp: 1
+
+    vmin: 0.5
+    vmax: 0.8
+
+    k: 25
+
+# image proc params
+inpaint_rescale_factor: 0.5
+
+# detection params
+detection:
+  type: point_cloud_box
+
+  foreground_mask_tolerance: 60
+  min_pt:
+    - 0.205
+    - -0.3
+    - 0.01
+
+  max_pt:
+    - 0.65
+    - 0.3
+    - 0.15
+
+  selection_policy: min
+  focus: 0
+
+  min_contour_area: 250.0
+  max_contour_area: 1000000.0
+  min_box_area: 250.0
+  max_box_area: 1000000.0
+  box_padding_px: 15
+
+  rescale_factor: 1.0
+  interpolation: bilinear
+  depth_grad_thresh: 10.0
+  contour_dist_thresh: 2.5
+
+  point_cloud_mask_only: 1
+
+  image_width: 640
+  image_height: 480
+
+  filter_dim: 1

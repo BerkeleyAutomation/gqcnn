@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
+Permission to use, copy, modify, and distribute this software and its documentation for educational,
+research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
+hereby granted, provided that the above copyright notice, this paragraph and the following two
+paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
+Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
+7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+
+IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
+THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
+HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
+MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+"""
 """
 Compute neural network features and visualize with t-sne
 Author: Jeff Mahler
@@ -6,29 +27,29 @@ import argparse
 import copy
 import cPickle as pkl
 import gc
-import IPython
-import logging
-import numpy as np
 import os
 import sys
 import time
 
+import numpy as np
 import scipy.sparse as ssp
 import sklearn.decomposition as skd
 import sklearn.manifold as skm
 
 import autolab_core.utils as utils
-from autolab_core import TensorDataset, YamlConfig
-from gqcnn.model import get_gqcnn_model
+from autolab_core import TensorDataset, YamlConfig, Logger
+from gqcnn import get_gqcnn_model
 from gqcnn.utils import ImageMode, TrainingMode, GripperMode, GeneralConstants, read_pose_data
 
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 from visualization import Visualizer2D as vis2d
 from visualization import Visualizer3D as vis3d
 
+# set up logger
+logger = Logger.get_logger('tools/featurize_grasp_dataset.py')
+
 if __name__ == '__main__':
     # parse args
-    logging.getLogger().setLevel(logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset_dir', type=str, default=None,
                         help='path to the dataset to use for training and validation')
@@ -84,7 +105,7 @@ if __name__ == '__main__':
         os.mkdir(output_dir)
 
     # load a gqcnn
-    logging.info('Loading GQ-CNN')
+    logger.info('Loading GQ-CNN')
     gqcnn = get_gqcnn_model().load(model_dir)
     gqcnn.open_session()
 
@@ -99,7 +120,7 @@ if __name__ == '__main__':
     poses = None
     labels = np.zeros(num_val_datapoints)
     for i in tensor_indices:
-        logging.info('Featurizing tensor %d' %(i))
+        logger.info('Featurizing tensor %d' %(i))
 
         # load indices
         datapoint_indices = dataset.datapoint_indices_for_tensor(i)
@@ -131,7 +152,7 @@ if __name__ == '__main__':
         
         # featurize data
         for feature_layer in feature_layers:
-            logging.info('Computing features for %s' %(feature_layer))
+            logger.info('Computing features for %s' %(feature_layer))
 
             # compute features
             features = gqcnn.featurize(image_tensor,
@@ -179,7 +200,7 @@ if __name__ == '__main__':
     # save features to file
     if config['save_raw_features']:
         for feature_layer, features in feature_maps.iteritems():
-            logging.info('Saving features for %s' %(feature_layer))
+            logger.info('Saving features for %s' %(feature_layer))
         
             # save to file
             features_filename = os.path.join(output_dir, 'features_%s.npz' %(feature_layer))
@@ -187,7 +208,7 @@ if __name__ == '__main__':
 
     # dimensionality reduction
     for feature_layer, features in feature_maps.iteritems():
-        logging.info('Performing PCA on %s' %(feature_layer))
+        logger.info('Performing PCA on %s' %(feature_layer))
 
         # concatenate with poses
         if feature_layer == 'fc4' or feature_layer == 'fc5':
@@ -208,20 +229,20 @@ if __name__ == '__main__':
         np.savez_compressed(pca_features_filename, tf_features)
         
         # run t-sne
-        logging.info('Running T-SNE for %s' %(feature_layer))
+        logger.info('Running T-SNE for %s' %(feature_layer))
         if use_bhtsne:
             # bhtsne impl
             from bhtsne import run_bh_tsne
             bhtsne_start = time.time()
             tsne_features = run_bh_tsne(tf_features, initial_dims=all_features.shape[1], verbose=True, perplexity=perplexity)
-            logging.info('BH T-SNE took %.3f sec' %(time.time() - bhtsne_start))
+            logger.info('BH T-SNE took %.3f sec' %(time.time() - bhtsne_start))
         else:
             # sklearn impl
             tsne_start = time.time()
             tsne = skm.TSNE(perplexity=perplexity,
                             verbose=1)
             tsne_features = tsne.fit_transform(tf_features)
-            logging.info('Sklearn T-SNE took %.3f sec' %(time.time() - tsne_start))
+            logger.info('Sklearn T-SNE took %.3f sec' %(time.time() - tsne_start))
 
             # save t-sne to file
             tsne_filename = os.path.join(output_dir, 'tsne_%s.pkl' %(feature_layer))

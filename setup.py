@@ -24,19 +24,33 @@ Setup of gqcnn python codebase
 Author: Vishal Satish
 """
 from setuptools import setup
+from setuptools.command.develop import develop
+from setuptools.command.install import install
+import os
+
+class PostDevelopCmd(develop):
+    def run(self):
+        os.system('sh scripts/download_data.sh')
+        develop.run(self)
+
+class PostInstallCmd(install):
+    def run(self):
+        os.system('sh scripts/download_data.sh')
+        install.run(self)
 
 requirements = [
-    'autolab_core',
-    'autolab_perception',
+    'autolab-core',
+    'autolab-perception',
     'visualization',
     'numpy<=1.14.1',
     'scipy',
     'matplotlib<=2.2.0',
     'opencv-python',
-    'tensorflow==1.8.0',
-    'ipython==5.5.0',
+    'tensorflow>=1.4.0',
     'scikit-image',
-    'scikit-learn'
+    'scikit-learn',
+    'psutil',
+    'gputil'
 ]
 
 exec(open('gqcnn/version.py').read())
@@ -66,5 +80,9 @@ setup(name='gqcnn',
           'sphinxcontrib-napoleon',
           'sphinx_rtd_theme'
       ],
+      },
+      cmdclass={
+        'install': PostInstallCmd,
+        'develop': PostDevelopCmd
       }
 )

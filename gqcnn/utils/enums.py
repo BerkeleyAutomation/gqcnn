@@ -20,7 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Class for storing constants/enums for optimization
+Constants/enums.
 Author: Vishal Satish
 """
 import tensorflow as tf
@@ -31,7 +31,8 @@ class GeneralConstants:
     SEED = 3472134
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
     JSON_INDENT = 2
-    QUEUE_CAPACITY = 1000
+    MAX_PREFETCH_Q_SIZE = 250
+    NUM_PREFETCH_Q_WORKERS = 3
     QUEUE_SLEEP = 0.001
     PI = math.pi
     
@@ -64,3 +65,9 @@ class InputDepthMode:
     POSE_STREAM = 'pose_stream'
     SUB = 'im_depth_sub'
     IM_ONLY = 'im_only'
+
+# enum for training status
+class GQCNNTrainingStatus:
+    NOT_STARTED = 'not_started'
+    SETTING_UP = 'setting_up'
+    TRAINING = 'training'

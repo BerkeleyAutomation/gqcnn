@@ -20,14 +20,14 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Handles logging of various optimization statistics such as error_rates/parameters/losses/etc.
+Handles logging of various training statistics.
 Author: Vishal Satish
 """
 import numpy as np
 import os
 
 class TrainStatsLogger(object):
-    """ Class to log optimization error rates/parameters/losses/etc. """
+    """Logger for training statistics."""
 
     def __init__(self, experiment_dir):
         """
@@ -41,15 +41,15 @@ class TrainStatsLogger(object):
         self.train_losses = []
         self.train_errors = []
         self.total_train_errors = []
-	self.total_train_losses = []
+        self.total_train_losses = []
         self.val_eval_iters = []
         self.val_losses = []
         self.val_errors = []
-	self.val_losses = []
+        self.val_losses = []
         self.learning_rates = []
 
     def log(self):
-        """ Log all of the statistics to experiment directory """
+        """Flush all of the statistics to the given experiment directory."""
         np.save(
             os.path.join(
                 self.experiment_dir,
@@ -102,14 +102,12 @@ class TrainStatsLogger(object):
             self.learning_rates)
 
     def update(self, **stats):
-        """ Update optimization statistics
-        NOTE: Any statistic that is None in the argument dict will not be updated
+        """Update training statistics. NOTE: Any statistic that is None in the argument dict will not be updated.
 
         Parameters
         ----------
         stats : dict
-                dict of statistics and values to be updated
-
+                dict of statistics to be updated
         """
         for statistic in stats:
             if statistic == "train_eval_iter":
