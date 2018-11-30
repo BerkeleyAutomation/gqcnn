@@ -91,8 +91,7 @@ if __name__ == '__main__':
     model_path = os.path.join(model_dir, model_name)
 
     # get configs
-    if config_filename is None:
-        model_config = json.load(open(os.path.join(model_path, 'config.json'), 'r'))
+    model_config = json.load(open(os.path.join(model_path, 'config.json'), 'r'))
     try:
         gqcnn_config = model_config['gqcnn']
         gripper_mode = gqcnn_config['gripper_mode']
@@ -113,24 +112,25 @@ if __name__ == '__main__':
             raise ValueError('Input data mode {} not supported!'.format(input_data_mode))
     
     # set config
-    config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   '..',
-                                   'cfg/policies/gqcnn_suction.yaml')
-    if gripper_mode == GripperMode.LEGACY_PARALLEL_JAW or gripper_mode == GripperMode.PARALLEL_JAW:
-        if fully_conv:
-            config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           '..',
-                                           'cfg/policies/fc_gqcnn_pj.yaml')
-        else:
-            config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           '..',
-                                           'cfg/policies/gqcnn_pj.yaml')
-    elif gripper_mode == GripperMode.LEGACY_SUCTION or gripper_mode == GripperMode.SUCTION:
-        if fully_conv:
-            config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           '..',
-                                           'cfg/policies/fc_gqcnn_suction.yaml')
-
+    if config_filename is None:
+        if gripper_mode == GripperMode.LEGACY_PARALLEL_JAW or gripper_mode == GripperMode.PARALLEL_JAW:
+            if fully_conv:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/policies/fc_gqcnn_pj.yaml')
+            else:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/policies/gqcnn_pj.yaml')
+        elif gripper_mode == GripperMode.LEGACY_SUCTION or gripper_mode == GripperMode.SUCTION:
+            if fully_conv:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/policies/fc_gqcnn_suction.yaml')
+            else:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/policies/gqcnn_suction.yaml')
             
     # read config
     config = YamlConfig(config_filename)
