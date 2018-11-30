@@ -718,14 +718,14 @@ class GQCNNTrainerTF(object):
                 pose_arr = self.dataset.tensor(self.pose_field_name, m).arr
                 angles = pose_arr[:, 3]
                 neg_ind = np.where(angles < 0)
-                angles = np.abs(angles) % GeneralConstants.PI
+                angles = np.abs(angles) % self._max_angle
                 angles[neg_ind] *= -1
-                g_90 = np.where(angles > (GeneralConstants.PI / 2))
-                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
-                angles[g_90] -= GeneralConstants.PI
-                angles[l_neg_90] += GeneralConstants.PI
+                g_90 = np.where(angles > (self._max_angle / 2))
+                l_neg_90 = np.where(angles < (-1 * (self._max_angle / 2)))
+                angles[g_90] -= self._max_angle
+                angles[l_neg_90] += self._max_angle
                 angles *= -1 # hack to fix reverse angle convention
-                angles += (GeneralConstants.PI / 2)
+                angles += (self._max_angle / 2)
                 for i in range(angles.shape[0]):
                     bin_counts[int(angles[i] // self._bin_width)] += 1
             self.logger.info('Bin counts: {}'.format(bin_counts))
@@ -887,11 +887,12 @@ class GQCNNTrainerTF(object):
  
         # angular training
         self._angular_bins = self.gqcnn.angular_bins
+        self._max_angle = self.gqcnn.max_angle
 
         # during angular training, make sure symmetrization in denoising is turned off and also set the angular bin width
         if self._angular_bins > 0:
             assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training'
-            self._bin_width = GeneralConstants.PI / self._angular_bins
+            self._bin_width = self._max_angle / self._angular_bins
 
     def _setup_denoising_and_synthetic(self):
         """ Setup denoising and synthetic data parameters """
@@ -1192,14 +1193,14 @@ class GQCNNTrainerTF(object):
                     bins = np.zeros_like(train_label_arr)
                     # form prediction mask to use when calculating loss
                     neg_ind = np.where(angles < 0)
-                    angles = np.abs(angles) % GeneralConstants.PI
+                    angles = np.abs(angles) % self._max_angle
                     angles[neg_ind] *= -1
-                    g_90 = np.where(angles > (GeneralConstants.PI / 2))
-                    l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
-                    angles[g_90] -= GeneralConstants.PI
-                    angles[l_neg_90] += GeneralConstants.PI
+                    g_90 = np.where(angles > (self._max_angle / 2))
+                    l_neg_90 = np.where(angles < (-1 * (self._max_angle / 2)))
+                    angles[g_90] -= self._max_angle
+                    angles[l_neg_90] += self._max_angle
                     angles *= -1 # hack to fix reverse angle convention
-                    angles += (GeneralConstants.PI / 2)
+                    angles += (self._max_angle / 2)
                     train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self._angular_bins*2))
                     for i in range(angles.shape[0]):
                         bins[i] = angles[i] // self._bin_width
@@ -1339,14 +1340,14 @@ class GQCNNTrainerTF(object):
                 # form mask to extract predictions from ground-truth angular bins
                 angles = raw_poses[:, 3]
                 neg_ind = np.where(angles < 0)
-                angles = np.abs(angles) % GeneralConstants.PI
+                angles = np.abs(angles) % self._max_angle
                 angles[neg_ind] *= -1
-                g_90 = np.where(angles > (GeneralConstants.PI / 2))
-                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
-                angles[g_90] -= GeneralConstants.PI
-                angles[l_neg_90] += GeneralConstants.PI
+                g_90 = np.where(angles > (self._max_angle / 2))
+                l_neg_90 = np.where(angles < (-1 * (self._max_angle / 2)))
+                angles[g_90] -= self._max_angle
+                angles[l_neg_90] += self._max_angle
                 angles *= -1 # hack to fix reverse angle convention
-                angles += (GeneralConstants.PI / 2)
+                angles += (self._max_angle / 2)
                 pred_mask = np.zeros((labels.shape[0], self._angular_bins*2), dtype=bool)
                 for i in range(angles.shape[0]):
                     pred_mask[i, int((angles[i] // self._bin_width)*2)] = True
