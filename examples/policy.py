@@ -35,6 +35,9 @@ import glob
 
 import numpy as np
 
+from PIL import Image
+import matplotlib.pyplot as plt
+
 from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
@@ -48,7 +51,6 @@ logger = Logger.get_logger('examples/policy.py')
 if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
-    parser.add_argument('model_name', type=str, default=None, help='name of a trained model to run')
     parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')
     parser.add_argument('--segmask', type=str, default=None, help='path to an optional segmask to use')
     parser.add_argument('--camera_intr', type=str, default=None, help='path to the camera intrinsics')
@@ -58,11 +60,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     #depth_im_filename = args.depth_image
     print("starting")
-    for filename in glob.glob('data/hsr/*.npy'):
-        print("filename found: %s" %(filename))
-        depth_im_filename = filename
+    for iter in xrange(0,63):
+        depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+            '..',
+            'data/hsr/d_img_angle_13_num_' + str(iter).zfill(3) + '.npy')
+        rgb_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+            '..',
+            'data/hsr/c_img_angle_13_num_' + str(iter).zfill(3) + '.png')
         segmask_filename = args.segmask
-        camera_intr_filename = args.camera_intrinsics
+        camera_intr_filename = args.camera_intr
         model_dir = args.model_dir
         config_filename = args.config_filename
         fully_conv = args.fully_conv
@@ -115,9 +121,16 @@ if __name__ == '__main__':
             
         # read images
         depth_data = np.load(depth_im_filename)
+        # crop image to make gqcnn focus on target zone of HSR
+        # desired cropped image: depth_data[190:330, 60:170]
+        depth_data[:, :245] = 0
+        depth_data[:, 420:] = 0
+        depth_data[:150, :] = 0
+        depth_data[310:, :] = 0
         depth_im = DepthImage(depth_data, frame=camera_intr.frame)
         color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
-                              frame=camera_intr.frame)
+                                frame=camera_intr.frame)
+
         
         # optionally read a segmask
         segmask = None
@@ -180,10 +193,17 @@ if __name__ == '__main__':
 
         # vis final grasp
         if policy_config['vis']['final_grasp']:
-            vis.figure(size=(10,10))
+            vis.figure(size=(40,40))
+            vis.subplot(1,2,1)
             vis.imshow(rgbd_im.depth,
                        vmin=policy_config['vis']['vmin'],
                        vmax=policy_config['vis']['vmax'])
+            vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
+            vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
+            #vis.show()
+            #vis.figure(size=(10,10))
+            vis.subplot(1,2,2)
+            vis.imshow(rgbd_im.color)
             vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
             vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
             vis.show()

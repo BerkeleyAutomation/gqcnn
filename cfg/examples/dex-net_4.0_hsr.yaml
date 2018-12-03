@@ -10,7 +10,7 @@ policy:
 
   # general params
   deterministic: 1
-  gripper_width: 0.05
+  gripper_width: 0.1
 
   # sampling params
   sampling:
