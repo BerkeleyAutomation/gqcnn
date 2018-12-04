@@ -60,7 +60,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     #depth_im_filename = args.depth_image
     print("starting")
-    for iter in xrange(0,63):
+    for iter in xrange(28,29):
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
             '..',
             'data/hsr/d_img_angle_13_num_' + str(iter).zfill(3) + '.npy')
@@ -127,7 +127,8 @@ if __name__ == '__main__':
         depth_data[:150, :] = 0
         depth_data[310:, :] = 0
         depth_im = DepthImage(depth_data, frame=camera_intr.frame)
-        color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
+        color_data = np.array(Image.open(rgb_im_filename))
+        color_im = ColorImage(color_data,
                                 frame=camera_intr.frame)
 
         
@@ -192,17 +193,18 @@ if __name__ == '__main__':
 
         # vis final grasp
         if policy_config['vis']['final_grasp']:
-            vis.figure(size=(40,40))
-            vis.subplot(1,2,1)
-            vis.imshow(rgbd_im.depth,
-                       vmin=policy_config['vis']['vmin'],
-                       vmax=policy_config['vis']['vmax'])
-            vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
-            vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
+            #vis.figure(size=(40,40))
+            #vis.subplot(1,2,1)
+            #vis.imshow(rgbd_im.depth,
+            #           vmin=policy_config['vis']['vmin'],
+            #           vmax=policy_config['vis']['vmax'])
+            #vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
+            #vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
             #vis.show()
-            #vis.figure(size=(10,10))
-            vis.subplot(1,2,2)
+            vis.figure(size=(10,10))
+            #vis.subplot(1,2,2)
             vis.imshow(rgbd_im.color)
             vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
-            vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
+            #vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
+            vis.savefig('/home/benno/Github/gqcnn/data/hsr/grasps/c_img_angle_13_num_' + str(iter).zfill(3) + '.png')
             vis.show()
