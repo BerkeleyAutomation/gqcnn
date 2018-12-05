@@ -120,7 +120,7 @@ class GQCNNTrainerTF(object):
         if self.cfg['loss'] == 'l2':
             return (1.0 / self.train_batch_size) * tf.nn.l2_loss(tf.subtract(tf.nn.sigmoid(self.train_net_output), self.train_labels_node))
         elif self.cfg['loss'] == 'sparse':
-            if self._angular_bins > 0:
+            if self._angular_bins > 0 or self.multi_head:
                 log = tf.reshape(tf.dynamic_partition(self.train_net_output, self.train_pred_mask_node, 2)[1], (-1, 2))
                 return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=self.train_labels_node,
                     logits=log))
@@ -917,6 +917,16 @@ class GQCNNTrainerTF(object):
         self.datapoints_per_file = self.dataset.datapoints_per_file
         self.num_random_files = min(self.num_tensors, self.num_random_files)
 
+        # set multi-gripper
+        self.multi_head = False
+        self.num_grippers = 1
+        self.gripper_types = None 
+        if 'gripper_ids' in self.dataset.field_names:
+            gripper_ids = self.dataset.metadata('gripper_ids')
+            self.gripper_types = self.dataset.metadata('gripper_types')
+            self.multi_head = True
+            self.num_grippers = np.max([int(g) for g in gripper_ids.keys()])
+            
         # read split
         if not self.dataset.has_split(self.split_name):
             self.logger.info('Training split: {} not found in dataset. Creating new split...'.format(self.split_name))
@@ -978,8 +988,21 @@ class GQCNNTrainerTF(object):
         self.input_im_node = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.im_channels))
         self.input_pose_node = tf.placeholder(tf.float32, (self.train_batch_size, self.pose_dim))
         if self._angular_bins > 0:
-            self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self._angular_bins * 2))
- 
+            self.num_mask_outputs = 0
+            if self.multi_head:
+                for gripper_id, gripper_type in self.gripper_types.iteritems():
+                    if gripper_type == GripperMode.PARALLEL_JAW or gripper_type == GripperMode.MULTI_SUCTION:
+                        self.num_mask_outputs += self._angular_bins
+                    else:
+                        self.num_mask_outputs += 1
+                self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self.num_mask_outputs * 2))
+            else:
+                self.num_mask_outputs = self._angular_bins
+                self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self._angular_bins * 2))
+        elif self.multi_head and self._angular_bins == 0:
+            self.num_mask_outputs = self.num_grippers
+            self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self.num_grippers * 2))            
+            
         # create data prefetch queue
         self.prefetch_q = mp.Queue(self.max_prefetch_q_size)
 
@@ -1108,8 +1131,8 @@ class GQCNNTrainerTF(object):
                 [self.train_batch_size, self.im_height, self.im_width, self.im_channels]).astype(np.float32)
             train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
             train_labels = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
-            if self._angular_bins > 0:
-                train_pred_mask = np.zeros((self.train_batch_size, self._angular_bins*2), dtype=bool)
+            if self._angular_bins > 0 or self.multi_head:
+                train_pred_mask = np.zeros((self.train_batch_size, self.num_mask_outputs*2), dtype=bool)
             
             while start_i < self.train_batch_size:
                 # compute num remaining
@@ -1189,6 +1212,7 @@ class GQCNNTrainerTF(object):
                 train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                 train_label_arr = train_label_arr.astype(self.numpy_dtype)
 
+                # TODO: indexing
                 if self._angular_bins > 0:
                     bins = np.zeros_like(train_label_arr)
                     # form prediction mask to use when calculating loss

@@ -1,0 +1,9 @@
+input_datasets:
+  gripper_name:
+    type: suction
+    dataset: dataset_dir
+  
+exclude_fields:
+  - color_ims
+
+display_rate: 1
