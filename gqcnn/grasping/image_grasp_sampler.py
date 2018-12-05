@@ -496,8 +496,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                     continue
                 
                 # sample depth between the min and max
-                min_depth = np.min(center_depth) + self._min_depth_offset
-                max_depth = np.max(center_depth) + self._max_depth_offset
+                min_depth = center_depth + self._min_depth_offset
+                max_depth = center_depth + self._max_depth_offset
                 sample_depth = min_depth + (max_depth - min_depth) * np.random.rand()
                 candidate_grasp = Grasp2D(grasp_center_pt,
                                           grasp_theta,

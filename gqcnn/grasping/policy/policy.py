@@ -1193,8 +1193,9 @@ class CompositeGraspingPolicy(Policy):
         key-value dict mapping policy names to grasping policies
     """
     def __init__(self, policies):
-        self._policies = policies
-
+        self._policies = policies        
+        self._logger = Logger.get_logger(self.__class__.__name__, log_file=None, global_log_file=True)
+        
     @property
     def policies(self):
         return self._policies

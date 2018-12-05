@@ -45,7 +45,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fine-Tune a pre-trained Grasp Quality Convolutional Neural Network with TensorFlow')
     parser.add_argument('dataset_dir', type=str, default=None,
                         help='path to the dataset to use for training and validation')
-    parser.add_argument('model_name', type=str, default=None,
+    parser.add_argument('base_model_name', type=str, default=None,
                         help='name of the pre-trained model to fine-tune')
     parser.add_argument('--split_name', type=str, default='image_wise',
                         help='name of the split to train on')
@@ -67,7 +67,7 @@ if __name__ == '__main__':
                         help='the deep learning framework to use')
     args = parser.parse_args()
     dataset_dir = args.dataset_dir
-    model_name = args.model_name
+    base_model_name = args.base_model_name
     split_name = args.split_name
     output_dir = args.output_dir
     tensorboard_port = args.tensorboard_port
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         config_filename = os.path.join(os.getcwd(), config_filename)
 
     # create full path to the pre-trained model
-    model_dir = os.path.join(model_dir, model_name)
+    model_dir = os.path.join(model_dir, base_model_name)
         
     # create output dir if necessary
     utils.mkdir_safe(output_dir)
