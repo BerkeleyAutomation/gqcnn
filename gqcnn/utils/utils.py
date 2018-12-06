@@ -76,6 +76,8 @@ def pose_dim(gripper_mode):
         return 1
     elif gripper_mode == GripperMode.LEGACY_SUCTION:
         return 2
+    elif gripper_mode == GripperMode.MULTI_GRIPPER:
+        return 1
     else:
         raise ValueError('Gripper mode %s not supported.' %(gripper_mode))
     
@@ -120,6 +122,11 @@ def read_pose_data(pose_arr, gripper_mode):
             return pose_arr[2:4]
         else:
             return pose_arr[:,2:4]
+    elif gripper_mode == GripperMode.MULTI_GRIPPER:
+        if pose_arr.ndim == 1:
+            return pose_arr[2:3]
+        else:
+            return pose_arr[:,2:3]
     else:
         raise ValueError('Gripper mode %s not supported.' %(gripper_mode))
 

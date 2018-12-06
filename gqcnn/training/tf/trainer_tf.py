@@ -926,6 +926,10 @@ class GQCNNTrainerTF(object):
             self.gripper_types = self.dataset.metadata('gripper_types')
             self.multi_head = True
             self.num_grippers = np.max([int(g) for g in gripper_ids.keys()])
+
+        # during multi-head training, make sure symmetrization in denoising is turned off
+        if self.multi_head:
+            assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during multi-head training'
             
         # read split
         if not self.dataset.has_split(self.split_name):
@@ -987,22 +991,46 @@ class GQCNNTrainerTF(object):
         self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
         self.input_im_node = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.im_channels))
         self.input_pose_node = tf.placeholder(tf.float32, (self.train_batch_size, self.pose_dim))
+
+        # setup mask placeholder for multiple angular bins
         if self._angular_bins > 0:
             self.num_mask_outputs = 0
+
+            # determine gripper indices in output array if multi-head
             if self.multi_head:
+                self.gripper_start_indices = {}
+                self.gripper_max_angles = {}
+                
                 for gripper_id, gripper_type in self.gripper_types.iteritems():
-                    if gripper_type == GripperMode.PARALLEL_JAW or gripper_type == GripperMode.MULTI_SUCTION:
+                    self.gripper_start_indices[gripper_id] = self.num_mask_outputs
+
+                    if gripper_type == GripperMode.PARALLEL_JAW:
                         self.num_mask_outputs += self._angular_bins
+                        self.gripper_max_angles[gripper_id] = np.pi
+
+                    elif gripper_type == GripperMode.MULTI_SUCTION:
+                        self.num_mask_outputs += self._angular_bins
+                        self.gripper_max_angles[gripper_id] = 2 * np.pi
+
                     else:
                         self.num_mask_outputs += 1
-                self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self.num_mask_outputs * 2))
+            # otherwise set via the number of angular bins
             else:
                 self.num_mask_outputs = self._angular_bins
-                self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self._angular_bins * 2))
+
+            # create mask index placeholder    
+            self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self.num_mask_outputs * 2))
+                
+        # set gripper indices for multi-head with no angular bins
         elif self.multi_head and self._angular_bins == 0:
             self.num_mask_outputs = self.num_grippers
-            self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self.num_grippers * 2))            
-            
+            self.gripper_start_indices = {}
+            for ind, gripper_id in enumerate(self.gripper_types.keys()):
+                self.gripper_start_indices[gripper_id] = ind
+
+            # create mask index placeholder    
+            self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self.num_mask_outputs * 2))            
+                
         # create data prefetch queue
         self.prefetch_q = mp.Queue(self.max_prefetch_q_size)
 

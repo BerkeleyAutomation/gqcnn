@@ -59,7 +59,8 @@ class GripperMode:
     MULTI_SUCTION = 'multi_suction'
     LEGACY_PARALLEL_JAW = 'legacy_parallel_jaw'
     LEGACY_SUCTION = 'legacy_suction'
-
+    MULTI_GRIPPER = 'multi_gripper'
+ 
 # enum for input depth mode 
 class InputDepthMode:
     POSE_STREAM = 'pose_stream'
