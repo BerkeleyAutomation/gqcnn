@@ -328,7 +328,7 @@ class GQCNNTrainerTF(object):
             for step in training_range:
                 # run optimization
                 step_start = time.time()
-                if self._angular_bins > 0:
+                if self._angular_bins > 0 or self.multi_head:
                     images, poses, labels, masks = self.prefetch_q.get()
                     _, l, ur_l, lr, predictions, raw_net_output = self.sess.run([apply_grad_op, loss, unregularized_loss, learning_rate, train_predictions, self.train_net_output], feed_dict={drop_rate_in: self.drop_rate, self.input_im_node: images, self.input_pose_node: poses, self.train_labels_node: labels, self.train_pred_mask_node: masks}, options=GeneralConstants.timeout_option)
                 else:
@@ -374,7 +374,7 @@ class GQCNNTrainerTF(object):
 
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
-                        if self._angular_bins > 0:
+                        if self._angular_bins > 0 or self.multi_head:
                             predictions = predictions[masks.astype(bool)].reshape((-1, 2))
                         classification_result = BinaryClassificationResult(predictions[:,1], labels)
                         train_error = classification_result.error_rate

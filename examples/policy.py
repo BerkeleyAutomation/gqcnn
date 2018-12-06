@@ -222,3 +222,17 @@ if __name__ == '__main__':
         vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
         vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
         vis.show()
+
+        T_camera_world = RigidTransform.load('data/calib/primesense/primesense.tf')
+        point_cloud = camera_intr.deproject(rgbd_im.depth)
+        point_cloud.remove_zero_points()
+        point_cloud = T_camera_world * point_cloud
+        T_grasp_camera = action.grasp.pose()
+        T_grasp_world = T_camera_world * T_grasp_camera
+        
+        from visualization import Visualizer3D as vis3d
+        vis3d.figure()
+        vis3d.points(point_cloud, subsample=3, random=True)
+        vis3d.pose(T_grasp_world)
+        vis3d.show()
+        
