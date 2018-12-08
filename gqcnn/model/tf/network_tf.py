@@ -395,15 +395,6 @@ class GQCNNTF(object):
         if 'angular_bins' in gqcnn_config.keys():
             self._angular_bins = gqcnn_config['angular_bins']
 
-        # get max angle
-        self._max_angle = np.pi
-        if 'max_angle' in gqcnn_config.keys():
-            self._max_angle = np.deg2rad(gqcnn_config['max_angle'])
-            
-        # if using angular bins, make sure output size of final fully connected layer is 2x number of angular bins(because of failure/success probs for each bin)
-        if self._angular_bins > 0:
-            assert self._architecture.values()[-1].values()[-1]['out_size'] == 2 * self._angular_bins, 'When predicting angular outputs, output size of final fully connected layer must be 2x number of angular bins'
-
         # intermediate network feature handles
         self._feature_tensors = {}
   
@@ -546,10 +537,6 @@ class GQCNNTF(object):
         return self._angular_bins
 
     @property
-    def max_angle(self):
-        return self._max_angle
-
-    @property
     def stride(self):
         return reduce(operator.mul, [layer['pool_stride'] for layer in self._architecture['im_stream'].values() if layer['type']=='conv'])
 
@@ -677,12 +664,12 @@ class GQCNNTF(object):
         """
         self._im_depth_sub_std = im_depth_sub_std
 
-    def add_softmax_to_output(self):
+    def add_softmax_to_output(self, num_outputs=0):
         """Adds softmax to output of network."""
         with tf.name_scope('softmax'):
-            if self._angular_bins > 0:
+            if num_outputs  > 0:
                 self._logger.info('Building Pair-wise Softmax Layer...')
-                binwise_split_output = tf.split(self._output_tensor, self._angular_bins, axis=-1)
+                binwise_split_output = tf.split(self._output_tensor, num_outputs, axis=-1)
                 binwise_split_output_soft = [tf.nn.softmax(s) for s in binwise_split_output]
                 self._output_tensor = tf.concat(binwise_split_output_soft, -1)
             else:

@@ -1,7 +1,10 @@
 input_datasets:
-  gripper_name:
+  suction:
     type: suction
-    dataset: dataset_dir
+    dataset: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_4_fc_suction_10_23_18/grasps
+  parallel_jaw:
+    type: parallel_jaw
+    dataset: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_4_fc_pj_07_20_18/grasps
   
 exclude_fields:
   - color_ims

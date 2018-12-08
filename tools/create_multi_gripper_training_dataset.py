@@ -52,15 +52,21 @@ if __name__ == '__main__':
     input_datasets = cfg['input_datasets']
     display_rate = cfg['display_rate']
 
+    input_dataset_names = []
+    for gripper_id, gripper_name in enumerate(input_datasets.keys()):
+        dataset_config = input_datasets[gripper_name]
+        dataset_name = dataset_config['dataset']
+        input_dataset_names.append(dataset_name)
+        
     # open tensor dataset
     dataset = TensorDataset.open(input_dataset_names[0])
     tensor_config = copy.deepcopy(dataset.config)
     for field_name in cfg['exclude_fields']:
         if field_name in tensor_config['fields'].keys():
             del tensor_config['fields'][field_name]
-    tensor_config['fields']['gripper_id'] = {'dtype': 'uint8'}        
     field_names = tensor_config['fields'].keys()
-    
+    tensor_config['fields']['gripper_ids'] = {'dtype': 'uint8'}        
+
     # init tensor dataset
     output_dataset = TensorDataset(output_dataset_name, tensor_config)
 
@@ -79,18 +85,22 @@ if __name__ == '__main__':
         dataset = TensorDataset.open(dataset_name)
         gripper_id_map[dataset_name] = gripper_id
         gripper_type_map[gripper_id] = gripper_type
-        
+
         logging.info('Aggregating data from dataset %s' %(dataset_name))        
         for i in range(dataset.num_datapoints):
             # read a datapoint
             datapoint = dataset.datapoint(i, field_names=field_names)
 
+            # TODO: remove
+            if i > 100000:
+                break
+            
             # display rate
             if i % display_rate == 0:
                 logging.info('Datapoint: %d of %d' %(i+1, dataset.num_datapoints))
 
             # add gripper id
-            datapoint['gripper_id'] = gripper_id
+            datapoint['gripper_ids'] = gripper_id
             
             # add datapoint    
             output_dataset.add(datapoint)
@@ -102,6 +112,6 @@ if __name__ == '__main__':
     for field_name, field_data in dataset.metadata.iteritems():
         if field_name not in ['obj_ids']:
             output_dataset.add_metadata(field_name, field_data)
-    
+
     # flush to disk
     output_dataset.flush()    
