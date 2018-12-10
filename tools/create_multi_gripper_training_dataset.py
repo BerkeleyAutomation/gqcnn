@@ -91,10 +91,6 @@ if __name__ == '__main__':
             # read a datapoint
             datapoint = dataset.datapoint(i, field_names=field_names)
 
-            # TODO: remove
-            if i > 100000:
-                break
-            
             # display rate
             if i % display_rate == 0:
                 logging.info('Datapoint: %d of %d' %(i+1, dataset.num_datapoints))
