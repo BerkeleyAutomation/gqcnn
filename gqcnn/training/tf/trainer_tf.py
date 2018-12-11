@@ -1326,12 +1326,14 @@ class GQCNNTrainerTF(object):
                 train_images[start_i:end_i, ...] = train_images_arr.copy()
                 train_poses[start_i:end_i,:] = train_poses_arr.copy()
                 train_labels[start_i:end_i] = train_label_arr.copy()
-                if self._angular_bins > 0:
+                if self._angular_bins > 0 or self.multi_head:
                     train_pred_mask[start_i:end_i] = train_pred_mask_arr.copy()
 
                 del train_images_arr
                 del train_poses_arr
                 del train_label_arr
+                if self._angular_bins > 0 or self.multi_head:
+                    del train_pred_mask_arr
 		
                 # update start index
                 start_i = end_i
