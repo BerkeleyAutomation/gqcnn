@@ -514,7 +514,6 @@ class MultiSuctionPoint2D(object):
 
         grasp_angle = 0
         if v.shape > 2 and angle is None:
-            #grasp_angle = v[2]
             grasp_vec = v[2:]
             grasp_vec = grasp_vec / np.linalg.norm(grasp_vec)
             grasp_angle = np.arctan2(grasp_vec[1], grasp_vec[0])

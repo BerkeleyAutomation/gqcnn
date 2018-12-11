@@ -38,7 +38,7 @@ from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 
-from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
+from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiGripper
 from gqcnn.utils import GripperMode, NoValidGraspsException
 
 # set up logger
@@ -82,7 +82,6 @@ if __name__ == '__main__':
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
                                             'data/calib/primesense/primesense.intr')    
-   
 
     # set model if provided 
     if model_dir is None:
@@ -131,7 +130,16 @@ if __name__ == '__main__':
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                '..',
                                                'cfg/policies/gqcnn_suction.yaml')
-            
+        elif gripper_mode == GripperMode.MULTI_GRIPPER:
+            if fully_conv:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/policies/fc_gqcnn_multi_gripper.yaml')
+            else:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/policies/gqcnn_multi_gripper.yaml')
+
     # read config
     config = YamlConfig(config_filename)
     inpaint_rescale_factor = config['inpaint_rescale_factor']
@@ -195,6 +203,8 @@ if __name__ == '__main__':
             policy = FullyConvolutionalGraspingPolicySuction(policy_config)
         elif policy_config['type'] == 'fully_conv_pj':
             policy = FullyConvolutionalGraspingPolicyParallelJaw(policy_config)
+        elif policy_config['type'] == 'fully_conv_multi_gripper':
+            policy = FullyConvolutionalGraspingPolicyMultiGripper(policy_config)
         else:
             raise ValueError('Invalid fully-convolutional policy type: {}'.format(policy_config['type']))
     else:

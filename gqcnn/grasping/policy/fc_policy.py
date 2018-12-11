@@ -34,7 +34,7 @@ from autolab_core import Point, Logger
 from perception import DepthImage
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import NoValidGraspsException
+from gqcnn.utils import NoValidGraspsException, GripperMode
 
 from enums import SamplingMethod
 from policy import GraspingPolicy, GraspAction
@@ -214,7 +214,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         
         # mask predicted success probabilities with the cropped and downsampled object segmask so we only sample grasps on the objects
         preds_success_only = self._mask_predictions(preds_success_only, raw_seg) 
-
+        
         # if we want to visualize more than one action, we have to sample more
         num_actions_to_sample = self._num_vis_samples if (self._vis_actions_2d or self._vis_actions_3d) else num_actions #TODO: @Vishal if this is used with the 'top_k' sampling method, the final returned action is not the best because the argpartition does not sort the partitioned indices 
 
@@ -278,6 +278,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
 
         # depth sampling parameters
         self._num_depth_bins = self._cfg['num_depth_bins']
+
         #TODO: ask Jeff what this is for again
         self._depth_offset = 0.0
         if 'depth_offset' in self._cfg.keys():
@@ -381,3 +382,151 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
     def _visualize_3d(self, actions, wrapped_depth_im, camera_intr, num_actions):
         """Visualize the actions in 3D."""
         raise NotImplementedError
+
+class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPolicy):
+    """Suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
+    def __init__(self, cfg, filters=None):
+        FullyConvolutionalGraspingPolicy.__init__(self, cfg, filters=filters)
+
+        # read the multi gripper indices
+        self._gripper_types = self.grasp_quality_fn.gqcnn.gripper_types
+        self._gripper_start_indices = self.grasp_quality_fn.gqcnn.gripper_start_indices
+        self._gripper_max_angles = self.grasp_quality_fn.gqcnn.gripper_max_angles
+        self._gripper_bin_widths = self.grasp_quality_fn.gqcnn.gripper_bin_widths
+
+        # read gripper params
+        self._gripper_width = 0
+        if 'gripper_width' in self._cfg.keys():
+            self._gripper_width = self._cfg['gripper_width']
+
+        # depth sampling parameters
+        self._num_depth_bins = self._cfg['num_depth_bins']
+        self._depth_offset = 0.0
+        if 'depth_offset' in self._cfg.keys():
+            self._depth_offset = self._cfg['depth_offset']
+
+    def _sample_depths(self, raw_depth_im, raw_seg):
+        """Sample depths from the raw depth image."""
+        max_depth = np.max(raw_depth_im) + self._depth_offset
+
+        # for sampling the min depth, we only sample from the portion of the depth image in the object segmask because sometimes the rim of the bin is not properly subtracted out of the depth image
+        raw_depth_im_segmented = np.ones_like(raw_depth_im)
+        raw_depth_im_segmented[np.where(raw_seg > 0)] = raw_depth_im[np.where(raw_seg > 0)]
+        min_depth = np.min(raw_depth_im_segmented) + self._depth_offset
+
+        depth_bin_width = (max_depth - min_depth) / self._num_depth_bins
+        depths = np.zeros((self._num_depth_bins, 1)) 
+        for i in range(self._num_depth_bins):
+            depths[i][0] = min_depth + (i * depth_bin_width + depth_bin_width / 2)
+        return depths
+
+    def _gen_images_and_depths(self, depth, segmask):
+        """Replicate the depth image and sample corresponding depths."""
+        depths = self._sample_depths(depth, segmask)
+        images = np.tile(np.asarray([depth]), (self._num_depth_bins, 1, 1, 1))
+        return images, depths
+    
+    def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
+        """Generate the actions to be returned."""
+        depth_im = DepthImage(images[0], frame=camera_intr.frame)
+        point_cloud_im = camera_intr.deproject_to_image(depth_im)
+        normal_cloud_im = point_cloud_im.normal_cloud_im()
+
+        num_grippers = len(self._gripper_types.keys())
+        
+        actions = []
+        for i in range(num_actions):
+            # read index
+            im_idx = ind[i, 0]
+            h_idx = ind[i, 1]
+            w_idx = ind[i, 2]
+            g_idx = ind[i, 3]
+
+            # determine gripper
+            gripper_id = None
+            g_start_idx = -1
+            for j in range(num_grippers):
+                candidate_gripper_id = self._gripper_types.keys()[j]
+                start_idx = self._gripper_start_indices[candidate_gripper_id]
+                if start_idx <= g_idx and start_idx > g_start_idx:
+                    g_start_idx = start_idx
+                    gripper_id = candidate_gripper_id
+                j += 1
+
+            if gripper_id is None:
+                raise ValueError('Predicted gripper index %d is invalid' %(g_idx))
+                
+            gripper_type = self._gripper_types[gripper_id]
+            max_angle = self._gripper_max_angles[gripper_id]
+            bin_width = self._gripper_bin_widths[gripper_id]
+                
+            # determine grasp pose
+            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
+            if gripper_type == GripperMode.SUCTION or gripper_type == GripperMode.LEGACY_SUCTION:
+                # read axis and depth from the images
+                axis = -normal_cloud_im[center.y, center.x]
+                if np.linalg.norm(axis) == 0:
+                    axis = np.array([0,0,1])
+                depth = depth_im[center.y, center.x, 0]
+                if depth == 0.0:
+                    continue
+                grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr)
+            elif gripper_type == GripperMode.PARALLEL_JAW or gripper_type == GripperMode.LEGACY_PARALLEL_JAW:
+                # read angle and depth
+                ang_idx = g_idx - g_start_idx
+                ang = max_angle / 2 - (ang_idx * bin_width + bin_width / 2)
+                depth = depths[im_idx, 0]
+                grasp = Grasp2D(center, ang, depth, width=self._gripper_width, camera_intr=camera_intr)                
+            elif gripper_type == GripperMode.MULTI_SUCTION:
+                # read axis, angle, and depth
+                ang_idx = g_idx - g_start_idx
+                axis = -normal_cloud_im[center.y, center.x]
+                if np.linalg.norm(axis) == 0:
+                    axis = np.array([0,0,1])
+                ang = max_angle / 2 - (ang_idx * bin_width + bin_width / 2)
+                depth = depth_im[center.y, center.x, 0]
+                if depth == 0.0:
+                    continue
+
+                # determine basis axes
+                x_axis = axis
+                y_axis = np.array([axis[1], -axis[0], 0])
+                if np.linalg.norm(y_axis) == 0:
+                    y_axis = np.array([1,0,0])
+                y_axis_im = np.array([np.cos(ang), np.sin(ang), 0])
+                y_axis = y_axis / np.linalg.norm(y_axis)
+                z_axis = np.cross(x_axis, y_axis)
+
+                # find rotation that aligns with the image orientation
+                R = np.array([x_axis, y_axis, z_axis]).T
+                num_angles = 1000.
+                max_dot = -np.inf
+                aligned_R = R.copy()
+                for i in range(num_angles):
+                    theta = float(i * max_angle) / num_angles
+                    R_tf = R.dot(RigidTransform.x_axis_rotation(theta))
+                    dot = R_tf[:,1].dot(y_axis_im)
+                    if dot > max_dot:
+                        max_dot = dot
+                        aligned_R = R_tf.copy()
+
+                # define multi cup suction point by the aligned pose
+                t = camera_intr.deproject_pixel(grasp_depth, Point(center_px, frame=camera_intr.frame)).data
+                T = RigidTransform(rotation=aligned_R,
+                                   translation=t,
+                                   from_frame='grasp',
+                                   to_frame=camera_intr.frame)
+                grasp = MultiSuctionPoint2D(T, camera_intr=camera_intr)
+
+            grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, g_idx], DepthImage(images[im_idx]))
+            actions.append(grasp_action)
+        return actions
+        
+    def _visualize_affordance_map(self, preds, depth_im, scale, plot_max=True, output_dir=None):
+        """Visualize an affordance map of the network predictions overlayed on the depth image."""
+        raise NotImplementedError
+ 
+    def _visualize_3d(self, actions, wrapped_depth_im, camera_intr, num_actions):
+        """Visualize the actions in 3D."""
+        raise NotImplementedError
+    

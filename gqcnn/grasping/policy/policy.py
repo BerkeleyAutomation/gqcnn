@@ -251,11 +251,6 @@ class GraspingPolicy(Policy):
         """ Returns the grasp sampler. """
         return self._grasp_constraint_fn
         
-    @property
-    def gqcnn(self):
-        """ Returns the GQ-CNN. """
-        return self._gqcnn
-
     def set_constraint_fn(self, constraint_fn):
         self._grasp_constraint_fn = constraint_fn    
     

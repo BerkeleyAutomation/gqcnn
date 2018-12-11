@@ -84,7 +84,7 @@ class FCGQCNNTF(GQCNNTF):
         # override GQ-CNN image height and width
         self._im_width = cfg['im_width']
         self._im_height = cfg['im_height']
-
+        
     def _pack(self, dim_h, dim_w, data, vector=False):
         if vector:
             # first reshape vector into 3-dimensional tensor

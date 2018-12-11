@@ -395,6 +395,19 @@ class GQCNNTF(object):
         if 'angular_bins' in gqcnn_config.keys():
             self._angular_bins = gqcnn_config['angular_bins']
 
+        # read multi-gripper indices if available
+        self._gripper_types = None
+        self._gripper_start_indices = None
+        self._gripper_max_angles = None
+        self._gripper_bin_widths = None
+        arch_config = gqcnn_config['architecture']
+        if 'gripper_types' in arch_config.keys():
+            self._gripper_types = arch_config['gripper_types']
+            self._gripper_start_indices = arch_config['gripper_start_indices']
+        if 'gripper_max_angles' in arch_config.keys():
+            self._gripper_max_angles = arch_config['gripper_max_angles']
+            self._gripper_bin_widths = arch_config['gripper_bin_widths']
+
         # intermediate network feature handles
         self._feature_tensors = {}
   
@@ -536,6 +549,22 @@ class GQCNNTF(object):
     def angular_bins(self):
         return self._angular_bins
 
+    @property
+    def gripper_types(self):
+        return self._gripper_types
+
+    @property
+    def gripper_start_indices(self):
+        return self._gripper_start_indices
+
+    @property
+    def gripper_max_angles(self):
+        return self._gripper_max_angles
+
+    @property
+    def gripper_bin_widths(self):
+        return self._gripper_bin_widths
+    
     @property
     def stride(self):
         return reduce(operator.mul, [layer['pool_stride'] for layer in self._architecture['im_stream'].values() if layer['type']=='conv'])
@@ -740,7 +769,10 @@ class GQCNNTF(object):
                         pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
                 elif self._input_depth_mode == InputDepthMode.SUB:
                     self._input_im_arr[:dim, ...] = image_arr[cur_ind:end_ind, ...] 
-                    self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind, :]
+                    if len(pose_arr.shape) == 1:
+                        self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind]
+                    else:
+                        self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind, :]
                 elif self._input_depth_mode == InputDepthMode.IM_ONLY:
                     self._input_im_arr[:dim, ...] = (
                         image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std
