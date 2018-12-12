@@ -30,10 +30,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from autolab_core import Point, Logger
+from autolab_core import Logger, Point, RigidTransform
 from perception import DepthImage
 from visualization import Visualizer2D as vis
-from gqcnn.grasping import Grasp2D, SuctionPoint2D
+from gqcnn.grasping import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 from gqcnn.utils import NoValidGraspsException, GripperMode
 
 from enums import SamplingMethod
@@ -95,6 +95,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         preds_masked = np.zeros_like(preds)
         raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h / 2:raw_segmask.shape[0] - self._gqcnn_recep_h / 2, self._gqcnn_recep_w / 2:raw_segmask.shape[1] - self._gqcnn_recep_w / 2, 0]
         raw_segmask_downsampled = raw_segmask_cropped[::self._gqcnn_stride, ::self._gqcnn_stride]
+
         if raw_segmask_downsampled.shape[0] != preds.shape[1]:
             raw_segmask_downsampled_new = np.zeros(preds.shape[1:3])
             raw_segmask_downsampled_new[:raw_segmask_downsampled.shape[0], :raw_segmask_downsampled.shape[1]] = raw_segmask_downsampled
@@ -204,7 +205,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # unpack the RgbdImageState
         wrapped_depth, raw_depth, raw_seg, camera_intr = self._unpack_state(state)
-
+        
         # predict
         images, depths = self._gen_images_and_depths(raw_depth, raw_seg)
         preds = self._grasp_quality_fn.quality(images, depths)
@@ -390,6 +391,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
 
         # read the multi gripper indices
         self._gripper_types = self.grasp_quality_fn.gqcnn.gripper_types
+        self._gripper_names = self.grasp_quality_fn.gqcnn.gripper_names
         self._gripper_start_indices = self.grasp_quality_fn.gqcnn.gripper_start_indices
         self._gripper_max_angles = self.grasp_quality_fn.gqcnn.gripper_max_angles
         self._gripper_bin_widths = self.grasp_quality_fn.gqcnn.gripper_bin_widths
@@ -455,13 +457,18 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
 
             if gripper_id is None:
                 raise ValueError('Predicted gripper index %d is invalid' %(g_idx))
-                
+
             gripper_type = self._gripper_types[gripper_id]
             max_angle = self._gripper_max_angles[gripper_id]
             bin_width = self._gripper_bin_widths[gripper_id]
+            policy_name = None
+            if self._gripper_names is not None:
+                policy_name = self._gripper_names[gripper_id]
                 
             # determine grasp pose
-            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
+            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2,
+                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]),
+                           frame=camera_intr.frame)
             if gripper_type == GripperMode.SUCTION or gripper_type == GripperMode.LEGACY_SUCTION:
                 # read axis and depth from the images
                 axis = -normal_cloud_im[center.y, center.x]
@@ -499,7 +506,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
 
                 # find rotation that aligns with the image orientation
                 R = np.array([x_axis, y_axis, z_axis]).T
-                num_angles = 1000.
+                num_angles = 1000
                 max_dot = -np.inf
                 aligned_R = R.copy()
                 for i in range(num_angles):
@@ -511,20 +518,44 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                         aligned_R = R_tf.copy()
 
                 # define multi cup suction point by the aligned pose
-                t = camera_intr.deproject_pixel(grasp_depth, Point(center_px, frame=camera_intr.frame)).data
+                t = camera_intr.deproject_pixel(depth, center).data
                 T = RigidTransform(rotation=aligned_R,
                                    translation=t,
                                    from_frame='grasp',
                                    to_frame=camera_intr.frame)
                 grasp = MultiSuctionPoint2D(T, camera_intr=camera_intr)
 
-            grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, g_idx], DepthImage(images[im_idx]))
+            # create grasp action
+            q_value = preds[im_idx, h_idx, w_idx, g_idx]
+            grasp_action = GraspAction(grasp,
+                                       q_value,
+                                       DepthImage(images[im_idx]),
+                                       policy_name=policy_name)
             actions.append(grasp_action)
         return actions
         
     def _visualize_affordance_map(self, preds, depth_im, scale, plot_max=True, output_dir=None):
         """Visualize an affordance map of the network predictions overlayed on the depth image."""
-        raise NotImplementedError
+        self._logger.info('Visualizing affordance map...')
+        print self._gripper_names
+        print self._gripper_start_indices
+        
+        for i in range(preds.shape[3]):
+            affordance_map = preds[0, ..., i]
+            tf_depth_im = depth_im.crop(depth_im.shape[0] - self._gqcnn_recep_h, depth_im.shape[1] - self._gqcnn_recep_w).resize(1.0 / self._gqcnn_stride)
+
+            # plot
+            vis.figure()
+            vis.imshow(tf_depth_im)
+            plt.imshow(affordance_map, cmap=plt.cm.RdYlGn, alpha=0.3, vmin=0.0, vmax=1.0)
+            if plot_max:
+                affordance_argmax = np.unravel_index(np.argmax(affordance_map), affordance_map.shape)
+                plt.scatter(affordance_argmax[1], affordance_argmax[0], c='black', marker='.', s=scale*25)
+            vis.title('Grasp Affordance Map')
+            if output_dir is not None:
+                vis.savefig(os.path.join(output_dir, 'grasp_affordance_map_%03d.png' %(i)))
+            else:
+                vis.show()
  
     def _visualize_3d(self, actions, wrapped_depth_im, camera_intr, num_actions):
         """Visualize the actions in 3D."""

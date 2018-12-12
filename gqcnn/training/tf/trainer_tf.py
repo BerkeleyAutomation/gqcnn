@@ -344,7 +344,7 @@ class GQCNNTrainerTF(object):
                     self.logger.info('Max ' +  str(np.max(predictions)))
                     self.logger.info('Min ' + str(np.min(predictions)))
                 elif self.cfg['loss'] != 'weighted_cross_entropy':
-                    if self._angular_bins == 0:
+                    if self._angular_bins == 0 and not self.multi_head:
                         ex = np.exp(raw_net_output - np.tile(np.max(raw_net_output, axis=1)[:,np.newaxis], [1,2]))
                         softmax = ex / np.tile(np.sum(ex, axis=1)[:,np.newaxis], [1,2])
 		        
@@ -920,9 +920,12 @@ class GQCNNTrainerTF(object):
         self.multi_head = False
         self.num_grippers = 1
         self.gripper_types = None 
+        self.gripper_names = None
         if 'gripper_ids' in self.dataset.field_names:
             gripper_ids = self.dataset.metadata['gripper_ids']
             self.gripper_types = self.dataset.metadata['gripper_types']
+            if 'gripper_names' in self.dataset.metadata.keys():
+                self.gripper_names = self.dataset.metadata['gripper_names']
             self.multi_head = True
             self.num_grippers = len(gripper_ids.keys())
 
@@ -1044,6 +1047,7 @@ class GQCNNTrainerTF(object):
         # set gripper ids in model config dir
         if self.multi_head:
             self.cfg['gqcnn']['architecture']['gripper_types'] = self.gripper_types
+            self.cfg['gqcnn']['architecture']['gripper_names'] = self.gripper_names
             self.cfg['gqcnn']['architecture']['gripper_start_indices'] = self.gripper_start_indices
             if self._angular_bins > 0:
                 self.cfg['gqcnn']['architecture']['gripper_max_angles'] = self.gripper_max_angles
@@ -1104,7 +1108,8 @@ class GQCNNTrainerTF(object):
             p.join()
 
         # close tensorboard
-        self._close_tensorboard()
+        if self.tensorboard_has_launched:
+            self._close_tensorboard()
 
         # close tensorflow session
         self.gqcnn.close_session()
@@ -1342,7 +1347,7 @@ class GQCNNTrainerTF(object):
             # send data to queue
             if not self.term_event.is_set():
                 try:
-                    if self._angular_bins > 0:
+                    if self._angular_bins > 0 or self.multi_head:
                         self.prefetch_q.put_nowait((train_images, train_poses, train_labels, train_pred_mask))                       
                     else:
                         self.prefetch_q.put_nowait((train_images, train_poses, train_labels)) 

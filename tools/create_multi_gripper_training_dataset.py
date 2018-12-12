@@ -75,6 +75,7 @@ if __name__ == '__main__':
     shutil.copyfile(config_filename, out_config_filename)
     
     # incrementally add points to the new dataset
+    gripper_name_map = {}
     gripper_type_map = {}
     gripper_id_map = {}
     for gripper_id, gripper_name in enumerate(input_datasets.keys()):
@@ -83,8 +84,9 @@ if __name__ == '__main__':
         gripper_type  = dataset_config['type']
 
         dataset = TensorDataset.open(dataset_name)
-        gripper_id_map[dataset_name] = gripper_id
+        gripper_name_map[gripper_id] = gripper_name
         gripper_type_map[gripper_id] = gripper_type
+        gripper_id_map[dataset_name] = gripper_id
 
         logging.info('Aggregating data from dataset %s' %(dataset_name))        
         for i in range(dataset.num_datapoints):
@@ -103,6 +105,7 @@ if __name__ == '__main__':
 
     # set metadata
     gripper_id_map = utils.reverse_dictionary(gripper_id_map)
+    output_dataset.add_metadata('gripper_names', gripper_name_map)
     output_dataset.add_metadata('gripper_ids', gripper_id_map)
     output_dataset.add_metadata('gripper_types', gripper_type_map)
     for field_name, field_data in dataset.metadata.iteritems():
