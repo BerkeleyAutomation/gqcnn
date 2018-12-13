@@ -384,6 +384,90 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
         """Visualize the actions in 3D."""
         raise NotImplementedError
 
+class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPolicy):
+    """Multi suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
+    def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
+        """Generate the actions to be returned."""
+        depth_im = DepthImage(images[0], frame=camera_intr.frame)
+        point_cloud_im = camera_intr.deproject_to_image(depth_im)
+        normal_cloud_im = point_cloud_im.normal_cloud_im()
+
+        max_angle = 2 * math.pi
+        bin_width = max_angle / preds.shape[-1]
+        
+        actions = []
+        for i in range(num_actions):
+            # read index
+            im_idx = ind[i, 0]
+            h_idx = ind[i, 1]
+            w_idx = ind[i, 2]
+            ang_idx = ind[i, 3]
+
+            # read center, axis and depth
+            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2,
+                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]),
+                           frame=camera_intr.frame)
+            axis = -normal_cloud_im[center.y, center.x]
+            if np.linalg.norm(axis) == 0:
+                axis = np.array([0,0,1])
+            ang = ang_idx * bin_width + bin_width / 2
+            depth = depth_im[center.y, center.x, 0]
+            if depth == 0.0:
+                continue
+
+            # determine basis axes
+            x_axis = axis
+            y_axis = np.array([axis[1], -axis[0], 0])
+            if np.linalg.norm(y_axis) == 0:
+                y_axis = np.array([1,0,0])
+            y_axis_im = np.array([np.cos(ang), np.sin(ang), 0])
+            y_axis = y_axis / np.linalg.norm(y_axis)
+            z_axis = np.cross(x_axis, y_axis)
+
+            # find rotation that aligns with the image orientation
+            R = np.array([x_axis, y_axis, z_axis]).T
+            num_angles = 1000
+            max_dot = -np.inf
+            aligned_R = R.copy()
+            for i in range(num_angles):
+                theta = float(i * max_angle) / num_angles
+                R_tf = R.dot(RigidTransform.x_axis_rotation(theta))
+                dot = R_tf[:,1].dot(y_axis_im)
+                if dot > max_dot:
+                    max_dot = dot
+                    aligned_R = R_tf.copy()
+
+            # define multi cup suction point by the aligned pose
+            t = camera_intr.deproject_pixel(depth, center).data
+            T = RigidTransform(rotation=aligned_R,
+                               translation=t,
+                               from_frame='grasp',
+                               to_frame=camera_intr.frame)
+
+            import IPython
+            IPython.embed()
+            
+            # create grasp action
+            grasp = MultiSuctionPoint2D(T, camera_intr=camera_intr)
+            q_value = preds[im_idx, h_idx, w_idx, ang_idx]
+            grasp_action = GraspAction(grasp,
+                                       q_value,
+                                       DepthImage(images[im_idx]))
+            actions.append(grasp_action)
+        return actions
+
+    def _visualize_affordance_map(self, preds, depth_im, scale, plot_max=True, output_dir=None):
+        """Visualize an affordance map of the network predictions overlayed on the depth image."""
+        pass
+        
+    def _gen_images_and_depths(self, depth, segmask):
+        """Extend the image to a 4D tensor."""
+        return np.expand_dims(depth, 0), np.array([-1]) #TODO: @Vishal depth should really be optional to the network...
+   
+    def _visualize_3d(self, actions, wrapped_depth_im, camera_intr, num_actions):
+        """Visualize the actions in 3D."""
+        raise NotImplementedError
+    
 class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPolicy):
     """Suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
     def __init__(self, cfg, filters=None):
@@ -459,8 +543,11 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                 raise ValueError('Predicted gripper index %d is invalid' %(g_idx))
 
             gripper_type = self._gripper_types[gripper_id]
-            max_angle = self._gripper_max_angles[gripper_id]
-            bin_width = self._gripper_bin_widths[gripper_id]
+            max_angle = 0.0
+            bin_width = 0.0
+            if self._gripper_max_angles is not None:
+                max_angle = self._gripper_max_angles[gripper_id]
+                bin_width = self._gripper_bin_widths[gripper_id]
             policy_name = None
             if self._gripper_names is not None:
                 policy_name = self._gripper_names[gripper_id]

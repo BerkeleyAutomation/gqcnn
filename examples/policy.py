@@ -38,7 +38,7 @@ from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 
-from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiGripper
+from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiSuction, FullyConvolutionalGraspingPolicyMultiGripper
 from gqcnn.utils import GripperMode, NoValidGraspsException
 
 # set up logger
@@ -130,6 +130,15 @@ if __name__ == '__main__':
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                '..',
                                                'cfg/policies/gqcnn_suction.yaml')
+        elif gripper_mode == GripperMode.MULTI_SUCTION:
+            if fully_conv:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/policies/fc_gqcnn_multi_suction.yaml')
+            else:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/policies/gqcnn_multi_suction.yaml')
         elif gripper_mode == GripperMode.MULTI_GRIPPER:
             if fully_conv:
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -171,10 +180,21 @@ if __name__ == '__main__':
         segmask = valid_px_mask
     else:
         segmask = segmask.mask_binary(valid_px_mask)
-    
+    segmask.data[:,:125] = 0
+    segmask.data[:,500:] = 0
+    segmask.data[350:,:] = 0
+        
     # inpaint
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
-        
+
+
+    # TODO: remove
+    color_im = color_im.resize(0.25)
+    depth_im = depth_im.resize(0.25, interp='nearest')
+    segmask = segmask.resize(0.25)
+    camera_intr = camera_intr.resize(0.25)
+    
+    # visualize input images
     if 'input_images' in policy_config['vis'].keys() and policy_config['vis']['input_images']:
         vis.figure(size=(10,10))
         num_plot = 1
@@ -186,7 +206,7 @@ if __name__ == '__main__':
             vis.subplot(1,num_plot,2)
             vis.imshow(segmask)
         vis.show()
-        
+
     # create state
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
     state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
@@ -203,6 +223,8 @@ if __name__ == '__main__':
             policy = FullyConvolutionalGraspingPolicySuction(policy_config)
         elif policy_config['type'] == 'fully_conv_pj':
             policy = FullyConvolutionalGraspingPolicyParallelJaw(policy_config)
+        elif policy_config['type'] == 'fully_conv_multi_suction':
+            policy = FullyConvolutionalGraspingPolicyMultiSuction(policy_config)
         elif policy_config['type'] == 'fully_conv_multi_gripper':
             policy = FullyConvolutionalGraspingPolicyMultiGripper(policy_config)
         else:
@@ -223,6 +245,10 @@ if __name__ == '__main__':
     action = policy(state)
     logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
+    #policy_start = time.time()
+    #action = policy(state)
+    #logger.info('Planning took %.3f sec' %(time.time() - policy_start))
+    
     # vis final grasp
     if policy_config['vis']['final_grasp']:
         vis.figure(size=(10,10))
@@ -233,7 +259,8 @@ if __name__ == '__main__':
         vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
         vis.show()
 
-        T_camera_world = RigidTransform.load('data/calib/primesense/primesense.tf')
+        #T_camera_world = RigidTransform.load('data/calib/primesense/primesense.tf')
+        T_camera_world = RigidTransform.load('data/examples/single_object/enshape/T_camera_world.tf')
         point_cloud = camera_intr.deproject(rgbd_im.depth)
         point_cloud.remove_zero_points()
         point_cloud = T_camera_world * point_cloud

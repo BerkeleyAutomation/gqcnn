@@ -21,7 +21,7 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 from model import get_gqcnn_model, get_fc_gqcnn_model 
 from training import get_gqcnn_trainer
-from grasping import RobustGraspingPolicy, UniformRandomGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiGripper, PriorityCompositeGraspingPolicy
+from grasping import RobustGraspingPolicy, UniformRandomGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiSuction, FullyConvolutionalGraspingPolicyMultiGripper, PriorityCompositeGraspingPolicy
 from analysis import GQCNNAnalyzer
 from search import GQCNNSearch
 from utils import NoValidGraspsException, NoAntipodalPairsFoundException

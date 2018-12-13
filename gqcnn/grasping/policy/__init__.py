@@ -19,7 +19,7 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from fc_policy import FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiGripper
+from fc_policy import FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiSuction, FullyConvolutionalGraspingPolicyMultiGripper
 from policy import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, PriorityCompositeGraspingPolicy, RgbdImageState, GraspAction, UniformRandomGraspingPolicy
 
 __all__ = ['FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'FullyConvolutionalGraspingPolicyMultiGripper', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'UniformRandomGraspingPolicy', 'RgbdImageState', 'GraspAction'] 
