@@ -719,16 +719,13 @@ class GQCNNTrainerTF(object):
             bin_counts = np.zeros((self._angular_bins,))
             for m in range(self.num_tensors):
                 pose_arr = self.dataset.tensor(self.pose_field_name, m).arr
-                angles = pose_arr[:, 3]
-                neg_ind = np.where(angles < 0)
-                angles = np.abs(angles) % self._max_angle
-                angles[neg_ind] *= -1
-                g_90 = np.where(angles > (self._max_angle / 2))
-                l_neg_90 = np.where(angles < (-1 * (self._max_angle / 2)))
-                angles[g_90] -= self._max_angle
-                angles[l_neg_90] += self._max_angle
-                angles *= -1 # hack to fix reverse angle convention
-                angles += (self._max_angle / 2)
+                angles = pose_arr[:, 3]                
+                while np.any(angles < 0):
+                    neg_ind = np.where(angles < 0)
+                    angles[neg_ind] += self._max_angle
+                while np.any(angles >= self._max_angle):
+                    greater_ind = np.where(angles >= self._max_angle)
+                    angles[greater_ind] -= self._max_angle
                 for i in range(angles.shape[0]):
                     bin_counts[int(angles[i] // self._bin_width)] += 1
             self.logger.info('Bin counts: {}'.format(bin_counts))
@@ -1025,6 +1022,7 @@ class GQCNNTrainerTF(object):
             else:
                 self.num_mask_outputs = self._angular_bins
                 self._max_angle = np.pi
+                gripper_type = self.gqcnn.gripper_mode
                 if gripper_type == GripperMode.MULTI_SUCTION:                
                     self._max_angle = 2*np.pi
                 elif gripper_type == GripperMode.SUCTION:
@@ -1153,12 +1151,12 @@ class GQCNNTrainerTF(object):
  
         # setup denoising and synthetic data parameters
         self._setup_denoising_and_synthetic()
-          
-        # compute means, std's, and normalization metrics
-        self._compute_data_metrics()
 
         # setup tensorflow session/placeholders/queue
         self._setup_tensorflow()
+        
+        # compute means, std's, and normalization metrics
+        self._compute_data_metrics()
 
         # setup summaries for visualizing metrics in tensorboard
         self._setup_summaries()
@@ -1299,16 +1297,13 @@ class GQCNNTrainerTF(object):
                                 train_pred_mask_arr[i, 2*ind] = 1
                                 train_pred_mask_arr[i, 2*ind + 1] = 1
                     else:
-                        # index for angle bins
-                        neg_ind = np.where(angles < 0)
-                        angles = np.abs(angles) % self._max_angle
-                        angles[neg_ind] *= -1
-                        g_90 = np.where(angles > (self._max_angle / 2))
-                        l_neg_90 = np.where(angles < (-1 * (self._max_angle / 2)))
-                        angles[g_90] -= self._max_angle
-                        angles[l_neg_90] += self._max_angle
-                        angles *= -1 # hack to fix reverse angle convention
-                        angles += (self._max_angle / 2)
+                        # enforce consistent range
+                        while np.any(angles < 0):
+                            neg_ind = np.where(angles < 0)
+                            angles[neg_ind] += self._max_angle
+                        while np.any(angles >= self._max_angle):
+                            greater_ind = np.where(angles >= self._max_angle)
+                            angles[greater_ind] -= self._max_angle
                         for i in range(angles.shape[0]):
                             train_pred_mask_arr[i, int((angles[i] // self._bin_width)*2)] = 1
                             train_pred_mask_arr[i, int((angles[i] // self._bin_width)*2 + 1)] = 1
@@ -1492,15 +1487,12 @@ class GQCNNTrainerTF(object):
                             pred_mask[i, 2*ind + 1] = 1
                 else:
                     # form mask to extract predictions from ground-truth angular bins
-                    neg_ind = np.where(angles < 0)
-                    angles = np.abs(angles) % self._max_angle
-                    angles[neg_ind] *= -1
-                    g_90 = np.where(angles > (self._max_angle / 2))
-                    l_neg_90 = np.where(angles < (-1 * (self._max_angle / 2)))
-                    angles[g_90] -= self._max_angle
-                    angles[l_neg_90] += self._max_angle
-                    angles *= -1 # hack to fix reverse angle convention
-                    angles += (self._max_angle / 2)
+                    while np.any(angles < 0):
+                        neg_ind = np.where(angles < 0)
+                        angles[neg_ind] += self._max_angle
+                    while np.any(angles >= self._max_angle):
+                        greater_ind = np.where(angles >= self._max_angle)
+                        angles[greater_ind] -= self._max_angle
                     for i in range(angles.shape[0]):
                         pred_mask[i, int((angles[i] // self._bin_width)*2)] = True
                         pred_mask[i, int((angles[i] // self._bin_width)*2 + 1)] = True
