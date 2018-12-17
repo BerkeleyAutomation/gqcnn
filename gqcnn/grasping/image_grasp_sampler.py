@@ -865,13 +865,14 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
         sample_start = time()
         suction_points = []
         k = 0
-        sample_size = min(self._max_num_samples, num_nonzero_px)
+        sample_size = self._max_num_samples
         indices = np.random.choice(num_nonzero_px,
-                                   size=sample_size,
+                                   size=min(sample_size, num_nonzero_px),
                                    replace=False)
+
         while k < sample_size and len(suction_points) < num_samples:
             # sample a point uniformly at random 
-            ind = indices[k]
+            ind = indices[k % num_nonzero_px]
             center_px = np.array([nonzero_px[ind,1], nonzero_px[ind,0]])
             center = Point(center_px, frame=camera_intr.frame)
             axis = -normal_cloud_im[center.y, center.x]
