@@ -86,7 +86,7 @@ gqcnn:
       conv1_1:
         type: conv
         filt_dim: 9
-        num_filt: 16
+        num_filt: 8
         pool_size: 1
         pool_stride: 1
         pad: VALID
@@ -95,7 +95,7 @@ gqcnn:
       conv1_2:
         type: conv
         filt_dim: 5
-        num_filt: 16
+        num_filt: 8
         pool_size: 2
         pool_stride: 2
         pad: VALID
@@ -104,7 +104,7 @@ gqcnn:
       conv2_1:
         type: conv
         filt_dim: 5
-        num_filt: 16
+        num_filt: 8
         pool_size: 1
         pool_stride: 1
         pad: VALID
@@ -113,7 +113,7 @@ gqcnn:
       conv2_2:
         type: conv
         filt_dim: 5
-        num_filt: 16
+        num_filt: 8
         pool_size: 2
         pool_stride: 2
         pad: VALID
@@ -121,10 +121,10 @@ gqcnn:
         norm_type: local_response
       fc3:
         type: fc
-        out_size: 128
+        out_size: 32
       fc4:
         type: fc
-        out_size: 128
+        out_size: 32
       fc5:
         type: fc
         out_size: 2

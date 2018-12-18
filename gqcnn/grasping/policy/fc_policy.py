@@ -26,6 +26,7 @@ Author: Vishal Satish
 import math
 from abc import abstractmethod, ABCMeta
 import os
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -208,8 +209,12 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         
         # predict
         images, depths = self._gen_images_and_depths(raw_depth, raw_seg)
-        preds = self._grasp_quality_fn.quality(images, depths)
 
+        pred_start = time.time()
+        preds = self._grasp_quality_fn.quality(images, depths)
+        pred_stop = time.time()
+        self._logger.info('Prediction took %.3f sec' %(pred_stop-pred_start))
+        
         # get success probablility predictions only (this is needed because the output of the net is pairs of (p_failure, p_success))
         preds_success_only = preds[:, :, :, 1::2]
         
@@ -444,9 +449,16 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
                                from_frame='grasp',
                                to_frame=camera_intr.frame)
 
+            """
+            print ang_idx, ang
+            vis.figure()
+            vis.imshow(depth_im)
+            vis.scatter(center.x, center.y, s=50, c='b')
+            vis.show()
             import IPython
             IPython.embed()
-            
+            """
+
             # create grasp action
             grasp = MultiSuctionPoint2D(T, camera_intr=camera_intr)
             q_value = preds[im_idx, h_idx, w_idx, ang_idx]

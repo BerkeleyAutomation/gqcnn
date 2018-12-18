@@ -1,11 +1,11 @@
 input_datasets:
-  suction:
+  suction_small:
     type: suction
-    dataset: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_4_fc_suction_10_23_18/grasps
-  parallel_jaw:
-    type: parallel_jaw
-    dataset: /nfs/diskstation/vsatish/dex-net/data/datasets/dexnet_4_fc_pj_07_20_18/grasps
-  
+    dataset: /home/jmahler/Workspace/jeff_working/dex-net/data/training/suction_fc_small/grasps
+  suction_large:
+    type: suction
+    dataset: /home/jmahler/Workspace/jeff_working/dex-net/data/training/suction_fc_large/grasps
+    
 exclude_fields:
   - color_ims
 

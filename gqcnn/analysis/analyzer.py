@@ -185,6 +185,9 @@ class GQCNNAnalyzer(object):
         gqcnn.open_session()
         gripper_mode = gqcnn.gripper_mode
         angular_bins = gqcnn.angular_bins
+
+        import IPython
+        IPython.embed()
         
         # read params from the config
         if dataset_config is None:
