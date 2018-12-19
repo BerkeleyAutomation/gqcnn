@@ -214,7 +214,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         preds = self._grasp_quality_fn.quality(images, depths)
         pred_stop = time.time()
         self._logger.info('Prediction took %.3f sec' %(pred_stop-pred_start))
-        
+
         # get success probablility predictions only (this is needed because the output of the net is pairs of (p_failure, p_success))
         preds_success_only = preds[:, :, :, 1::2]
         
@@ -230,6 +230,12 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         # sample num_actions_to_sample indices from the success predictions
         sampled_ind = self._sample_predictions(preds_success_only, num_actions_to_sample)
 
+        #vis.figure()
+        #vis.imshow(DepthImage(preds_success_only[0,...]))
+        #vis.show()
+        import IPython
+        IPython.embed()
+                
         # wrap actions to be returned
         actions = self._get_actions(preds_success_only, sampled_ind, images, depths, camera_intr, num_actions_to_sample)
 

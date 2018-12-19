@@ -450,7 +450,7 @@ class GQCNNTF(object):
             
             # add softmax function to output of network(this is optional because 1) we might be doing regression or 2) we are training and Tensorflow has an optimized cross-entropy loss with the softmax already built-in)
             if add_softmax:
-                self.add_softmax_to_output()
+                self.add_softmax_to_output(num_outputs=self._angular_bins)
             # add sigmoid function to output of network(for weighted cross-entropy loss)
             if add_sigmoid:
                 self.add_sigmoid_to_output()

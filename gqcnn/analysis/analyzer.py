@@ -73,7 +73,7 @@ class GQCNNAnalyzer(object):
         self.cfg = config
         self.verbose = verbose
 
-        plt.switch_backend(plot_backend) # by default we want to use a non-interactive backend(ex. pdf) because the GQCNNAnalyzer anyways only saves plots to disk, and interactive backends sometimes cause issues with localhost when run remotely in screen 
+        #plt.switch_backend(plot_backend) # by default we want to use a non-interactive backend(ex. pdf) because the GQCNNAnalyzer anyways only saves plots to disk, and interactive backends sometimes cause issues with localhost when run remotely in screen 
         self._parse_config()
 
     def _parse_config(self):
@@ -186,9 +186,6 @@ class GQCNNAnalyzer(object):
         gripper_mode = gqcnn.gripper_mode
         angular_bins = gqcnn.angular_bins
 
-        import IPython
-        IPython.embed()
-        
         # read params from the config
         if dataset_config is None:
             dataset_dir = model_config['dataset_dir']
@@ -221,6 +218,15 @@ class GQCNNAnalyzer(object):
             vis2d.imshow(DepthImage(filt))
             figname = os.path.join(model_output_dir, 'conv1_filters.pdf')
         vis2d.savefig(figname, dpi=self.dpi)
+
+        # set angular bin variables
+        if angular_bins > 0:
+            max_angle = np.pi
+            if gripper_mode == GripperMode.MULTI_SUCTION:                
+                max_angle = 2*np.pi
+            elif gripper_mode == GripperMode.SUCTION:
+                raise ValueError('Cannot use angular bins with single suction cup!')
+            bin_width = max_angle / angular_bins
         
         # aggregate training and validation true labels and predicted probabilities
         all_predictions = []
@@ -243,17 +249,15 @@ class GQCNNAnalyzer(object):
                 # form mask to extract predictions from ground-truth angular bins
                 raw_poses = dataset.tensor(pose_field_name, i).arr
                 angles = raw_poses[:, 3]
-                neg_ind = np.where(angles < 0)
-                angles = np.abs(angles) % GeneralConstants.PI
-                angles[neg_ind] *= -1
-                g_90 = np.where(angles > (GeneralConstants.PI / 2))
-                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
-                angles[g_90] -= GeneralConstants.PI
-                angles[l_neg_90] += GeneralConstants.PI
-                angles *= -1 # hack to fix reverse angle convention
-                angles += (GeneralConstants.PI / 2)
                 pred_mask = np.zeros((raw_poses.shape[0], angular_bins*2), dtype=bool)
-                bin_width = GeneralConstants.PI / angular_bins
+
+                # form mask to extract predictions from ground-truth angular bins
+                while np.any(angles < 0):
+                    neg_ind = np.where(angles < 0)
+                    angles[neg_ind] += max_angle
+                while np.any(angles >= max_angle):
+                    greater_ind = np.where(angles >= max_angle)
+                    angles[greater_ind] -= max_angle
                 for i in range(angles.shape[0]):
                     pred_mask[i, int((angles[i] // bin_width)*2)] = True
                     pred_mask[i, int((angles[i] // bin_width)*2 + 1)] = True
@@ -263,7 +267,28 @@ class GQCNNAnalyzer(object):
             if angular_bins > 0:
                 raw_predictions = np.array(predictions)
                 predictions = predictions[pred_mask].reshape((-1, 2))
-            
+
+            #import IPython
+            #IPython.embed()
+                
+            """
+            for j, image in enumerate(image_arr):
+                im = DepthImage(image)
+                p = predictions[j,:].reshape((-1,2))
+                vis2d.figure()
+                vis2d.imshow(im)
+                vis2d.scatter(im.center[0], im.center[1])
+
+                for i in range(angular_bins):
+                    q = p[i,1]
+                    theta = i * bin_width + bin_width / 2
+                    v = np.array([np.cos(theta), np.sin(theta)])
+                    l = np.c_[im.center,
+                              im.center + 10*v]
+                    vis2d.plot(l[0,:], l[1,:], color=plt.cm.RdYlBu(q), linewidth=3)
+                vis2d.show()
+            """
+                
             # aggregate
             all_predictions.extend(predictions[:,1].tolist())
             if angular_bins > 0:
