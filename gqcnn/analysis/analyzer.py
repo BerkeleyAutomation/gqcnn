@@ -264,17 +264,13 @@ class GQCNNAnalyzer(object):
 
             # predict with GQ-CNN
             predictions = gqcnn.predict(image_arr, pose_arr)
-            if angular_bins > 0:
-                raw_predictions = np.array(predictions)
-                predictions = predictions[pred_mask].reshape((-1, 2))
 
-            #import IPython
-            #IPython.embed()
-                
             """
             for j, image in enumerate(image_arr):
                 im = DepthImage(image)
                 p = predictions[j,:].reshape((-1,2))
+
+
                 vis2d.figure()
                 vis2d.imshow(im)
                 vis2d.scatter(im.center[0], im.center[1])
@@ -287,8 +283,16 @@ class GQCNNAnalyzer(object):
                               im.center + 10*v]
                     vis2d.plot(l[0,:], l[1,:], color=plt.cm.RdYlBu(q), linewidth=3)
                 vis2d.show()
+
+            import IPython
+            IPython.embed()                
             """
-                
+            
+            # reshape predictions
+            if angular_bins > 0:
+                raw_predictions = np.array(predictions)
+                predictions = predictions[pred_mask].reshape((-1, 2))
+            
             # aggregate
             all_predictions.extend(predictions[:,1].tolist())
             if angular_bins > 0:

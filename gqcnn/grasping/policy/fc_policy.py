@@ -233,8 +233,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         #vis.figure()
         #vis.imshow(DepthImage(preds_success_only[0,...]))
         #vis.show()
-        import IPython
-        IPython.embed()
+        #import IPython
+        #IPython.embed()
                 
         # wrap actions to be returned
         actions = self._get_actions(preds_success_only, sampled_ind, images, depths, camera_intr, num_actions_to_sample)
@@ -455,16 +455,6 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
                                from_frame='grasp',
                                to_frame=camera_intr.frame)
 
-            """
-            print ang_idx, ang
-            vis.figure()
-            vis.imshow(depth_im)
-            vis.scatter(center.x, center.y, s=50, c='b')
-            vis.show()
-            import IPython
-            IPython.embed()
-            """
-
             # create grasp action
             grasp = MultiSuctionPoint2D(T, camera_intr=camera_intr)
             q_value = preds[im_idx, h_idx, w_idx, ang_idx]
@@ -480,6 +470,27 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
         
     def _gen_images_and_depths(self, depth, segmask):
         """Extend the image to a 4D tensor."""
+        """
+        depth_im = DepthImage(depth)
+        bin_width = 2 * np.pi / 16
+        num_rots = 8
+        inc = bin_width / num_rots
+        images = []
+        for i in range(num_rots):
+            theta = i * inc
+            images.append(depth_im.transform(np.zeros(2), theta))
+
+        vis.figure()
+        for i in range(num_rots):
+            vis.subplot(1,num_rots,i+1)
+            vis.imshow(images[i])
+        vis.show()
+        import IPython
+        IPython.embed()
+        """
+        
+        #return np.array([im.raw_data for im in images]), -1 * np.zeros(num_rots)
+        
         return np.expand_dims(depth, 0), np.array([-1]) #TODO: @Vishal depth should really be optional to the network...
    
     def _visualize_3d(self, actions, wrapped_depth_im, camera_intr, num_actions):
