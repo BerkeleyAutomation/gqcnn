@@ -4,7 +4,7 @@ policy:
   sampling_method: top_k
   num_depth_bins: 1
   gripper_width: 0.05
-  gqcnn_stride: 4
+  gqcnn_stride: 2
   gqcnn_recep_h: 32
   gqcnn_recep_w: 32
 
@@ -25,7 +25,7 @@ policy:
   policy_vis:
     scale: 0.5
     show_axis: 1
-    num_samples: 0
+    num_samples: 0 #1000
     actions_2d: 0
     actions_3d: 0
     affordance_map: 0

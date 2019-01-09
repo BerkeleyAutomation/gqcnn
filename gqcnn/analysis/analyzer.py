@@ -278,6 +278,7 @@ class GQCNNAnalyzer(object):
                 for i in range(angular_bins):
                     q = p[i,1]
                     theta = i * bin_width + bin_width / 2
+                    print i, theta, q
                     v = np.array([np.cos(theta), np.sin(theta)])
                     l = np.c_[im.center,
                               im.center + 10*v]

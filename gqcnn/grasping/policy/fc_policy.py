@@ -163,6 +163,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         # plot actions in 2D
         vis.figure()
         vis.imshow(wrapped_depth_im)
+        actions.sort(key = lambda x: x.q_value)
         for i in range(num_actions):
             vis.grasp(actions[i].grasp, scale=scale, show_axis=show_axis, color=plt.cm.RdYlGn(actions[i].q_value))
         vis.title('Top {} Grasps'.format(num_actions))
@@ -220,7 +221,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         
         # mask predicted success probabilities with the cropped and downsampled object segmask so we only sample grasps on the objects
         preds_success_only = self._mask_predictions(preds_success_only, raw_seg) 
-        
+
         # if we want to visualize more than one action, we have to sample more
         num_actions_to_sample = self._num_vis_samples if (self._vis_actions_2d or self._vis_actions_3d) else num_actions #TODO: @Vishal if this is used with the 'top_k' sampling method, the final returned action is not the best because the argpartition does not sort the partitioned indices 
 
@@ -229,13 +230,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # sample num_actions_to_sample indices from the success predictions
         sampled_ind = self._sample_predictions(preds_success_only, num_actions_to_sample)
-
-        #vis.figure()
-        #vis.imshow(DepthImage(preds_success_only[0,...]))
-        #vis.show()
-        #import IPython
-        #IPython.embed()
-                
+     
         # wrap actions to be returned
         actions = self._get_actions(preds_success_only, sampled_ind, images, depths, camera_intr, num_actions_to_sample)
 
@@ -440,8 +435,8 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             num_angles = 1000
             max_dot = -np.inf
             aligned_R = R.copy()
-            for i in range(num_angles):
-                theta = float(i * max_angle) / num_angles
+            for k in range(num_angles):
+                theta = float(k * max_angle) / num_angles
                 R_tf = R.dot(RigidTransform.x_axis_rotation(theta))
                 dot = R_tf[:,1].dot(y_axis_im)
                 if dot > max_dot:

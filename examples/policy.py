@@ -180,13 +180,14 @@ if __name__ == '__main__':
         segmask = valid_px_mask
     else:
         segmask = segmask.mask_binary(valid_px_mask)
+
+    # TODO: remove
     segmask.data[:,:125] = 0
     segmask.data[:,500:] = 0
     segmask.data[350:,:] = 0
         
     # inpaint
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
-
 
     # TODO: remove
     color_im = color_im.resize(0.25)
@@ -245,9 +246,9 @@ if __name__ == '__main__':
     action = policy(state)
     logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
-    #policy_start = time.time()
-    #action = policy(state)
-    #logger.info('Planning took %.3f sec' %(time.time() - policy_start))
+    policy_start = time.time()
+    action = policy(state)
+    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
     
     # vis final grasp
     if policy_config['vis']['final_grasp']:
