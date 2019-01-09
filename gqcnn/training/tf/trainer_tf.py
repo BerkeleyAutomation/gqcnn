@@ -887,8 +887,6 @@ class GQCNNTrainerTF(object):
  
         # angular training
         self._angular_bins = self.gqcnn.angular_bins
-        if self._angular_bins > 0:
-            assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training'
 
     def _setup_denoising_and_synthetic(self):
         """ Setup denoising and synthetic data parameters """
@@ -926,10 +924,6 @@ class GQCNNTrainerTF(object):
             self.multi_head = True
             self.num_grippers = len(gripper_ids.keys())
 
-        # during multi-head training, make sure symmetrization in denoising is turned off
-        if self.multi_head:
-            assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during multi-head training'
-            
         # read split
         if not self.dataset.has_split(self.split_name):
             self.logger.info('Training split: {} not found in dataset. Creating new split...'.format(self.split_name))
@@ -1386,22 +1380,15 @@ class GQCNNTrainerTF(object):
                     theta = 180.0
                     rot_map = cv2.getRotationMatrix2D(tuple(self.im_center), theta, 1)
                     train_image = cv2.warpAffine(train_image, rot_map, (self.im_height, self.im_width), flags=cv2.INTER_NEAREST)
-
-                    if self.gripper_mode == GripperMode.LEGACY_SUCTION:
-                        pose_arr[:,3] = -pose_arr[:,3]
-                    elif self.gripper_mode == GripperMode.SUCTION:
-                        pose_arr[:,4] = -pose_arr[:,4]
+                    pose_arr[i,3] = pose_arr[i,3] + np.pi
                 # reflect left right with 50% probability
                 if np.random.rand() < 0.5:
                     train_image = np.fliplr(train_image)
+                    pose_arr[i,3] = np.pi - pose_arr[i,3]
                 # reflect up down with 50% probability
                 if np.random.rand() < 0.5:
                     train_image = np.flipud(train_image)
-
-                    if self.gripper_mode == GripperMode.LEGACY_SUCTION:
-                        pose_arr[:,3] = -pose_arr[:,3]
-                    elif self.gripper_mode == GripperMode.SUCTION:
-                        pose_arr[:,4] = -pose_arr[:,4]
+                    pose_arr[i,3] = -pose_arr[i,3]
                 image_arr[i,:,:,0] = train_image
         return image_arr, pose_arr
 

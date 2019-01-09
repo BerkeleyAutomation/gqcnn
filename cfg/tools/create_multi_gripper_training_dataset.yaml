@@ -1,11 +1,14 @@
 input_datasets:
-  suction_small:
+  small_suction:
     type: suction
-    dataset: /home/jmahler/Workspace/jeff_working/dex-net/data/training/suction_fc_small/grasps
-  suction_large:
+    dataset: /mnt/data/datasets/knapp/small_suction_no_segmask/fc_grasps
+  large_suction:
     type: suction
-    dataset: /home/jmahler/Workspace/jeff_working/dex-net/data/training/suction_fc_large/grasps
-    
+    dataset: /mnt/data/datasets/knapp/large_suction_no_segmask/fc_grasps
+  dual_suction:
+    type: multi_suction
+    dataset: /mnt/data/datasets/knapp/dual_suction_with_approach/fc_grasps
+  
 exclude_fields:
   - color_ims
 

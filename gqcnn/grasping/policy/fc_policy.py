@@ -461,6 +461,21 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             grasp_action = GraspAction(grasp,
                                        q_value,
                                        DepthImage(images[im_idx]))
+
+
+
+            """
+            from visualization import Visualizer2D as vis2d
+            im = DepthImage(images[im_idx])
+            im = im.crop(32, 32, center.y, center.x)
+            vis2d.figure()
+            vis2d.imshow(im)
+            vis2d.show()
+
+            import IPython
+            IPython.embed()
+            """
+
             actions.append(grasp_action)
         return actions
 
