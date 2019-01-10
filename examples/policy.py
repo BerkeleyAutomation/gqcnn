@@ -186,14 +186,23 @@ if __name__ == '__main__':
     segmask.data[:,500:] = 0
     segmask.data[350:,:] = 0
         
+    # TODO: remove
+    RESCALE_FACTOR = 0.25
+    color_im = color_im.resize(RESCALE_FACTOR)
+    depth_im = depth_im.resize(RESCALE_FACTOR, interp='nearest')
+    segmask = segmask.resize(RESCALE_FACTOR, interp='nearest')
+    camera_intr = camera_intr.resize(RESCALE_FACTOR)
+
+    #color_im = color_im.transform(np.zeros(2), np.pi / 32)
+    #depth_im = depth_im.transform(np.zeros(2), np.pi / 32)
+    #segmask = segmask.transform(np.zeros(2), np.pi / 32)
+
+    #color_im = color_im.transform(np.array([0,1]), 0.0)
+    #depth_im = depth_im.transform(np.array([0,1]), 0.0)
+    #segmask = segmask.transform(np.array([0,1]), 0.0)
+
     # inpaint
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
-
-    # TODO: remove
-    color_im = color_im.resize(0.25)
-    depth_im = depth_im.resize(0.25, interp='nearest')
-    segmask = segmask.resize(0.25)
-    camera_intr = camera_intr.resize(0.25)
     
     # visualize input images
     if 'input_images' in policy_config['vis'].keys() and policy_config['vis']['input_images']:
@@ -246,9 +255,9 @@ if __name__ == '__main__':
     action = policy(state)
     logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
-    policy_start = time.time()
-    action = policy(state)
-    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
+    #policy_start = time.time()
+    #action = policy(state)
+    #logger.info('Planning took %.3f sec' %(time.time() - policy_start))
     
     # vis final grasp
     if policy_config['vis']['final_grasp']:
@@ -267,10 +276,19 @@ if __name__ == '__main__':
         point_cloud = T_camera_world * point_cloud
         T_grasp_camera = action.grasp.pose()
         T_grasp_world = T_camera_world * T_grasp_camera
+
+        point_cloud_image = camera_intr.deproject_to_image(rgbd_im.depth)
+        m = point_cloud_image.to_mesh()
+        from trimesh.io.export import export_mesh
+        export_mesh(m, 'test.obj')
         
         from visualization import Visualizer3D as vis3d
         vis3d.figure()
-        vis3d.points(point_cloud, subsample=3, random=True)
-        vis3d.pose(T_grasp_world)
+        vis3d.points(point_cloud,
+                     subsample=1,
+                     random=True,
+                     color=(0,1,1),
+                     scale=0.0025)
+        vis3d.pose(T_grasp_world, alpha=0.035)
         vis3d.show()
         

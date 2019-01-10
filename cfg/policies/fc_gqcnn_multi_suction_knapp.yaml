@@ -25,13 +25,13 @@ policy:
   policy_vis:
     scale: 0.5
     show_axis: 1
-    num_samples: 0 #1000
-    actions_2d: 0
+    num_samples: 100
+    actions_2d: 1
     actions_3d: 0
     affordance_map: 0
   vis:
     final_grasp: 1
-    input_images: 0
+    input_images: 1
 
     vmin: 1.25
     vmax: 1.75
