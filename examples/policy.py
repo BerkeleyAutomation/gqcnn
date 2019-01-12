@@ -87,7 +87,6 @@ if __name__ == '__main__':
         if fully_conv and segmask_filename is None:
             segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
-
                                             'data/examples/clutter/primesense/segmask_0.png')
         if camera_intr_filename is None:
             camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
