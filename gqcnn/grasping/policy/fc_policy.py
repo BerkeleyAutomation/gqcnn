@@ -278,19 +278,21 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
 
         # depth sampling parameters
         self._num_depth_bins = self._cfg['num_depth_bins']
-        #TODO: ask Jeff what this is for again
-        self._depth_offset = 0.0
-        if 'depth_offset' in self._cfg.keys():
-            self._depth_offset = self._cfg['depth_offset']
+        self._min_depth_offset = 0.0
+        if 'min_depth_offset' in self._cfg.keys():
+            self._min_depth_offset = self._cfg['min_depth_offset']
+        self._max_depth_offset = 0.0
+        if 'max_depth_offset' in self._cfg.keys():
+            self._max_depth_offset = self._cfg['max_depth_offset']
 
     def _sample_depths(self, raw_depth_im, raw_seg):
         """Sample depths from the raw depth image."""
-        max_depth = np.max(raw_depth_im) + self._depth_offset
+        max_depth = np.max(raw_depth_im) + self._max_depth_offset
 
         # for sampling the min depth, we only sample from the portion of the depth image in the object segmask because sometimes the rim of the bin is not properly subtracted out of the depth image
         raw_depth_im_segmented = np.ones_like(raw_depth_im)
         raw_depth_im_segmented[np.where(raw_seg > 0)] = raw_depth_im[np.where(raw_seg > 0)]
-        min_depth = np.min(raw_depth_im_segmented) + self._depth_offset
+        min_depth = np.min(raw_depth_im_segmented) + self._min_depth_offset
 
         depth_bin_width = (max_depth - min_depth) / self._num_depth_bins
         depths = np.zeros((self._num_depth_bins, 1)) 
