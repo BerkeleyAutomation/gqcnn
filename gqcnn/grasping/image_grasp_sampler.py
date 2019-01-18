@@ -489,25 +489,6 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                grasp_center[1] > depth_im.width - self._min_dist_from_boundary:
                 continue
             
-            # sample depths
-            #for i in range(self._depth_samples_per_grasp):
-            #    # get depth in the neighborhood of the center pixel
-            depth_win = depth_im.data[grasp_center[0]-self._h:grasp_center[0]+self._h, grasp_center[1]-self._w:grasp_center[1]+self._w]
-            center_depth = np.min(depth_win)
-            if center_depth == 0 or np.isnan(center_depth):
-                continue
-            #    
-            #    # sample depth between the min and max
-            min_depth = np.min(center_depth) + self._min_depth_offset
-            max_depth = np.max(center_depth) + self._max_depth_offset
-            sample_depth = min_depth + (max_depth - min_depth) * np.random.rand()
-            #    candidate_grasp = Grasp2D(grasp_center_pt,
-            #                              grasp_theta,
-            #                              sample_depth,
-            #                              width=self._gripper_width,
-            #                              camera_intr=camera_intr,
-            #                              contact_points=[p1, p2],
-            #                              contact_normals=[n1, n2])
             p3 = p1 + (p2 - p1) / 10
             p4 = p2 + (p1 - p2) / 10
             depth = (depth_im.data[p3[0],p3[1]] + depth_im.data[p4[0],p4[1]]) / 2
