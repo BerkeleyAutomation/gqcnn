@@ -489,6 +489,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                grasp_center[1] > depth_im.width - self._min_dist_from_boundary:
                 continue
             
+            # compute depths
             p3 = p1 + (p2 - p1) / 10
             p4 = p2 + (p1 - p2) / 10
             depth = (depth_im.data[p3[0],p3[1]] + depth_im.data[p4[0],p4[1]]) / 2
@@ -500,12 +501,10 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                                           camera_intr=camera_intr,
                                           contact_points=[p1, p2],
                                           contact_normals=[n1, n2])
-
             if visualize:
                 vis.figure((35,20))
                 vis.imshow(depth_im)
                 vis.grasp(candidate_grasp)
-                vis.title(depth)
                 vis.scatter(p1[1], p1[0], c='b', s=25)
                 vis.scatter(p2[1], p2[0], c='b', s=25)
                 vis.scatter(p3[1], p3[0], c='r', s=25)
