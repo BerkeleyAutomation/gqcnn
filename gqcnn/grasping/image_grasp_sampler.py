@@ -501,14 +501,15 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                                           camera_intr=camera_intr,
                                           contact_points=[p1, p2],
                                           contact_normals=[n1, n2])
+
             if visualize:
                 vis.figure((35,20))
                 vis.imshow(depth_im)
                 vis.grasp(candidate_grasp)
-                vis.scatter(p1[1], p1[0], c='b', s=25)
-                vis.scatter(p2[1], p2[0], c='b', s=25)
-                vis.scatter(p3[1], p3[0], c='r', s=25)
-                vis.scatter(p4[1], p4[0], c='r', s=25)
+                vis.scatter(p1[1], p1[0], c='b', s=1000)
+                vis.scatter(p2[1], p2[0], c='b', s=1000)
+                vis.scatter(p3[1], p3[0], c='r', s=1000)
+                vis.scatter(p4[1], p4[0], c='r', s=1000)
                 vis.show()
                 
             grasps.append(candidate_grasp)
