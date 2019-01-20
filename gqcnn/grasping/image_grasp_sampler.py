@@ -495,7 +495,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             depth = (depth_im.data[p3[0],p3[1]] + depth_im.data[p4[0],p4[1]]) / 2
 
             # sample height offset from surface into object
-            height_offset = 0.02 + np.random.random() * 0.01
+            height_offset = 0.01 + np.random.random() * 0.01
 
             candidate_grasp = Grasp2D(grasp_center_pt,
                                           grasp_theta,
