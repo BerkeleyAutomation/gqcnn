@@ -50,11 +50,15 @@ class Grasp2D(object):
         pair of contact normals in image space
     """
     def __init__(self, center, angle=0.0, depth=1.0, width=0.0, camera_intr=None,
-                 contact_points=None, contact_normals=None):
+                 contact_points=None, contact_normals=None, height_offset=None):
         self.center = center
         self.angle = angle
         self.depth = depth
         self.width = width
+        if height_offset is not None:
+            self.height_offset = height_offset
+        else:
+            self.height_offset = 0
         # if camera_intr is none use default primesense camera intrinsics
         if not camera_intr:
             self.camera_intr = CameraIntrinsics('primesense_overhead', fx=525, fy=525, cx=319.5, cy=239.5, width=640, height=480)
@@ -119,7 +123,7 @@ class Grasp2D(object):
         where p1 and p2 are the jaw locations in image space
         """
         p1, p2 = self.endpoints
-        return np.r_[p1, p2, self.depth]
+        return np.r_[p1, p2, self.depth, self.height_offset]
 
     @staticmethod
     def from_feature_vec(v, width=0.0, camera_intr=None):
@@ -138,6 +142,7 @@ class Grasp2D(object):
         p1 = v[:2]
         p2 = v[2:4]
         depth = v[4]
+        height_offset = v[5]
 
         # compute center and angle
         center_px = (p1 + p2) / 2
@@ -149,7 +154,7 @@ class Grasp2D(object):
             angle = np.arccos(axis[0])
         else:
             angle = -np.arccos(axis[0])
-        return Grasp2D(center, angle, depth, width=width, camera_intr=camera_intr)
+        return Grasp2D(center, angle, depth, width=width, camera_intr=camera_intr, height_offset=height_offset)
 
     def pose(self, grasp_approach_dir=None):
         """ Computes the 3D pose of the grasp relative to the camera.
