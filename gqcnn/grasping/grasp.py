@@ -241,14 +241,17 @@ class SuctionPoint2D(object):
         depth of the suction point in 3D space
     camera_intr : :obj:`perception.CameraIntrinsics`
         frame of reference for camera that the suction point corresponds to
+    angle : float
+        angle of the axis in image space
     """
-    def __init__(self, center, axis=None, depth=1.0, camera_intr=None):
+    def __init__(self, center, axis=None, depth=1.0, camera_intr=None, angle=0.0):
         if axis is None:
             axis = np.array([0,0,1])
 
         self.center = center
         self.axis = axis
-
+        self.angle = angle
+        
         frame = 'image'
         if camera_intr is not None:
             frame = camera_intr.frame
@@ -258,7 +261,7 @@ class SuctionPoint2D(object):
             self.axis = np.array(axis)
         if np.abs(np.linalg.norm(self.axis) - 1.0) > 1e-3:
             raise ValueError('Illegal axis. Must be norm 1.')
-
+        
         self.depth = depth
         # if camera_intr is none use default primesense camera intrinsics
         if not camera_intr:
@@ -274,18 +277,36 @@ class SuctionPoint2D(object):
         return self.camera_intr.frame
 
     @property
-    def angle(self):
-        """ The angle that the grasp pivot axis makes in image space. """
-        rotation_axis = np.cross(self.axis, np.array([0,0,1]))
-        rotation_axis_image = np.array([rotation_axis[0], rotation_axis[1]])
-        angle = 0
-        if np.linalg.norm(rotation_axis) > 0:
-            rotation_axis_image = rotation_axis_image / np.linalg.norm(rotation_axis_image)
-            angle = np.arccos(rotation_axis_image[0])
-        if rotation_axis[1] < 0:
-            angle = -angle
-        return angle
+    def rotation_matrix(self):
+        """The rotation matrix for the grasp in image space. """
+        # convert to 3D pose
+        suction_x_camera = self.axis.copy()
+        suction_z_camera = np.array([-suction_x_camera[1], suction_x_camera[0], 0])
+        if np.linalg.norm(suction_z_camera) < 1e-12:
+            suction_z_camera = np.array([1.0, 0.0, 0.0])
+        suction_z_camera = suction_z_camera / np.linalg.norm(suction_z_camera)
+        suction_y_camera = np.cross(suction_z_camera, suction_x_camera)
+        suction_rot_camera = np.c_[suction_x_camera, suction_y_camera, suction_z_camera]
 
+        # rotate to align with the angle
+        num_rot = 32
+        max_dot = -1
+        best_angle = self.angle
+        target_vec = np.array([np.cos(self.angle), np.sin(self.angle)])
+        suction_rot = suction_rot_camera.copy()
+
+        for i in range(num_rot):
+            theta = float(2 * np.pi * i) / num_rot 
+            R = RigidTransform.x_axis_rotation(theta)
+            suction_rot = suction_rot_camera.dot(R)
+            proj_y_axis = suction_rot[:2,1]
+            dot = proj_y_axis.dot(target_vec)
+            if dot > max_dot:
+                max_dot = dot
+                best_angle = theta
+                
+        return suction_rot_camera.dot(R)
+            
     @property
     def approach_angle(self):
         """ The angle between the grasp approach axis and camera optical axis. """
@@ -363,13 +384,7 @@ class SuctionPoint2D(object):
         suction_axis_camera = self.axis
         
         # convert to 3D pose
-        suction_x_camera = suction_axis_camera
-        suction_z_camera = np.array([-suction_x_camera[1], suction_x_camera[0], 0])
-        if np.linalg.norm(suction_z_camera) < 1e-12:
-            suction_z_camera = np.array([1.0, 0.0, 0.0])
-        suction_z_camera = suction_z_camera / np.linalg.norm(suction_z_camera)
-        suction_y_camera = np.cross(suction_z_camera, suction_x_camera)
-        suction_rot_camera = np.c_[suction_x_camera, suction_y_camera, suction_z_camera]
+        suction_rot_camera = self.rotation_matrix
 
         T_suction_camera = RigidTransform(rotation=suction_rot_camera,
                                           translation=suction_center_camera,
