@@ -232,8 +232,11 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         sampled_ind = self._sample_predictions(preds_success_only, num_actions_to_sample)
      
         # wrap actions to be returned
+        actions_start = time.time()
         actions = self._get_actions(preds_success_only, sampled_ind, images, depths, camera_intr, num_actions_to_sample)
-
+        actions_stop = time.time()
+        self._logger.info('Action postprocessing took %.3f sec' %(actions_stop-actions_start))
+        
         # filter grasps
         if self._filter_grasps:
             actions.sort(reverse=True, key=lambda action: action.q_value)
@@ -251,7 +254,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         return actions[-1] if (self._filter_grasps or num_actions == 1) else actions[-(num_actions+1):]
 
-    def action_set(self, state, num_actions):
+    def action_set(self, state, num_actions, policy_subset=None, min_q_value=-1):
         """ Plan a set of actions.
 
         Parameters
@@ -266,7 +269,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         list of :obj:`gqcnn.GraspAction`
             the planned grasps
         """
-        return [action.grasp for action in self._action(state, num_actions=num_actions)]
+        return [action for action in self._action(state, num_actions=num_actions)]
 
 class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPolicy):
     """Parallel jaw grasp sampling policy using Fully-Convolutional GQ-CNN network."""
@@ -394,13 +397,16 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
     """Multi suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
         """Generate the actions to be returned."""
+        # compute point cloud and normals
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
         point_cloud_im = camera_intr.deproject_to_image(depth_im)
         normal_cloud_im = point_cloud_im.normal_cloud_im()
 
+        # set angle params
         max_angle = 2 * math.pi
         bin_width = max_angle / preds.shape[-1]
-        
+        num_angles = 2 * preds.shape[-1]
+
         actions = []
         for i in range(num_actions):
             # read index
@@ -432,7 +438,6 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
 
             # find rotation that aligns with the image orientation
             R = np.array([x_axis, y_axis, z_axis]).T
-            num_angles = 1000
             max_dot = -np.inf
             aligned_R = R.copy()
             for k in range(num_angles):
@@ -456,21 +461,7 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             grasp_action = GraspAction(grasp,
                                        q_value,
                                        DepthImage(images[im_idx]))
-
-
-
-            """
-            from visualization import Visualizer2D as vis2d
-            im = DepthImage(images[im_idx])
-            im = im.crop(32, 32, center.y, center.x)
-            vis2d.figure()
-            vis2d.imshow(im)
-            vis2d.show()
-
-            import IPython
-            IPython.embed()
-            """
-
+            grasp_action.policy_name = self.name
             actions.append(grasp_action)
         return actions
 
@@ -480,27 +471,6 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
         
     def _gen_images_and_depths(self, depth, segmask):
         """Extend the image to a 4D tensor."""
-        """
-        depth_im = DepthImage(depth)
-        bin_width = 2 * np.pi / 16
-        num_rots = 8
-        inc = bin_width / num_rots
-        images = []
-        for i in range(num_rots):
-            theta = i * inc
-            images.append(depth_im.transform(np.zeros(2), theta))
-
-        vis.figure()
-        for i in range(num_rots):
-            vis.subplot(1,num_rots,i+1)
-            vis.imshow(images[i])
-        vis.show()
-        import IPython
-        IPython.embed()
-        """
-        
-        #return np.array([im.raw_data for im in images]), -1 * np.zeros(num_rots)
-        
         return np.expand_dims(depth, 0), np.array([-1]) #TODO: @Vishal depth should really be optional to the network...
    
     def _visualize_3d(self, actions, wrapped_depth_im, camera_intr, num_actions):

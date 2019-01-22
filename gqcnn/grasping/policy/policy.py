@@ -191,6 +191,11 @@ class GraspingPolicy(Policy):
         if 'gripper_width' in config.keys():
             self._gripper_width = config['gripper_width']
 
+        # set the name
+        self.name = 'gqcnn'
+        if 'name' in config.keys():
+            self.name = config['name']
+            
         # set the logging dir and possibly log file
         self._logging_dir = None
         log_file = None
