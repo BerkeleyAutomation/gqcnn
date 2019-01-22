@@ -123,7 +123,7 @@ class Grasp2D(object):
         where p1 and p2 are the jaw locations in image space
         """
         p1, p2 = self.endpoints
-        return np.r_[p1, p2, self.depth, self.height_offset]
+        return np.r_[p1, p2, self.depth, self.width, self.height_offset]
 
     @staticmethod
     def from_feature_vec(v, width=0.0, camera_intr=None):
@@ -142,7 +142,8 @@ class Grasp2D(object):
         p1 = v[:2]
         p2 = v[2:4]
         depth = v[4]
-        height_offset = v[5]
+        width = v[5]
+        height_offset = v[6]
 
         # compute center and angle
         center_px = (p1 + p2) / 2
