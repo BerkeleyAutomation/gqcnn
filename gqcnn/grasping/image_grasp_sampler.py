@@ -699,7 +699,8 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             if psi < self._max_suction_dir_optical_axis_angle:
 
                 # create candidate grasp
-                candidate = SuctionPoint2D(center, axis, depth, camera_intr=camera_intr)
+                angle = 2 * np.pi * np.random.rand()
+                candidate = SuctionPoint2D(center, axis, depth, camera_intr=camera_intr, angle=angle)
 
                 # check constraint satisfaction
                 if constraint_fn is None or constraint_fn(candidate):
