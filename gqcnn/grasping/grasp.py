@@ -305,6 +305,7 @@ class SuctionPoint2D(object):
                 max_dot = dot
                 best_angle = theta
                 
+        R = RigidTransform.x_axis_rotation(best_angle)
         return suction_rot_camera.dot(R)
             
     @property
