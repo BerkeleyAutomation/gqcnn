@@ -124,6 +124,7 @@ class Grasp2D(object):
         """
         p1, p2 = self.endpoints
         return np.r_[p1, p2, self.depth, self.width, self.height_offset]
+    
 
     @staticmethod
     def from_feature_vec(v, width=0.0, camera_intr=None):
