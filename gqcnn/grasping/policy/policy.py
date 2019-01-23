@@ -752,7 +752,6 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         num_grasps = len(grasps)
         if num_grasps == 0:
             self._logger.warning('No valid grasps could be found')
-            raise NoValidGraspsException()
 
         grasp_type = 'parallel_jaw'
         if isinstance(grasps[0], SuctionPoint2D):
@@ -909,7 +908,6 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             num_grasps = len(grasps)
             if num_grasps == 0:
                 self._logger.warning('No valid grasps could be found')
-                raise NoValidGraspsException()
             self._logger.info('Resample loop took %.3f sec' %(time()-loop_start))
             self._logger.info('Resampling took %.3f sec' %(time()-resample_start))
 
