@@ -463,9 +463,6 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
             # compute center and axis
             grasp_center = (p1 + p2) / 2
-            print(k)
-            if (480 - grasp_center[0]) > 60 * k /250:
-                continue
             grasp_axis = p2 - p1
             grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
             grasp_theta = np.pi / 2
