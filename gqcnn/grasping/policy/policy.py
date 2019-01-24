@@ -808,6 +808,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             elite_grasp_indices = [i[1] for i in q_values_and_indices[:num_refit]]
             elite_grasps = [grasps[i] for i in elite_grasp_indices]
             elite_grasp_arr = np.array([g.feature_vec for g in elite_grasps])
+            print('elite set shape')
+            print(elite_grasp_arr.shape[0])
+            if elite_grasp_arr.shape[0] < 2:
+                print('Less than 2 elite grasps found')
+                return None, None
 
             if self.config['vis']['elite_grasps']:
                 # display each grasp on the original image, colored by predicted success
