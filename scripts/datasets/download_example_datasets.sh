@@ -17,10 +17,10 @@ unzip example_training_dataset_suction.zip
 mv grasps example_suction
 cd ../..
 
-# PARALLEL JAW ANGULAR
+# FULLY-CONVOLUTIONAL PARALLEL JAW 
 wget -O data/training/example_training_dataset_pj_angular.zip https://berkeley.box.com/shared/static/2u4ew5444m90waucgsor8uoijgr9dgwr.zip
 
 cd data/training
 unzip example_training_dataset_pj_angular.zip
-mv grasps example_pj_angular
+mv grasps example_fc_pj
 cd ../..
