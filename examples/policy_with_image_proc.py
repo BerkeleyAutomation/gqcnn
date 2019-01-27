@@ -79,7 +79,7 @@ if __name__ == '__main__':
     if config_filename is None:
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                        '..',
-                                       'cfg/examples/dex-net_2.0.yaml')
+                                       'cfg/examples/replication/dex-net_2.0.yaml')
     
     # read config
     config = YamlConfig(config_filename)

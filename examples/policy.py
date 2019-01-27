@@ -117,20 +117,20 @@ if __name__ == '__main__':
             if fully_conv:
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                '..',
-                                               'cfg/policies/fc_gqcnn_pj.yaml')
+                                               'cfg/examples/fc_gqcnn_pj.yaml')
             else:
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                '..',
-                                               'cfg/policies/gqcnn_pj.yaml')
+                                               'cfg/examples/gqcnn_pj.yaml')
         elif gripper_mode == GripperMode.LEGACY_SUCTION or gripper_mode == GripperMode.SUCTION:
             if fully_conv:
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                '..',
-                                               'cfg/policies/fc_gqcnn_suction.yaml')
+                                               'cfg/examples/fc_gqcnn_suction.yaml')
             else:
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                '..',
-                                               'cfg/policies/gqcnn_suction.yaml')
+                                               'cfg/examples/gqcnn_suction.yaml')
             
     # read config
     config = YamlConfig(config_filename)
