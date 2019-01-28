@@ -452,7 +452,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         sample_start = time()
         k = 0
         grasps = []
-        while k < sample_size and len(grasps) < num_samples:
+        near_grasps = []
+        while k < sample_size and len(near_grasps) <= num_samples:
             grasp_ind = grasp_indices[k]
             p1 = contact_points1[grasp_ind,:]
             p2 = contact_points2[grasp_ind,:]
@@ -519,9 +520,20 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                 vis.show()
                 
             grasps.append(candidate_grasp)
+            if len(grasps) >= 250:
+                # find nearest grasp
+                max_y = 0
+                for grasp in grasps:
+                    if grasp.center[1] > max_y:
+                        max_y = grasp.center[1]
+                        nearest_grasp = grasp
+                new_near_grasps = [grasp for grasp in grasps if not grasp.center[1] <= max_y - 50]
+                for near_grasp in new_near_grasps:
+                    near_grasps.append(near_grasp)
+                grasps = []
         # return sampled grasps
         self._logger.debug('Loop took %.3f sec' %(time() - sample_start))
-        return grasps
+        return near_grasps
 
 class DepthImageSuctionPointSampler(ImageGraspSampler):
     """ Grasp sampler for suction points from depth images.
