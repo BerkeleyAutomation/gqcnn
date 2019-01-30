@@ -230,7 +230,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # sample num_actions_to_sample indices from the success predictions
         sampled_ind = self._sample_predictions(preds_success_only, num_actions_to_sample)
-     
+        
         # wrap actions to be returned
         actions_start = time.time()
         actions = self._get_actions(preds_success_only, sampled_ind, images, depths, camera_intr, num_actions_to_sample)
@@ -252,7 +252,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         if self._vis_affordance_map:
             self._visualize_affordance_map(preds_success_only, wrapped_depth, self._vis_scale, output_dir=state_output_dir)
 
-        return actions[-1] if (self._filter_grasps or num_actions == 1) else actions[-(num_actions+1):]
+        actions.sort(reverse=True, key=lambda action: action.q_value)
+        return actions[0] if (self._filter_grasps or num_actions == 1) else actions[-(num_actions+1):]
 
     def action_set(self, state, num_actions, policy_subset=None, min_q_value=-1):
         """ Plan a set of actions.
@@ -346,13 +347,23 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
         """Generate the actions to be returned."""
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
         point_cloud_im = camera_intr.deproject_to_image(depth_im)
-        normal_cloud_im = point_cloud_im.normal_cloud_im()
+        normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=9)
 
+        max_angle = 2 * math.pi
+        bin_width = max_angle / preds.shape[-1]
+        num_angles = 2 * preds.shape[-1]
+
+        ang_idx = 0
+        ang = 0.0
+        
         actions = []
         for i in range(num_actions):
             im_idx = ind[i, 0]
             h_idx = ind[i, 1]
             w_idx = ind[i, 2]
+            if ind.shape[1] > 3:
+                ang_idx = ind[i, 3]
+                ang = ang_idx * bin_width + bin_width / 2
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
             axis = -normal_cloud_im[center.y, center.x]
             if np.linalg.norm(axis) == 0:
@@ -360,8 +371,11 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
             depth = depth_im[center.y, center.x, 0]
             if depth == 0.0:
                 continue
-            grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr)
-            grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, 0], DepthImage(images[im_idx]))
+            grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr, angle=ang)
+            q_value = preds[im_idx, h_idx, w_idx, ang_idx]
+            grasp_action = GraspAction(grasp,
+                                       q_value,
+                                       DepthImage(images[im_idx]))
             actions.append(grasp_action)
         return actions
 
@@ -400,7 +414,7 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
         # compute point cloud and normals
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
         point_cloud_im = camera_intr.deproject_to_image(depth_im)
-        normal_cloud_im = point_cloud_im.normal_cloud_im()
+        normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=9)
 
         # set angle params
         max_angle = 2 * math.pi

@@ -387,6 +387,10 @@ class RobustGraspingPolicy(GraspingPolicy):
         if 'gripper_width' in self.config.keys():
             self._gripper_width = self.config['gripper_width']
 
+    def set_filters(self, filters):
+        """ Sets the grasp filters for the policy. """
+        self._filters = filters
+            
     def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).

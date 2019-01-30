@@ -1002,10 +1002,10 @@ class GQCNNTrainerTF(object):
                         self.num_mask_outputs += self._angular_bins
                         self.gripper_max_angles[gripper_id] = np.pi
 
-                    elif gripper_type == GripperMode.MULTI_SUCTION:
+                    elif gripper_type == GripperMode.MULTI_SUCTION or \
+                         gripper_type == GripperMode.SUCTION:
                         self.num_mask_outputs += self._angular_bins
                         self.gripper_max_angles[gripper_id] = 2 * np.pi
-
                     else:
                         self.num_mask_outputs += 1
                         self.gripper_max_angles[gripper_id] = 0.0
@@ -1020,7 +1020,7 @@ class GQCNNTrainerTF(object):
                 if gripper_type == GripperMode.MULTI_SUCTION:                
                     self._max_angle = 2*np.pi
                 elif gripper_type == GripperMode.SUCTION:
-                    raise ValueError('Cannot use angular bins with single suction cup!')
+                    self._max_angle = 2*np.pi
                 self._bin_width = self._max_angle / self._angular_bins
                 
             # create mask index placeholder    

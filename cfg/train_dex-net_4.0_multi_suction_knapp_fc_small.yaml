@@ -69,13 +69,13 @@ gqcnn:
   seed: 24098
 
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
-  gripper_mode: multi_suction
+  gripper_mode: suction
 
   # method by which to integrate depth into the network
   input_depth_mode: im_only
 
   # used for training with multiple angular predictions
-  angular_bins: 32
+  angular_bins: 8
   max_angle: 360
   
   # prediction batch size, in training this will be overriden by the val_batch_size in the optimizer's config file
@@ -164,7 +164,7 @@ gqcnn:
         out_size: 64
       fc5:
         type: fc
-        out_size: 64
+        out_size: 16
 
   # architecture normalization constants
   radius: 2
