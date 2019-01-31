@@ -916,6 +916,7 @@ class GQCNNTrainerTF(object):
         self.num_grippers = 1
         self.gripper_types = None 
         self.gripper_names = None
+        self.num_angular_bins = None
         if 'gripper_ids' in self.dataset.field_names:
             gripper_ids = self.dataset.metadata['gripper_ids']
             self.gripper_types = self.dataset.metadata['gripper_types']
@@ -924,6 +925,12 @@ class GQCNNTrainerTF(object):
             self.multi_head = True
             self.num_grippers = len(gripper_ids.keys())
 
+            self.num_angular_bins = {}
+            if 'num_angular_bins' in self.dataset.metadata.keys():
+                [self.num_angular_bins.update({k:v}) for k, v in self.dataset.metadata['num_angular_bins'].iteritems()]
+            else:
+                [self.num_angular_bins.update({k:self._angular_bins}) for k in gripper_ids.keys()]                
+                
         # read split
         if not self.dataset.has_split(self.split_name):
             self.logger.info('Training split: {} not found in dataset. Creating new split...'.format(self.split_name))
@@ -999,18 +1006,18 @@ class GQCNNTrainerTF(object):
                     self.gripper_start_indices[gripper_id] = self.num_mask_outputs
 
                     if gripper_type == GripperMode.PARALLEL_JAW:
-                        self.num_mask_outputs += self._angular_bins
                         self.gripper_max_angles[gripper_id] = np.pi
+                        self.num_mask_outputs += self.num_angular_bins[gripper_id]
 
                     elif gripper_type == GripperMode.MULTI_SUCTION or \
                          gripper_type == GripperMode.SUCTION:
-                        self.num_mask_outputs += self._angular_bins
                         self.gripper_max_angles[gripper_id] = 2 * np.pi
+                        self.num_mask_outputs += self.num_angular_bins[gripper_id]
                     else:
-                        self.num_mask_outputs += 1
                         self.gripper_max_angles[gripper_id] = 0.0
+                        self.num_mask_outputs += 1
 
-                    self.gripper_bin_widths[gripper_id] = self.gripper_max_angles[gripper_id] / self._angular_bins
+                    self.gripper_bin_widths[gripper_id] = self.gripper_max_angles[gripper_id] / self.num_angular_bins[gripper_id]
                         
             # otherwise set via the number of angular bins
             else:
@@ -1044,6 +1051,7 @@ class GQCNNTrainerTF(object):
             if self._angular_bins > 0:
                 self.cfg['gqcnn']['architecture']['gripper_max_angles'] = self.gripper_max_angles
                 self.cfg['gqcnn']['architecture']['gripper_bin_widths'] = self.gripper_bin_widths
+                self.cfg['gqcnn']['architecture']['num_angular_bins'] = self.num_angular_bins
             self._save_configs()
 
         # create data prefetch queue
@@ -1266,27 +1274,26 @@ class GQCNNTrainerTF(object):
                     if self.multi_head:
                         # index for multiple grippers with angle bins
                         for gripper_id, start_ind in self.gripper_start_indices.iteritems():
+                            # find the indices of the given gripper type
                             gripper_type = self.gripper_types[gripper_id]
                             gripper_ind = np.where(train_gripper_ids_arr == int(gripper_id))[0]
                             if gripper_ind.shape[0] == 0:
                                 continue
-                            
+
+                            # determine the offset for the angular bin
                             offset_ind = 0
-                            if gripper_type != GripperMode.SUCTION and gripper_type != GripperMode.LEGACY_SUCTION:
-                                max_angle = self.gripper_max_angles[gripper_id]
-                                angles_gripper = angles[gripper_ind] 
+                            max_angle = self.gripper_max_angles[gripper_id]
+                            angles_gripper = angles[gripper_ind] 
+                            while np.any(angles_gripper < 0):
                                 neg_ind = np.where(angles_gripper < 0)
-                                angles_gripper = np.abs(angles_gripper) % max_angle
-                                angles_gripper[neg_ind] *= -1
-                                g_90 = np.where(angles_gripper > (max_angle / 2))
-                                l_neg_90 = np.where(angles_gripper < (-1 * (max_angle / 2)))
-                                angles_gripper[g_90] -= max_angle
-                                angles_gripper[l_neg_90] += max_angle
-                                angles_gripper *= -1 # hack to fix reverse angle convention
-                                angles_gripper += (max_angle / 2)
+                                angles_gripper[neg_ind] += max_angle
+                            while np.any(angles_gripper >= max_angle):
+                                greater_ind = np.where(angles_gripper >= max_angle)
+                                angles_gripper[greater_ind] -= max_angle
+                                
+                            # create a mask
                             for j, i in enumerate(gripper_ind):
-                                if gripper_type != GripperMode.SUCTION and gripper_type != GripperMode.LEGACY_SUCTION:
-                                    offset_ind = int(angles_gripper[j] // self.gripper_bin_widths[gripper_id])
+                                offset_ind = int(angles_gripper[j] // self.gripper_bin_widths[gripper_id])
                                 ind = int(start_ind + offset_ind)
                                 train_pred_mask_arr[i, 2*ind] = 1
                                 train_pred_mask_arr[i, 2*ind + 1] = 1
@@ -1454,21 +1461,16 @@ class GQCNNTrainerTF(object):
                         if gripper_ind.shape[0] == 0:
                             continue
                         offset_ind = 0
-                        if gripper_type != GripperMode.SUCTION and gripper_type != GripperMode.LEGACY_SUCTION:
-                            max_angle = self.gripper_max_angles[gripper_id]
-                            angles_gripper = angles[gripper_ind] 
+                        max_angle = self.gripper_max_angles[gripper_id]
+                        angles_gripper = angles[gripper_ind] 
+                        while np.any(angles_gripper < 0):
                             neg_ind = np.where(angles_gripper < 0)
-                            angles_gripper = np.abs(angles_gripper) % max_angle
-                            angles_gripper[neg_ind] *= -1
-                            g_90 = np.where(angles_gripper > (max_angle / 2))
-                            l_neg_90 = np.where(angles_gripper < (-1 * (max_angle / 2)))
-                            angles_gripper[g_90] -= max_angle
-                            angles_gripper[l_neg_90] += max_angle
-                            angles_gripper *= -1 # hack to fix reverse angle convention
-                            angles_gripper += (max_angle / 2)
+                            angles_gripper[neg_ind] += max_angle
+                        while np.any(angles_gripper >= max_angle):
+                            greater_ind = np.where(angles_gripper >= max_angle)
+                            angles_gripper[greater_ind] -= max_angle
                         for j, i in enumerate(gripper_ind):
-                            if gripper_type != GripperMode.SUCTION and gripper_type != GripperMode.LEGACY_SUCTION:
-                                offset_ind = int(angles_gripper[j] // self.gripper_bin_widths[gripper_id])
+                            offset_ind = int(angles_gripper[j] // self.gripper_bin_widths[gripper_id])
                             ind = int(start_ind + offset_ind)
                             pred_mask[i, 2*ind] = 1
                             pred_mask[i, 2*ind + 1] = 1
