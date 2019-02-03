@@ -30,23 +30,23 @@ import os
 
 class PostDevelopCmd(develop):
     def run(self):
-        os.system('sh scripts/download_data.sh')
+        os.system('sh scripts/downloads/download_example_data.sh')
         develop.run(self)
 
 class PostInstallCmd(install):
     def run(self):
-        os.system('sh scripts/download_data.sh')
+        os.system('sh scripts/downloads/download_example_data.sh')
         install.run(self)
 
 requirements = [
     'autolab-core',
     'autolab-perception',
     'visualization',
-    'numpy<=1.14.1',
+    'numpy>=1.14.0',
     'scipy',
-    'matplotlib<=2.2.0',
+    'matplotlib>=1.5.0',
     'opencv-python',
-    'tensorflow>=1.4.0',
+    'tensorflow>=1.10.0',
     'scikit-image',
     'scikit-learn',
     'psutil',
@@ -67,8 +67,6 @@ setup(name='gqcnn',
           'Development Status :: 4 - Beta',
           'Programming Language :: Python',
           'Programming Language :: Python :: 2.7',
-          'Programming Language :: Python :: 3.5',
-          'Programming Language :: Python :: 3.6',
           'Natural Language :: English',
           'Topic :: Scientific/Engineering'
       ],      

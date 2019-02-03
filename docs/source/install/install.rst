@@ -3,43 +3,44 @@ Dependencies
 
 PyPI Packages
 """""""""""""
-The `gqcnn` package  depends on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `skimage`_, `sklearn`_, and `pillow`_ which should be installed automatically when using pip.
+The `gqcnn` package  depends on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `sklearn`_, `gputil`_, and `psutil`_, which should be installed automatically when using pip.
 You can also install these manually if necessary ::
 
-    $ pip install numpy scipy matplotlib tensorflow-gpu opencv-python scikit-image scikit-learn pillow
+    $ pip install numpy scipy matplotlib tensorflow-gpu opencv-python scikit-learn psutil gputil
 
 .. _numpy: http://www.numpy.org/
 .. _scipy: https://www.scipy/org/
 .. _matplotlib: http://www.matplotlib.org/
 .. _tensorflow: https://www.tensorflow.org/
 .. _cv2: http://opencv.org/
-.. _pillow: https://python-pillow.org/
-.. _skimage: http://scikit-learn.org/stable/
 .. _sklearn: http://scikit-image.org/
+.. _psutil: https://github.com/giampaolo/psutil
+.. _gputil: https://github.com/anderskm/gputil
 
 If you do not have a GPU, then substitute `tensorflow` for `tensorflow-gpu` in the installation command.
-Note that `TensorFlow installation`_ with GPU support requires CUDA 8.0.
+Note that `TensorFlow installation`_ with GPU support requires CUDA 9.0.
 
 .. _TensorFlow installation: https://www.tensorflow.org/install
 
 BerkeleyAutomation Packages
 """""""""""""""""""""""""""
-The `gqcnn` package also depends on `BerkeleyAutomation's`_ `autolab_core`_ and `perception`_ packages.
-To install these dependencies, follow the `installation instructions for autolab_core`_ and the `installation instructions for perception`_.
+The `gqcnn` package also depends on `BerkeleyAutomation's`_ `autolab_core`_, `perception`_, and `visualization`_ packages.
+To install these dependencies, follow the `installation instructions for autolab_core`_, the `installation instructions for perception`_ and the `installation instructions for visualization`_.
 If you are installing gqcnn as a ROS package, we suggest installing both `autolab_core`_ and `perception`_ as ROS packages by checking out the repos into your catkin workspace and running catkin_make.
 
 .. _BerkeleyAutomation's: https://github.com/BerkeleyAutomation
 .. _autolab_core: https://github.com/BerkeleyAutomation/autolab_core
 .. _perception: https://github.com/BerkeleyAutomation/perception
+.. _visualization: https://github.com/BerkeleyAutomation/visualization
 .. _installation instructions for autolab_core: https://BerkeleyAutomation.github.io/autolab_core/install/install.html
 .. _installation instructions for perception: https://berkeleyautomation.github.io/perception/install/install.html
-
+.. _installation instructions for visualization: https://berkeleyautomation.github.io/visualization/install/install.html
 
 Python Installation
 ~~~~~~~~~~~~~~~~~~~
 
-Python-only installation is intended for users who are **only interested in training GQ-CNNs**, not
-using them on a physical robot.
+Python-only installation is intended for users who are **only interested in training GQ-CNNs or grasp planning on saved RGBD images**, not
+gusing them on a physical robot.
 If you have intentions of using GQ-CNNs for grasp planning on a physical robot, we suggest you `install as a ROS package`_.
 
 The `gqcnn` package is known to work for Python 2.7 and has not been tested for Python 3.
@@ -60,16 +61,7 @@ Change directories into the `gqcnn` repository and run ::
 
     $ python setup.py install
 
-or ::
-
-    $ pip install -r requirements.txt
-
-Alternatively, you can run ::
-
-    $ pip install /path/to/gqcnn
-
-to install `gqcnn` from anywhere.
-This will install `gqcnn` in your current Python environment.
+This will install `gqcnn` in your current Python environment and automatically download the example models and datasets.
 
 ROS Installation
 ~~~~~~~~~~~~~~~~

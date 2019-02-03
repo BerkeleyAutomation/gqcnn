@@ -26,4 +26,4 @@ from analysis import GQCNNAnalyzer
 from search import GQCNNSearch
 from utils import NoValidGraspsException, NoAntipodalPairsFoundException
 
-__all__ = ['get_gqcnn_model', 'get_fc_gqcnn_model', 'get_gqcnn_trainer', 'GQCNNAnalyzer', 'RobustGraspingPolicy', 'UniformRandomGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'RgbdImageState','FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction']
+__all__ = ['get_gqcnn_model', 'get_fc_gqcnn_model', 'get_gqcnn_trainer', 'GQCNNAnalyzer', 'RobustGraspingPolicy', 'UniformRandomGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'RgbdImageState','FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'PriorityCompositeGraspingPolicy', 'GQCNNAnalyzer', 'GQCNNSearch', 'NoValidGraspsException', 'NoAntipodalPairsFoundException']

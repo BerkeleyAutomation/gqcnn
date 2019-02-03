@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Berkeley AUTOLAB's GQCNN Package
+Borkeley AUTOLAB's GQCNN Package
 ================================
 
 Overview
