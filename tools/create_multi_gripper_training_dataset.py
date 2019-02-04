@@ -106,9 +106,6 @@ if __name__ == '__main__':
             # add datapoint    
             output_dataset.add(datapoint)
 
-            if i == 99999:
-                break
-
     # set metadata
     gripper_id_map = utils.reverse_dictionary(gripper_id_map)
     output_dataset.add_metadata('gripper_names', gripper_name_map)
