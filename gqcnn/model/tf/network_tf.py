@@ -401,6 +401,7 @@ class GQCNNTF(object):
         self._gripper_start_indices = None
         self._gripper_max_angles = None
         self._gripper_bin_widths = None
+        self._gripper_num_angular_bins = None
         arch_config = gqcnn_config['architecture']
         if 'gripper_names' in arch_config.keys():
             self._gripper_names = arch_config['gripper_names']
@@ -410,7 +411,10 @@ class GQCNNTF(object):
         if 'gripper_max_angles' in arch_config.keys():
             self._gripper_max_angles = arch_config['gripper_max_angles']
             self._gripper_bin_widths = arch_config['gripper_bin_widths']
-
+        if 'num_angular_bins' in arch_config.keys():
+            self._gripper_num_angular_bins = arch_config['num_angular_bins']
+            self._angular_bins = np.sum([v for v in self._gripper_num_angular_bins.values()])
+            
         # intermediate network feature handles
         self._feature_tensors = {}
   
@@ -571,6 +575,10 @@ class GQCNNTF(object):
     @property
     def gripper_bin_widths(self):
         return self._gripper_bin_widths
+
+    @property
+    def gripper_num_angular_bins(self):
+        return self._gripper_num_angular_bins
     
     @property
     def stride(self):

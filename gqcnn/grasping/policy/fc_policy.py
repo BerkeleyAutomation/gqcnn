@@ -502,6 +502,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
         self._gripper_start_indices = self.grasp_quality_fn.gqcnn.gripper_start_indices
         self._gripper_max_angles = self.grasp_quality_fn.gqcnn.gripper_max_angles
         self._gripper_bin_widths = self.grasp_quality_fn.gqcnn.gripper_bin_widths
+        self._gripper_num_angular_bins = self.grasp_quality_fn.gqcnn.gripper_num_angular_bins
 
         # read gripper params
         self._gripper_width = 0
@@ -571,6 +572,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
             if self._gripper_max_angles is not None:
                 max_angle = self._gripper_max_angles[gripper_id]
                 bin_width = self._gripper_bin_widths[gripper_id]
+            num_angles = 2 * int(max_angle / bin_width)
             policy_name = None
             if self._gripper_names is not None:
                 policy_name = self._gripper_names[gripper_id]
@@ -587,20 +589,30 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                 depth = depth_im[center.y, center.x, 0]
                 if depth == 0.0:
                     continue
-                grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr)
+
+                # read angle
+                ang_idx = g_idx - g_start_idx
+                ang = ang_idx * bin_width + bin_width / 2
+                
+                # create grasp
+                grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr, angle=ang)
+
             elif gripper_type == GripperMode.PARALLEL_JAW or gripper_type == GripperMode.LEGACY_PARALLEL_JAW:
                 # read angle and depth
                 ang_idx = g_idx - g_start_idx
-                ang = max_angle / 2 - (ang_idx * bin_width + bin_width / 2)
+                ang = ang_idx * bin_width + bin_width / 2
                 depth = depths[im_idx, 0]
+
+                # create grasp
                 grasp = Grasp2D(center, ang, depth, width=self._gripper_width, camera_intr=camera_intr)                
+
             elif gripper_type == GripperMode.MULTI_SUCTION:
                 # read axis, angle, and depth
                 ang_idx = g_idx - g_start_idx
+                ang = ang_idx * bin_width + bin_width / 2
                 axis = -normal_cloud_im[center.y, center.x]
                 if np.linalg.norm(axis) == 0:
                     axis = np.array([0,0,1])
-                ang = max_angle / 2 - (ang_idx * bin_width + bin_width / 2)
                 depth = depth_im[center.y, center.x, 0]
                 if depth == 0.0:
                     continue
@@ -616,11 +628,10 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
 
                 # find rotation that aligns with the image orientation
                 R = np.array([x_axis, y_axis, z_axis]).T
-                num_angles = 1000
                 max_dot = -np.inf
                 aligned_R = R.copy()
-                for i in range(num_angles):
-                    theta = float(i * max_angle) / num_angles
+                for k in range(num_angles):
+                    theta = float(k * max_angle) / num_angles
                     R_tf = R.dot(RigidTransform.x_axis_rotation(theta))
                     dot = R_tf[:,1].dot(y_axis_im)
                     if dot > max_dot:
@@ -633,6 +644,8 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                                    translation=t,
                                    from_frame='grasp',
                                    to_frame=camera_intr.frame)
+
+                # create grasp
                 grasp = MultiSuctionPoint2D(T, camera_intr=camera_intr)
 
             # create grasp action
@@ -641,6 +654,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                                        q_value,
                                        DepthImage(images[im_idx]),
                                        policy_name=policy_name)
+
             actions.append(grasp_action)
         return actions
         
