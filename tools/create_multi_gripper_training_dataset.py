@@ -78,15 +78,18 @@ if __name__ == '__main__':
     gripper_name_map = {}
     gripper_type_map = {}
     gripper_id_map = {}
+    angular_bins_map = {}
     for gripper_id, gripper_name in enumerate(input_datasets.keys()):
         dataset_config = input_datasets[gripper_name]
         dataset_name = dataset_config['dataset']
         gripper_type  = dataset_config['type']
-
+        num_angular_bins = dataset_config['num_angular_bins']
+        
         dataset = TensorDataset.open(dataset_name)
         gripper_name_map[gripper_id] = gripper_name
         gripper_type_map[gripper_id] = gripper_type
         gripper_id_map[dataset_name] = gripper_id
+        angular_bins_map[gripper_id] = num_angular_bins
 
         logging.info('Aggregating data from dataset %s' %(dataset_name))        
         for i in range(dataset.num_datapoints):
@@ -103,11 +106,15 @@ if __name__ == '__main__':
             # add datapoint    
             output_dataset.add(datapoint)
 
+            if i == 99999:
+                break
+
     # set metadata
     gripper_id_map = utils.reverse_dictionary(gripper_id_map)
     output_dataset.add_metadata('gripper_names', gripper_name_map)
     output_dataset.add_metadata('gripper_ids', gripper_id_map)
     output_dataset.add_metadata('gripper_types', gripper_type_map)
+    output_dataset.add_metadata('num_angular_bins', angular_bins_map)
     for field_name, field_data in dataset.metadata.iteritems():
         if field_name not in ['obj_ids']:
             output_dataset.add_metadata(field_name, field_data)

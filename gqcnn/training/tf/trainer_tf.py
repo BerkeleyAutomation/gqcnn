@@ -1018,7 +1018,7 @@ class GQCNNTrainerTF(object):
                         self.num_mask_outputs += 1
 
                     self.gripper_bin_widths[gripper_id] = self.gripper_max_angles[gripper_id] / self.num_angular_bins[gripper_id]
-                        
+            
             # otherwise set via the number of angular bins
             else:
                 self.num_mask_outputs = self._angular_bins
@@ -1281,7 +1281,6 @@ class GQCNNTrainerTF(object):
                                 continue
 
                             # determine the offset for the angular bin
-                            offset_ind = 0
                             max_angle = self.gripper_max_angles[gripper_id]
                             angles_gripper = angles[gripper_ind] 
                             while np.any(angles_gripper < 0):
@@ -1460,7 +1459,6 @@ class GQCNNTrainerTF(object):
                         gripper_ind = np.where(gripper_ids == int(gripper_id))[0]
                         if gripper_ind.shape[0] == 0:
                             continue
-                        offset_ind = 0
                         max_angle = self.gripper_max_angles[gripper_id]
                         angles_gripper = angles[gripper_ind] 
                         while np.any(angles_gripper < 0):
@@ -1483,8 +1481,8 @@ class GQCNNTrainerTF(object):
                         greater_ind = np.where(angles >= self._max_angle)
                         angles[greater_ind] -= self._max_angle
                     for i in range(angles.shape[0]):
-                        pred_mask[i, int((angles[i] // self._bin_width)*2)] = True
-                        pred_mask[i, int((angles[i] // self._bin_width)*2 + 1)] = True
+                        pred_mask[i, int((angles[i] // self._bin_width)*2)] = 1
+                        pred_mask[i, int((angles[i] // self._bin_width)*2 + 1)] = 1
             elif self.multi_head:
                 pred_mask = np.zeros((labels.shape[0], self.num_mask_outputs*2), dtype=bool)
                 for gripper_id, ind in self.gripper_start_indices.iteritems():
