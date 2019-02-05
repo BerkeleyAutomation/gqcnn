@@ -531,6 +531,15 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
                 for near_grasp in new_near_grasps:
                     near_grasps.append(near_grasp)
                 grasps = []
+            # find nearest grasp
+            max_y = 0
+            for grasp in grasps:
+                if grasp.center[1] > max_y:
+                    max_y = grasp.center[1]
+                    nearest_grasp = grasp
+            new_near_grasps = [grasp for grasp in grasps if not grasp.center[1] <= max_y - 50]
+            for near_grasp in new_near_grasps:
+                near_grasps.append(near_grasp)
         # return sampled grasps
         self._logger.debug('Loop took %.3f sec' %(time() - sample_start))
         return near_grasps
