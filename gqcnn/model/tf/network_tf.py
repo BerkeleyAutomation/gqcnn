@@ -441,12 +441,12 @@ class GQCNNTF(object):
             # setup input placeholders
             if train_im_node is not None:
                 # training
-                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels))
-                self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim))
+                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels), name='input_im')
+                self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim), name='input_pose')
             else:
                 # inference only using GQ-CNN instantiated from GQCNNTF.load()
-                self._input_im_node = tf.placeholder(tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels))
-                self._input_pose_node = tf.placeholder(tf.float32, (self._batch_size, self._pose_dim))
+                self._input_im_node = tf.placeholder(tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels), name='input_im')
+                self._input_pose_node = tf.placeholder(tf.float32, (self._batch_size, self._pose_dim), name='input_pose')
             self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), ())
 
             # build network
@@ -714,11 +714,11 @@ class GQCNNTF(object):
             if num_outputs  > 0:
                 self._logger.info('Building Pair-wise Softmax Layer...')
                 binwise_split_output = tf.split(self._output_tensor, num_outputs, axis=-1)
-                binwise_split_output_soft = [tf.nn.softmax(s) for s in binwise_split_output]
-                self._output_tensor = tf.concat(binwise_split_output_soft, -1)
+                binwise_split_output_soft = [tf.nn.softmax(s, name='output_%03d'%(i)) for i, s in enumerate(binwise_split_output)]
+                self._output_tensor = tf.concat(binwise_split_output_soft, -1, name='output')
             else:
                 self._logger.info('Building Softmax Layer...')
-                self._output_tensor = tf.nn.softmax(self._output_tensor)
+                self._output_tensor = tf.nn.softmax(self._output_tensor, name='output')
 
     def add_sigmoid_to_output(self):
         """Adds sigmoid to output of network."""
