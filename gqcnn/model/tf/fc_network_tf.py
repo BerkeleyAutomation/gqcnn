@@ -164,13 +164,6 @@ class FCGQCNNTF(GQCNNTF):
     def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, layers, only_stream=False):
         self._logger.info('Building Image Stream...')
 
-        if self._input_depth_mode == InputDepthMode.SUB:
-            sub_mean = tf.constant(self._im_depth_sub_mean, dtype=tf.float32)
-            sub_std = tf.constant(self._im_depth_sub_std, dtype=tf.float32)
-            sub_im = tf.subtract(input_node, tf.tile(tf.reshape(input_pose_node, tf.constant((-1, 1, 1, 1))), tf.constant((1, input_height, input_width, 1))))
-            norm_sub_im = tf.div(tf.subtract(sub_im, sub_mean), sub_std)
-            input_node = norm_sub_im
-
         output_node = input_node
         prev_layer = "start" # dummy placeholder
         filter_dim = self._train_im_width
