@@ -30,7 +30,4 @@ if __name__ == '__main__':
         fcgqcnn.predict(image_arr, pose_arr)
         writer.close()
 
-        import IPython
-        IPython.embed()
-        
         fcgqcnn.close_session()
