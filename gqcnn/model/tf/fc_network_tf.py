@@ -48,7 +48,7 @@ class FCGQCNNTF(GQCNNTF):
                 assert layer_config['pad'] == 'VALID', 'GQ-CNN used for FC-GQ-CNN must have VALID padding for conv layers. Found layer: {} with padding: {}'.format(layer_name, layer_config['pad'])
 
     @staticmethod
-    def load(model_dir, fc_config, log_file=None):
+    def load(model_dir, fc_config, log_file=None, add_drop=False):
         """Instantiate an FC-GQ-CNN from a trained GQ-CNN. 
 
         Parameters
@@ -73,9 +73,9 @@ class FCGQCNNTF(GQCNNTF):
         fcgqcnn.init_mean_and_std(model_dir)
         training_mode = train_config['training_mode']
         if training_mode == TrainingMode.CLASSIFICATION:
-            fcgqcnn.initialize_network(add_softmax=True)
+            fcgqcnn.initialize_network(add_softmax=True, add_drop=add_drop)
         elif training_mode == TrainingMode.REGRESSION:
-            fcgqcnn.initialize_network()
+            fcgqcnn.initialize_network(add_drop=add_drop)
         else:
             raise ValueError('Invalid training mode: {}'.format(training_mode))
         return fcgqcnn
@@ -105,7 +105,17 @@ class FCGQCNNTF(GQCNNTF):
         
         # create new set of weights by reshaping fully connected layer weights
         fcW = self._weights.weights['{}_weights'.format(fc_name)]
-        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] / (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name))
+
+        opened_sess = False
+        if self.sess is None:
+            self.open_session()
+            opened_sess = True
+        shape1 = tf.shape(fcW)[0].eval(session=self.sess)
+        shape2 = tf.shape(fcW)[1:].eval(session=self.sess)
+        if opened_sess:
+            self.close_session()
+        
+        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [shape1 / (filter_dim * filter_dim)], shape2], 0)), name='{}_fully_conv_weights'.format(fc_name))
         self._weights.weights['{}_fully_conv_weights'.format(fc_name)] = convW
         
         # get bias
