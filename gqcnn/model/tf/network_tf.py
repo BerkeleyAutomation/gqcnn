@@ -63,7 +63,7 @@ class GQCNNTF(object):
         self._parse_config(gqcnn_config)
 
     @staticmethod
-    def load(model_dir, verbose=True, log_file=None, add_drop=False):
+    def load(model_dir, verbose=True, log_file=None):
         """Instantiate a trained GQ-CNN for fine-tuning or inference. 
 
         Parameters
@@ -171,9 +171,9 @@ class GQCNNTF(object):
         gqcnn.init_mean_and_std(model_dir)
         training_mode = train_config['training_mode']
         if training_mode == TrainingMode.CLASSIFICATION:
-            gqcnn.initialize_network(add_softmax=True, add_drop=add_drop)
+            gqcnn.initialize_network(add_softmax=True)
         elif training_mode == TrainingMode.REGRESSION:
-            gqcnn.initialize_network(add_drop=add_drop)
+            gqcnn.initialize_network()
         else:
             raise ValueError('Invalid training mode: {}'.format(training_mode))
         return gqcnn
@@ -420,8 +420,8 @@ class GQCNNTF(object):
   
         #  base layer names for fine-tuning
         self._base_layer_names = []
- 
-    def initialize_network(self, train_im_node=None, train_pose_node=None, add_softmax=False, add_sigmoid=False, add_drop=True):
+
+    def initialize_network(self, train_im_node=None, train_pose_node=None, add_softmax=False, add_sigmoid=False):
         """Set up input placeholders and build network.
 
         Parameters
@@ -451,12 +451,10 @@ class GQCNNTF(object):
                 self._input_pose_node = None
                 if self._input_depth_mode != InputDepthMode.SUB and self._input_depth_mode != InputDepthMode.IM_ONLY:
                     self._input_pose_node = tf.placeholder(tf.float32, (self._batch_size, self._pose_dim), name='input_pose')
-            self._input_drop_rate_node = None
-            if add_drop:
-                self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), ())
+            self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), (), name='dropout')
 
             # build network
-            self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
+            self._output_tensor = tf.identity(self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node), name='output')
             
             # add softmax function to output of network(this is optional because 1) we might be doing regression or 2) we are training and Tensorflow has an optimized cross-entropy loss with the softmax already built-in)
             if add_softmax:
@@ -509,6 +507,9 @@ class GQCNNTF(object):
 
     def set_batch_size(self, batch_size):
         self._batch_size = batch_size
+
+    def set_model_dir(self, model_dir):
+        self._model_dir = model_dir
 
     @property
     def im_height(self):
@@ -1007,9 +1008,7 @@ class GQCNNTF(object):
             fc = tf.matmul(input_node, fcW) + fcb
         else:
             fc = self._leaky_relu(tf.matmul(input_node, fcW) + fcb, alpha=self._relu_coeff)
-
-        if drop_rate is not None:
-            fc = tf.nn.dropout(fc, 1 - drop_rate)
+        fc = tf.nn.dropout(fc, 1 - drop_rate)
 
         # add output to feature dict
         self._feature_tensors[name] = fc
