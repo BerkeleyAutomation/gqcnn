@@ -122,13 +122,7 @@ class FCGQCNNTF(GQCNNTF):
         convb = self._weights.weights['{}_bias'.format(fc_name)]
 
         # compute conv out(note that we use padding='VALID' here because we want an output size of 1x1xnum_filts for the original input size)
-        convh = tf.nn.conv2d(input_node, convW, strides=[1, 1, 1, 1], padding='VALID')
-
-        # pack bias into tensor of shape=tf.shape(convh)
-        bias_packed = self._pack(tf.shape(convh)[1], tf.shape(convh)[2], convb, vector=True)
-
-        # add bias term
-        convh = convh + bias_packed
+        convh = tf.nn.conv2d(input_node, convW, strides=[1, 1, 1, 1], padding='VALID') + convb
 
         # apply activation
         if not final_fc_layer:
