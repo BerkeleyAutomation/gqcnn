@@ -21,5 +21,6 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 from network_tf import GQCNNTF
 from fc_network_tf import FCGQCNNTF
+from ncsdk_fc_network_tf import NCFCGQCNNTF
 
-__all__ = ['GQCNNTF', 'FCGQCNNTF']
+__all__ = ['GQCNNTF', 'FCGQCNNTF', 'NCFCGQCNNTF']

@@ -51,3 +51,14 @@ def get_fc_gqcnn_model(backend='tf', verbose=True):
         return FCGQCNNTF
     else:
         raise ValueError('Invalid backend: {}'.format(backend))
+
+def get_nc_fc_gqcnn_model(backend='tf', verbose=True):
+    # set up logger
+    logger = Logger.get_logger('NCFCGQCNNModelFactory', silence=(not verbose))
+
+    # return desired Fully-Convolutional GQ-CNN instance for use with Intel NCSDK 2 based on backend
+    if backend == 'tf':
+        logger.info('Initializing NC-FC-GQ-CNN with Tensorflow as backend...')
+        return NCFCGQCNNTF
+    else:
+        raise ValueError('Invalid backend: {}'.format(backend))
