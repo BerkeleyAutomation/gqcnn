@@ -53,7 +53,7 @@ import autolab_core.utils as utils
 from gqcnn.utils import ImageMode, TrainingMode, GripperMode, InputDepthMode, GeneralConstants, TrainStatsLogger, pose_dim, read_pose_data, weight_name_to_layer_name, GQCNNTrainingStatus
 
 class GQCNNTrainerTF(object):
-    """ Trains GQCNN with Tensorflow backend """
+    """ Trains a GQ-CNN with Tensorflow backend. """
 
     def __init__(self, gqcnn,
                  dataset_dir,
@@ -183,12 +183,12 @@ class GQCNNTrainerTF(object):
         self._tensorboard_proc.terminate()                        
 
     def train(self):
-        """ Perform optimization """
+        """ Perform optimization. """
         with self.gqcnn.tf_graph.as_default():
             self._train()
         
     def _train(self):
-        """ Perform optimization """
+        """ Perform optimization. """
         start_time = time.time()
 
         # run setup 
@@ -210,7 +210,7 @@ class GQCNNTrainerTF(object):
         Parameters
         ----------
         base_model_dir : str
-            path to the base model to use
+            path to the pre-trained base model to use
         """
         with self.gqcnn.tf_graph.as_default():
             self._finetune(base_model_dir)
@@ -221,7 +221,7 @@ class GQCNNTrainerTF(object):
         Parameters
         ----------
         base_model_dir : str
-            path to the base model to use
+            path to the pre-trained base model to use
         """
         # set flag and base model for fine-tuning
         self.finetuning = True
@@ -731,7 +731,7 @@ class GQCNNTrainerTF(object):
             self.logger.info('Bin counts: {}'.format(bin_counts))
 
     def _compute_split_indices(self):
-        """ Compute train and validation indices for each tensor to speed data accesses"""
+        """ Compute train and validation indices for each tensor to speed data accesses """
         # read indices
         train_indices, val_indices, _ = self.dataset.split(self.split_name)
 
@@ -958,7 +958,7 @@ class GQCNNTrainerTF(object):
         self.decay_step = self.decay_step_multiplier * self.num_train
 
     def _setup_tensorflow(self):
-        """Setup Tensorflow placeholders, session, and queue """
+        """Setup Tensorflow placeholders, session, and queue"""
 
         # set up training label and numpy datatypes
         if self.training_mode == TrainingMode.REGRESSION:
@@ -1089,7 +1089,7 @@ class GQCNNTrainerTF(object):
         self._setup_summaries()
 
     def _load_and_enqueue(self):
-        """ Loads and Enqueues a batch of images for training """
+        """ Loads and enqueues a batch of images for training """
         signal.signal(signal.SIGINT, signal.SIG_IGN) # when the parent process receives a SIGINT, it will itself handle cleaning up child processes
 
         # open dataset

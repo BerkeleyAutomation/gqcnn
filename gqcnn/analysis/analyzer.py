@@ -20,7 +20,8 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Class for analyzing a GQCNN model for grasp quality prediction
+Class for analyzing a GQCNN model for grasp quality prediction.
+
 Author: Jeff Mahler
 """
 import cPickle as pkl
@@ -57,18 +58,18 @@ WINDOW = 100
 MAX_LOSS = 5.0
 
 class GQCNNAnalyzer(object):
-    """ Analyzes GQCNN models """
+    """ Analyzes trained GQ-CNN models. """
 
     def __init__(self, config, verbose=True, plot_backend='pdf'):
         """
         Parameters
         ----------
-        model_dir : str
-            path to the model to analyze
-        output_dir : str
-            path to save the model output
         config : dict
-            dictionary of configuration parameters
+            dictionary of analysis configuration parameters
+        verbose : bool
+            whether or not to log analysis output to stdout
+        plot_backend : str
+            matplotlib plotting backend to use, default is non-interactive 'pdf' backend
         """
         self.cfg = config
         self.verbose = verbose
@@ -89,23 +90,23 @@ class GQCNNAnalyzer(object):
     def analyze(self, model_dir,
                 output_dir,
                 dataset_config=None):
-        """ Analyzes a GQCNN model.
+        """ Run analysis.
 
         Parameters
         ----------
         model_dir : str
-            path to the model
+            path to the GQ-CNN model to analyze
         output_dir : str
             path to save the analysis
         dataset_config : dict
-            dictionary of parameters for the dataset to test on
+            dictionary to configure dataset used for training evaluation if different from one used during training
 
         Returns
         -------
         :obj:`autolab_core.BinaryClassificationResult`
-            result on training data
+            result of analysis on training data
         :obj:`autolab_core.BinaryClassificationResult`
-            result on validation data
+            result of analysis on validation data
         """
         # determine model output dir
         model_name = ''

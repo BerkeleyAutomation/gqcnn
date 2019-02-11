@@ -31,6 +31,22 @@ from tf import *
 from autolab_core import Logger
  
 def get_gqcnn_model(backend='tf', verbose=True):
+    """
+    Get the GQ-CNN model for the provided backend. Currently on TensorFlow is supported.
+
+    Parameters
+    ----------
+    backend : str
+        the backend to use, currently only 'tf' is supported
+    verbose : bool
+        whether or not to log initialization output to stdout
+
+    Returns
+    -------
+    :obj:`gqcnn.model.tf.GQCNNTF`
+        GQ-CNN model with TensorFlow backend
+    """
+
     # set up logger
     logger = Logger.get_logger('GQCNNModelFactory', silence=(not verbose))
 
@@ -42,6 +58,22 @@ def get_gqcnn_model(backend='tf', verbose=True):
         raise ValueError('Invalid backend: {}'.format(backend))
 
 def get_fc_gqcnn_model(backend='tf', verbose=True):
+    """
+    Get the FC-GQ-CNN model for the provided backend. Currently on TensorFlow is supported.
+
+    Parameters
+    ----------
+    backend : str
+        the backend to use, currently only 'tf' is supported
+    verbose : bool
+        whether or not to log initialization output to stdout
+
+    Returns
+    -------
+    :obj:`gqcnn.model.tf.FCGQCNNTF`
+        FC-GQ-CNN model with TensorFlow backend
+    """
+
     # set up logger
     logger = Logger.get_logger('FCGQCNNModelFactory', silence=(not verbose))
 

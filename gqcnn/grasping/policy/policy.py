@@ -47,25 +47,26 @@ FIGSIZE = 16
 SEED = 5234709
 
 class RgbdImageState(object):
-    """ State to encapsulate RGB-D images.
+    """State to encapsulate RGB-D images."""
 
-    Attributes
-    ----------
-    rgbd_im : :obj:`perception.RgbdImage`
-        an RGB-D image to plan grasps on
-    camera_intr : :obj:`perception.CameraIntrinsics`
-        intrinsics of the RGB-D camera
-    segmask : :obj:`perception.BinaryImage`
-        segmentation mask for the image
-    obj_segmask : :obj:`perception.SegmentationImage`
-        segmentation mask for the different objects in the image
-    full_observed : :obj:`object`
-        representation of the fully observed state
-    """
     def __init__(self, rgbd_im, camera_intr,
                  segmask=None,
                  obj_segmask=None,
                  fully_observed=None):
+        """
+        Parameters
+        ----------
+        rgbd_im : :obj:`perception.RgbdImage`
+            an RGB-D image to plan grasps on
+        camera_intr : :obj:`perception.CameraIntrinsics`
+            intrinsics of the RGB-D camera
+        segmask : :obj:`perception.BinaryImage`
+            segmentation mask for the image
+        obj_segmask : :obj:`perception.SegmentationImage`
+            segmentation mask for the different objects in the image
+        full_observed : :obj:`object`
+            representation of the fully observed state
+        """
         self.rgbd_im = rgbd_im
         self.camera_intr = camera_intr
         self.segmask = segmask
@@ -73,6 +74,13 @@ class RgbdImageState(object):
         self.fully_observed = fully_observed
 
     def save(self, save_dir):
+        """ Save to a directory.
+
+        Parameters
+        ----------
+        save_dir : str
+            the directory to save to
+        """
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
         color_image_filename = os.path.join(save_dir, 'color.png')
@@ -93,6 +101,13 @@ class RgbdImageState(object):
 
     @staticmethod
     def load(save_dir):
+        """ Load an :obj:`RGBDImageState`.
+
+        Parameters
+        ----------
+        save_dir : str
+            the directory to load from
+        """
         if not os.path.exists(save_dir):
             raise ValueError('Directory %s does not exist!' %(save_dir))
         color_image_filename = os.path.join(save_dir, 'color.png')
@@ -123,12 +138,31 @@ class GraspAction(object):
     """ Action to encapsulate grasps.
     """
     def __init__(self, grasp, q_value, image=None, policy_name=None):
+        """
+        Parameters
+        ----------
+        grasp : :obj`Grasp2D` or :obj:`SuctionPoint2D`
+            2D grasp to wrap
+        q_value : float
+            grasp quality
+        image : :obj:`perception.DepthImage`
+            depth image corresponding to grasp
+        policy_name : str
+            policy name
+        """
         self.grasp = grasp
         self.q_value = q_value
         self.image = image
         self.policy_name = policy_name
 
     def save(self, save_dir):
+        """ Save grasp action.
+        
+        Parameters
+        ----------
+        save_dir : str
+            directory to save the grasp action to
+        """
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
         grasp_filename = os.path.join(save_dir, 'grasp.pkl')
@@ -141,6 +175,18 @@ class GraspAction(object):
 
     @staticmethod
     def load(save_dir):
+        """ Load a saved grasp action.
+        
+        Parameters
+        ----------
+        save_dir : str
+            directory of the saved grasp action
+
+        Returns
+        -------
+        :obj:`GraspAction`
+            loaded grasp action
+        """
         if not os.path.exists(save_dir):
             raise ValueError('Directory %s does not exist!' %(save_dir))
         grasp_filename = os.path.join(save_dir, 'grasp.pkl')
@@ -158,33 +204,36 @@ class Policy(object):
     __metaclass__ = ABCMeta
 
     def __call__(self, state):
+        """ Execute the policy on a state. """
         return self.action(state)
 
     @abstractmethod
     def action(self, state):
-        """ Returns an action for a given state.
-        """
+        """ Returns an action for a given state. """
         pass
 
 class GraspingPolicy(Policy):
-    """ Policy for robust grasping with Grasp Quality Convolutional Neural Networks (GQ-CNN).
-    Attributes
-    ----------
-    config : dict
-        dictionary of parameters for the policy
-
-    Notes
-    -----
-    Required configuration parameters are specified in Other Parameters
-
-    Other Parameters
-    ----------------
-    sampling : dict
-        dictionary of parameters for grasp sampling, see gqcnn/image_grasp_sampler.py
-    gqcnn_model : str
-        string path to a trained GQ-CNN model see gqcnn/neural_networks.py
-    """
+    """ Policy for robust grasping with Grasp Quality Convolutional Neural Networks (GQ-CNN). """
     def __init__(self, config, init_sampler=True):
+        """
+        Parameters
+        ----------
+        config : dict
+            python dictionary of parameters for the policy
+        init_sampler : bool
+            whether or not to initialize the grasp sampler
+
+        Notes
+        -----
+        Required configuration parameters are specified in Other Parameters
+
+        Other Parameters
+        ----------------
+        sampling : dict
+            dictionary of parameters for grasp sampling, see gqcnn/image_grasp_sampler.py
+        gqcnn_model : str
+            string path to a trained GQ-CNN model see gqcnn/neural_networks.py
+        """
         # store parameters
         self._config = config
         self._gripper_width = 0.05
@@ -233,35 +282,81 @@ class GraspingPolicy(Policy):
 
     @property
     def config(self):
-        """ Returns the policy parameters. """
+        """ Returns the policy configuration parameters. 
+
+        Returns
+        -------
+        dict
+            python dictionary of the policy configuration parameters
+        """
         return self._config
 
     @property
     def grasp_sampler(self):
-        """ Returns the grasp sampler. """
+        """ Returns the grasp sampler. 
+
+        Returns
+        -------
+        :obj:`gqcnn.grasping.image_grasp_sampler.ImageGraspSampler`
+            the grasp sampler
+        """
         return self._grasp_sampler
 
     @property
     def grasp_quality_fn(self):
-        """ Returns the grasp sampler. """
+        """ Returns the grasp quality function. 
+
+        Returns
+        -------
+        :obj:`gqcnn.grasping.grasp_quality_function.GraspQualityFunction`
+            the grasp quality function
+        """
         return self._grasp_quality_fn
 
     @property
     def grasp_constraint_fn(self):
-        """ Returns the grasp sampler. """
+        """ Returns the grasp constraint function. 
+
+        Returns
+        -------
+        :obj:`gqcnn.grasping.constraint_fn.GraspConstraintFn`
+            the grasp contraint function
+        """
         return self._grasp_constraint_fn
         
     @property
     def gqcnn(self):
-        """ Returns the GQ-CNN. """
+        """ Returns the GQ-CNN. 
+
+        Returns
+        -------
+        :obj:`gqcnn.model.tf.GQCNNTF`
+            the GQ-CNN model
+        """
         return self._gqcnn
 
     def set_constraint_fn(self, constraint_fn):
+        """ Sets the grasp constraint function.
+
+        Parameters
+        ----------
+        constraint_fn : :obj`gqcnn.grasping.constraint_fn.GraspConstraintFn`
+            the grasp contraint function
+        """
         self._grasp_constraint_fn = constraint_fn    
     
     def action(self, state):
         """ Returns an action for a given state.
-        Public handle to function.
+        
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            the RGB-D image state to plan grasps on
+
+        Returns
+        -------
+        :obj:`GraspAction`
+            the planned grasp action
         """
         # save state
         if self._logging_dir is not None:
@@ -291,7 +386,15 @@ class GraspingPolicy(Policy):
         pass
     
     def show(self, filename=None, dpi=100):
-        """ Show a figure. """
+        """ Show a figure. 
+        
+        Parameters
+        ----------
+        filename : str
+            file to save figure to
+        dpi : int
+            dpi of figure
+        """
         if self._logging_dir is None:
             vis.show()
         else:
@@ -301,6 +404,14 @@ class GraspingPolicy(Policy):
 class UniformRandomGraspingPolicy(GraspingPolicy):
     """ Returns a grasp uniformly at random. """
     def __init__(self, config):
+        """ 
+        Parameters
+        ----------
+        config : dict
+            python dictionary of policy configuration parameters 
+        filters : dict
+            python dictionary of functions to apply to filter invalid grasps
+        """
         GraspingPolicy.__init__(self, config)
         self._num_grasp_samples = 1
 
@@ -358,21 +469,30 @@ class RobustGraspingPolicy(GraspingPolicy):
     """ Samples a set of grasp candidates in image space,
     ranks the grasps by the predicted probability of success from a GQ-CNN,
     and returns the grasp with the highest probability of success.
-
-    Notes
-    -----
-    Required configuration parameters are specified in Other Parameters
-
-    Other Parameters
-    ----------------
-    num_grasp_samples : int
-        number of grasps to sample
-    gripper_width : float, optional
-        width of the gripper in meters
-    logging_dir : str, optional
-        directory in which to save the sampled grasps and input images
     """
+
     def __init__(self, config, filters=None):
+        """
+        Parameters
+        ----------
+        config : dict
+            python dictionary of policy configuration parameters 
+        filters : dict
+            python dictionary of functions to apply to filter invalid grasps
+
+        Notes
+        -----
+        Required configuration dictionary parameters are specified in Other Parameters
+
+        Other Parameters
+        ----------------
+        num_grasp_samples : int
+            number of grasps to sample
+        gripper_width : float, optional
+            width of the gripper in meters
+        logging_dir : str, optional
+            directory in which to save the sampled grasps and input images
+        """
         GraspingPolicy.__init__(self, config)
         self._parse_config()
         self._filters = filters
@@ -390,6 +510,18 @@ class RobustGraspingPolicy(GraspingPolicy):
     def select(self, grasps, q_value):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
+ 
+        Parameters
+        ----------
+        grasps : list 
+            python list of :obj:`gqcnn.grasping.Grasp2D` or :obj:`gqcnn.grasping.SuctionPoint2D` grasps to select from
+        q_values : list
+            python list of associated q-values
+
+        Returns
+        -------
+        :obj:`gqcnn.grasping.Grasp2D` or :obj:`gqcnn.grasping.SuctionPoint2D`
+            grasp with highest probability of success 
         """
         # sort grasps
         num_grasps = len(grasps)
@@ -502,34 +634,40 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     (5) repeat steps 2-4 for K iters
     (6) return the best candidate from the final sample set
 
-    Parameters
-    ----------
-    filters : :obj:`dict` mapping names to functions
-        list of functions to apply to filter invalid grasps
-    Notes
-    -----
-    Required configuration parameters are specified in Other Parameters
-
-    Other Parameters
-    ----------------
-    num_seed_samples : int
-        number of candidate to sample in the initial set
-    num_gmm_samples : int
-        number of candidates to sample on each resampling from the GMMs
-    num_iters : int
-        number of sample-and-refit iterations of CEM
-    gmm_refit_p : float
-        top p-% of grasps used for refitting
-    gmm_component_frac : float
-        percentage of the elite set size used to determine number of GMM components
-    gmm_reg_covar : float
-        regularization parameters for GMM covariance matrix, enforces diversity of fitted distributions
-    deterministic : bool, optional
-        whether to set the random seed to enforce deterministic behavior
-    gripper_width : float, optional
-        width of the gripper in meters
     """
+
     def __init__(self, config, filters=None):
+        """
+        Parameters
+        ----------
+        config : dict
+            python dictionary of policy configuration parameters 
+        filters : dict
+            python dictionary of functions to apply to filter invalid grasps
+
+        Notes
+        -----
+        Required configuration dictionary parameters are specified in Other Parameters
+
+        Other Parameters
+        ----------------
+        num_seed_samples : int
+            number of candidate to sample in the initial set
+        num_gmm_samples : int
+            number of candidates to sample on each resampling from the GMMs
+        num_iters : int
+            number of sample-and-refit iterations of CEM
+        gmm_refit_p : float
+            top p-% of grasps used for refitting
+        gmm_component_frac : float
+            percentage of the elite set size used to determine number of GMM components
+        gmm_reg_covar : float
+            regularization parameters for GMM covariance matrix, enforces diversity of fitted distributions
+        deterministic : bool, optional
+            whether to set the random seed to enforce deterministic behavior
+        gripper_width : float, optional
+            width of the gripper in meters
+        """
         GraspingPolicy.__init__(self, config)
         self._parse_config()
         self._filters = filters
@@ -578,8 +716,19 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         self._state_counter = 0 # used for logging state data
 
     def select(self, grasps, q_values):
-        """ Selects the grasp with the highest probability of success.
-        Can override for alternate policies (e.g. epsilon greedy).
+        """ Selects the grasp with the highest probability of success. Can override for alternate policies (e.g. epsilon greedy).
+
+        Parameters
+        ----------
+        grasps : list 
+            python list of :obj:`gqcnn.grasping.Grasp2D` or :obj:`gqcnn.grasping.SuctionPoint2D` grasps to select from
+        q_values : list
+            python list of associated q-values
+
+        Returns
+        -------
+        :obj:`gqcnn.grasping.Grasp2D` or :obj:`gqcnn.grasping.SuctionPoint2D`
+            grasp with highest probability of success 
         """ 
         # sort
         self._logger.info('Sorting grasps')
@@ -687,14 +836,14 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         """ Plan a set of grasps with the highest probability of success on
         the given RGB-D image.
 
-        Attributes
+        Parameters
         ----------
         state : :obj:`RgbdImageState`
             image to plan grasps on
 
         Returns
         -------
-        :obj: list of `GraspAction`
+        python list of :obj:`gqcnn.grasping.Grasp2D` or :obj:`gqcnn.grasping.SuctionPoint2D`
             grasps to execute
         """
         # check valid input

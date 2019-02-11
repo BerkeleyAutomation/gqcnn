@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Borkeley AUTOLAB's GQCNN Package
+Berkeley AUTOLAB's GQCNN Package
 ================================
 
 Overview
@@ -34,34 +34,28 @@ Project Goals
 -------------
 The goals of this project are to facilitate:
 
-1) **Replicability** of GQ-CNN training from the `Dex-Net 2.0 paper`_.
-2) **Research extensions** on novel GQ-CNN architectures that have higher performance on Dex-Net 2.0 training datasets.
+#. **Replicability** of GQ-CNN training and deployment from:
+    #. The latest `Dex-Net 4.0`_ results.
+    #. Older results such as `Dex-Net 2.0`_, `Dex-Net 2.1`_ and `Dex-Net 3.0`_.
+    #. Experimental results such as `FC-GQ-CNN`_.
+#. **Research extensions** on novel GQ-CNN architectures that have higher performance on `Dex-Net 4.0`_ training datasets.
 
-Our longer-term goal is to encourage development of GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.
+.. _Dex-Net 2.0: https://berkeleyautomation.github.io/dex-net/#dexnet_2
+.. _Dex-Net 2.1: https://berkeleyautomation.github.io/dex-net/#dexnet_21
+.. _Dex-Net 3.0: https://berkeleyautomation.github.io/dex-net/#dexnet_3
+.. _Dex-Net 4.0: https://berkeleyautomation.github.io/dex-net/#dexnet_4
+.. _FC-GQ-CNN: https://berkeleyautomation.github.io/dex-net/#fcgqcnn
 
-System Requirements
--------------------
-The `gqcnn` package currently supports only training of GQ-CNN on Dex-Net 2.0 datasets.
-We are working toward a grasp planning ROS service based on GQ-CNNs to work toward GQ-CNNs that work on other robot hardware setups.
-
-Please note that **performance on current datasets is not indicative of performance on other hardware setups** because our datasets are specific to:
-
-1) Our ABB YuMi parallel-jaw gripper with custom fingertips due to collision geometry.
-2) A Primense Carmine 1.09 due to camera parameters.
-3) A camera positioned between 50-70cm above a table looking down due to image rendering parameters.
-
-We are currently researching how to generate datasets that can generalize across robots, cameras, and viewpoints.
+Our longer-term goal is to encourage development of robust GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.
 
 Development
 -----------
-The package is currently under active development. Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.
-
-Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
-For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.edu) with the subject line starting with "gqcnn development: "
+The package is currently under active development. Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
+For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.edu) or Vishal Satish (vsatish@berkeley.edu) with the subject line starting with "GQ-CNN Development".
 
 Academic Use
 ------------
-If you use the code, datasets, or models in a publication, please `cite the Dex-Net 2.0 paper`_.
+If you use the code, datasets, or models in a publication, please cite the appropriate paper.
 
 .. _Grasp Quality Convolutional Neural Networks (GQ-CNNs): info/info.html
 
@@ -72,8 +66,6 @@ If you use the code, datasets, or models in a publication, please `cite the Dex-
 .. _Dex-Net 2.0 paper: https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf
 
 .. _Github Issues: https://github.com/BerkeleyAutomation/gqcnn/issues
-
-.. _cite the Dex-Net 2.0 paper: https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017.bib
 
 .. toctree::
    :maxdepth: 2
@@ -89,35 +81,31 @@ If you use the code, datasets, or models in a publication, please `cite the Dex-
 
 .. toctree::
    :maxdepth: 2
-   :caption: Data
-
-   data/data.rst
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Benchmarks
-
-   /benchmarks/benchmarks.rst
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Tutorial
+   :caption: Getting Started
 
    tutorials/tutorial.rst
 
 .. toctree::
    :maxdepth: 2
-   :caption: Documentation for Scripts
-   :glob:
+   :caption: Replication
 
-   scripts/*
+   replication/replication.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Benchmarks
+
+   benchmarks/benchmarks.rst
 
 .. toctree::
    :maxdepth: 2
    :caption: API Documentation
    :glob:
 
-   api/*
+   api/gqcnn.rst
+   api/training.rst
+   api/analysis.rst
+   api/policies.rst
 
 Indices and tables
 ==================

@@ -71,7 +71,7 @@ setup(name='gqcnn',
           'Topic :: Scientific/Engineering'
       ],      
       packages=['gqcnn'], 
-      setup_requres = requirements,
+      setup_requires = requirements,
       install_requires = requirements,
       extras_require = { 'docs' : [
           'sphinx',

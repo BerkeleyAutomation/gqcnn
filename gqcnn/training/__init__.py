@@ -28,6 +28,20 @@ Author: Vishal Satish
 from tf import *
 
 def get_gqcnn_trainer(backend='tf'):
+    """ 
+    Get the GQ-CNN Trainer for the provided backend. Currently on TensorFlow is supported.
+
+    Parameters
+    ----------
+    backend : str
+        the backend to use, currently only 'tf' is supported
+
+    Returns
+    -------
+    :obj:`gqcnn.training.tf.GQCNNTrainerTF`
+        GQ-CNN Trainer with TensorFlow backend
+    """
+
     # return desired GQCNNTrainer instance based on backend
     if backend == 'tf':
         return GQCNNTrainerTF

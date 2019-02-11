@@ -34,10 +34,22 @@ from network_tf import GQCNNTF
 from gqcnn.utils import TrainingMode, InputDepthMode
 
 class FCGQCNNTF(GQCNNTF):
-    """FC-GQ-CNN network implemented in Tensorflow. Note that this network is not directly trained,
-       but instead loaded from a trained GQ-CNN at inference time."""
+    """FC-GQ-CNN network implemented in Tensorflow. Note that FC-GQ-CNNs are never directly trained, but instead a pre-trained GQ-CNN is converted to an FC-GQ-CNN at inference time."""
 
     def __init__(self, gqcnn_config, fc_config, verbose=True, log_file=None):
+        """
+        Parameters
+        ----------
+        gqcnn_config : dict
+            python dictionary of pre-trained GQ-CNN model configuration parameters
+        fc_config : dict
+            python dictionary of FC-GQ-CNN model configuration parameters
+        verbose : bool
+            whether or not to log model output to stdout
+        log_file : str
+            if provided, model output will also be logged to this file
+        """
+
         super(FCGQCNNTF, self).__init__(gqcnn_config, log_file=log_file)
         super(FCGQCNNTF, self)._parse_config(gqcnn_config) 
         self._parse_config(fc_config) # we call this again(even though it gets called in the parent constructor on line 42) because the call to the parent _parse_config() on line 43 overwrites our first call
@@ -49,17 +61,21 @@ class FCGQCNNTF(GQCNNTF):
 
     @staticmethod
     def load(model_dir, fc_config, log_file=None):
-        """Instantiate an FC-GQ-CNN from a trained GQ-CNN. 
+        """Load an FC-GQ-CNN from a pre-trained GQ-CNN. 
 
         Parameters
         ----------
         model_dir : str
-            path to trained GQ-CNN
+            path to pre-trained GQ-CNN model
+        fc_config : dict
+            python dictionary of FC-GQ-CNN model configuration parameters
+        log_file : str
+            if provided, model output will also be logged to this file
 
         Returns
         -------
         :obj:`FCGQCNNTF`
-            initialized FCGQCNNTF 
+            initialized FC-GQ-CNN 
         """
         config_file = os.path.join(model_dir, 'config.json')
         with open(config_file) as data_file:    

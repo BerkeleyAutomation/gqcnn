@@ -262,7 +262,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         return [action.grasp for action in self._action(state, num_actions=num_actions)]
 
 class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPolicy):
-    """Parallel jaw grasp sampling policy using Fully-Convolutional GQ-CNN network."""
+    """Parallel jaw grasp sampling policy using the FC-GQ-CNN."""
     def __init__(self, cfg, filters=None):
         """
         Parameters
@@ -270,7 +270,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
         cfg : dict
             python dictionary of policy configuration parameters
         filters : dict
-            python dictionary of kinematic filters to apply 
+            python dictionary of functions to apply to filter invalid grasps 
         """
         FullyConvolutionalGraspingPolicy.__init__(self, cfg, filters=filters)
 
@@ -330,7 +330,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
         raise NotImplementedError
 
 class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
-    """Suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
+    """Suction grasp sampling policy using the FC-GQ-CNN."""
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
         """Generate the actions to be returned."""
         depth_im = DepthImage(images[0], frame=camera_intr.frame)

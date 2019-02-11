@@ -51,7 +51,11 @@ class GQCNNTF(object):
         Parameters
         ----------
         gqcnn_config : dict
-            python dictionary of network configuration parameters
+            python dictionary of model configuration parameters
+        verbose : bool
+            whether or not to log model output to stdout
+        log_file : str
+            if provided, model output will also be logged to this file
         """
         self._sess = None
         self._graph = tf.Graph()
@@ -69,8 +73,12 @@ class GQCNNTF(object):
         Parameters
         ----------
         model_dir : str
-            path to trained GQ-CNN
-
+            path to trained GQ-CNN model
+        verbose : bool
+            whether or not to log model output to stdout
+        log_file : str
+            if provided, model output will also be logged to this file
+ 
         Returns
         -------
         :obj:`GQCNNTF`
@@ -184,7 +192,7 @@ class GQCNNTF(object):
         Parameters
         ----------
         model_dir : str
-            path to trained GQ-CNN directory where means and standard deviations are stored
+            path to trained GQ-CNN model where means and standard deviations are stored
         """
         # load in means and stds 
         if self._input_depth_mode == InputDepthMode.POSE_STREAM:
@@ -223,11 +231,11 @@ class GQCNNTF(object):
         Parameters
         ----------
         model_dir : str
-            path to GQ-CNN directory
+            path to pre-trained GQ-CNN model
         """
         # check architecture
         if 'base_model' not in self._architecture.keys():
-            self._logger.warning('Architecuture has no base model. The network has not been modified')
+            self._logger.warning('Architecuture has no base model. The network has not been modified.')
             return False
         base_model_config = self._architecture['base_model']
         output_layer = base_model_config['output_layer']
@@ -321,7 +329,7 @@ class GQCNNTF(object):
         Parameters
         ----------
         gqcnn_config : dict
-            python dictionary of configuration parameters
+            python dictionary of model configuration parameters
         """
         
         ##################### PARSING GQCNN CONFIG #####################
@@ -415,12 +423,14 @@ class GQCNNTF(object):
 
         Parameters
         ----------
-        train_im_node :obj:`tf.placeholder`
+        train_im_node : :obj:`tf.placeholder`
             images for training
-        train_pose_node :obj:`tf.placeholder`
+        train_pose_node : :obj:`tf.placeholder`
             poses for training
         add_softmax : bool
             whether or not to add a softmax layer to output of network
+        add_sigmoid : bool
+            whether or not to add a sigmoid layer to output of network
         """
         with self._graph.as_default():
             # set tf random seed if debugging
@@ -490,9 +500,6 @@ class GQCNNTF(object):
     def batch_size(self):
         return self._batch_size
 
-    def set_batch_size(self, batch_size):
-        self._batch_size = batch_size
-
     @property
     def im_height(self):
         return self._im_height
@@ -556,10 +563,11 @@ class GQCNNTF(object):
     @property
     def filters(self):
         """Evaluate the filters of the first convolution layer.
+
         Returns
         -------
         :obj:`numpy.ndarray`
-            filters(weights) from first convolution layer of the network
+            filters (weights) from first convolution layer of the network
         """
         close_sess = False
         if self._sess is None:
@@ -577,13 +585,23 @@ class GQCNNTF(object):
             self.close_session()
         return filters
 
+    def set_batch_size(self, batch_size):
+        """Update the batch size to be used for during inference.
+
+        Parameters
+        ----------
+        batch_size : int
+            the new batch size
+        """
+        self._batch_size = batch_size
+
     def set_im_mean(self, im_mean):
         """Update image mean to be used for normalization during inference. 
         
         Parameters
         ----------
         im_mean : float
-            image mean
+            the new image mean
         """
         self._im_mean = im_mean
     
@@ -593,7 +611,7 @@ class GQCNNTF(object):
         Returns
         -------
         : float
-            image mean
+            the image mean
         """
         return self.im_mean
 
@@ -603,7 +621,7 @@ class GQCNNTF(object):
         Parameters
         ----------
         im_std : float
-            image standard deviation
+            the new image standard deviation
         """
         self._im_std = im_std
 
@@ -613,7 +631,7 @@ class GQCNNTF(object):
         Returns
         -------
         : float
-            image standard deviation
+            the image standard deviation
         """
         return self.im_std
 
@@ -622,8 +640,8 @@ class GQCNNTF(object):
         
         Parameters
         ----------
-        pose_mean :obj:`numpy.ndarray`
-            pose mean
+        pose_mean : :obj:`numpy.ndarray`
+            the new pose mean
         """
         self._pose_mean = pose_mean
 
@@ -633,7 +651,7 @@ class GQCNNTF(object):
         Returns
         -------
         :obj:`numpy.ndarray`
-            pose mean
+            the pose mean
         """
         return self._pose_mean
 
@@ -642,8 +660,8 @@ class GQCNNTF(object):
         
         Parameters
         ----------
-        pose_std :obj:`numpy.ndarray`
-            pose standard deviation
+        pose_std : :obj:`numpy.ndarray`
+            the new pose standard deviation
         """
         self._pose_std = pose_std
 
@@ -653,7 +671,7 @@ class GQCNNTF(object):
         Returns
         -------
         :obj:`numpy.ndarray`
-            pose standard deviation
+            the pose standard deviation
         """
         return self._pose_std
 
@@ -663,7 +681,7 @@ class GQCNNTF(object):
         Parameters
         ----------
         im_depth_sub_mean : float
-            mean of subtracted image and gripper depth
+            the new mean of subtracted image and gripper depth
         """
         self._im_depth_sub_mean = im_depth_sub_mean
 
@@ -673,7 +691,7 @@ class GQCNNTF(object):
         Parameters
         ----------
         im_depth_sub_std : float
-            standard deviation of subtracted image and gripper depth
+            the standard deviation of subtracted image and gripper depth
         """
         self._im_depth_sub_std = im_depth_sub_std
 
@@ -701,21 +719,21 @@ class GQCNNTF(object):
         Parameters
         ----------
         batch_size : float
-            batch size to be used for inference
+            the new batch size
         """
         self._batch_size = batch_size
 
     def _predict(self, image_arr, pose_arr, verbose=False):
-        """Query predictions from network.
+        """Query predictions from the network.
 
         Parameters
         ----------
-        image_arr :obj:`numpy.ndarray`
+        image_arr : :obj:`numpy.ndarray`
             input images
-        pose_arr :obj:`numpy.ndarray`
+        pose_arr : :obj:`numpy.ndarray`
             input gripper poses
         verbose : bool
-            whether or not to log progress, useful to turn off during training
+            whether or not to log progress to stdout, useful to turn off during training
         """       
         # get prediction start time
         start_time = time.time()
@@ -782,12 +800,12 @@ class GQCNNTF(object):
 
         Parameters
         ----------
-        image_arr :obj:`numpy ndarray`
+        image_arr : :obj:`numpy ndarray`
             4D tensor of depth images
-        pose_arr :obj:`numpy ndarray`
+        pose_arr : :obj:`numpy ndarray`
             tensor of gripper poses
         verbose : bool
-            whether or not to log progress
+            whether or not to log progress to stdout, useful to turn off during training
         """
         return self._predict(image_arr, pose_arr, verbose=verbose)
    
@@ -796,14 +814,14 @@ class GQCNNTF(object):
         
         Parameters
         ----------
-        image_arr :obj:`numpy ndarray` 
+        image_arr : :obj:`numpy ndarray` 
             4D tensor of depth images
-        pose_arr :obj:`numpy ndarray`
+        pose_arr : :obj:`numpy ndarray`
             optional tensor of gripper poses
         feature_layer : str
             the network layer to featurize
         verbose : bool
-            whether or not to log progress
+            whether or not to log progress to stdout
         """
         # get featurization start time
         start_time = time.time()
