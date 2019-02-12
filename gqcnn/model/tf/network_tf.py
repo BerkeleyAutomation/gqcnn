@@ -454,7 +454,7 @@ class GQCNNTF(object):
             self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), (), name='dropout')
 
             # build network
-            self._output_tensor = tf.identity(self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node), name='output')
+            self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
             
             # add softmax function to output of network(this is optional because 1) we might be doing regression or 2) we are training and Tensorflow has an optimized cross-entropy loss with the softmax already built-in)
             if add_softmax:
@@ -718,7 +718,7 @@ class GQCNNTF(object):
     def add_softmax_to_output(self, num_outputs=0):
         """Adds softmax to output of network."""
         with tf.name_scope('softmax'):
-            if num_outputs  > 0:
+            if num_outputs > 0:
                 self._logger.info('Building Pair-wise Softmax Layer...')
                 binwise_split_output = tf.split(self._output_tensor, num_outputs, axis=-1)
                 binwise_split_output_soft = [tf.nn.softmax(s, name='output_%03d'%(i)) for i, s in enumerate(binwise_split_output)]

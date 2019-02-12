@@ -56,5 +56,5 @@ if __name__=='__main__':
 
     # compile the model using NCSDK 2 
     logger.info('Compiling model...')
-    p = subprocess.Popen(['mvNCCompile', os.path.join(model_dir, 'model.pb'), '-in', 'input_im', '-on', 'output' if fcgqcnn.angular_bins > 0 else 'softmax/output', '-o', os.path.join(model_dir, 'model.graph')])
+    p = subprocess.Popen(['mvNCCompile', os.path.join(model_dir, 'model.pb'), '-in', 'input_im', '-on', 'softmax/output', '-o', os.path.join(model_dir, 'model.graph')])
     p.wait()

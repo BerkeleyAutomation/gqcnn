@@ -34,7 +34,7 @@ from gqcnn.utils import TrainingMode
 
 class NCFCGQCNNTF(FCGQCNNTF):
     """FC-GQ-CNN network implemented in Tensorflow for use with the Intel NCSDK 2. Key implementation details: 
-        1) Only uses Tensorflow operations supported by the NCSDK. These can be found in /usr/local/bin/ncsdk/Controllers/Parsers/TensorFlowParser/. For the FC-GQ-CNN, the pair-wise softmax layer depends on the unsupported tf.split() operation. We therefore omit this layer and return the raw network outputs instead, leaving it to the end policy to apply the pair-wise softmax layer.
+        1) Only uses Tensorflow operations supported by the NCSDK. These can be found in /usr/local/bin/ncsdk/Controllers/Parsers/TensorFlowParser/. For the FC-GQ-CNN, the pair-wise softmax layer depends on the unsupported tf.split() operation. We instead implement it with iterative tf.slice operations.
         2) The save() function saves a clean protobuf (.pb) version of the network without training operations that can be used for compilation with the NCSDK.
         3) Sets the batch size to 1 as required by the NCSDK.
     """
@@ -71,18 +71,26 @@ class NCFCGQCNNTF(FCGQCNNTF):
         fcgqcnn.set_model_dir(model_dir)
 
         # initialize the network
-        if fcgqcnn.angular_bins > 0:
-            fcgqcnn._logger.warning('Excluding pair-wise softmax layer!')
+        training_mode = train_config['training_mode']
+        if training_mode == TrainingMode.CLASSIFICATION:
+            fcgqcnn.initialize_network(add_softmax=True)
+        elif training_mode == TrainingMode.REGRESSION:
             fcgqcnn.initialize_network()
         else:
-            training_mode = train_config['training_mode']
-            if training_mode == TrainingMode.CLASSIFICATION:
-                fcgqcnn.initialize_network(add_softmax=True)
-            elif training_mode == TrainingMode.REGRESSION:
-                fcgqcnn.initialize_network()
-            else:
-                raise ValueError('Invalid training mode: {}'.format(training_mode))
+            raise ValueError('Invalid training mode: {}'.format(training_mode))
         return fcgqcnn
+
+    def add_softmax_to_output(self, num_outputs=0):
+        """Adds softmax to output of network. Uses iterative tf.slice operation instead of tf.split in pair-wise softmax implementation."""
+        with tf.name_scope('softmax'):
+            if num_outputs > 0: 
+                self._logger.info('Building Pair-wise Softmax Layer...')
+                binwise_split_output = [tf.slice(self._output_tensor, (0, 0, 0, i*2), self._output_tensor.get_shape().as_list()[:-1] + [2]) for i in range(self._angular_bins)]
+                binwise_split_output_soft = [tf.nn.softmax(s, name='output_%03d'%(i)) for i, s in enumerate(binwise_split_output)]
+                self._output_tensor = tf.concat(binwise_split_output_soft, -1, name='output')
+            else:    
+                self._logger.info('Building Softmax Layer...')
+                self._output_tensor = tf.nn.softmax(self._output_tensor, name='output')
 
     def save(self):
         """Generates a clean protobuf (.pb) version of the network without training operations."""
@@ -90,7 +98,7 @@ class NCFCGQCNNTF(FCGQCNNTF):
 
         self._logger.info('Building cleaned graph...')
         self.open_session()
-        cleaned_graph = tf.graph_util.convert_variables_to_constants(self._sess, self._graph.as_graph_def(), ['output'] if self.angular_bins > 0 else ['softmax/output'])
+        cleaned_graph = tf.graph_util.convert_variables_to_constants(self._sess, self._graph.as_graph_def(), ['softmax/output'])
 
         self._logger.info('Writing clean graph...')
         with tf.gfile.GFile(os.path.join(self._model_dir, 'model.pb'), 'wb') as f:

@@ -105,17 +105,7 @@ class FCGQCNNTF(GQCNNTF):
         
         # create new set of weights by reshaping fully connected layer weights
         fcW = self._weights.weights['{}_weights'.format(fc_name)]
-
-        opened_sess = False
-        if self.sess is None:
-            self.open_session()
-            opened_sess = True
-        shape1 = tf.shape(fcW)[0].eval(session=self.sess)
-        shape2 = tf.shape(fcW)[1:].eval(session=self.sess)
-        if opened_sess:
-            self.close_session()
-        
-        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [shape1 / (filter_dim * filter_dim)], shape2], 0)), name='{}_fully_conv_weights'.format(fc_name))
+        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] / (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name))
         self._weights.weights['{}_fully_conv_weights'.format(fc_name)] = convW
         
         # get bias
