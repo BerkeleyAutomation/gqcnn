@@ -946,7 +946,11 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                 filename = os.path.join(self._logging_dir, 'cem_iter_%d.png' %(j))
             vis.show(filename)
 
-        return grasps, q_values
+        # create the list of grasp actions
+        grasp_actions = []
+        for grasp, q in zip(grasps, q_values):
+            grasp_actions.append(GraspAction(grasp, q, None))
+        return grasp_actions
 
     def _action(self, state):
         """ Plans the grasp with the highest probability of success on
@@ -969,8 +973,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         segmask = state.segmask
 
         # plan grasps
-        grasps, q_values = self.action_set(state)
-
+        grasp_actions = self.action_set(state)
+        grasps = [g.grasp for g in grasp_actions]
+        q_values = [g.q_value for g in grasp_actions]
+        
         # select grasp
         index = self.select(grasps, q_values)
         grasp = grasps[index]
@@ -1249,30 +1255,31 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
             raise NoValidGraspsException()
         return action
 
-    def action_set(self, state, policy_subset=None, min_q_value=-1.0):
+    def action_set(self, state, num_actions, policy_subset=None, min_q_value=-1.0):
         """ Returns an action for a given state.
         """
         actions = None
         q_values = None
         i = 0
         max_q = min_q_value        
-        while actions is None or (max_q <= min_q_value and i < len(self._priority_list)):
+        while (actions is None or max_q <= min_q_value) and i < len(self._priority_list):
             name = self._priority_list[i]
             if policy_subset is not None and name not in policy_subset:
                 i += 1
                 continue
             self._logger.info('Planning action set for sub-policy {}'.format(name))
             try:
-                actions, q_values = self.policies[name].action_set(state)
+                actions = self.policies[name].action_set(state)
                 for action in actions:
                     action.policy_name = name
+                q_values = [a.q_value for a in actions]
                 max_q = np.max(q_values)
             except NoValidGraspsException:
                 pass
             i += 1
         if actions is None:
             raise NoValidGraspsException()
-        return actions, q_values    
+        return actions    
 
 class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
     def __init__(self, policies):

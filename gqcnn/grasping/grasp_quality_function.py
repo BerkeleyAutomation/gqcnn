@@ -183,7 +183,7 @@ class SuctionQualityFunction(GraspQualityFunction):
     """Abstract wrapper class for suction quality functions (only image based metrics for now). """
     def __init__(self, config):
         """Create a suction quality function. """
-        GraspQualityFunction.__init(self)
+        GraspQualityFunction.__init__(self)
 
         # read parameters
         self._window_size = config['window_size']
@@ -610,64 +610,6 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
             q = max_q
             if sse_q[k] > planarity_thresh or sse_q[k] > self._planarity_abs_thresh:
                 grasp_center = np.array([action.center.y, action.center.x])
-                q = np.linalg.norm(grasp_center - object_com)
-
-            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
-            qualities.append(q)
-
-        return np.array(qualities)
-
-class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctionQualityFunction):
-    """A approach planarity suction metric that ranks sufficiently planar points by their distance to the object COM. """
-
-    def __init__(self, config):
-        """Create approach planarity suction metric. """
-        self._planarity_pctile = config['planarity_pctile']
-        self._planarity_abs_thresh = 0
-        if 'planarity_abs_thresh' in config.keys():
-            self._planarity_abs_thresh = np.exp(-config['planarity_abs_thresh'])
-
-        DiscApproachPlanaritySuctionQualityFunction.__init__(self, config)
-
-    def quality(self, state, actions, params=None): 
-        """Given a suction point, compute a score based on a best-fit 3D plane of the neighboring points.
-
-        Parameters
-        ----------
-        state : :obj:`RgbdImageState`
-            An RgbdImageState instance that encapsulates rgbd_im, camera_intr, segmask, full_observed.
-        action: :obj:`SuctionPoint2D`
-            A suction grasp in image space that encapsulates center, approach direction, depth, camera_intr.
-        params: dict
-            Stores params used in computing suction quality.
-
-        Returns
-        -------
-        :obj:`numpy.ndarray`
-            Array of the quality for each grasp
-        """
-        # compute planarity
-        sse_q = DiscApproachPlanaritySuctionQualityFunction.quality(self, state, actions, params=params)
-
-        if params['vis']['hist']:
-            plt.figure()
-            utils.histogram(sse_q, 100, (np.min(sse_q), np.max(sse_q)), normalized=False, plot=True)
-            plt.show()
-
-        # compute object centroid
-        object_com = state.rgbd_im.center
-        if state.segmask is not None:
-            nonzero_px = state.segmask.nonzero_pixels()
-            object_com = np.mean(nonzero_px, axis=0)
-
-        # threshold
-        planarity_thresh = abs(np.percentile(sse_q, 100-self._planarity_pctile))
-        qualities = []
-        max_q = max(state.rgbd_im.height, state.rgbd_im.width)
-        for k, action in enumerate(actions):
-            q = max_q
-            if sse_q[k] > planarity_thresh or sse_q[k] > self._planarity_abs_thresh:
-                grasp_center = np.array([action.center.y, action.center.x])
 
                 if state.obj_segmask is not None:
                     grasp_obj_id = state.obj_segmask[grasp_center[0],
@@ -682,7 +624,7 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
             qualities.append(q)
 
         return np.array(qualities)
-    
+
 class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
     """A approach planarity suction metric. """
 
