@@ -32,7 +32,7 @@ from autolab_core import Logger
  
 def get_gqcnn_model(backend='tf', verbose=True):
     """
-    Get the GQ-CNN model for the provided backend. Currently on TensorFlow is supported.
+    Get the GQ-CNN model for the provided backend. Currently only TensorFlow is supported.
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ def get_gqcnn_model(backend='tf', verbose=True):
 
 def get_fc_gqcnn_model(backend='tf', verbose=True):
     """
-    Get the FC-GQ-CNN model for the provided backend. Currently on TensorFlow is supported.
+    Get the FC-GQ-CNN model for the provided backend. Currently only TensorFlow is supported.
 
     Parameters
     ----------

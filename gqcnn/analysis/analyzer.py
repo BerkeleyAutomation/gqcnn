@@ -58,7 +58,7 @@ WINDOW = 100
 MAX_LOSS = 5.0
 
 class GQCNNAnalyzer(object):
-    """ Analyzes trained GQ-CNN models. """
+    """ Analyzes a trained GQ-CNN model. """
 
     def __init__(self, config, verbose=True, plot_backend='pdf'):
         """

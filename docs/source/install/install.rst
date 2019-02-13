@@ -14,7 +14,7 @@ The `gqcnn` package has only been tested with `Ubuntu 12.04`, `Ubuntu 14.04` and
 Virtualenv
 """"""""""
 
-We highly recommend using a Python environment management system, in particular `Virtualenv`. Several users have encountered problems with dependencies when using `Conda`.
+We highly recommend using a Python environment management system, in particular `Virtualenv`. **Note: Several users have encountered problems with dependencies when using Conda.**
 
 Dependencies
 ~~~~~~~~~~~~
@@ -55,7 +55,7 @@ If you are installing `gqcnn` as a ROS package, we suggest installing both `auto
 Python Installation
 ~~~~~~~~~~~~~~~~~~~
 
-Python-only installation is intended for users who are **only interested in training GQ-CNNs or grasp planning on saved RGBD images**, not
+The Python-only installation is intended for users who are **only interested in 1) Training GQ-CNNs or 2) Grasp planning on saved RGBD images**, not
 interfacing with a physical robot.
 If you have intentions of using GQ-CNNs for grasp planning on a physical robot, we suggest you `install as a ROS package`_.
 
@@ -77,6 +77,8 @@ Change directories into the `gqcnn` repository and run the setup script. ::
 
 This will install `gqcnn` in your current virtual environment and automatically download the example models and datasets.
 
+.. _ros-install:
+
 ROS Installation
 ~~~~~~~~~~~~~~~~
 
@@ -86,14 +88,14 @@ Installation as a ROS package is intended for users who wish to use GQ-CNNs to p
 """""""""""""""""""""""
 Clone or download the `project`_ from Github. ::
 
-    $ cd {PATH_TO_YOUR_CATKIN_WORKSPACE}/src
+    $ cd <PATH_TO_YOUR_CATKIN_WORKSPACE>/src
     $ git clone https://github.com/BerkeleyAutomation/gqcnn.git
 
 2. Build the catkin package
 """""""""""""""""""""""""""
 Build the catkin package. ::
 
-    $ cd {PATH_TO_YOUR_CATKIN_WORKSPACE}
+    $ cd <PATH_TO_YOUR_CATKIN_WORKSPACE>
     $ catkin_make
 
 Then re-source `devel/setup.bash` for the package to be available through Python.

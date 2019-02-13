@@ -8,7 +8,7 @@ The args are:
 
 #. **model_name**: Name of a trained model.
 
-The script will store a detailed analysis in `analysis/model_name/`.
+The script will store a detailed analysis in `analysis/<model_name>/`.
 
 To analyze the networks we just trained, run: ::
 

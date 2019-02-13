@@ -6,7 +6,7 @@ All GQ-CNN grasping policies are child classes of the base :ref:`GraspingPolicy`
     $ from gqcnn import RgbdImageState, CrossEntropyRobustGraspingPolicy
     $
     $ im = RgbdImageState.load(<saved rgbd image dir>)
-    $ my_policy = CrossEntropyRobustGraspingPolicy(<policy args>)
+    $ my_policy = CrossEntropyRobustGraspingPolicy(<policy initializer args>)
     $
     $ my_grasp_action = my_policy(im)
 
@@ -46,7 +46,7 @@ A wrapper for states containing an RGBD (RGB + Depth) image, camera intrinisics,
 
 GraspAction
 -----------
-A wrapper for 2D grasp actions such as :ref:`Grasp2D` or :ref`SuctionPoint2D`.
+A wrapper for 2D grasp actions such as :ref:`Grasp2D` or :ref:`SuctionPoint2D`.
 
 .. autoclass:: gqcnn.grasping.policy.policy.GraspAction
 

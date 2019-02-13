@@ -1,15 +1,13 @@
 Replicating Results
 ~~~~~~~~~~~~~~~~~~~
-Numerous publications in the larger `Dex-Net`_ project utilize GQ-CNNs, particularly `Dex-Net 2.0`_, `Dex-Net 2.1`_, `Dex-Net 3.0`_, `Dex-Net 4.0`_, and `FC-GQ-CNN`_. One of the goals of the `gqcnn` library is to provide the necessary code and instructions for replicating the results of these papers. 
-
-Thus, we have provided a number of replication scripts under the `gqcnn/scripts/` directory.
+Numerous publications in the larger `Dex-Net`_ project utilize GQ-CNNs, particularly `Dex-Net 2.0`_, `Dex-Net 2.1`_, `Dex-Net 3.0`_, `Dex-Net 4.0`_, and `FC-GQ-CNN`_. One of the goals of the `gqcnn` library is to provide the necessary code and instructions for replicating the results of these papers. Thus, we have provided a number of replication scripts under the `scripts/` directory.
 
 There are two ways to replicate results:
 
 #. **Use a pre-trained model:** Download a pre-trained GQ-CNN model and run an example policy.
 #. **Train from scratch:** Download the raw dataset, train a GQ-CNN model, and run an example policy using the model you just trained.
 
-**We highly encourage method 1.** Note that method 2 is computationally expensive as training takes roughly 24 hours on a Nvidia Titan Xp GPU. Furthermore, the raw datasets are fairly large in size, on the order of xGB each. 
+**We highly encourage method 1.** Note that method 2 is computationally expensive as training takes roughly 24 hours on a Nvidia Titan Xp GPU. Furthermore, the raw datasets are fairly large in size. 
 
 For more information about the pre-trained models and sample inputs for the example policy, see :ref:`pre-trained-models` and :ref:`sample-inputs`.
 
@@ -155,33 +153,6 @@ Then train a FC-GQ-CNN from scratch. ::
 Finally, evaluate the trained FC-GQ-CNN. :: 
 
     $ ./scripts/policies/run_all_dex-net_4.0_fc_suction_examples.sh
-
-Data License
-============
-The pre-trained GQ-CNN models and raw datasets are licensed under The Regents of the University of California (Regents). Copyright ©2017. All Rights Reserved.
-
-Permission to use, copy, modify, and distribute this software and its documentation for educational,
-research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
-hereby granted, provided that the above copyright notice, this paragraph and the following two
-paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
-Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
-7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
-
-IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
-INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
-THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
-ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
-HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
-MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
-
-The raw datasets are generated from 3D object models from `3DNet`_ and `the KIT Object Database`_ that may be subject to copyright.
-
-.. _3DNet: https://repo.acin.tuwien.ac.at/tmp/permanent/3d-net.org/
-.. _the KIT Object Database: https://h2t-projects.webarchiv.kit.edu/Projects/ObjectModelsWe    bUI/
-
 
 .. _Dex-Net: https://berkeleyautomation.github.io/dex-net/
 .. _Dex-Net 2.0: https://berkeleyautomation.github.io/dex-net/#dexnet_2

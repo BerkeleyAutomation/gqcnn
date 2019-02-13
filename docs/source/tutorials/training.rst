@@ -24,4 +24,14 @@ To train a GQ-CNN for a **suction** gripper run: ::
 
     $ python tools/finetune.py data/training/example_suction/ GQCNN-4.0-SUCTION --config_filename cfg/finetune_example_suction.yaml --name gqcnn_example_suction
 
+Visualizing Training
+--------------------
+The `gqcnn` model contains support for visualizing training progress through Tensorboard. Tensorboard is automatically launched when the training script is run and can be accessed by navigating to **localhost:6006** in a web browser. There you will find something like the following:
+
+.. image:: ../images/tensorboard.png
+    :width: 100 % 
+
+Which displays useful training statistics such as validation error, minibatch loss, and learning rate.
+
+The Tensorflow summaries are stored in `models/<model_name>/tensorboard_summaries/`.
 

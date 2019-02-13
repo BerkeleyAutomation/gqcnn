@@ -107,6 +107,12 @@ If you use the code, datasets, or models in a publication, please cite the appro
    api/analysis.rst
    api/policies.rst
 
+.. toctree::
+   :maxdepth: 2
+   :caption: License
+
+   license/license.rst
+
 Indices and tables
 ==================
 
