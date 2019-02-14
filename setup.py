@@ -44,7 +44,7 @@ requirements = [
     'visualization',
     'numpy>=1.14.0',
     'scipy',
-    'matplotlib>=1.5.0',
+    'matplotlib<3.0',
     'opencv-python',
     'tensorflow>=1.10.0',
     'scikit-image',
@@ -65,8 +65,7 @@ setup(name='gqcnn',
       keywords = 'robotics grasping vision deep learning',
       classifiers = [
           'Development Status :: 4 - Beta',
-          'Programming Language :: Python',
-          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 2.7 :: Only',
           'Natural Language :: English',
           'Topic :: Scientific/Engineering'
       ],      
