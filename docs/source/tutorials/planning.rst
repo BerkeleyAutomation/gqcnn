@@ -63,11 +63,11 @@ The args are:
 
 To evaluate the pre-trained `Dex-Net 4.0`_ **parallel jaw** network on sample images of objects in heaps run: ::
 
-    $ python examples/policy.py GQCNN-4.0-PJ --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png
+    $ python examples/policy.py GQCNN-4.0-PJ --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
 To evaluate the pre-trained `Dex-Net 4.0`_ **suction** network on sample images of objects in heaps run: ::
 
-    $ python examples/policy.py GQCNN-4.0-SUCTION --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png
+    $ python examples/policy.py GQCNN-4.0-SUCTION --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
 
 ROS Policy
@@ -100,7 +100,7 @@ The args are:
 
 To query the policy on sample images of objects in heaps run: ::
 
-    $ python examples/policy_ros.py --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png
+    $ python examples/policy_ros.py --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
 Usage on a Physical Robot with ROS
 ----------------------------------
@@ -124,10 +124,10 @@ Then run the Python policy with the `\\--fully_conv` flag.
 
 To evaluate the pre-trained `FC-GQ-CNN`_ **parallel jaw** network on sample images of objects in heaps run: ::
 
-    $ python examples/policy.py FCGQCNN-4.0-PJ --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png
+    $ python examples/policy.py FCGQCNN-4.0-PJ --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
 To evaluate the pre-trained `FC-GQ-CNN`_ **suction** network on sample images of objects in heaps run: ::
 
-    $ python examples/policy.py FCGQCNN-4.0-SUCTION --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png
+    $ python examples/policy.py FCGQCNN-4.0-SUCTION --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
     
