@@ -23,20 +23,20 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 Setup of gqcnn python codebase
 Author: Vishal Satish
 """
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 import os
 
 class PostDevelopCmd(develop):
     def run(self):
-        os.system('sh scripts/downloads/download_example_data.sh')
         develop.run(self)
+        os.system('sh scripts/downloads/download_example_data.sh')
 
 class PostInstallCmd(install):
     def run(self):
+        install.do_egg_install(self) #TODO: @Vishal figure out why install.run(self) causes install_requires to be ignored
         os.system('sh scripts/downloads/download_example_data.sh')
-        install.run(self)
 
 requirements = [
     'autolab-core',
@@ -69,8 +69,7 @@ setup(name='gqcnn',
           'Natural Language :: English',
           'Topic :: Scientific/Engineering'
       ],      
-      packages=['gqcnn'], 
-      setup_requires = requirements,
+      packages=find_packages(), 
       install_requires = requirements,
       extras_require = { 'docs' : [
           'sphinx',
