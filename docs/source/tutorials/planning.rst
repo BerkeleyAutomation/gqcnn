@@ -8,7 +8,7 @@ In the `gqcnn` package this is implemented as policies that map an RGBD image to
 .. _Dex-Net 2.1: https://berkeleyautomation.github.io/dex-net/#dexnet_21
 .. _Dex-Net 3.0: https://berkeleyautomation.github.io/dex-net/#dexnet_3
 .. _Dex-Net 4.0: https://berkeleyautomation.github.io/dex-net/#dexnet_4
-.. _FC-GQ-CNN: https://berkeleyautomation.github.io/dex-net/#fcgqcnn
+.. _FC-GQ-CNN: https://berkeleyautomation.github.io/fcgqcnn
 
 We provide example policies in `examples/`. In particular, we provide both an example Python policy and an example ROS policy. **Note that the ROS policy requires the ROS gqcnn installation**, which can be found :ref:`here <ros-install>`. We highly recommend using the Python policy unless you need to plan grasps on a physical robot using ROS.
 
@@ -23,7 +23,7 @@ Sample inputs from our experimental setup are provided with the repo:
 #. **data/examples/single_object/primesense/**: Set of example images from a Primesense Carmine containing objects used in `Dex-Net 2.0`_ experiments in singulation. 
 #. **data/examples/clutter/primesense/**: Set of example images from a Primesense Carmine containing objects used in `Dex-Net 2.1`_ experiments arranged in heaps.
 
-**\*\*Note that when trying these sample inputs, you must make sure that the GQ-CNN model you are using was trained for the corresponding camera and input type (singulation/clutter). See the following section for more details.**
+**\*\*Note that when trying these sample inputs, you must make sure that the GQ-CNN model you are using was trained for the corresponding camera and input type (singulation/clutter). See the following section for more details.\*\***
 
 .. _pre-trained-models:
 
@@ -43,7 +43,7 @@ The models are:
 #. **FC-GQCNN-4.0-PJ**: For `FC-GQ-CNN`_, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.
 #. **FC-GQCNN-4.0-SUCTION**: For `FC-GQ-CNN`_, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.  
 
-**\*\*Note that GQ-CNN models are sensitive to the parameters used during dataset generation, specifically 1) Gripper geometry, an ABB YuMi Parallel Jaw Gripper for all our pre-trained models 2) Camera intrinsics, either a Primesense Carmine or PhotoNeo Phoxi S for all our pre-trained models (see above for which one) 3) Distance between camera and workspace during rendering, 50-70cm for all our pre-trained models. Thus we cannot guarantee performance of our pre-trained models on other physical setups. If you have a specific use-case in mind, please reach out to us.** We are actively researching how to generate more robust datasets that can generalize across robots, cameras, and viewpoints!
+**\*\*Note that GQ-CNN models are sensitive to the parameters used during dataset generation, specifically 1) Gripper geometry, an ABB YuMi Parallel Jaw Gripper for all our pre-trained models 2) Camera intrinsics, either a Primesense Carmine or PhotoNeo Phoxi S for all our pre-trained models (see above for which one) 3) Distance between camera and workspace during rendering, 50-70cm for all our pre-trained models. Thus we cannot guarantee performance of our pre-trained models on other physical setups. If you have a specific use-case in mind, please reach out to us.\*\*** We are actively researching how to generate more robust datasets that can generalize across robots, cameras, and viewpoints!
 
 Python Policy
 -------------

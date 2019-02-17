@@ -25,10 +25,7 @@ Links
 .. _UC Berkeley AUTOLAB: http://autolab.berkeley.edu
 
 .. image:: images/gqcnn.png
-   :height: 800px
-   :width: 800 px
-   :scale: 100 %
-   :align: center
+   :width: 100 %
 
 Project Goals
 -------------
@@ -44,9 +41,13 @@ The goals of this project are to facilitate:
 .. _Dex-Net 2.1: https://berkeleyautomation.github.io/dex-net/#dexnet_21
 .. _Dex-Net 3.0: https://berkeleyautomation.github.io/dex-net/#dexnet_3
 .. _Dex-Net 4.0: https://berkeleyautomation.github.io/dex-net/#dexnet_4
-.. _FC-GQ-CNN: https://berkeleyautomation.github.io/dex-net/#fcgqcnn
+.. _FC-GQ-CNN: https://berkeleyautomation.github.io/fcgqcnn
 
 Our longer-term goal is to encourage development of robust GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.
+
+Disclaimer
+----------
+**\*\*GQ-CNN models are sensitive to the parameters used during dataset generation, specifically 1) Gripper geometry 2) Camera intrinsics 3) Distance between camera and workspace during rendering. Thus we cannot guarantee performance of our pre-trained models on other physical setups. If you have a specific use-case in mind, please reach out to us. It might be possible to generate a custom dataset for you particular setup.\*\*** We are actively researching how to generate more robust datasets that can generalize across robots, cameras, and viewpoints!
 
 Development
 -----------
@@ -55,7 +56,13 @@ For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.ed
 
 Academic Use
 ------------
-If you use the code, datasets, or models in a publication, please cite the appropriate paper.
+If you use the code, datasets, or models in a publication, please cite the appropriate paper:
+
+#. **Dex-Net 2.0** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_rss2017.bib>`__
+#. **Dex-Net 2.1** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_corl2017.bib>`__
+#. **Dex-Net 3.0** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_icra2018.bib>`__
+#. **Dex-Net 4.0** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_sciencerobotics2019.bib>`__
+#. **FC-GQ-CNN** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/fcgqcnn/gh-pages/docs/fcgqcnn_ral2019.bib>`__
 
 .. _Grasp Quality Convolutional Neural Networks (GQ-CNNs): info/info.html
 

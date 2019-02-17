@@ -159,6 +159,6 @@ Finally, evaluate the trained FC-GQ-CNN. ::
 .. _Dex-Net 2.1: https://berkeleyautomation.github.io/dex-net/#dexnet_21
 .. _Dex-Net 3.0: https://berkeleyautomation.github.io/dex-net/#dexnet_3
 .. _Dex-Net 4.0: https://berkeleyautomation.github.io/dex-net/#dexnet_4
-.. _FC-GQ-CNN: https://berkeleyautomation.github.io/dex-net/#fcgqcnn 
+.. _FC-GQ-CNN: https://berkeleyautomation.github.io/fcgqcnn 
 .. _gqcnn: https://github.com/BerkeleyAutomation/gqcnn
 

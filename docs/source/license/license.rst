@@ -1,6 +1,6 @@
 License
 ~~~~~~~
-The `gqcnn` library, pre-trained models, and raw datasets are licensed under The Regents of the University of California (Regents). Copyright ©2017. All Rights Reserved.
+The `gqcnn` library, pre-trained models, and raw datasets are licensed under The Regents of the University of California (Regents). Copyright ©2019. All Rights Reserved.
 
 Permission to use, copy, modify, and distribute this software and its documentation for educational,
 research, and not-for-profit purposes, without fee and without a signed licensing agreement, is

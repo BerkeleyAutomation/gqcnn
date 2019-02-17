@@ -56,7 +56,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GQCNN'
-copyright = u'2019, Vishal Satish, Jeff Mahler'
+copyright = u'2019, The Regents of the University of California'
 author = u'Vishal Satish, Jeff Mahler'
 
 # The version info for the project you're documenting, acts as replacement for
