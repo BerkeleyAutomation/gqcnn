@@ -39,11 +39,15 @@ if __name__=='__main__':
     parser.add_argument('model_dir', type=str, default=None, help='path to the GQ-CNN model')
     parser.add_argument('input_h', type=int, default=None, help='input height for the FC-GQ-CNN')
     parser.add_argument('input_w', type=int, default=None, help='input width for the FC-GQ-CNN')
+    parser.add_argument('--shave_cores', type=int, default=1, help='number of SHAVE cores to compile network for')
+    parser.add_argument('--hardware_version', type=str, default=None, help='specific hardware version to compile for')
 
     args = parser.parse_args()
     model_dir = args.model_dir
     input_h = args.input_h
     input_w = args.input_w
+    shave_cores = args.shave_cores
+    hardware_version = args.hardware_version
 
     # load the FC-GQ-CNN
     logger.info('Loading FC-GQ-CNN...')
@@ -56,5 +60,9 @@ if __name__=='__main__':
 
     # compile the model using NCSDK 2 
     logger.info('Compiling model...')
-    p = subprocess.Popen(['mvNCCompile', os.path.join(model_dir, 'model.pb'), '-in', 'input_im', '-on', 'softmax/output', '-o', os.path.join(model_dir, 'model.graph')])
+    command = ['mvNCCompile', os.path.join(model_dir, 'model.pb'), '-s', str(shave_cores), '-in', 'input_im', '-on', 'softmax/output', '-o', os.path.join(model_dir, 'model.graph')]
+    if hardware_version is not None:
+        # add the hardware version flag
+        command.append('--{}'.format(hardware_version))
+    p = subprocess.Popen(command)
     p.wait()
