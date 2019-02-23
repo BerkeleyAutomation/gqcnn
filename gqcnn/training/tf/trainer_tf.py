@@ -880,11 +880,6 @@ class GQCNNTrainerTF(object):
         if self.total_pct < 0 or self.total_pct > 1:
             raise ValueError('Total percentage must be in range [0,1]')
 
-        # normalization
-        self._norm_inputs = True
-        if self.gqcnn.input_depth_mode == InputDepthMode.SUB:
-            self._norm_inputs = False       
- 
         # angular training
         self._angular_bins = self.gqcnn.angular_bins
 
@@ -1041,7 +1036,7 @@ class GQCNNTrainerTF(object):
                 self.gripper_start_indices[gripper_id] = ind
 
             # create mask index placeholder    
-            self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self.num_mask_outputs * 2))            
+            self.train_pred_mask_node = tf.placeholder(tf.int32, (self.train_batch_size, self.num_mask_outputs * 2))
 
         # set gripper ids in model config dir
         if self.multi_head:
@@ -1206,7 +1201,10 @@ class GQCNNTrainerTF(object):
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[file_num]
                 np.random.shuffle(train_ind)
-                if self.gripper_mode == GripperMode.LEGACY_SUCTION:
+                if self.gripper_mode == GripperMode.PARALLEL_JAW:
+                    valid_ind = np.where(train_poses_tensor.data[train_ind,5] < 0.8 * min(self.im_height, self.im_width))[0]
+                    train_ind = train_ind[valid_ind]
+                elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
                     tp_tmp = read_pose_data(train_poses_tensor.data, self.gripper_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
                     
@@ -1257,14 +1255,18 @@ class GQCNNTrainerTF(object):
                 train_images_arr, train_poses_arr = self._distort(train_images_arr, train_poses_arr)
 
                 # slice poses
-                train_poses_arr = read_pose_data(train_poses_arr,
-                                                 self.gripper_mode)
+                train_poses_arr = read_pose_data(train_poses_arr, self.gripper_mode)
 
                 # standardize inputs and outputs
-                if self._norm_inputs:
+                if self.gqcnn.input_depth_mode == InputDepthMode.SUB:
+                    train_images_arr = train_images_arr - np.tile(np.reshape(train_poses_arr, (-1, 1, 1, 1)),
+                                                                  (1, train_images_arr.shape[1], train_images_arr.shape[2], 1))
+                    train_images_arr = (train_images_arr - self.im_depth_sub_mean) / self.im_depth_sub_std
+                else:
                     train_images_arr = (train_images_arr - self.im_mean) / self.im_std
                     if self.gqcnn.input_depth_mode == InputDepthMode.POSE_STREAM:
                         train_poses_arr = (train_poses_arr - self.pose_mean) / self.pose_std
+                        
                 train_label_arr = 1 * (train_label_arr > self.metric_thresh)
                 train_label_arr = train_label_arr.astype(self.numpy_dtype)
 
