@@ -3,9 +3,9 @@ train_batch_size: 64
 val_batch_size: &val_batch_size 64
 
 # logging params
-num_epochs: 50        # number of epochs to train for
-eval_frequency: 10.0    # how often to get validation error (in epochs)
-save_frequency: 10.0   # how often to save output (in epochs)
+num_epochs: 25        # number of epochs to train for
+eval_frequency: 10.0  # how often to get validation error (in epochs)
+save_frequency: 10.0  # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
 log_frequency: 1      # how often to log output (in steps)
 
@@ -84,7 +84,7 @@ gqcnn:
   # architecture
   architecture:
     base_model:
-      output_layer: fc4
+      output_layer: conv2_2
     im_stream:
       conv1_1:
         type: conv
@@ -124,7 +124,7 @@ gqcnn:
         norm_type: local_response
       fc3:
         type: fc
-        out_size: 128
+        out_size: 64
     pose_stream:
       pc1:
         type: pc
@@ -135,7 +135,7 @@ gqcnn:
     merge_stream:
       fc4:
         type: fc_merge
-        out_size: 128
+        out_size: 64
       fc5:
         type: fc
         out_size: 2

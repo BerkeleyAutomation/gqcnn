@@ -81,7 +81,7 @@ if __name__ == '__main__':
     if not os.path.isabs(config_filename):
         config_filename = os.path.join(os.getcwd(), config_filename)
     if dataset_config_filename is not None and not os.path.isabs(dataset_config_filename):
-        config_filename = os.path.join(os.getcwd(), dataset_config_filename)
+        dataset_config_filename = os.path.join(os.getcwd(), dataset_config_filename)
 
     # make the output dir
     if not os.path.exists(output_dir):

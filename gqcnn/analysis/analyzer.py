@@ -249,6 +249,8 @@ class GQCNNAnalyzer(object):
                 # form mask to extract predictions from ground-truth angular bins
                 raw_poses = dataset.tensor(pose_field_name, i).arr
                 angles = raw_poses[:, 3]
+
+                """
                 pred_mask = np.zeros((raw_poses.shape[0], angular_bins*2), dtype=bool)
 
                 # form mask to extract predictions from ground-truth angular bins
@@ -261,7 +263,23 @@ class GQCNNAnalyzer(object):
                 for i in range(angles.shape[0]):
                     pred_mask[i, int((angles[i] // bin_width)*2)] = True
                     pred_mask[i, int((angles[i] // bin_width)*2 + 1)] = True
+                """
 
+                neg_ind = np.where(angles < 0)
+                angles = np.abs(angles) % GeneralConstants.PI
+                angles[neg_ind] *= -1
+                g_90 = np.where(angles > (GeneralConstants.PI / 2))
+                l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
+                angles[g_90] -= GeneralConstants.PI
+                angles[l_neg_90] += GeneralConstants.PI
+                angles *= -1 # hack to fix reverse angle convention
+                angles += (GeneralConstants.PI / 2)
+                pred_mask = np.zeros((raw_poses.shape[0], angular_bins*2), dtype=bool)
+                bin_width = GeneralConstants.PI / angular_bins
+                for i in range(angles.shape[0]):
+                    pred_mask[i, int((angles[i] // bin_width)*2)] = True
+                    pred_mask[i, int((angles[i] // bin_width)*2 + 1)] = True
+                    
             # predict with GQ-CNN
             predictions = gqcnn.predict(image_arr, pose_arr)
 
