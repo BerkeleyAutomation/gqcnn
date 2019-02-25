@@ -300,27 +300,34 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
         max_depth = np.max(raw_depth_im) + self._depth_offset
 
         # for sampling the min depth, we only sample from the portion of the depth image in the object segmask because sometimes the rim of the bin is not properly subtracted out of the depth image
-        raw_depth_im_segmented = np.ones_like(raw_depth_im)
-        raw_depth_im_segmented[np.where(raw_seg > 0)] = raw_depth_im[np.where(raw_seg > 0)]
-        min_depth = np.min(raw_depth_im_segmented) + self._depth_offset
-
+        raw_depth_im_segmented = np.zeros(raw_depth_im.shape)
+        raw_depth_im_segmented[raw_seg > 0] = raw_depth_im[raw_seg > 0]
+            
+        min_depth = self._depth_offset
+        if np.any(raw_seg > 0):
+            min_depth = np.min(raw_depth_im_segmented[raw_seg > 0]) + self._depth_offset
+        
         depth_bin_width = (max_depth - min_depth) / self._num_depth_bins
         depths = np.zeros((self._num_depth_bins, 1)) 
         for i in range(self._num_depth_bins):
             depths[i][0] = min_depth + (i * depth_bin_width + depth_bin_width / 2)
+
         return depths
 
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
         """Generate the actions to be returned."""
         actions = []
-        ang_bin_width = math.pi / preds.shape[-1]
+
+        max_angle = math.pi
+        bin_width = max_angle / preds.shape[-1]
+
         for i in range(num_actions):
             im_idx = ind[i, 0]
             h_idx = ind[i, 1]
             w_idx = ind[i, 2]
             ang_idx = ind[i, 3]
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
-            ang = math.pi / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
+            ang = ang_idx * bin_width + bin_width / 2
             depth = depths[im_idx, 0]
             grasp = Grasp2D(center, ang, depth, width=self._gripper_width, camera_intr=camera_intr)
             grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, ang_idx], DepthImage(images[im_idx]))
