@@ -398,6 +398,7 @@ class GQCNNTF(object):
         # read multi-gripper indices if available
         self._gripper_types = None
         self._gripper_names = None
+        self._tool_configs = None
         self._gripper_start_indices = None
         self._gripper_max_angles = None
         self._gripper_bin_widths = None
@@ -405,6 +406,8 @@ class GQCNNTF(object):
         arch_config = gqcnn_config['architecture']
         if 'gripper_names' in arch_config.keys():
             self._gripper_names = arch_config['gripper_names']
+        if 'tool_configs' in arch_config.keys():
+            self._tool_configs = arch_config['tool_configs']
         if 'gripper_types' in arch_config.keys():
             self._gripper_types = arch_config['gripper_types']
             self._gripper_start_indices = arch_config['gripper_start_indices']
@@ -564,6 +567,10 @@ class GQCNNTF(object):
     def gripper_names(self):
         return self._gripper_names
 
+    @property
+    def tool_configs(self):
+        return self._tool_configs
+    
     @property
     def gripper_types(self):
         return self._gripper_types

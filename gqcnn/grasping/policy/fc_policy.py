@@ -485,7 +485,7 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             grasp_action = GraspAction(grasp,
                                        q_value,
                                        DepthImage(images[im_idx]))
-            grasp_action.policy_name = self.name
+            grasp_action.gripper_name = self.name
             actions.append(grasp_action)
         return actions
 
@@ -509,6 +509,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
         # read the multi gripper indices
         self._gripper_types = self.grasp_quality_fn.gqcnn.gripper_types
         self._gripper_names = self.grasp_quality_fn.gqcnn.gripper_names
+        self._tool_configs = self.grasp_quality_fn.gqcnn.tool_configs
         self._gripper_start_indices = self.grasp_quality_fn.gqcnn.gripper_start_indices
         self._gripper_max_angles = self.grasp_quality_fn.gqcnn.gripper_max_angles
         self._gripper_bin_widths = self.grasp_quality_fn.gqcnn.gripper_bin_widths
@@ -583,9 +584,12 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                 max_angle = self._gripper_max_angles[gripper_id]
                 bin_width = self._gripper_bin_widths[gripper_id]
             num_angles = 2 * int(max_angle / bin_width)
-            policy_name = None
+            gripper_name = None
+            tool_config = None
             if self._gripper_names is not None:
-                policy_name = self._gripper_names[gripper_id]
+                gripper_name = self._gripper_names[gripper_id]
+            if self._tool_configs is not None:
+                tool_config = self._tool_configs[gripper_id]
                 
             # determine grasp pose
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2,
@@ -663,7 +667,8 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
             grasp_action = GraspAction(grasp,
                                        q_value,
                                        DepthImage(images[im_idx]),
-                                       policy_name=policy_name)
+                                       gripper_name=gripper_name,
+                                       tool_config=tool_config)
 
             actions.append(grasp_action)
         return actions

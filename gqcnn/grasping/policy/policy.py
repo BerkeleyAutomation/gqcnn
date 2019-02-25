@@ -122,11 +122,13 @@ class RgbdImageState(object):
 class GraspAction(object):
     """ Action to encapsulate grasps.
     """
-    def __init__(self, grasp, q_value, image=None, policy_name=None):
+    def __init__(self, grasp, q_value, image=None,
+                 gripper_name=None, tool_config=None):
         self.grasp = grasp
         self.q_value = q_value
         self.image = image
-        self.policy_name = policy_name
+        self.gripper_name = gripper_name
+        self.tool_config = tool_config
 
     def save(self, save_dir):
         if not os.path.exists(save_dir):
@@ -1246,7 +1248,7 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
             self._logger.info('Planning action for sub-policy {}'.format(name))
             try:
                 action = self.policies[policy_name].action(state)
-                action.policy_name = name
+                action.gripper_name = name
                 max_q = action.q_value
             except NoValidGraspsException:
                 pass
@@ -1271,7 +1273,7 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
             try:
                 actions = self.policies[name].action_set(state)
                 for action in actions:
-                    action.policy_name = name
+                    action.gripper_name = name
                 q_values = [a.q_value for a in actions]
                 max_q = np.max(q_values)
             except NoValidGraspsException:
@@ -1295,7 +1297,7 @@ class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
                 continue
             try:
                 action = policy.action(state)
-                action.policy_name = name
+                action.gripper_name = name
                 actions.append()
             except NoActionFoundException:
                 pass
@@ -1318,7 +1320,7 @@ class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
             try:
                 action_set, q_vals = self.policies[name].action_set(state)
                 for action in action_set:
-                    action.policy_name = name
+                    action.gripper_name = name
                 actions.extend(action_set)
                 q_values.extend(q_vals)
             except NoValidGraspsException:
