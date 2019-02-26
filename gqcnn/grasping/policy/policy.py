@@ -130,6 +130,12 @@ class GraspAction(object):
         self.gripper_name = gripper_name
         self.tool_config = tool_config
 
+    @property
+    def policy_name(self):
+        if self.tool_config is None:
+            return self.gripper_name
+        return self.gripper_name + '~' + self.tool_config
+        
     def save(self, save_dir):
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
