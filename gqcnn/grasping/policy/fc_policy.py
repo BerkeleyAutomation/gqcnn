@@ -32,7 +32,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from autolab_core import Logger, Point, RigidTransform
-from perception import DepthImage
+from perception import DepthImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 from gqcnn.utils import NoValidGraspsException, GripperMode
@@ -481,10 +481,10 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
 
             # define multi cup suction point by the aligned pose
             import ambicore
-            if isinstance(camera_intr, ambicore.Intrinsics):
-                t = camera_intr.deproject_pixel(depth, center.data)
-            else:
+            if isinstance(camera_intr, CameraIntrinsics):
                 t = camera_intr.deproject_pixel(depth, center).data
+            else:
+                t = camera_intr.deproject_pixel(depth, center.data)
             T = RigidTransform(rotation=aligned_R,
                                translation=t,
                                from_frame='grasp',
