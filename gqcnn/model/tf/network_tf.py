@@ -61,6 +61,7 @@ class GQCNNTF(object):
             
         self._weights = GQCNNWeights()
         self._parse_config(gqcnn_config)
+        self._gqcnn_config = gqcnn_config
 
     @staticmethod
     def load(model_dir, verbose=True, log_file=None):
