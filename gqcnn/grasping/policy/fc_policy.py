@@ -89,7 +89,14 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
     def _unpack_state(self, state):
         """Unpack information from the RgbdImageState"""
-        return state.rgbd_im.depth, state.rgbd_im.depth._data, state.segmask.raw_data, state.camera_intr #TODO: @Vishal don't access raw depth data like this
+        depth = state.rgbd_im.depth
+        depth_data = state.rgbd_im.depth.data
+        if depth_data.ndim < 3:
+            depth_data = depth_data[:,:,np.newaxis]
+        segmask_data = state.segmask.data
+        if segmask_data.ndim < 3:
+            segmask_data = segmask_data[:,:,np.newaxis]
+        return depth, depth_data, segmask_data, state.camera_intr #TODO: @Vishal don't access raw depth data like this
        
     def _mask_predictions(self, preds, raw_segmask):
         """Mask the given predictions with the given segmask, setting the rest to 0.0."""
@@ -424,7 +431,7 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
         # compute point cloud and normals
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
         point_cloud_im = camera_intr.deproject_to_image(depth_im)
-        normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=9)
+        normal_cloud_im = point_cloud_im.normal_cloud_im()#ksize=9)
 
         # set angle params
         max_angle = 2 * math.pi
@@ -473,7 +480,11 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
                     aligned_R = R_tf.copy()
 
             # define multi cup suction point by the aligned pose
-            t = camera_intr.deproject_pixel(depth, center).data
+            import ambicore
+            if isinstance(camera_intr, ambicore.Intrinsics):
+                t = camera_intr.deproject_pixel(depth, center.data)
+            else:
+                t = camera_intr.deproject_pixel(depth, center).data
             T = RigidTransform(rotation=aligned_R,
                                translation=t,
                                from_frame='grasp',
