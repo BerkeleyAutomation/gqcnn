@@ -910,7 +910,12 @@ class GQCnnQualityFunction(GraspQualityFunction):
         # predict grasps
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        q_values = output_arr[:,-1]
+
+        if self._gqcnn._angular_bins > 0:
+            q_values = output_arr[:, 1] # first index since images were rotated into alignment
+        else:
+            q_values = output_arr[:,-1]
+
         self._logger.info('Inference took %.3f sec' %(time() - predict_start))
         return q_values.tolist()
 
