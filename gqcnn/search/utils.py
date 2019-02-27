@@ -28,6 +28,7 @@ import copy
 from collections import OrderedDict, defaultdict
 from datetime import datetime
 import itertools
+import six
 
 import numpy as np
 
@@ -54,7 +55,7 @@ def get_fields_to_search_over(train_config, prev_keys=[]):
     return fields, anchored_fields
 
 def update_dict(dict1, dict2):
-    for key, val in dict2.iteritems():
+    for key, val in six.iteritems(dict2):
         if key in dict1:
             dict1[key].extend(val)
         else:
@@ -83,7 +84,7 @@ def parse_master_train_config(train_config):
     hyperparam_search_fields, hyperparam_anchored_search_fields = get_fields_to_search_over(train_config)
 
     # ensure a one-to-one mapping between hyperparameters of fields with matching anchor tags
-    for anchor_tag, fields in hyperparam_anchored_search_fields.iteritems():
+    for anchor_tag, fields in six.iteritems(hyperparam_anchored_search_fields):
         num_params = []
         for field in fields:
             num_params.append(len(get_nested_key(train_config, field)))

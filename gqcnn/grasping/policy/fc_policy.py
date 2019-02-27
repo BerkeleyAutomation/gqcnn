@@ -37,8 +37,8 @@ from visualization import Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 from gqcnn.utils import NoValidGraspsException, GripperMode
 
-from enums import SamplingMethod
-from policy import GraspingPolicy, GraspAction
+from .enums import SamplingMethod
+from .policy import GraspingPolicy, GraspAction
 
 class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """Abstract grasp sampling policy class using Fully-Convolutional GQ-CNN network."""
@@ -101,7 +101,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     def _mask_predictions(self, preds, raw_segmask):
         """Mask the given predictions with the given segmask, setting the rest to 0.0."""
         preds_masked = np.zeros_like(preds)
-        raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h / 2:raw_segmask.shape[0] - self._gqcnn_recep_h / 2, self._gqcnn_recep_w / 2:raw_segmask.shape[1] - self._gqcnn_recep_w / 2, 0]
+        raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h // 2:raw_segmask.shape[0] - self._gqcnn_recep_h // 2, self._gqcnn_recep_w // 2:raw_segmask.shape[1] - self._gqcnn_recep_w // 2, 0]
         raw_segmask_downsampled = raw_segmask_cropped[::self._gqcnn_stride, ::self._gqcnn_stride]
 
         if raw_segmask_downsampled.shape[0] != preds.shape[1]:
@@ -183,7 +183,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         """Filter actions."""
         for action in actions:
             valid = True
-            for filter_name, is_valid in self._filters.iteritems():
+            for filter_name, is_valid in self._filters.items():
                 if not is_valid(action.grasp):
                     self._logger.info('Grasp {} is not valid with filter {}'.format(action.grasp, filter_name))
                     valid = False
@@ -381,7 +381,7 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
             if ind.shape[1] > 3:
                 ang_idx = ind[i, 3]
                 ang = ang_idx * bin_width + bin_width / 2
-            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
+            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]))
             axis = -normal_cloud_im[center.y, center.x]
             if np.linalg.norm(axis) == 0:
                 continue
@@ -447,8 +447,8 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             ang_idx = ind[i, 3]
 
             # read center, axis and depth
-            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2,
-                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]),
+            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
+                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]),
                            frame=camera_intr.frame)
             axis = -normal_cloud_im[center.y, center.x]
             if np.linalg.norm(axis) == 0:
@@ -603,8 +603,8 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                 tool_config = self._tool_configs[gripper_id]
                 
             # determine grasp pose
-            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2,
-                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]),
+            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
+                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]),
                            frame=camera_intr.frame)
             if gripper_type == GripperMode.SUCTION or gripper_type == GripperMode.LEGACY_SUCTION:
                 # read axis and depth from the images
@@ -687,8 +687,8 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
     def _visualize_affordance_map(self, preds, depth_im, scale, plot_max=True, output_dir=None):
         """Visualize an affordance map of the network predictions overlayed on the depth image."""
         self._logger.info('Visualizing affordance map...')
-        print self._gripper_names
-        print self._gripper_start_indices
+        print(self._gripper_names)
+        print(self._gripper_start_indices)
         
         for i in range(preds.shape[3]):
             affordance_map = preds[0, ..., i]
