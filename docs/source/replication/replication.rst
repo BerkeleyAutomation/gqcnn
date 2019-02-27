@@ -9,6 +9,12 @@ There are two ways to replicate results:
 
 **We highly encourage method 1.** Note that method 2 is computationally expensive as training takes roughly 24 hours on a Nvidia Titan Xp GPU. Furthermore, the raw datasets are fairly large in size. 
 
+Please keep in mind that GQ-CNN models are sensitive to the following parameters used during dataset generation:
+   #. The robot gripper
+   #. The depth camera
+   #. The distance between the camera and workspace.
+As a result, we cannot guarantee performance of our pre-trained models on other physical setups.
+
 For more information about the pre-trained models and sample inputs for the example policy, see :ref:`pre-trained-models` and :ref:`sample-inputs`.
 
 Using a Pre-trained Model

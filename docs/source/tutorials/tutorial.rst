@@ -10,6 +10,15 @@ There are two main use cases of the `gqcnn` package:
 
 Click on the links or scroll down to get started!
 
+Prerequisites
+-------------
+Before running the tutorials please download the example models and datasets: ::
+
+    $ cd /path/to/your/gqcnn
+    $ ./scripts/downloads/download_example_data.sh
+    $ ./scripts/downloads/models/download_models.sh
+
+
 Running Python Scripts
 ----------------------
 All `gqcnn` Python scripts are designed to be run from the top-level directory of your `gqcnn` repo by default. This is because every script takes in a YAML file specifying parameters for the script, and this YAML file is stored relative to the repository root directory.
