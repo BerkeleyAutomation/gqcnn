@@ -609,7 +609,7 @@ class GQCNNTF(object):
             close_sess = True
             self.open_session()
 
-        first_layer_name = self._architecture['im_stream'].keys()[0]
+        first_layer_name = list(self._architecture['im_stream'].keys())[0]
         try:
             filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_name)])
         except:
@@ -1147,7 +1147,7 @@ class GQCNNTF(object):
         self._logger.info('Building Merge Stream...')
         
         # first check if first layer is a merge layer
-        if layers[layers.keys()[0]]['type'] != 'fc_merge':
+        if layers[list(layers.keys())[0]]['type'] != 'fc_merge':
             raise ValueError('First layer in merge stream must be a fc_merge layer!')
             
         prev_layer = "start"

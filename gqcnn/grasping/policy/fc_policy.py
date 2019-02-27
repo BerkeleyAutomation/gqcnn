@@ -578,7 +578,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
             gripper_id = None
             g_start_idx = -1
             for j in range(num_grippers):
-                candidate_gripper_id = self._gripper_types.keys()[j]
+                candidate_gripper_id = list(self._gripper_types.keys())[j]
                 start_idx = self._gripper_start_indices[candidate_gripper_id]
                 if start_idx <= g_idx and start_idx > g_start_idx:
                     g_start_idx = start_idx
@@ -664,7 +664,11 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                         aligned_R = R_tf.copy()
 
                 # define multi cup suction point by the aligned pose
-                t = camera_intr.deproject_pixel(depth, center).data
+                import ambicore
+                if isinstance(camera_intr, CameraIntrinsics):
+                    t = camera_intr.deproject_pixel(depth, center).data
+                else:
+                    t = camera_intr.deproject_pixel(depth, center.data)
                 T = RigidTransform(rotation=aligned_R,
                                    translation=t,
                                    from_frame='grasp',
@@ -687,8 +691,6 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
     def _visualize_affordance_map(self, preds, depth_im, scale, plot_max=True, output_dir=None):
         """Visualize an affordance map of the network predictions overlayed on the depth image."""
         self._logger.info('Visualizing affordance map...')
-        print(self._gripper_names)
-        print(self._gripper_start_indices)
         
         for i in range(preds.shape[3]):
             affordance_map = preds[0, ..., i]

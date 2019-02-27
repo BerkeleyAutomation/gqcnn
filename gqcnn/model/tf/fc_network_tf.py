@@ -198,7 +198,7 @@ class FCGQCNNTF(GQCNNTF):
         self._logger.info('Building Merge Stream...')
         
         # first check if first layer is a merge layer
-        if layers[layers.keys()[0]]['type'] != 'fc_merge':
+        if layers[list(layers.keys())[0]]['type'] != 'fc_merge':
             raise ValueError('First layer in merge stream must be of type fc_merge!')
             
         prev_layer = "start" # dummy placeholder
