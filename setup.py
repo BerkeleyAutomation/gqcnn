@@ -46,7 +46,7 @@ requirements = [
     'scipy',
     'matplotlib<=2.2.0',
     'opencv-python',
-    #'tensorflow>=1.4.0',
+    'tensorflow>=1.4.0',
     'scikit-image',
     'scikit-learn',
     'psutil',
@@ -81,8 +81,8 @@ setup(name='gqcnn',
           'sphinx_rtd_theme'
       ],
       },
-#      cmdclass={
-#        'install': PostInstallCmd,
-#        'develop': PostDevelopCmd
-#      }
+      cmdclass={
+        'install': PostInstallCmd,
+        'develop': PostDevelopCmd
+      }
 )
