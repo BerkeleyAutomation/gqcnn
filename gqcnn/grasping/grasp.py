@@ -378,8 +378,11 @@ class SuctionPoint2D(object):
         # compute 3D grasp center in camera basis
         suction_center_im = self.center.data
         center_px_im = Point(suction_center_im, frame=self.camera_intr.frame)
-        suction_center_camera = self.camera_intr.deproject_pixel(self.depth, center_px_im)
-        suction_center_camera = suction_center_camera.data
+        import ambicore
+        if isinstance(self.camera_intr, CameraIntrinsics):
+            suction_center_camera = self.camera_intr.deproject_pixel(self.depth, center_px_im).data
+        else:
+            suction_center_camera = self.camera_intr.deproject_pixel(self.depth, center_px_im.data)
 
         # compute 3D grasp axis in camera basis
         suction_axis_camera = self.axis
@@ -553,7 +556,10 @@ class MultiSuctionPoint2D(object):
 
         R = np.array([x_axis, y_axis, z_axis]).T
         R = R.dot(RigidTransform.x_axis_rotation(grasp_angle))
-        t = camera_intr.deproject_pixel(grasp_depth, Point(center_px, frame=camera_intr.frame)).data
+        if isinstance(camera_intr, CameraIntrinsics):
+            t = camera_intr.deproject_pixel(grasp_depth, Point(center_px, frame=camera_intr.frame)).data
+        else:
+            t = camera_intr.deproject_pixel(grasp_depth, center_px)
         T = RigidTransform(rotation=R,
                            translation=t,
                            from_frame='grasp',

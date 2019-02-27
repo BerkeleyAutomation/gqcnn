@@ -122,7 +122,7 @@ class ResourceManager(object):
             total_gpu_mems, gpu_loads, gpu_mems = self._get_gpu_stats()
             max_possible_trials_gpu_load_per_device = [int((100 - gpu_load) // self._trial_gpu_load) for gpu_load in gpu_loads]
             max_possible_trials_gpu_mem_per_device = [int((total_gpu_mem - gpu_mem) // self._trial_gpu_mem) for total_gpu_mem, gpu_mem in zip(total_gpu_mems, gpu_mems)]
-            max_possible_trials_gpu_per_device = map(lambda (x, y): min(x, y), zip(max_possible_trials_gpu_load_per_device, max_possible_trials_gpu_mem_per_device))
+            max_possible_trials_gpu_per_device = map(lambda x: min(x[0], x[1]), zip(max_possible_trials_gpu_load_per_device, max_possible_trials_gpu_mem_per_device))
             self._logger.info('GPU loads: {}, GPU mems: {}, Max possible trials: {}'.format('% '.join([str(gpu_load) for gpu_load in gpu_loads]) + '%', 'MiB '.join([str(gpu_mem) for gpu_mem in gpu_mems]) + 'MiB', sum(max_possible_trials_gpu_per_device)))
             num_trials_to_schedule = min(num_trials_to_schedule, sum(max_possible_trials_gpu_per_device))
             

@@ -29,13 +29,16 @@ import math
 import time
 import operator
 import os
-from Queue import Queue
+try:
+    from Queue import Queue
+except:
+    from queue import Queue
 import sys
 
-from resource_manager import ResourceManager
-from trial import GQCNNTrainingAndAnalysisTrial, GQCNNFineTuningAndAnalysisTrial
-from utils import gen_trial_params, gen_timestamp, log_trial_status
-from enums import TrialConstants, SearchConstants
+from .resource_manager import ResourceManager
+from .trial import GQCNNTrainingAndAnalysisTrial, GQCNNFineTuningAndAnalysisTrial
+from .utils import gen_trial_params, gen_timestamp, log_trial_status
+from .enums import TrialConstants, SearchConstants
 
 from autolab_core import Logger
 from gqcnn.utils import GQCNNTrainingStatus

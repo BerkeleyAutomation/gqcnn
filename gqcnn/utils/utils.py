@@ -28,7 +28,7 @@ import os
 import numpy as np
 
 from autolab_core import Logger
-from enums import GripperMode
+from .enums import GripperMode
 
 # set up logger
 logger = Logger.get_logger('gqcnn/utils/utils.py')

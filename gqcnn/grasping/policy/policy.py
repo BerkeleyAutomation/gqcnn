@@ -24,11 +24,15 @@ Grasping policies
 Author: Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
-import cPickle as pkl
+try:
+    import cPickle as pkl
+except ImportError:
+    import pickle as pkl
 import math
 import os
 from time import time
 import copy
+import six
 
 import numpy as np
 from sklearn.mixture import GaussianMixture
@@ -419,7 +423,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             index = grasps_and_predictions[i][0]
             grasp = grasps[index]
             valid = True
-            for filter_name, is_valid in self._filters.iteritems():
+            for filter_name, is_valid in six.iteritems(self._filters):
                 valid = is_valid(grasp) 
                 self._logger.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
                 if not valid:
@@ -612,7 +616,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             index = grasps_and_predictions[i][0]
             grasp = grasps[index]
             valid = True
-            for filter_name, is_valid in self._filters.iteritems():
+            for filter_name, is_valid in six.iteritems(self._filters):
                 valid = is_valid(grasp) 
                 self._logger.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
                 if not valid:
@@ -640,8 +644,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         normal_cloud_im = point_cloud_im.normal_cloud_im()
 
         q_vals = []
-        gqcnn_recep_h_half = self._grasp_quality_fn.gqcnn_recep_height / 2
-        gqcnn_recep_w_half = self._grasp_quality_fn.gqcnn_recep_width / 2
+        gqcnn_recep_h_half = self._grasp_quality_fn.gqcnn_recep_height // 2
+        gqcnn_recep_w_half = self._grasp_quality_fn.gqcnn_recep_width // 2
         im_h = state.rgbd_im.height
         im_w = state.rgbd_im.width
         for i in range(gqcnn_recep_h_half - 1, im_h - gqcnn_recep_h_half, stride):
@@ -655,7 +659,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         self._logger.info('Generating crop grasp candidates took {} sec.'.format(time() - crop_candidate_start_time))
 
         # mask out predictions not in the segmask(we don't really care about them)
-        pred_map = np.array(q_vals).reshape((im_h - gqcnn_recep_h_half * 2) / stride + 1, (im_w - gqcnn_recep_w_half * 2) / stride + 1)
+        pred_map = np.array(q_vals).reshape((im_h - gqcnn_recep_h_half * 2) // stride + 1, (im_w - gqcnn_recep_w_half * 2) // stride + 1)
         tf_segmask = state.segmask.crop(im_h - gqcnn_recep_h_half * 2, im_w - gqcnn_recep_w_half * 2).resize(1.0 / stride, interp='nearest')._data.squeeze() #TODO: @Vishal don't access the raw data like this!
         if tf_segmask.shape != pred_map.shape:
             new_tf_segmask = np.zeros_like(pred_map)
@@ -667,8 +671,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         return pred_map_masked
 
     def _plot_grasp_affordance_map(self, state, affordance_map, stride=1, grasps=None, q_values=None, plot_max=True, title=None, scale=1.0, save_fname=None, save_path=None):
-        gqcnn_recep_h_half = self._grasp_quality_fn.gqcnn_recep_height / 2
-        gqcnn_recep_w_half = self._grasp_quality_fn.gqcnn_recep_width / 2
+        gqcnn_recep_h_half = self._grasp_quality_fn.gqcnn_recep_height // 2
+        gqcnn_recep_w_half = self._grasp_quality_fn.gqcnn_recep_width // 2
         im_h = state.rgbd_im.height
         im_w = state.rgbd_im.width
 
@@ -1298,7 +1302,7 @@ class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
         """
         # compute all possible actions
         actions = []
-        for name, policy in self.policies.iteritems():
+        for name, policy in six.iteritems(self.policies):
             if policy_subset is not None and name not in policy_subset:
                 continue
             try:
@@ -1320,7 +1324,7 @@ class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
         """
         actions = []
         q_values = []
-        for name, policy in self.policies.iteritems():
+        for name, policy in six.iteritems(self.policies):
             if policy_subset is not None and name not in policy_subset:
                 continue
             try:

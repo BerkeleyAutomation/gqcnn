@@ -27,7 +27,10 @@ import argparse
 import collections
 import copy
 import json
-import cPickle as pkl
+try:
+    import cPickle as pkl
+except ImportError:
+    import pickle as pkl
 import os
 import random
 import shutil
@@ -37,7 +40,10 @@ import sys
 import threading
 import time
 import multiprocessing as mp
-import Queue
+try:
+    import Queue
+except:
+    from queue import Queue
 
 import matplotlib.pyplot as plt
 import cv2
@@ -291,7 +297,7 @@ class GQCNNTrainerTF(object):
         var_list = self.weights.values()
         if finetune:
             var_list = []
-            for weights_name, weights_val in self.weights.iteritems():
+            for weights_name, weights_val in self.weights.items():
                 layer_name = weight_name_to_layer_name(weights_name)
                 if self.optimize_base_layers or layer_name not in self.gqcnn._base_layer_names:
                     var_list.append(weights_val)
@@ -519,12 +525,12 @@ class GQCNNTrainerTF(object):
                     train_indices = self.train_index_map[i]
                     if self.gripper_mode == GripperMode.SUCTION:
                         rand_indices = np.random.choice(pose_data.shape[0],
-                                                        size=pose_data.shape[0]/2,
+                                                        size=pose_data.shape[0]//2,
                                                         replace=False)
                         pose_data[rand_indices, 4] = -pose_data[rand_indices, 4]
                     elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
                         rand_indices = np.random.choice(pose_data.shape[0],
-                                                        size=pose_data.shape[0]/2,
+                                                        size=pose_data.shape[0]//2,
                                                         replace=False)
                         pose_data[rand_indices, 3] = -pose_data[rand_indices, 3]
                     if train_indices.shape[0] > 0:
@@ -543,12 +549,12 @@ class GQCNNTrainerTF(object):
                     train_indices = self.train_index_map[i]
                     if self.gripper_mode == GripperMode.SUCTION:
                         rand_indices = np.random.choice(pose_data.shape[0],
-                                                        size=pose_data.shape[0]/2,
+                                                        size=pose_data.shape[0]//2,
                                                         replace=False)
                         pose_data[rand_indices, 4] = -pose_data[rand_indices, 4]
                     elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
                         rand_indices = np.random.choice(pose_data.shape[0],
-                                                        size=pose_data.shape[0]/2,
+                                                        size=pose_data.shape[0]//2,
                                                         replace=False)
                         pose_data[rand_indices, 3] = -pose_data[rand_indices, 3]
                     if train_indices.shape[0] > 0:
@@ -620,7 +626,7 @@ class GQCNNTrainerTF(object):
             self.gqcnn.set_im_depth_sub_mean(self.im_depth_sub_mean)
             self.gqcnn.set_im_depth_sub_std(self.im_depth_sub_std)
 
-	elif self.gqcnn.input_depth_mode == InputDepthMode.IM_ONLY:
+        elif self.gqcnn.input_depth_mode == InputDepthMode.IM_ONLY:
             # compute image stats
             im_mean_filename = os.path.join(self.model_dir, 'im_mean.npy')
             im_std_filename = os.path.join(self.model_dir, 'im_std.npy')
@@ -746,7 +752,7 @@ class GQCNNTrainerTF(object):
             lowest = np.min(datapoint_indices)
             self.train_index_map[tensor_index].append(i - lowest)
 
-        for i, indices in self.train_index_map.iteritems():
+        for i, indices in self.train_index_map.items():
             self.train_index_map[i] = np.array(indices)
             
         self.val_index_map = {}
@@ -761,7 +767,7 @@ class GQCNNTrainerTF(object):
             lowest = np.min(datapoint_indices)
             self.val_index_map[tensor_index].append(i - lowest)
 
-        for i, indices in self.val_index_map.iteritems():
+        for i, indices in self.val_index_map.items():
             self.val_index_map[i] = np.array(indices)
             
     def _setup_output_dirs(self):
@@ -922,7 +928,7 @@ class GQCNNTrainerTF(object):
 
             self.num_angular_bins = {}
             if 'num_angular_bins' in self.dataset.metadata.keys():
-                [self.num_angular_bins.update({k:v}) for k, v in self.dataset.metadata['num_angular_bins'].iteritems()]
+                [self.num_angular_bins.update({k:v}) for k, v in self.dataset.metadata['num_angular_bins'].items()]
             else:
                 [self.num_angular_bins.update({k:self._angular_bins}) for k in gripper_ids.keys()]                
                 
@@ -997,7 +1003,7 @@ class GQCNNTrainerTF(object):
                 self.gripper_max_angles = {}
                 self.gripper_bin_widths = {}
                 
-                for gripper_id, gripper_type in self.gripper_types.iteritems():
+                for gripper_id, gripper_type in self.gripper_types.items():
                     self.gripper_start_indices[gripper_id] = self.num_mask_outputs
 
                     if gripper_type == GripperMode.PARALLEL_JAW:
@@ -1275,7 +1281,7 @@ class GQCNNTrainerTF(object):
                     train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self.num_mask_outputs*2))
                     if self.multi_head:
                         # index for multiple grippers with angle bins
-                        for gripper_id, start_ind in self.gripper_start_indices.iteritems():
+                        for gripper_id, start_ind in self.gripper_start_indices.items():
                             # find the indices of the given gripper type
                             gripper_type = self.gripper_types[gripper_id]
                             gripper_ind = np.where(train_gripper_ids_arr == int(gripper_id))[0]
@@ -1312,7 +1318,7 @@ class GQCNNTrainerTF(object):
                 elif self.multi_head:
                     # index for multiple grippers
                     train_pred_mask_arr = np.zeros((train_label_arr.shape[0], self.num_mask_outputs*2))
-                    for gripper_id, ind in self.gripper_start_indices.iteritems():
+                    for gripper_id, ind in self.gripper_start_indices.items():
                         gripper_ind = np.where(train_gripper_ids_arr == int(gripper_id))[0]
                         if gripper_ind.shape[0] == 0:
                             continue
@@ -1456,7 +1462,7 @@ class GQCNNTrainerTF(object):
 
                 if self.multi_head:
                     # index for multiple grippers with angle bins
-                    for gripper_id, start_ind in self.gripper_start_indices.iteritems():
+                    for gripper_id, start_ind in self.gripper_start_indices.items():
                         gripper_type = self.gripper_types[gripper_id]
                         gripper_ind = np.where(gripper_ids == int(gripper_id))[0]
                         if gripper_ind.shape[0] == 0:
@@ -1487,7 +1493,7 @@ class GQCNNTrainerTF(object):
                         pred_mask[i, int((angles[i] // self._bin_width)*2 + 1)] = 1
             elif self.multi_head:
                 pred_mask = np.zeros((labels.shape[0], self.num_mask_outputs*2), dtype=bool)
-                for gripper_id, ind in self.gripper_start_indices.iteritems():
+                for gripper_id, ind in self.gripper_start_indices.items():
                     gripper_ind = np.where(gripper_ids == int(gripper_id))[0]
                     if gripper_ind.shape[0] == 0:
                         continue

@@ -213,8 +213,8 @@ class GQCNNTF(object):
             self._im_depth_sub_mean = np.load(os.path.join(model_dir, 'im_depth_sub_mean.npy')) 
             self._im_depth_sub_std = np.load(os.path.join(model_dir, 'im_depth_sub_std.npy'))
         elif self._input_depth_mode == InputDepthMode.IM_ONLY:
-	    self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
-	    self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
+            self._im_mean = np.load(os.path.join(model_dir, 'im_mean.npy'))
+            self._im_std = np.load(os.path.join(model_dir, 'im_std.npy'))
         else:
             raise ValueError('Unsupported input depth mode: {}'.format(self._input_depth_mode))
  
@@ -609,7 +609,7 @@ class GQCNNTF(object):
             close_sess = True
             self.open_session()
 
-        first_layer_name = self._architecture['im_stream'].keys()[0]
+        first_layer_name = list(self._architecture['im_stream'].keys())[0]
         try:
             filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_name)])
         except:
@@ -953,11 +953,11 @@ class GQCNNTF(object):
                 self._weights.weights['{}_bias'.format(name)] = convb
             
             if pad == 'SAME':
-                out_height = input_height / pool_stride_h
-                out_width = input_width / pool_stride_w
+                out_height = input_height // pool_stride_h
+                out_width = input_width // pool_stride_w
             else:
-                out_height = math.ceil(float(input_height - filter_h + 1) / pool_stride_h)
-                out_width = math.ceil(float(input_width - filter_w + 1) / pool_stride_w)
+                out_height = math.ceil(float(input_height - filter_h + 1) // pool_stride_h)
+                out_width = math.ceil(float(input_width - filter_w + 1) // pool_stride_w)
             out_channels = num_filt
 
             # build layer
@@ -1094,7 +1094,7 @@ class GQCNNTF(object):
         output_node = input_node
         prev_layer = "start" # dummy placeholder
         last_index = len(layers.keys()) - 1
-        for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
+        for layer_index, (layer_name, layer_config) in enumerate(layers.items()):
             layer_type = layer_config['type']
             if layer_type == 'conv':
                 if prev_layer == 'fc':
@@ -1125,7 +1125,7 @@ class GQCNNTF(object):
         self._logger.info('Building Pose Stream...')
         output_node = input_node
         prev_layer = "start" # dummy placeholder
-        for layer_name, layer_config in layers.iteritems():
+        for layer_name, layer_config in layers.items():
             layer_type = layer_config['type']
             if layer_type == 'conv':
                raise ValueError('Cannot have conv layer in pose stream')
@@ -1147,13 +1147,13 @@ class GQCNNTF(object):
         self._logger.info('Building Merge Stream...')
         
         # first check if first layer is a merge layer
-        if layers[layers.keys()[0]]['type'] != 'fc_merge':
+        if layers[list(layers.keys())[0]]['type'] != 'fc_merge':
             raise ValueError('First layer in merge stream must be a fc_merge layer!')
             
         prev_layer = "start"
         last_index = len(layers.keys()) - 1
         fan_in = -1
-        for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
+        for layer_index, (layer_name, layer_config) in enumerate(layers.items()):
             layer_type = layer_config['type']
             if layer_type == 'conv':
                raise ValueError('Cannot have conv layer in merge stream!')

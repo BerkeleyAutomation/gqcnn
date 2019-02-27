@@ -30,7 +30,7 @@ import sys
 
 import tensorflow as tf
 
-from network_tf import GQCNNTF
+from .network_tf import GQCNNTF
 from gqcnn.utils import TrainingMode, InputDepthMode
 
 class FCGQCNNTF(GQCNNTF):
@@ -43,7 +43,7 @@ class FCGQCNNTF(GQCNNTF):
         self._parse_config(fc_config) # we call this again(even though it gets called in the parent constructor on line 42) because the call to the parent _parse_config() on line 43 overwrites our first call
 
         # check that conv layers of GQ-CNN were trained with VALID padding
-        for layer_name, layer_config in self._architecture['im_stream'].iteritems():
+        for layer_name, layer_config in self._architecture['im_stream'].items():
             if layer_config['type'] == 'conv':
                 assert layer_config['pad'] == 'VALID', 'GQ-CNN used for FC-GQ-CNN must have VALID padding for conv layers. Found layer: {} with padding: {}'.format(layer_name, layer_config['pad'])
 
@@ -105,7 +105,7 @@ class FCGQCNNTF(GQCNNTF):
         
         # create new set of weights by reshaping fully connected layer weights
         fcW = self._weights.weights['{}_weights'.format(fc_name)]
-        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] / (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name))
+        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] // (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name))
         self._weights.weights['{}_fully_conv_weights'.format(fc_name)] = convW
         
         # get bias
@@ -134,7 +134,7 @@ class FCGQCNNTF(GQCNNTF):
 
         # create new set of weights for image stream by reshaping fully-connected layer weights
         fcW_im = self._weights.weights['{}_input_1_weights'.format(fc_name)]
-        convW = tf.Variable(tf.reshape(fcW_im, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW_im)[0] / (filter_dim * filter_dim)], tf.shape(fcW_im)[1:]], 0)), name='{}_im_fully_conv_weights'.format(fc_name))
+        convW = tf.Variable(tf.reshape(fcW_im, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW_im)[0] // (filter_dim * filter_dim)], tf.shape(fcW_im)[1:]], 0)), name='{}_im_fully_conv_weights'.format(fc_name))
         self._weights.weights['{}_im_fully_conv_weights'.format(fc_name)] = convW
 
         # compute im stream conv out(note that we use padding='VALID' here because we want an output size of 1x1xnum_filts for the original input size)
@@ -168,7 +168,7 @@ class FCGQCNNTF(GQCNNTF):
         prev_layer = "start" # dummy placeholder
         filter_dim = self._train_im_width
         last_index = len(layers.keys()) - 1
-        for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
+        for layer_index, (layer_name, layer_config) in enumerate(layers.items()):
             layer_type = layer_config['type']
             if layer_type == 'conv':
                 if prev_layer == 'fc':
@@ -176,9 +176,9 @@ class FCGQCNNTF(GQCNNTF):
                 output_node, input_height, input_width, input_channels = self._build_conv_layer(output_node, input_height, input_width, input_channels, layer_config['filt_dim'], layer_config['filt_dim'], layer_config['num_filt'], layer_config['pool_stride'], layer_config['pool_stride'], layer_config['pool_size'], layer_name, norm=layer_config['norm'], pad=layer_config['pad'])
                 prev_layer = layer_type
                 if layer_config['pad'] == 'SAME':
-                    filter_dim /= layer_config['pool_stride']
+                    filter_dim //= layer_config['pool_stride']
                 else:
-                    filter_dim = ((filter_dim - layer_config['filt_dim']) / layer_config['pool_stride']) + 1
+                    filter_dim = ((filter_dim - layer_config['filt_dim']) // layer_config['pool_stride']) + 1
             elif layer_type == 'fc':
                 if layer_index == last_index and only_stream:
                     output_node = self._build_fully_conv_layer(output_node, filter_dim, layer_name, final_fc_layer=True)
@@ -198,14 +198,14 @@ class FCGQCNNTF(GQCNNTF):
         self._logger.info('Building Merge Stream...')
         
         # first check if first layer is a merge layer
-        if layers[layers.keys()[0]]['type'] != 'fc_merge':
+        if layers[list(layers.keys())[0]]['type'] != 'fc_merge':
             raise ValueError('First layer in merge stream must be of type fc_merge!')
             
         prev_layer = "start" # dummy placeholder
         last_index = len(layers.keys()) - 1
         filter_dim = 1 # because fully-convolutional layers at this point in the network have a filter_dim of 1
         fan_in = -1
-        for layer_index, (layer_name, layer_config) in enumerate(layers.iteritems()):
+        for layer_index, (layer_name, layer_config) in enumerate(layers.items()):
             layer_type = layer_config['type']
             if layer_type == 'conv':
                raise ValueError('Cannot have conv layer in merge stream!')

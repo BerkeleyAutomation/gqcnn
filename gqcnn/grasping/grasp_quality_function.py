@@ -268,7 +268,7 @@ class BestFitPlanaritySuctionQualityFunction(SuctionQualityFunction):
             if params is not None and params['vis']['plane']:
                 from visualization import Visualizer2D as vis2d
                 from visualization import Visualizer3D as vis3d
-                mid_i = A.shape[0] / 2
+                mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
                 p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
                 n = np.array([w[0], w[1], -1])
@@ -348,7 +348,7 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
             if params is not None and params['vis']['plane']:
                 from visualization import Visualizer2D as vis2d
                 from visualization import Visualizer3D as vis3d
-                mid_i = A.shape[0] / 2
+                mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
                 p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
                 n = np.array([w[0], w[1], -1])
@@ -471,7 +471,7 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
             if params is not None and params['vis']['plane']:
                 from visualization import Visualizer2D as vis2d
                 from visualization import Visualizer3D as vis3d
-                mid_i = A.shape[0] / 2
+                mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
                 p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
                 n = np.array([w[0], w[1], -1])
