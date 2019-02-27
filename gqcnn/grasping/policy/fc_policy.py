@@ -100,7 +100,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
        
     def _mask_predictions(self, preds, raw_segmask):
         """Mask the given predictions with the given segmask, setting the rest to 0.0."""
-        preds_masked = np.zeros_like(preds)
+        preds_masked = -1 * np.ones_like(preds)
         raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h / 2:raw_segmask.shape[0] - self._gqcnn_recep_h / 2, self._gqcnn_recep_w / 2:raw_segmask.shape[1] - self._gqcnn_recep_w / 2, 0]
         raw_segmask_downsampled = raw_segmask_cropped[::self._gqcnn_stride, ::self._gqcnn_stride]
 
@@ -141,7 +141,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             if self._sampling_method == 'top_k':
                 return np.argpartition(preds_flat, -1 * num_samples)[-1 * num_samples:]
             elif self._sampling_method == 'uniform':
-                nonzero_ind = np.where(preds_flat > 0)[0]
+                nonzero_ind = np.where(preds_flat >= 0)[0]
                 if nonzero_ind.shape[0] == 0:
                     raise NoValidGraspsException('No grasps with nonzero quality')
                 return np.random.choice(nonzero_ind, size=num_samples)
@@ -237,6 +237,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # sample num_actions_to_sample indices from the success predictions
         sampled_ind = self._sample_predictions(preds_success_only, num_actions_to_sample)
+        preds_success_only[preds_success_only==-1] = 0.0
         
         # wrap actions to be returned
         actions_start = time.time()
