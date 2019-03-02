@@ -13,6 +13,7 @@ Please keep in mind that GQ-CNN models are sensitive to the following parameters
    #. The robot gripper
    #. The depth camera
    #. The distance between the camera and workspace.
+
 As a result, we cannot guarantee performance of our pre-trained models on other physical setups.
 
 For more information about the pre-trained models and sample inputs for the example policy, see :ref:`pre-trained-models` and :ref:`sample-inputs`.

@@ -51,6 +51,7 @@ GQ-CNN models are sensitive to the following parameters used during dataset gene
    #. The robot gripper
    #. The depth camera
    #. The distance between the camera and workspace.
+
 As a result, we cannot guarantee performance of our pre-trained models on other physical setups. If you have a specific use-case in mind, please reach out to us. It might be possible to generate a custom dataset for you particular setup. We are actively researching how to generate more robust datasets that can generalize across robots, cameras, and viewpoints.
 
 Development
