@@ -124,10 +124,10 @@ Then run the Python policy with the `\\--fully_conv` flag.
 
 To evaluate the pre-trained `FC-GQ-CNN`_ **parallel jaw** network on sample images of objects in heaps run: ::
 
-    $ python examples/policy.py FCGQCNN-4.0-PJ --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
+    $ python examples/policy.py FC-GQCNN-4.0-PJ --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
 To evaluate the pre-trained `FC-GQ-CNN`_ **suction** network on sample images of objects in heaps run: ::
 
-    $ python examples/policy.py FCGQCNN-4.0-SUCTION --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
+    $ python examples/policy.py FC-GQCNN-4.0-SUCTION --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
     
