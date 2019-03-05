@@ -403,7 +403,7 @@ class RobustGraspingPolicy(GraspingPolicy):
         """ Sets the grasp filters for the policy. """
         self._filters = filters
             
-    def select(self, grasps, q_value):
+    def select(self, grasps, q_value, state):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
         """
@@ -424,7 +424,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             grasp = grasps[index]
             valid = True
             for filter_name, is_valid in six.iteritems(self._filters):
-                valid = is_valid(grasp) 
+                valid = is_valid(grasp, state=state) 
                 self._logger.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
                 if not valid:
                     valid = False
@@ -434,7 +434,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             i += 1
         raise NoValidGraspsException('No grasps satisfied filters')
 
-    def _action(self, state):
+    def action_set(self, state):
         """ Plans the grasp with the highest probability of success on
         the given RGB-D image.
 
@@ -493,8 +493,32 @@ class RobustGraspingPolicy(GraspingPolicy):
                 filename = os.path.join(self._logging_dir, 'grasp_candidates.png')
             vis.show(filename)
 
+        # return actions
+        actions = [GraspAction(grasp, q_value, state.rgbd_im.depth) for grasp, q_value in zip(grasps, q_values)]
+        actions.sort(key = lambda x: x.q_value, reverse=True)
+        return actions
+    
+    def _action(self, state):
+        """ Plans the grasp with the highest probability of success on
+        the given RGB-D image.
+
+        Attributes
+        ----------
+        state : :obj:`RgbdImageState`
+            image to plan grasps on
+
+        Returns
+        -------
+        :obj:`GraspAction`
+            grasp to execute
+        """
+        # plan a set of grasps
+        grasp_actions = self.action_set(state)
+        grasps = [a.grasp for a in grasp_actions]
+        q_values = [a.q_value for a in grasp_action]
+        
         # select grasp
-        index = self.select(grasps, q_values)
+        index = self.select(grasps, q_values, state)
         grasp = grasps[index]
         q_value = q_values[index]
         if self.config['vis']['grasp_plan']:
@@ -593,7 +617,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
  
         self._state_counter = 0 # used for logging state data
 
-    def select(self, grasps, q_values):
+    def select(self, grasps, q_values, state):
         """ Selects the grasp with the highest probability of success.
         Can override for alternate policies (e.g. epsilon greedy).
         """ 
@@ -617,7 +641,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             grasp = grasps[index]
             valid = True
             for filter_name, is_valid in six.iteritems(self._filters):
-                valid = is_valid(grasp) 
+                valid = is_valid(grasp, state=state) 
                 self._logger.debug('Grasp {} filter {} valid: {}'.format(i, filter_name, valid))
                 if not valid:
                     valid = False
@@ -990,7 +1014,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         q_values = [g.q_value for g in grasp_actions]
         
         # select grasp
-        index = self.select(grasps, q_values)
+        index = self.select(grasps, q_values, state)
         grasp = grasps[index]
         q_value = q_values[index]
         if self.config['vis']['grasp_plan']:
