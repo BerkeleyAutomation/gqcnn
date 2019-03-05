@@ -958,6 +958,39 @@ class GQCnnPlanarityQualityFunction(GraspQualityFunction):
             if planarity < self._planarity_q_thresh:
                 q_values[i] = 0
         return q_values
+
+class GQCnnHeightQualityFunction(GraspQualityFunction):
+    def __init__(self, config):
+        """Create a GQCNN suction quality function. """
+        GraspQualityFunction.__init__(self)
+        self._gqcnn_fn = GQCnnQualityFunction(config)
+        
+        self._height_thresh = config['height_thresh']
+
+    def quality(self, state, actions, params): 
+        """ Evaluate the quality of a set of actions according to a GQ-CNN.
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            state of the world described by an RGB-D image
+        actions: :obj:`object`
+            set of grasping actions to evaluate
+        params: dict
+            optional parameters for quality evaluation
+
+        Returns
+        -------
+        :obj:`list` of float
+            real-valued grasp quality predictions for each action, between 0 and 1
+        """
+        q_values = self._gqcnn_fn.quality(state, actions, params)
+        for i in range(len(q_values)):
+            T_grasp_camera = actions[i].pose()
+            T_grasp_world = state.T_camera_world * T_grasp_camera
+            if T_grasp_world.translation[2] < self._height_thresh:
+                q_values[i] = 0
+        return q_values
     
 class NoMagicQualityFunction(GraspQualityFunction):
     def __init__(self, config):
@@ -1174,6 +1207,8 @@ class GraspQualityFunctionFactory(object):
             return GQCnnQualityFunction(config)
         elif metric_type == 'gqcnn_planarity':
             return GQCnnPlanarityQualityFunction(config)
+        elif metric_type == 'gqcnn_height':
+            return GQCnnHeightQualityFunction(config)
         elif metric_type == 'nomagic':
             return NoMagicQualityFunction(config)
         elif metric_type == 'fcgqcnn':

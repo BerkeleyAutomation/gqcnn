@@ -69,13 +69,15 @@ class RgbdImageState(object):
     def __init__(self, rgbd_im, camera_intr,
                  segmask=None,
                  obj_segmask=None,
-                 fully_observed=None):
+                 fully_observed=None,
+                 T_camera_world=None):
         self.rgbd_im = rgbd_im
         self.camera_intr = camera_intr
         self.segmask = segmask
         self.obj_segmask = obj_segmask
         self.fully_observed = fully_observed
-
+        self.T_camera_world = T_camera_world
+        
     def save(self, save_dir):
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
