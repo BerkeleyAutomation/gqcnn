@@ -181,26 +181,6 @@ if __name__ == '__main__':
     else:
         segmask = segmask.mask_binary(valid_px_mask)
 
-    # TODO: remove
-    segmask.data[:,:125] = 0
-    segmask.data[:,500:] = 0
-    segmask.data[350:,:] = 0
-        
-    # TODO: remove
-    RESCALE_FACTOR = 0.25
-    color_im = color_im.resize(RESCALE_FACTOR)
-    depth_im = depth_im.resize(RESCALE_FACTOR, interp='nearest')
-    segmask = segmask.resize(RESCALE_FACTOR, interp='nearest')
-    camera_intr = camera_intr.resize(RESCALE_FACTOR)
-
-    #color_im = color_im.transform(np.zeros(2), np.pi / 32)
-    #depth_im = depth_im.transform(np.zeros(2), np.pi / 32)
-    #segmask = segmask.transform(np.zeros(2), np.pi / 32)
-
-    #color_im = color_im.transform(np.array([0,1]), 0.0)
-    #depth_im = depth_im.transform(np.array([0,1]), 0.0)
-    #segmask = segmask.transform(np.array([0,1]), 0.0)
-
     # inpaint
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
     
@@ -255,10 +235,6 @@ if __name__ == '__main__':
     action = policy(state)
     logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
-    #policy_start = time.time()
-    #action = policy(state)
-    #logger.info('Planning took %.3f sec' %(time.time() - policy_start))
-    
     # vis final grasp
     if policy_config['vis']['final_grasp']:
         vis.figure(size=(10,10))
@@ -268,27 +244,3 @@ if __name__ == '__main__':
         vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
         vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
         vis.show()
-
-        #T_camera_world = RigidTransform.load('data/calib/primesense/primesense.tf')
-        T_camera_world = RigidTransform.load('data/examples/single_object/enshape/T_camera_world.tf')
-        point_cloud = camera_intr.deproject(rgbd_im.depth)
-        point_cloud.remove_zero_points()
-        point_cloud = T_camera_world * point_cloud
-        T_grasp_camera = action.grasp.pose()
-        T_grasp_world = T_camera_world * T_grasp_camera
-
-        point_cloud_image = camera_intr.deproject_to_image(rgbd_im.depth)
-        m = point_cloud_image.to_mesh()
-        from trimesh.io.export import export_mesh
-        export_mesh(m, 'test.obj')
-        
-        from visualization import Visualizer3D as vis3d
-        vis3d.figure()
-        vis3d.points(point_cloud,
-                     subsample=1,
-                     random=True,
-                     color=(0,1,1),
-                     scale=0.0025)
-        vis3d.pose(T_grasp_world, alpha=0.035)
-        vis3d.show()
-        
