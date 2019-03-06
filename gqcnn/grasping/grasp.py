@@ -378,7 +378,6 @@ class SuctionPoint2D(object):
         # compute 3D grasp center in camera basis
         suction_center_im = self.center.data
         center_px_im = Point(suction_center_im, frame=self.camera_intr.frame)
-        import ambicore
         if isinstance(self.camera_intr, CameraIntrinsics):
             suction_center_camera = self.camera_intr.deproject_pixel(self.depth, center_px_im).data
         else:
