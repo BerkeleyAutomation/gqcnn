@@ -225,8 +225,14 @@ class SuctionQualityFunction(GraspQualityFunction):
 
     def _sum_of_squared_residuals(self, w, A, z):
         """ Returns the sum of squared residuals from the plane. """
+        if A.shape[0] == 0:
+            return 0
         return (1.0 / A.shape[0]) * np.square(np.linalg.norm(np.dot(A, w) - z))
 
+    def _residuals(self, w, A, z):
+        """ Returns the sum of squared residuals from the plane. """
+        return np.linalg.norm(np.dot(A, w) - z)
+    
 class BestFitPlanaritySuctionQualityFunction(SuctionQualityFunction):
     """A best-fit planarity suction metric. """
 
@@ -399,7 +405,7 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
         p_0 = point_cloud_image[y, x]
         n = -action.axis
         w = np.array([-n[0]/n[2], -n[1]/n[2], np.dot(n,p_0)/n[2]])
-        return w
+        return w, p_0
 
     def _points_in_window(self, point_cloud_image, action, segmask=None):
         """Retrieve all points on the object in a disc of size self._window_size. """
@@ -465,16 +471,16 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
             
             points = self._points_in_window(point_cloud_image, action, segmask=state.segmask) # x,y in matrix A and z is vector z.
             A, b = self._points_to_matrices(points)
-            w = self._action_to_plane(point_cloud_image, action) # vector w w/ a bias term represents a best-fit plane.
-            sse = self._sum_of_squared_residuals(w, A, b)
+            w, p0 = self._action_to_plane(point_cloud_image, action) # vector w w/ a bias term represents a best-fit plane.
+            #sse = self._sum_of_squared_residuals(w, A, b)
+            sse = np.max(self._residuals(w, A, b))
 
             if params is not None and params['vis']['plane']:
                 from visualization import Visualizer2D as vis2d
                 from visualization import Visualizer3D as vis3d
                 mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
-                p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
-                n = np.array([w[0], w[1], -1])
+                n = -action.axis
                 n = n / np.linalg.norm(n)
                 tx = np.array([n[1], -n[0], 0])
                 tx = tx / np.linalg.norm(tx)
@@ -490,10 +496,10 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                                                to_frame='world')
                 
                 vis3d.figure()
-                vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
-                vis3d.points(c, scale=0.005, color=(1,1,0))
-                vis3d.points(d, scale=0.005, color=(1,1,0))
+                vis3d.points(point_cloud_image.to_point_cloud(), scale=0.001, subsample=5, random=True, color=(0,0,1))
+                vis3d.points(PointCloud(points.T), scale=0.0015, color=(1,0,0))
+                vis3d.points(c, scale=0.002, color=(1,1,0))
+                vis3d.points(d, scale=0.002, color=(1,1,0))
                 vis3d.table(T_table_world, dim=0.01)
                 vis3d.show()
                 
@@ -919,6 +925,73 @@ class GQCnnQualityFunction(GraspQualityFunction):
         self._logger.info('Inference took %.3f sec' %(time() - predict_start))
         return q_values.tolist()
 
+class GQCnnPlanarityQualityFunction(GraspQualityFunction):
+    def __init__(self, config):
+        """Create a GQCNN suction quality function. """
+        GraspQualityFunction.__init__(self)
+        self._gqcnn_fn = GQCnnQualityFunction(config)
+        self._planarity_fn = DiscApproachPlanaritySuctionQualityFunction(config)
+        
+        self._planarity_q_thresh = config['planarity_q_thresh']
+
+    def quality(self, state, actions, params): 
+        """ Evaluate the quality of a set of actions according to a GQ-CNN.
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            state of the world described by an RGB-D image
+        actions: :obj:`object`
+            set of grasping actions to evaluate
+        params: dict
+            optional parameters for quality evaluation
+
+        Returns
+        -------
+        :obj:`list` of float
+            real-valued grasp quality predictions for each action, between 0 and 1
+        """
+        q_values = self._gqcnn_fn.quality(state, actions, params)
+        planarity_q_values = self._planarity_fn(state, actions, params)
+        for i in range(len(q_values)):
+            planarity = planarity_q_values[i]
+            if planarity < self._planarity_q_thresh:
+                q_values[i] = 0
+        return q_values
+
+class GQCnnHeightQualityFunction(GraspQualityFunction):
+    def __init__(self, config):
+        """Create a GQCNN suction quality function. """
+        GraspQualityFunction.__init__(self)
+        self._gqcnn_fn = GQCnnQualityFunction(config)
+        
+        self._height_thresh = config['height_thresh']
+
+    def quality(self, state, actions, params): 
+        """ Evaluate the quality of a set of actions according to a GQ-CNN.
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            state of the world described by an RGB-D image
+        actions: :obj:`object`
+            set of grasping actions to evaluate
+        params: dict
+            optional parameters for quality evaluation
+
+        Returns
+        -------
+        :obj:`list` of float
+            real-valued grasp quality predictions for each action, between 0 and 1
+        """
+        q_values = self._gqcnn_fn.quality(state, actions, params)
+        for i in range(len(q_values)):
+            T_grasp_camera = actions[i].pose()
+            T_grasp_world = state.T_camera_world * T_grasp_camera
+            if T_grasp_world.translation[2] < self._height_thresh:
+                q_values[i] = 0
+        return q_values
+    
 class NoMagicQualityFunction(GraspQualityFunction):
     def __init__(self, config):
         """Create a quality that uses nomagic_net as a quality function. """
@@ -1132,6 +1205,10 @@ class GraspQualityFunctionFactory(object):
             return ComDiscCurvatureSuctionQualityFunction(config)
         elif metric_type == 'gqcnn':
             return GQCnnQualityFunction(config)
+        elif metric_type == 'gqcnn_planarity':
+            return GQCnnPlanarityQualityFunction(config)
+        elif metric_type == 'gqcnn_height':
+            return GQCnnHeightQualityFunction(config)
         elif metric_type == 'nomagic':
             return NoMagicQualityFunction(config)
         elif metric_type == 'fcgqcnn':

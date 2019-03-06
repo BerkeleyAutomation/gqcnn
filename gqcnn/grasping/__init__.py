@@ -20,7 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 from .grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
-from .grasp_quality_function import GraspQualityFunctionFactory, GQCnnQualityFunction
+from .grasp_quality_function import GraspQualityFunctionFactory, GQCnnQualityFunction, DiscApproachPlanaritySuctionQualityFunction
 from .image_grasp_sampler import ImageGraspSamplerFactory, AntipodalDepthImageGraspSampler
 from .constraint_fn import GraspConstraintFnFactory, DiscreteApproachGraspConstraintFn
 from .policy import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, FullyConvolutionalGraspingPolicy, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiSuction, FullyConvolutionalGraspingPolicyMultiGripper, UniformRandomGraspingPolicy, PriorityCompositeGraspingPolicy, RgbdImageState, GraspAction
