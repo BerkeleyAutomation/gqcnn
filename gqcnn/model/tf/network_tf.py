@@ -63,6 +63,14 @@ class GQCNNTF(object):
         self._parse_config(gqcnn_config)
         self._gqcnn_config = gqcnn_config
 
+    @property
+    def gqcnn_config(self):
+        return self._gqcnn_config
+
+    @property
+    def train_config(self):
+        return self._train_config
+
     @staticmethod
     def load(model_dir, verbose=True, log_file=None):
         """Instantiate a trained GQ-CNN for fine-tuning or inference. 
@@ -170,6 +178,7 @@ class GQCNNTF(object):
         gqcnn = GQCNNTF(gqcnn_config, verbose=verbose, log_file=log_file)
         gqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         gqcnn.init_mean_and_std(model_dir)
+        gqcnn._train_config = train_config
         training_mode = train_config['training_mode']
         if training_mode == TrainingMode.CLASSIFICATION:
             gqcnn.initialize_network(add_softmax=True)

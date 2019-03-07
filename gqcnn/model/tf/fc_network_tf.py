@@ -71,6 +71,7 @@ class FCGQCNNTF(GQCNNTF):
         fcgqcnn = FCGQCNNTF(gqcnn_config, fc_config, log_file=log_file)
         fcgqcnn.init_weights_file(os.path.join(model_dir, 'model.ckpt'))
         fcgqcnn.init_mean_and_std(model_dir)
+        fcgqcnn._train_config = train_config
         training_mode = train_config['training_mode']
         if training_mode == TrainingMode.CLASSIFICATION:
             fcgqcnn.initialize_network(add_softmax=True)
