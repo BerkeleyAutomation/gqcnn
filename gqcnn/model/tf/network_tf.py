@@ -454,7 +454,7 @@ class GQCNNTF(object):
             self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), (), name='dropout')
 
             # build network
-            self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
+            self._output_tensor = tf.identity(self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node), name='raw_out')
             
             # add softmax function to output of network(this is optional because 1) we might be doing regression or 2) we are training and Tensorflow has an optimized cross-entropy loss with the softmax already built-in)
             if add_softmax:
@@ -718,6 +718,7 @@ class GQCNNTF(object):
     def add_softmax_to_output(self, num_outputs=0):
         """Adds softmax to output of network."""
         with tf.name_scope('softmax'):
+            """
             if num_outputs > 0:
                 self._logger.info('Building Pair-wise Softmax Layer...')
                 binwise_split_output = tf.split(self._output_tensor, num_outputs, axis=-1)
@@ -726,7 +727,8 @@ class GQCNNTF(object):
             else:
                 self._logger.info('Building Softmax Layer...')
                 self._output_tensor = tf.nn.softmax(self._output_tensor, name='output')
-
+            """
+            self._output_tensor = tf.identity(self._output_tensor, name='output')
     def add_sigmoid_to_output(self):
         """Adds sigmoid to output of network."""
         with tf.name_scope('sigmoid'):
@@ -804,8 +806,8 @@ class GQCNNTF(object):
                     images_sub = images - np.tile(np.reshape(poses, (-1, 1, 1, 1)), (1, images.shape[1], images.shape[2], 1))
 
                     # normalize
-                    self._input_im_arr[:dim, ...] = (images_sub - self._im_depth_sub_mean) / self._im_depth_sub_std
-
+#                    self._input_im_arr[:dim, ...] = (images_sub - self._im_depth_sub_mean) / self._im_depth_sub_std
+                    self._input_im_arr[:dim, ...] = images_sub
                 # normalize the images
                 elif self._input_depth_mode == InputDepthMode.IM_ONLY:
                     self._input_im_arr[:dim, ...] = (

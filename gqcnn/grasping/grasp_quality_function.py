@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform, Logger
 from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
-from gqcnn import get_gqcnn_model, get_fc_gqcnn_model
+from gqcnn import get_gqcnn_model, get_fc_gqcnn_model, get_ncs_fc_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
 from gqcnn.utils import GripperMode
 
@@ -1123,7 +1123,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
         return q_values.tolist()
 
 class FCGQCnnQualityFunction(GraspQualityFunction):
-    def __init__(self, config):
+    def __init__(self, config, ncs=False):
         """ Grasp quality function using the fully-convolutional gqcnn """
         GraspQualityFunction.__init__(self)
 
@@ -1132,16 +1132,24 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         self._model_dir = config['gqcnn_model']
         self._backend = config['gqcnn_backend']
         self._fully_conv_config = config['fully_conv_gqcnn_config']
+        self._ncs_compiler_extra_args = None
+        if 'ncs_compiler_extra_args' in config.keys():
+            self._ncs_compiler_extra_args = config['ncs_compiler_extra_args']
 
         # init fcgqcnn
-        self._fcgqcnn = get_fc_gqcnn_model(backend=self._backend).load(self._model_dir, self._fully_conv_config)
+        if ncs:
+            self._fcgqcnn = get_ncs_fc_gqcnn_model(backend=self._backend).load(self._model_dir, self._fully_conv_config, compiler_extra_args=self._ncs_compiler_extra_args)
+        else:
+            self._fcgqcnn = get_fc_gqcnn_model(backend=self._backend).load(self._model_dir, self._fully_conv_config)
 
-        # open tensorflow session for fcgqcnn
-        self._fcgqcnn.open_session()
+        if not ncs:
+            # open tensorflow session for fcgqcnn
+            self._fcgqcnn.open_session()
 
     def __del__(self):
         try:
-            self._fcgqcnn.close_session()
+            if not ncs:
+                self._fcgqcnn.close_session()
         except:
             pass
         del self
@@ -1189,5 +1197,7 @@ class GraspQualityFunctionFactory(object):
             return NoMagicQualityFunction(config)
         elif metric_type == 'fcgqcnn':
             return FCGQCnnQualityFunction(config)
+        elif metric_type == 'ncsfcgqcnn':
+            return FCGQCnnQualityFunction(config, ncs=True)
         else:
             raise ValueError('Grasp function type %s not supported!' %(metric_type))

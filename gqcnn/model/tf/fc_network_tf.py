@@ -39,8 +39,7 @@ class FCGQCNNTF(GQCNNTF):
 
     def __init__(self, gqcnn_config, fc_config, verbose=True, log_file=None):
         super(FCGQCNNTF, self).__init__(gqcnn_config, log_file=log_file)
-        super(FCGQCNNTF, self)._parse_config(gqcnn_config) 
-        self._parse_config(fc_config) # we call this again(even though it gets called in the parent constructor on line 42) because the call to the parent _parse_config() on line 43 overwrites our first call
+        self._parse_fc_config(fc_config)
 
         # check that conv layers of GQ-CNN were trained with VALID padding
         for layer_name, layer_config in self._architecture['im_stream'].iteritems():
@@ -48,7 +47,7 @@ class FCGQCNNTF(GQCNNTF):
                 assert layer_config['pad'] == 'VALID', 'GQ-CNN used for FC-GQ-CNN must have VALID padding for conv layers. Found layer: {} with padding: {}'.format(layer_name, layer_config['pad'])
 
     @staticmethod
-    def load(model_dir, fc_config, log_file=None, add_drop=False):
+    def load(model_dir, fc_config, log_file=None):
         """Instantiate an FC-GQ-CNN from a trained GQ-CNN. 
 
         Parameters
@@ -73,18 +72,22 @@ class FCGQCNNTF(GQCNNTF):
         fcgqcnn.init_mean_and_std(model_dir)
         training_mode = train_config['training_mode']
         if training_mode == TrainingMode.CLASSIFICATION:
-            fcgqcnn.initialize_network(add_softmax=True, add_drop=add_drop)
+            fcgqcnn.initialize_network(add_softmax=True)
         elif training_mode == TrainingMode.REGRESSION:
-            fcgqcnn.initialize_network(add_drop=add_drop)
+            fcgqcnn.initialize_network()
         else:
             raise ValueError('Invalid training mode: {}'.format(training_mode))
         return fcgqcnn
 
-    def _parse_config(self, cfg):
+    def _parse_fc_config(self, cfg):
         # override GQ-CNN image height and width
         self._im_width = cfg['im_width']
         self._im_height = cfg['im_height']
-        
+
+        out_h = ((self._im_height - self._train_im_height) / self.stride) + 1
+        out_w = ((self._im_width - self._train_im_width) / self.stride) + 1
+        self._fc_output_shape = (out_h, out_w, self._angular_bins*2)
+
     def _pack(self, dim_h, dim_w, data, vector=False):
         if vector:
             # first reshape vector into 3-dimensional tensor

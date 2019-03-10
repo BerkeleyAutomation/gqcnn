@@ -72,3 +72,13 @@ class GQCNNTrainingStatus:
     NOT_STARTED = 'not_started'
     SETTING_UP = 'setting_up'
     TRAINING = 'training'
+
+# filenames for NCSFCGQCNNTF compiled graph and protobuf file
+class NCSFCGQCNNTFFileNames:
+    TF_PROTO = 'fc_model.pb'
+    NCS_GRAPH = 'fc_model.graph'
+
+# input and output names for NCSFCGQCNNTF
+class NCSFCGQCNNTFNodes:
+    IN = 'input_im'
+    OUT = 'raw_out'
