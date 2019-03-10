@@ -51,8 +51,8 @@ class FCGQCNNTF(GQCNNTF):
         """
 
         super(FCGQCNNTF, self).__init__(gqcnn_config, log_file=log_file)
-        super(FCGQCNNTF, self)._parse_config(gqcnn_config) 
-        self._parse_config(fc_config) # we call this again(even though it gets called in the parent constructor on line 42) because the call to the parent _parse_config() on line 43 overwrites our first call
+#        super(FCGQCNNTF, self)._parse_config(gqcnn_config) 
+        self._parse_fc_config(fc_config) # we call this again(even though it gets called in the parent constructor on line 42) because the call to the parent _parse_config() on line 43 overwrites our first call
 
         # check that conv layers of GQ-CNN were trained with VALID padding
         for layer_name, layer_config in self._architecture['im_stream'].iteritems():
@@ -96,10 +96,14 @@ class FCGQCNNTF(GQCNNTF):
             raise ValueError('Invalid training mode: {}'.format(training_mode))
         return fcgqcnn
 
-    def _parse_config(self, cfg):
+    def _parse_fc_config(self, cfg):
         # override GQ-CNN image height and width
         self._im_width = cfg['im_width']
         self._im_height = cfg['im_height']
+
+        out_h = ((self._im_height - self._train_im_height) / self.stride) + 1
+        out_w = ((self._im_width - self._train_im_width) / self.stride) + 1
+        self._fc_output_shape = (out_h, out_w, self._angular_bins*2)
 
     def _pack(self, dim_h, dim_w, data, vector=False):
         if vector:
@@ -128,13 +132,13 @@ class FCGQCNNTF(GQCNNTF):
         convb = self._weights.weights['{}_bias'.format(fc_name)]
 
         # compute conv out(note that we use padding='VALID' here because we want an output size of 1x1xnum_filts for the original input size)
-        convh = tf.nn.conv2d(input_node, convW, strides=[1, 1, 1, 1], padding='VALID')
+        convh = tf.nn.conv2d(input_node, convW, strides=[1, 1, 1, 1], padding='VALID') + convb
 
         # pack bias into tensor of shape=tf.shape(convh)
-        bias_packed = self._pack(tf.shape(convh)[1], tf.shape(convh)[2], convb, vector=True)
+#        bias_packed = self._pack(tf.shape(convh)[1], tf.shape(convh)[2], convb, vector=True)
 
         # add bias term
-        convh = convh + bias_packed
+#        convh = convh + bias_packed
 
         # apply activation
         if not final_fc_layer:
@@ -180,12 +184,14 @@ class FCGQCNNTF(GQCNNTF):
     def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, layers, only_stream=False):
         self._logger.info('Building Image Stream...')
 
+        """
         if self._input_depth_mode == InputDepthMode.SUB:
             sub_mean = tf.constant(self._im_depth_sub_mean, dtype=tf.float32)
             sub_std = tf.constant(self._im_depth_sub_std, dtype=tf.float32)
             sub_im = tf.subtract(input_node, tf.tile(tf.reshape(input_pose_node, tf.constant((-1, 1, 1, 1))), tf.constant((1, input_height, input_width, 1))))
             norm_sub_im = tf.div(tf.subtract(sub_im, sub_mean), sub_std)
             input_node = norm_sub_im
+        """
 
         output_node = input_node
         prev_layer = "start" # dummy placeholder

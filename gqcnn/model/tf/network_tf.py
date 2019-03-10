@@ -440,16 +440,20 @@ class GQCNNTF(object):
             # setup input placeholders
             if train_im_node is not None:
                 # training
-                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels))
-                self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim))
+                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels), name='input_im')
+                self._input_pose_node = None
+                if self._input_depth_mode != InputDepthMode.SUB and self._input_depth_mode != InputDepthMode.IM_ONLY:
+                    self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim))
             else:
                 # inference only using GQ-CNN instantiated from GQCNNTF.load()
-                self._input_im_node = tf.placeholder(tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels))
-                self._input_pose_node = tf.placeholder(tf.float32, (self._batch_size, self._pose_dim))
+                self._input_im_node = tf.placeholder(tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels), name='input_im')
+                self._input_pose_node = None
+                if self._input_depth_mode != InputDepthMode.SUB and self._input_depth_mode != InputDepthMode.IM_ONLY:
+                    self._input_pose_node = tf.placeholder(tf.float32, (self._batch_size, self._pose_dim))
             self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), ())
 
             # build network
-            self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
+            self._output_tensor = tf.identity(self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node), name='raw_out')
             
             # add softmax function to output of network(this is optional because 1) we might be doing regression or 2) we are training and Tensorflow has an optimized cross-entropy loss with the softmax already built-in)
             if add_softmax:
@@ -499,6 +503,12 @@ class GQCNNTF(object):
     @property
     def batch_size(self):
         return self._batch_size
+
+    def set_batch_size(self, batch_size):
+        self._batch_size = batch_size
+
+    def set_model_dir(self, model_dir):
+        self._model_dir = model_dir
 
     @property
     def im_height(self):
@@ -769,16 +779,34 @@ class GQCNNTF(object):
                         image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std 
                     self._input_pose_arr[:dim, :] = (
                         pose_arr[cur_ind:end_ind, :] - self._pose_mean) / self._pose_std
+                # subtract the depth and then normalize
                 elif self._input_depth_mode == InputDepthMode.SUB:
-                    self._input_im_arr[:dim, ...] = image_arr[cur_ind:end_ind, ...] 
-                    self._input_pose_arr[:dim, :] = pose_arr[cur_ind:end_ind, :]
+                    # read batch
+                    images = image_arr[cur_ind:end_ind, ...]
+                    if len(pose_arr.shape) == 1:
+                        poses = pose_arr[cur_ind:end_ind]
+                    else:
+                        poses = pose_arr[cur_ind:end_ind, :]
+
+                    # subtract poses
+                    images_sub = images - np.tile(np.reshape(poses, (-1, 1, 1, 1)), (1, images.shape[1], images.shape[2], 1))
+
+                    # normalize
+                    self._input_im_arr[:dim, ...] = (images_sub - self._im_depth_sub_mean) / self._im_depth_sub_std
                 elif self._input_depth_mode == InputDepthMode.IM_ONLY:
                     self._input_im_arr[:dim, ...] = (
                         image_arr[cur_ind:end_ind, ...] - self._im_mean) / self._im_std
 
-                gqcnn_output = self._sess.run(self._output_tensor,
-                                                feed_dict={self._input_im_node: self._input_im_arr,
-                                                           self._input_pose_node: self._input_pose_arr})
+                # run forward inference
+                if self._input_depth_mode == InputDepthMode.SUB or self._input_depth_mode == InputDepthMode.IM_ONLY:
+                    # ignore pose input
+                    gqcnn_output = self._sess.run(self._output_tensor,
+                                                  feed_dict={self._input_im_node: self._input_im_arr})
+                else:
+                    # standard forward pass
+                    gqcnn_output = self._sess.run(self._output_tensor,
+                                                  feed_dict={self._input_im_node: self._input_im_arr,
+                                                             self._input_pose_node: self._input_pose_arr})
 
                 # allocate output tensor
                 if output_arr is None:
