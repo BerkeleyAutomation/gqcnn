@@ -147,7 +147,6 @@ if __name__ == '__main__':
             
     # setup sensor
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
-    camera_intr = camera_intr.resize(0.125) # new        
 
     # read images
     depth_data = np.load(depth_im_filename)
@@ -155,14 +154,10 @@ if __name__ == '__main__':
     color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
                           frame=camera_intr.frame)
 
-#    depth_im = depth_im.resize(0.5, interp='nearest') # new
-#    color_im = color_im.resize(0.5, interp='nearest') # new  
- 
     # optionally read a segmask
     segmask = None
     if segmask_filename is not None:
         segmask = BinaryImage.open(segmask_filename)
-#        segmask = segmask.resize(0.5, interp='nearest') # new
     valid_px_mask = depth_im.invalid_pixel_mask().inverse()
     if segmask is None:
         segmask = valid_px_mask
