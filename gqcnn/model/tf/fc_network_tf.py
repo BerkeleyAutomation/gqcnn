@@ -103,6 +103,10 @@ class FCGQCNNTF(GQCNNTF):
 
         out_h = ((self._im_height - self._train_im_height) / self.stride) + 1
         out_w = ((self._im_width - self._train_im_width) / self.stride) + 1
+
+        out_h += 1
+        out_w += 1
+
         self._fc_output_shape = (out_h, out_w, self._angular_bins*2)
 
     def _pack(self, dim_h, dim_w, data, vector=False):

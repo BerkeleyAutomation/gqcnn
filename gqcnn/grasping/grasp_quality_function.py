@@ -1132,7 +1132,7 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         self._model_dir = config['gqcnn_model']
         self._backend = config['gqcnn_backend']
         self._fully_conv_config = config['fully_conv_gqcnn_config']
-        self._ncs_compiler_extra_args = None
+        self._ncs_compiler_extra_args = {}
         if 'ncs_compiler_extra_args' in config.keys():
             self._ncs_compiler_extra_args = config['ncs_compiler_extra_args']
 
