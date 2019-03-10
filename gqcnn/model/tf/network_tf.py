@@ -757,7 +757,7 @@ class GQCNNTF(object):
         """
         self._batch_size = batch_size
 
-    def _predict(self, image_arr, pose_arr, verbose=False):
+    def _predict(self, image_arr, pose_arr, verbose=False, save_raw_inputs_outputs=False):
         """Query predictions from network.
 
         Parameters
@@ -835,6 +835,15 @@ class GQCNNTF(object):
                     gqcnn_output = self._sess.run(self._output_tensor,
                                                   feed_dict={self._input_im_node: self._input_im_arr,
                                                              self._input_pose_node: self._input_pose_arr})
+
+                # save raw inputs and outputs
+                if save_raw_inputs_outputs:
+                    features = self._sess.run(self._feature_tensors['fc5'],
+                                              feed_dict={self._input_im_node: self._input_im_arr})
+                    for i in range(dim):
+                        np.save('input_%d.npy' %(i), self._input_im_arr[i,...])
+                    for i in range(dim):
+                        np.save('output_%d.npy' %(i), features[i,...])
 
                 # allocate output tensor
                 if output_arr is None:

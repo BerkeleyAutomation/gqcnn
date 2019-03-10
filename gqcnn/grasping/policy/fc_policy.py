@@ -197,7 +197,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         """Generate inputs for the grasp quality function."""
         pass 
 
-    def _action(self, state, num_actions=1):
+    def _action(self, state, num_actions=1, save_inputs=False):
         """Plan action(s)."""
         if self._filter_grasps:
             assert self._filters is not None, 'Trying to filter grasps but no filters were provided!'
@@ -214,6 +214,12 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # unpack the RgbdImageState
         wrapped_depth, raw_depth, raw_seg, camera_intr = self._unpack_state(state)
+
+        # save raw inputs and outputs
+        if save_inputs:
+            state.rgbd_im.save('rgbd_im.npy')
+            state.camera_intr.save('camera.intr')
+            state.segmask.save('segmask.png')
         
         # predict
         images, depths = self._gen_images_and_depths(raw_depth, raw_seg)
