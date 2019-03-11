@@ -757,7 +757,7 @@ class GQCNNTF(object):
         """
         self._batch_size = batch_size
 
-    def _predict(self, image_arr, pose_arr, verbose=False, save_raw_inputs_outputs=True):
+    def _predict(self, image_arr, pose_arr, verbose=False, save_raw_inputs_outputs=False):
         """Query predictions from network.
 
         Parameters
