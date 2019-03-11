@@ -5,8 +5,8 @@ policy:
   num_depth_bins: 16
   gripper_width: 0.085
   gqcnn_stride: 2
-  gqcnn_recep_h: 32
-  gqcnn_recep_w: 32
+  gqcnn_recep_h: 48
+  gqcnn_recep_w: 48
 
   # grasp filtering
   filter_grasps: 0
@@ -15,11 +15,11 @@ policy:
   # metrics
   metric:
     type: fcgqcnn
-    gqcnn_model: models/FC-GQCNN-4.0-SIEMENS
+    gqcnn_model: models/GQCNN-4.0-SIEMENS-4X
     gqcnn_backend: tf
     fully_conv_gqcnn_config:
-      im_height: 90
-      im_width: 160
+      im_height: 256
+      im_width: 256
 
   # visualization
   policy_vis:

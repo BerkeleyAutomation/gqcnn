@@ -217,7 +217,9 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # save raw inputs and outputs
         if save_inputs:
-            state.rgbd_im.save('rgbd_im.npy')
+            state.rgbd_im.save('rgbd.npy')
+            state.rgbd_im.depth.save('depth.npy')
+            state.rgbd_im.color.save('color.png')
             state.camera_intr.save('camera.intr')
             state.segmask.save('segmask.png')
         

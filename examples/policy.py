@@ -62,9 +62,7 @@ if __name__ == '__main__':
     model_dir = args.model_dir
     config_filename = args.config_filename
     fully_conv = args.fully_conv
-
-    assert not (fully_conv and depth_im_filename is not None and segmask_filename is None), 'Fully-Convolutional policy expects a segmask.'
-
+    
     if depth_im_filename is None:
         if fully_conv:
             depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -74,10 +72,6 @@ if __name__ == '__main__':
             depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              '..',
                                              'data/examples/single_object/primesense/depth_0.npy')
-    if fully_conv and segmask_filename is None:
-        segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        '..',
-                                        'data/examples/clutter/primesense/segmask_0.png')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
@@ -175,6 +169,8 @@ if __name__ == '__main__':
     segmask = None
     if segmask_filename is not None:
         segmask = BinaryImage.open(segmask_filename)
+    else:
+        segmask = BinaryImage(255 * np.ones(depth_im.shape).astype(np.uint8), frame=depth_im.frame)
     valid_px_mask = depth_im.invalid_pixel_mask().inverse()
     if segmask is None:
         segmask = valid_px_mask
@@ -200,7 +196,7 @@ if __name__ == '__main__':
     # create state
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
     state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
-
+    
     # set input sizes for fully-convolutional policy
     if fully_conv:
         policy_config['metric']['fully_conv_gqcnn_config']['im_height'] = depth_im.shape[0]

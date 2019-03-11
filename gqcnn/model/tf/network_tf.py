@@ -844,7 +844,7 @@ class GQCNNTF(object):
                         np.save('input_%d.npy' %(i), self._input_im_arr[i,...])
                     for i in range(dim):
                         np.save('output_%d.npy' %(i), features[i,...])
-
+                        
                 # allocate output tensor
                 if output_arr is None:
                     output_arr = np.zeros([num_images] + list(gqcnn_output.shape[1:]))
