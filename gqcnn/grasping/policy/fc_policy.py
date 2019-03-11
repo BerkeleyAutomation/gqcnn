@@ -169,7 +169,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # plot actions in 2D
         vis.figure()
-        vis.imshow(wrapped_depth_im)
+        from perception import DepthImage
+        vis.imshow(DepthImage(wrapped_depth_im.data))
         actions.sort(key = lambda x: x.q_value)
         for i in range(num_actions):
             vis.grasp(actions[i].grasp, scale=scale, show_axis=show_axis, color=plt.cm.RdYlGn(actions[i].q_value))
@@ -197,7 +198,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         """Generate inputs for the grasp quality function."""
         pass 
 
-    def _action(self, state, num_actions=1, save_inputs=False):
+    def _action(self, state, num_actions=1, save_inputs=True):
         """Plan action(s)."""
         if self._filter_grasps:
             assert self._filters is not None, 'Trying to filter grasps but no filters were provided!'
@@ -239,9 +240,6 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # if we want to visualize more than one action, we have to sample more
         num_actions_to_sample = self._num_vis_samples if (self._vis_actions_2d or self._vis_actions_3d) else num_actions #TODO: @Vishal if this is used with the 'top_k' sampling method, the final returned action is not the best because the argpartition does not sort the partitioned indices 
-
-        if self._sampling_method == SamplingMethod.TOP_K and self._num_vis_samples:
-            self._logger.warning('FINAL GRASP RETURNED IS NOT THE BEST!')
 
         # sample num_actions_to_sample indices from the success predictions
         sampled_ind = self._sample_predictions(preds_success_only, num_actions_to_sample)

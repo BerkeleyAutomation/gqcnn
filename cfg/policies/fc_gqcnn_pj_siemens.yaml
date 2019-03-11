@@ -15,11 +15,11 @@ policy:
   # metrics
   metric:
     type: fcgqcnn
-    gqcnn_model: models/GQCNN-4.0-SIEMENS-4X
+    gqcnn_model: models/FC-GQCNN-4.0-SIEMENS-4X-DOWNSAMPLING
     gqcnn_backend: tf
     fully_conv_gqcnn_config:
-      im_height: 256
-      im_width: 256
+      im_height: 64
+      im_width: 64
 
   # visualization
   policy_vis:
