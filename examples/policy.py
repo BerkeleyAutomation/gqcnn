@@ -63,7 +63,8 @@ if __name__ == '__main__':
     config_filename = args.config_filename
     fully_conv = args.fully_conv
 
-    assert not (fully_conv and depth_im_filename is not None and segmask_filename is None), 'Fully-Convolutional policy expects a segmask.'
+    if (fully_conv and depth_im_filename is not None and segmask_filename is None):
+        logger.warning('Using FC-GQ-CNN policy without segmask is not recommended!')
 
     if depth_im_filename is None:
         if fully_conv:
@@ -74,16 +75,11 @@ if __name__ == '__main__':
             depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              '..',
                                              'data/examples/single_object/primesense/depth_0.npy')
-    if fully_conv and segmask_filename is None:
-        segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        '..',
-                                        'data/examples/clutter/primesense/segmask_0.png')
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             '..',
                                             'data/calib/primesense/primesense.intr')    
    
-
     # set model if provided 
     if model_dir is None:
         model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
