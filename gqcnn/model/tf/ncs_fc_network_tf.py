@@ -94,10 +94,13 @@ class NCSFCGQCNNTF(FCGQCNNTF):
             raise ValueError('Invalid training mode: {}'.format(training_mode))
 
         # compile the network for inference on the NCS
-        fcgqcnn.compiler_extra_args = compiler_extra_args
+        fcgqcnn.set_compiler_extra_args(compiler_extra_args)
         fcgqcnn.compile()
 
         return fcgqcnn
+
+    def set_compiler_extra_args(self, args):
+        self._compiler_extra_args = args
     
     def add_softmax_to_output(self, num_outputs=0):
         """Adds softmax to output of network. Uses iterative tf.slice operation instead of tf.split in pair-wise softmax implementation."""
@@ -221,7 +224,6 @@ class NCSFCGQCNNTF(FCGQCNNTF):
 
         return output_arr
 
-
     def _save_proto(self):
         """Generates a clean protobuf (.pb) version of the network without training operations."""
 
@@ -265,7 +267,7 @@ class NCSFCGQCNNTF(FCGQCNNTF):
 
         self._logger.info('Compiling model for NCS...')
         command = ['mvNCCompile', os.path.join(self._model_dir, NCSFCGQCNNTFFileNames.TF_PROTO), '-in', NCSFCGQCNNTFNodes.IN, '-on', NCSFCGQCNNTFNodes.OUT, '-o', os.path.join(self._model_dir, save_fname)]
-        for arg, val in self.compiler_extra_args.iteritems():
+        for arg, val in self._compiler_extra_args.iteritems():
             command.append(arg)
             command.append(str(val))
         self._logger.info('Executing: "{}"'.format(' '.join(command)))
