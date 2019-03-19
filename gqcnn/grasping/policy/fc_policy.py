@@ -40,6 +40,8 @@ from gqcnn.utils import NoValidGraspsException, GripperMode
 from .enums import SamplingMethod
 from .policy import GraspingPolicy, GraspAction
 
+MASKED_FLAG = -1
+
 class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """Abstract grasp sampling policy class using Fully-Convolutional GQ-CNN network."""
     __metaclass__ = ABCMeta
@@ -100,7 +102,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
        
     def _mask_predictions(self, preds, raw_segmask):
         """Mask the given predictions with the given segmask, setting the rest to 0.0."""
-        preds_masked = -1 * np.ones_like(preds)
+        preds_masked = MASKED_FLAG * np.ones_like(preds)
         raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h // 2:raw_segmask.shape[0] - self._gqcnn_recep_h // 2, self._gqcnn_recep_w // 2:raw_segmask.shape[1] - self._gqcnn_recep_w // 2, 0]
         raw_segmask_downsampled = raw_segmask_cropped[::self._gqcnn_stride, ::self._gqcnn_stride]
 
@@ -243,7 +245,6 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # sample num_actions_to_sample indices from the success predictions
         sampled_ind = self._sample_predictions(preds_success_only, num_actions_to_sample)
-        preds_success_only[preds_success_only==-1] = 0.0
         
         # wrap actions to be returned
         actions_start = time.time()
@@ -345,6 +346,9 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
             depth = depths[im_idx, 0]
             grasp = Grasp2D(center, ang, depth, width=self._gripper_width, camera_intr=camera_intr)
             q_value = preds[im_idx, h_idx, w_idx, ang_idx]
+            if q_value == MASKED_FLAG:
+                continue
+
             grasp_action = GraspAction(grasp,
                                        q_value,
                                        DepthImage(images[im_idx]))
@@ -397,6 +401,9 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
                 continue
             grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr, angle=ang)
             q_value = preds[im_idx, h_idx, w_idx, ang_idx]
+            if q_value == MASKED_FLAG:
+                continue
+
             grasp_action = GraspAction(grasp,
                                        q_value,
                                        DepthImage(images[im_idx]))
@@ -500,6 +507,9 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             # create grasp action
             grasp = MultiSuctionPoint2D(T, camera_intr=camera_intr)
             q_value = preds[im_idx, h_idx, w_idx, ang_idx]
+            if q_value == MASKED_FLAG:
+                continue
+
             grasp_action = GraspAction(grasp,
                                        q_value,
                                        DepthImage(images[im_idx]))
@@ -686,6 +696,9 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
 
             # create grasp action
             q_value = preds[im_idx, h_idx, w_idx, g_idx]
+            if q_value == MASKED_FLAG:
+                continue
+
             grasp_action = GraspAction(grasp,
                                        q_value,
                                        DepthImage(images[im_idx]),
