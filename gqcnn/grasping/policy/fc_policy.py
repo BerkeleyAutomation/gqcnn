@@ -494,10 +494,10 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
                     aligned_R = R_tf.copy()
 
             # define multi cup suction point by the aligned pose
-            import ambicore
             if isinstance(camera_intr, CameraIntrinsics):
                 t = camera_intr.deproject_pixel(depth, center).data
             else:
+                import ambicore
                 t = camera_intr.deproject_pixel(depth, center.data)
             T = RigidTransform(rotation=aligned_R,
                                translation=t,
@@ -681,10 +681,10 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                         aligned_R = R_tf.copy()
 
                 # define multi cup suction point by the aligned pose
-                import ambicore
                 if isinstance(camera_intr, CameraIntrinsics):
                     t = camera_intr.deproject_pixel(depth, center).data
                 else:
+                    import ambicore
                     t = camera_intr.deproject_pixel(depth, center.data)
                 T = RigidTransform(rotation=aligned_R,
                                    translation=t,
@@ -711,8 +711,13 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
     def _visualize_affordance_map(self, preds, depth_im, scale, plot_max=True, output_dir=None):
         """Visualize an affordance map of the network predictions overlayed on the depth image."""
         self._logger.info('Visualizing affordance map...')
+
+        ind = []
+        for gripper_id, gripper_type in self._gripper_types.iteritems():
+            if gripper_type == 'suction':
+                ind.append(self._gripper_start_indices[gripper_id])
         
-        for i in range(preds.shape[3]):
+        for i in ind:
             affordance_map = preds[0, ..., i]
             tf_depth_im = depth_im.crop(depth_im.shape[0] - self._gqcnn_recep_h, depth_im.shape[1] - self._gqcnn_recep_w).resize(1.0 / self._gqcnn_stride)
 

@@ -62,8 +62,8 @@ seed: 24098
 ### GQCNN CONFIG ###
 gqcnn:
   # basic data metrics
-  im_height: 48
-  im_width: 48
+  im_height: 40
+  im_width: 40
   im_channels: 1
   debug: 0
   seed: 24098

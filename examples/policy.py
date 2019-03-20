@@ -53,6 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--camera_intr', type=str, default=None, help='path to the camera intrinsics')
     parser.add_argument('--model_dir', type=str, default=None, help='path to the folder in which the model is stored')
     parser.add_argument('--config_filename', type=str, default=None, help='path to configuration file to use')
+    parser.add_argument('--rescale_factor', type=float, default=None, help='factor to rescale images by')
     parser.add_argument('--fully_conv', action='store_true', help='run Fully-Convolutional GQ-CNN policy instead of standard GQ-CNN policy')
     args = parser.parse_args()
     model_name = args.model_name
@@ -61,6 +62,7 @@ if __name__ == '__main__':
     camera_intr_filename = args.camera_intr
     model_dir = args.model_dir
     config_filename = args.config_filename
+    rescale_factor = args.rescale_factor
     fully_conv = args.fully_conv
     
     if depth_im_filename is None:
@@ -179,7 +181,14 @@ if __name__ == '__main__':
 
     # inpaint
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
-    
+
+    # resize
+    if rescale_factor is not None:
+        color_im = color_im.resize(rescale_factor)
+        depth_im = depth_im.resize(rescale_factor, interp='nearest')
+        segmask = segmask.resize(rescale_factor, interp='nearest')
+        camera_intr = camera_intr.resize(rescale_factor)
+        
     # visualize input images
     if 'input_images' in policy_config['vis'].keys() and policy_config['vis']['input_images']:
         vis.figure(size=(10,10))
