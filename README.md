@@ -6,8 +6,8 @@ Documentation: https://berkeleyautomation.github.io/gqcnn
 We're excited to announce version 1.0, which brings the GQ-CNN package up to date with recent research in the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project.
 Version 1.0 introduces support for:
 
-* **[Dex-Net 4.0](https://goldberg.berkeley.edu/pubs/Ambidextrous-Grasping-Science-Robotics-Jan-2019.pdf):** Composite policies that decide whether to use a suction cup or parallel-jaw gripper.
-* **[Fully Convolutional GQ-CNNs](https://goldberg.berkeley.edu/pubs/Fully-Convolutional-Dex-Net-RA-Letters-Journal-Feb-2019.pdf):** Fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.
+* **[Dex-Net 4.0](https://berkeleyautomation.github.io/dex-net/#dexnet_4):** Composite policies that decide whether to use a suction cup or parallel-jaw gripper.
+* **[Fully Convolutional GQ-CNNs](https://berkeleyautomation.github.io/fcgqcnn):** Fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.
 
 Version 1.0 also provide a more robust ROS grasp planning service that includes built-in pre-processing.
 
@@ -17,7 +17,7 @@ Version 1.0 also provide a more robust ROS grasp planning service that includes 
 * More robust ROS policy with integrated pre-processing.
 * Improved interface for training GQ-CNNs and evaluating policies.
 * Faster training due to improved parallelism in data prefetch/pre-processing.
-* Easy-to-use shell scripts for replication of published results from Dex-Net {[2.0](https://goldberg.berkeley.edu/pubs/dex-net-2.0-Camera-Ready-RSS-2017.pdf),[2.1](https://goldberg.berkeley.edu/pubs/jeff-bin-picking-corl2017-cam-ready.pdf),[3.0](https://goldberg.berkeley.edu/pubs/ICRA2018-jeff-suction-grasping-final.pdf),[4.0](https://goldberg.berkeley.edu/pubs/Ambidextrous-Grasping-Science-Robotics-Jan-2019.pdf)} and [FC-GQ-CNN](https://goldberg.berkeley.edu/pubs/Fully-Convolutional-Dex-Net-RA-Letters-Journal-Feb-2019.pdf).
+* Easy-to-use shell scripts for replication of published results from Dex-Net {[2.0](https://berkeleyautomation.github.io/dex-net/#dexnet_2),[2.1](https://berkeleyautomation.github.io/dex-net/#dexnet_21),[3.0](https://berkeleyautomation.github.io/dex-net/#dexnet_3),[4.0](https://berkeleyautomation.github.io/dex-net/#dexnet_4)} and [FC-GQ-CNN](https://berkeleyautomation.github.io/fcgqcnn).
 
 ## Package Overview
 The gqcnn Python package is for training and analysis of Grasp Quality Convolutional Neural Networks (GQ-CNNs).
