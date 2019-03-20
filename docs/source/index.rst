@@ -10,6 +10,12 @@ Overview
 --------
 The `gqcnn` package is a Python API for training and deploying `Grasp Quality Convolutional Neural Networks (GQ-CNNs)`_ for grasp planning using training datasets from the `Dexterity Network (Dex-Net)`_, developed by the `Berkeley AUTOLAB`_ and introduced in the `Dex-Net 2.0 paper`_.
 
+We're excited to announce gqcnn version 1.0, which brings the GQ-CNN package up to date with recent research in `Dex-Net`_.
+Version 1.0 introduces support for:
+
+* **[Dex-Net 4.0](https://goldberg.berkeley.edu/pubs/Ambidextrous-Grasping-Science-Robotics-Jan-2019.pdf):** Composite policies that decide whether to use a suction cup or parallel-jaw gripper.
+* **[Fully Convolutional GQ-CNN](https://goldberg.berkeley.edu/pubs/Fully-Convolutional-Dex-Net-RA-Letters-Journal-Feb-2019.pdf):** Fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.
+
 Links
 -----
 * `Source Code`_
@@ -72,6 +78,8 @@ If you use the code, datasets, or models in a publication, please cite the appro
 .. _Grasp Quality Convolutional Neural Networks (GQ-CNNs): info/info.html
 
 .. _Dexterity Network (Dex-Net): https://berkeleyautomation.github.io/dex-net
+
+.. _Dex-Net: https://berkeleyautomation.github.io/dex-net
 
 .. _Berkeley AUTOLAB: http://autolab.berkeley.edu/
 

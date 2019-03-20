@@ -3,7 +3,7 @@
 Documentation: https://berkeleyautomation.github.io/gqcnn
 
 ## Version 1.0 Release
-We're excited to announce gqcnn version 1.0, which brings the GQ-CNN package up to speed with recent research in the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project.
+We're excited to announce gqcnn version 1.0, which brings the GQ-CNN package up to date with recent research in the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project.
 Version 1.0 introduces support for:
 
 * **[Dex-Net 4.0](https://goldberg.berkeley.edu/pubs/Ambidextrous-Grasping-Science-Robotics-Jan-2019.pdf):** Composite policies that decide whether to use a suction cup or parallel-jaw gripper.
