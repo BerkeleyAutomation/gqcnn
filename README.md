@@ -6,8 +6,8 @@ Documentation: https://berkeleyautomation.github.io/gqcnn
 We're excited to announce gqcnn version 1.0, which brings the GQ-CNN package up to speed with recent research in the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project.
 Version 1.0 introduces support for:
 
-* **[Dex-Net 4.0](https://goldberg.berkeley.edu/pubs/Ambidextrous-Grasping-Science-Robotics-Jan-2019.pdf):** Extends Dex-Net to multiple grippers working together in composite policies.
-* **[Fully Convolutional GQ-CNN](https://goldberg.berkeley.edu/pubs/Fully-Convolutional-Dex-Net-RA-Letters-Journal-Feb-2019.pdf):** Extends Dex-Net to fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.
+* **[Dex-Net 4.0](https://goldberg.berkeley.edu/pubs/Ambidextrous-Grasping-Science-Robotics-Jan-2019.pdf):** Composite policies that decide whether to use a suction cup or parallel-jaw gripper.
+* **[Fully Convolutional GQ-CNN](https://goldberg.berkeley.edu/pubs/Fully-Convolutional-Dex-Net-RA-Letters-Journal-Feb-2019.pdf):** Fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.
 
 Version 1.0 also provide a more robust ROS grasp planning service that includes built-in pre-processing.
 
