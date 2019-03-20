@@ -11,13 +11,13 @@ Version 1.0 introduces support for:
 
 Version 1.0 also provide a more robust ROS grasp planning service that includes built-in pre-processing.
 
-**What’s new**
-* Support for training GQ-CNNs on Dex-Net 4.0 parallel jaw and suction datasets
-* Support for faster Fully Convolutional GQ-CNNs (FC-GQ-CNNs)
-* More robust ROS policy with integrated pre-processing
-* Improved interface for training GQ-CNNs and evaluating policies
-* Faster training due to improved parallelism in data prefetch/pre-processing
-* Easy-to-use shell scripts for replication of published results from Dex-Net 2.0/2.1/3.0/4.0/FC-GQ-CNN
+### New Features
+* Support for training GQ-CNNs on Dex-Net 4.0 parallel jaw and suction datasets.
+* Support for faster Fully Convolutional GQ-CNNs (FC-GQ-CNNs).
+* More robust ROS policy with integrated pre-processing.
+* Improved interface for training GQ-CNNs and evaluating policies.
+* Faster training due to improved parallelism in data prefetch/pre-processing.
+* Easy-to-use shell scripts for replication of published results from Dex-Net 2.0/2.1/3.0/4.0/FC-GQ-CNN.
 
 ## Package Overview
 The gqcnn Python package is for training and analysis of Grasp Quality Convolutional Neural Networks (GQ-CNNs).
