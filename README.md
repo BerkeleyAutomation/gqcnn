@@ -1,6 +1,6 @@
 # Berkeley AUTOLAB's GQCNN Package
 
-Documentation: https://berkeleyautomation.github.io/gqcnn
+Documentation: https://berkeleyautomation.github.io/gqcnn.
 
 ## Version 1.0 Release
 We're excited to announce version 1.0, which brings the GQ-CNN package up to date with recent research in the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project.
@@ -35,7 +35,4 @@ Our GQ-CNN training datasets and trained models can be downloaded from [this lin
 ## Usage
 As of Feb. 1, 2018, the code is licensed according to the UC Berkeley Copyright and Disclaimer Notice.
 The code is available for educational, research, and not-for-profit purposes (for full details, see [LICENSE](https://github.com/BerkeleyAutomation/gqcnn/blob/release-prep/LICENSE)).
-If you use this code in a publication, please cite:
-
-Mahler, Jeffrey, Jacky Liang, Sherdil Niyaz, Michael Laskey, Richard Doan, Xinyu Liu, Juan Aparicio Ojea, and Ken Goldberg. "Dex-Net 2.0: Deep Learning to Plan Robust Grasps with Synthetic Point Clouds and Analytic Grasp Metrics." Robotics: Science and Systems (2017). Boston, MA.
-
+If you use any part of this code in a publication, please cite [the appropriate Dex-Net publication](https://berkeleyautomation.github.io/gqcnn/index.html#academic-use).
