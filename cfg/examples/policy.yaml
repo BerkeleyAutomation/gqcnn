@@ -1,7 +1,7 @@
 # sensor params
 sensor:
   image_dir: data/rgbd/multiple_objects
-  type: virtual_primesense
+  type: virtual
   frame: primesense_overhead
 calib_dir: data/calib
 
