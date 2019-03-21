@@ -20,10 +20,10 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 from .grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
-from .grasp_quality_function import GraspQualityFunctionFactory, GQCnnQualityFunction, DiscApproachPlanaritySuctionQualityFunction
+from .grasp_quality_function import GraspQualityFunctionFactory, GQCnnQualityFunction, FCGQCnnQualityFunction, DiscApproachPlanaritySuctionQualityFunction, ComDiscApproachPlanaritySuctionQualityFunction
 from .image_grasp_sampler import ImageGraspSamplerFactory, AntipodalDepthImageGraspSampler
 from .constraint_fn import GraspConstraintFnFactory, DiscreteApproachGraspConstraintFn
-from .policy import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, FullyConvolutionalGraspingPolicy, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiSuction, FullyConvolutionalGraspingPolicyMultiGripper, UniformRandomGraspingPolicy, PriorityCompositeGraspingPolicy, RgbdImageState, GraspAction
+from .policy import GraspingPolicy, RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, FullyConvolutionalGraspingPolicy, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiSuction, FullyConvolutionalGraspingPolicyMultiGripper, UniformRandomGraspingPolicy, PriorityCompositeGraspingPolicy, RgbdImageState, GraspAction
 from .actions import NoAction, ParallelJawGrasp3D, SuctionGrasp3D, MultiSuctionGrasp3D
 
-__all__ = ['Grasp2D', 'SuctionPoint2D', 'MultiSuctionPoint2D', 'GraspQualityFunctionFactory', 'GQCnnQualityFunction', 'ImageGraspSamplerFactory', 'AntipodalDepthImageGraspSampler', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'FullyConvolutionalGraspingPolicyMultiGripper', 'UniformRandomGraspingPolicy', 'RgbdImageState', 'GraspAction', 'GraspConstraintFnFactory', 'NoAction', 'ParallelJawGrasp3D', 'SuctionGrasp3D', 'MultiSuctionGrasp3D', 'FullyConvolutionalGraspingPolicy']
+__all__ = ['Grasp2D', 'SuctionPoint2D', 'MultiSuctionPoint2D', 'GraspQualityFunctionFactory', 'GQCnnQualityFunction', 'ImageGraspSamplerFactory', 'AntipodalDepthImageGraspSampler', 'GraspingPolicy', 'RobustGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'FullyConvolutionalGraspingPolicyMultiGripper', 'UniformRandomGraspingPolicy', 'RgbdImageState', 'GraspAction', 'GraspConstraintFnFactory', 'NoAction', 'ParallelJawGrasp3D', 'SuctionGrasp3D', 'MultiSuctionGrasp3D', 'FullyConvolutionalGraspingPolicy']
