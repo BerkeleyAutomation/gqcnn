@@ -35,6 +35,7 @@ class GeneralConstants:
     NUM_PREFETCH_Q_WORKERS = 3
     QUEUE_SLEEP = 0.001
     PI = math.pi
+    TF_DTYPE = tf.float16
     
 # enum for image modalities
 class ImageMode:

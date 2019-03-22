@@ -31,7 +31,7 @@ import sys
 import tensorflow as tf
 
 from .network_tf import GQCNNTF
-from gqcnn.utils import TrainingMode, InputDepthMode
+from gqcnn.utils import GeneralConstants, TrainingMode, InputDepthMode
 
 class FCGQCNNTF(GQCNNTF):
     """FC-GQ-CNN network implemented in Tensorflow. Note that this network is not directly trained,
@@ -106,7 +106,7 @@ class FCGQCNNTF(GQCNNTF):
         
         # create new set of weights by reshaping fully connected layer weights
         fcW = self._weights.weights['{}_weights'.format(fc_name)]
-        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] // (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name))
+        convW = tf.Variable(tf.reshape(fcW, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW)[0] // (filter_dim * filter_dim)], tf.shape(fcW)[1:]], 0)), name='{}_fully_conv_weights'.format(fc_name), dtype=GeneralConstants.TF_DTYPE)
         self._weights.weights['{}_fully_conv_weights'.format(fc_name)] = convW
         
         # get bias
@@ -135,7 +135,7 @@ class FCGQCNNTF(GQCNNTF):
 
         # create new set of weights for image stream by reshaping fully-connected layer weights
         fcW_im = self._weights.weights['{}_input_1_weights'.format(fc_name)]
-        convW = tf.Variable(tf.reshape(fcW_im, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW_im)[0] // (filter_dim * filter_dim)], tf.shape(fcW_im)[1:]], 0)), name='{}_im_fully_conv_weights'.format(fc_name))
+        convW = tf.Variable(tf.reshape(fcW_im, tf.concat([[filter_dim, filter_dim], [tf.shape(fcW_im)[0] // (filter_dim * filter_dim)], tf.shape(fcW_im)[1:]], 0)), name='{}_im_fully_conv_weights'.format(fc_name), dtype=GeneralConstants.TF_DTYPE)
         self._weights.weights['{}_im_fully_conv_weights'.format(fc_name)] = convW
 
         # compute im stream conv out(note that we use padding='VALID' here because we want an output size of 1x1xnum_filts for the original input size)

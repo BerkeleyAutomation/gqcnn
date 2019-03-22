@@ -36,7 +36,7 @@ import tensorflow as tf
 import tensorflow.contrib.framework as tcf
 
 from autolab_core import Logger
-from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GripperMode, TrainingMode, InputDepthMode
+from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GeneralConstants, GripperMode, TrainingMode, InputDepthMode
 
 class GQCNNWeights(object):
     """Helper struct for storing network weights."""
@@ -297,6 +297,7 @@ class GQCNNTF(object):
                 # add weights
                 if layer_name in self._base_layer_names:
                     self._weights.weights[short_name] = tf.Variable(reader.get_tensor(full_var_name), name=full_var_name)
+                                                                    
                     
     def init_weights_file(self, ckpt_file):
         """Load trained GQ-CNN weights. 
@@ -454,17 +455,17 @@ class GQCNNTF(object):
             # setup input placeholders
             if train_im_node is not None:
                 # training
-                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels), name='input_im')
+                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels), name='input_im', dtype=GeneralConstants.TF_DTYPE)
                 self._input_pose_node = None
                 if self._input_depth_mode != InputDepthMode.SUB and self._input_depth_mode != InputDepthMode.IM_ONLY:
-                    self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim), name='input_pose')
+                    self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim), name='input_pose', dtype=GeneralConstants.TF_DTYPE)
             else:
                 # inference only using GQ-CNN instantiated from GQCNNTF.load()
-                self._input_im_node = tf.placeholder(tf.float32, (self._batch_size, self._im_height, self._im_width, self._num_channels), name='input_im')
+                self._input_im_node = tf.placeholder(GeneralConstants.TF_DTYPE, (self._batch_size, self._im_height, self._im_width, self._num_channels), name='input_im')
                 self._input_pose_node = None
                 if self._input_depth_mode != InputDepthMode.SUB and self._input_depth_mode != InputDepthMode.IM_ONLY:
-                    self._input_pose_node = tf.placeholder(tf.float32, (self._batch_size, self._pose_dim), name='input_pose')
-            self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), ())
+                    self._input_pose_node = tf.placeholder(GeneralConstants.TF_DTYPE, (self._batch_size, self._pose_dim), name='input_pose')
+            self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), (), dtype=GeneralConstants.TF_DTYPE)
 
             # build network
             self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
@@ -964,8 +965,12 @@ class GQCNNTF(object):
 
                 fan_in = filter_h * filter_w * input_channels
                 std = np.sqrt(2.0 / (fan_in))
-                convW = tf.Variable(tf.truncated_normal(convW_shape, stddev=std), name='{}_weights'.format(name))
-                convb = tf.Variable(tf.truncated_normal([num_filt], stddev=std), name='{}_bias'.format(name))
+                convW = tf.Variable(tf.truncated_normal(convW_shape, stddev=std),
+                                    name='{}_weights'.format(name),
+                                    dtype=GeneralConstants.TF_DTYPE)
+                convb = tf.Variable(tf.truncated_normal([num_filt], stddev=std),
+                                    name='{}_bias'.format(name),
+                                    dtype=GeneralConstants.TF_DTYPE)
 
                 self._weights.weights['{}_weights'.format(name)] = convW
                 self._weights.weights['{}_bias'.format(name)] = convb
@@ -1014,11 +1019,18 @@ class GQCNNTF(object):
         else:
             self._logger.info('Reinitializing layer {}.'.format(name))
             std = np.sqrt(2.0 / (fan_in))
-            fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std), name='{}_weights'.format(name))
+            fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std),
+                              name='{}_weights'.format(name),
+                              dtype=GeneralConstants.TF_DTYPE)
+
             if final_fc_layer:
-                fcb = tf.Variable(tf.constant(0.0, shape=[out_size]), name='{}_bias'.format(name))
+                fcb = tf.Variable(tf.constant(0.0, shape=[out_size]),
+                                  name='{}_bias'.format(name),
+                                  dtype=GeneralConstants.TF_DTYPE)
             else:
-                fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std), name='{}_bias'.format(name))
+                fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std),
+                                  name='{}_bias'.format(name),
+                                  dtype=GeneralConstants.TF_DTYPE)                                  
 
             self._weights.weights['{}_weights'.format(name)] = fcW
             self._weights.weights['{}_bias'.format(name)] = fcb
@@ -1055,9 +1067,13 @@ class GQCNNTF(object):
             self._logger.info('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             pcW = tf.Variable(tf.truncated_normal([fan_in, out_size],
-                                               stddev=std), name='{}_weights'.format(name))
+                                               stddev=std),
+                              name='{}_weights'.format(name),
+                              dtype=GeneralConstants.TF_DTYPE)                                                                
             pcb = tf.Variable(tf.truncated_normal([out_size],
-                                               stddev=std), name='{}_bias'.format(name))
+                                               stddev=std),
+                              name='{}_bias'.format(name),
+                              dtype=GeneralConstants.TF_DTYPE)                              
 
             self._weights.weights['{}_weights'.format(name)] = pcW
             self._weights.weights['{}_bias'.format(name)] = pcb
@@ -1087,9 +1103,15 @@ class GQCNNTF(object):
         else:
             self._logger.info('Reinitializing layer {}.'.format(name))
             std = np.sqrt(2.0 / (fan_in_1 + fan_in_2))
-            input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std), name='{}_input_1_weights'.format(name))
-            input2W = tf.Variable(tf.truncated_normal([fan_in_2, out_size], stddev=std), name='{}_input_2_weights'.format(name))
-            fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std), name='{}_bias'.format(name))
+            input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std),
+                                  name='{}_input_1_weights'.format(name),
+                                  dtype=GeneralConstants.TF_DTYPE)
+            input2W = tf.Variable(tf.truncated_normal([fan_in_2, out_size], stddev=std),
+                                  name='{}_input_2_weights'.format(name),
+                                  dtype=GeneralConstants.TF_DTYPE)                                  
+            fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std),
+                              name='{}_bias'.format(name),
+                              dtype=GeneralConstants.TF_DTYPE)                              
 
             self._weights.weights['{}_input_1_weights'.format(name)] = input1W
             self._weights.weights['{}_input_2_weights'.format(name)] = input2W

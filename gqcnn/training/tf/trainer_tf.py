@@ -990,8 +990,8 @@ class GQCNNTrainerTF(object):
 
         # set up placeholders
         self.train_labels_node = tf.placeholder(train_label_dtype, (self.train_batch_size,))
-        self.input_im_node = tf.placeholder(tf.float32, (self.train_batch_size, self.im_height, self.im_width, self.im_channels))
-        self.input_pose_node = tf.placeholder(tf.float32, (self.train_batch_size, self.pose_dim))
+        self.input_im_node = tf.placeholder(GeneralConstants.TF_DTYPE, (self.train_batch_size, self.im_height, self.im_width, self.im_channels))
+        self.input_pose_node = tf.placeholder(GeneralConstants.TF_DTYPE, (self.train_batch_size, self.pose_dim))
 
         # setup mask placeholder for multiple angular bins
         if self._angular_bins > 0:
@@ -1072,10 +1072,10 @@ class GQCNNTrainerTF(object):
         """ Sets up placeholders for summary values and creates summary writer """
         # we create placeholders for our python values because summary_scalar expects
         # a placeholder, not simply a python value 
-        self.val_error_placeholder = tf.placeholder(tf.float32, [])
-        self.minibatch_error_placeholder = tf.placeholder(tf.float32, [])
-        self.minibatch_loss_placeholder = tf.placeholder(tf.float32, [])
-        self.learning_rate_placeholder = tf.placeholder(tf.float32, [])
+        self.val_error_placeholder = tf.placeholder(GeneralConstants.TF_DTYPE, [])
+        self.minibatch_error_placeholder = tf.placeholder(GeneralConstants.TF_DTYPE, [])
+        self.minibatch_loss_placeholder = tf.placeholder(GeneralConstants.TF_DTYPE, [])
+        self.learning_rate_placeholder = tf.placeholder(GeneralConstants.TF_DTYPE, [])
 
         # we create summary scalars with tags that allow us to group them together so we can write different batches
         # of summaries at different intervals
