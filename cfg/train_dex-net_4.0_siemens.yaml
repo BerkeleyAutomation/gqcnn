@@ -44,7 +44,7 @@ preproc_log_frequency: 100 # how often to log preprocessing (in steps)
 multiplicative_denoising: 0
 gamma_shape: 1000.00
 
-symmetrize: 0
+symmetrize: 1
 
 gaussian_process_denoising: 1
 gaussian_process_rate: 0.5
@@ -62,8 +62,8 @@ seed: 24098
 ### GQCNN CONFIG ###
 gqcnn:
   # basic data metrics
-  im_height: 40
-  im_width: 40
+  im_height: 48
+  im_width: 48
   im_channels: 1
   debug: 0
   seed: 24098

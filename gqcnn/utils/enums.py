@@ -23,8 +23,9 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 Constants/enums.
 Author: Vishal Satish
 """
-import tensorflow as tf
 import math
+import numpy as np
+import tensorflow as tf
 
 # other constants
 class GeneralConstants:
@@ -35,6 +36,7 @@ class GeneralConstants:
     NUM_PREFETCH_Q_WORKERS = 3
     QUEUE_SLEEP = 0.001
     PI = math.pi
+    NP_DTYPE = np.float16
     TF_DTYPE = tf.float16
     
 # enum for image modalities

@@ -33,8 +33,8 @@ if __name__ == '__main__':
     depth_im = depth_im.inpaint(rescale_factor=0.25)
     depth_im = depth_im.resize(0.25, interp='nearest')
     
-    vis2d.figure()
-    vis2d.imshow(depth_im)
-    vis2d.show()
+    #vis2d.figure()
+    #vis2d.imshow(depth_im)
+    #vis2d.show()
 
     depth_im.save(out_filename)

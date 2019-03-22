@@ -455,17 +455,17 @@ class GQCNNTF(object):
             # setup input placeholders
             if train_im_node is not None:
                 # training
-                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels), name='input_im', dtype=GeneralConstants.TF_DTYPE)
+                self._input_im_node = tf.placeholder_with_default(train_im_node, (None, self._im_height, self._im_width, self._num_channels), name='input_im')
                 self._input_pose_node = None
                 if self._input_depth_mode != InputDepthMode.SUB and self._input_depth_mode != InputDepthMode.IM_ONLY:
-                    self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim), name='input_pose', dtype=GeneralConstants.TF_DTYPE)
+                    self._input_pose_node = tf.placeholder_with_default(train_pose_node, (None, self._pose_dim), name='input_pose')
             else:
                 # inference only using GQ-CNN instantiated from GQCNNTF.load()
                 self._input_im_node = tf.placeholder(GeneralConstants.TF_DTYPE, (self._batch_size, self._im_height, self._im_width, self._num_channels), name='input_im')
                 self._input_pose_node = None
                 if self._input_depth_mode != InputDepthMode.SUB and self._input_depth_mode != InputDepthMode.IM_ONLY:
                     self._input_pose_node = tf.placeholder(GeneralConstants.TF_DTYPE, (self._batch_size, self._pose_dim), name='input_pose')
-            self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0), (), dtype=GeneralConstants.TF_DTYPE)
+            self._input_drop_rate_node = tf.placeholder_with_default(tf.constant(0.0, dtype=GeneralConstants.TF_DTYPE), ())
 
             # build network
             self._output_tensor = self._build_network(self._input_im_node, self._input_pose_node, self._input_drop_rate_node)
@@ -965,10 +965,10 @@ class GQCNNTF(object):
 
                 fan_in = filter_h * filter_w * input_channels
                 std = np.sqrt(2.0 / (fan_in))
-                convW = tf.Variable(tf.truncated_normal(convW_shape, stddev=std),
+                convW = tf.Variable(tf.truncated_normal(convW_shape, stddev=std, dtype=GeneralConstants.TF_DTYPE),
                                     name='{}_weights'.format(name),
                                     dtype=GeneralConstants.TF_DTYPE)
-                convb = tf.Variable(tf.truncated_normal([num_filt], stddev=std),
+                convb = tf.Variable(tf.truncated_normal([num_filt], stddev=std, dtype=GeneralConstants.TF_DTYPE),
                                     name='{}_bias'.format(name),
                                     dtype=GeneralConstants.TF_DTYPE)
 
@@ -1019,16 +1019,16 @@ class GQCNNTF(object):
         else:
             self._logger.info('Reinitializing layer {}.'.format(name))
             std = np.sqrt(2.0 / (fan_in))
-            fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std),
+            fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std, dtype=GeneralConstants.TF_DTYPE),
                               name='{}_weights'.format(name),
                               dtype=GeneralConstants.TF_DTYPE)
 
             if final_fc_layer:
-                fcb = tf.Variable(tf.constant(0.0, shape=[out_size]),
+                fcb = tf.Variable(tf.constant(0.0, shape=[out_size], dtype=GeneralConstants.TF_DTYPE),
                                   name='{}_bias'.format(name),
                                   dtype=GeneralConstants.TF_DTYPE)
             else:
-                fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std),
+                fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std, dtype=GeneralConstants.TF_DTYPE),
                                   name='{}_bias'.format(name),
                                   dtype=GeneralConstants.TF_DTYPE)                                  
 
@@ -1067,11 +1067,11 @@ class GQCNNTF(object):
             self._logger.info('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             pcW = tf.Variable(tf.truncated_normal([fan_in, out_size],
-                                               stddev=std),
+                                               stddev=std, dtype=GeneralConstants.TF_DTYPE),
                               name='{}_weights'.format(name),
                               dtype=GeneralConstants.TF_DTYPE)                                                                
             pcb = tf.Variable(tf.truncated_normal([out_size],
-                                               stddev=std),
+                                               stddev=std, dtype=GeneralConstants.TF_DTYPE),
                               name='{}_bias'.format(name),
                               dtype=GeneralConstants.TF_DTYPE)                              
 
@@ -1103,13 +1103,13 @@ class GQCNNTF(object):
         else:
             self._logger.info('Reinitializing layer {}.'.format(name))
             std = np.sqrt(2.0 / (fan_in_1 + fan_in_2))
-            input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std),
+            input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std, dtype=GeneralConstants.TF_DTYPE),
                                   name='{}_input_1_weights'.format(name),
                                   dtype=GeneralConstants.TF_DTYPE)
-            input2W = tf.Variable(tf.truncated_normal([fan_in_2, out_size], stddev=std),
+            input2W = tf.Variable(tf.truncated_normal([fan_in_2, out_size], stddev=std, dtype=GeneralConstants.TF_DTYPE),
                                   name='{}_input_2_weights'.format(name),
                                   dtype=GeneralConstants.TF_DTYPE)                                  
-            fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std),
+            fcb = tf.Variable(tf.truncated_normal([out_size], stddev=std, dtype=GeneralConstants.TF_DTYPE),
                               name='{}_bias'.format(name),
                               dtype=GeneralConstants.TF_DTYPE)                              
 

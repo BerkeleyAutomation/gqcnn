@@ -740,7 +740,7 @@ class GQCNNTrainerTF(object):
         """ Compute train and validation indices for each tensor to speed data accesses"""
         # read indices
         train_indices, val_indices, _ = self.dataset.split(self.split_name)
-
+        
         # loop through tensors, assigning indices to each file
         self.train_index_map = {}
         for i in range(self.dataset.num_tensors):
@@ -769,7 +769,7 @@ class GQCNNTrainerTF(object):
 
         for i, indices in self.val_index_map.items():
             self.val_index_map[i] = np.array(indices)
-            
+
     def _setup_output_dirs(self):
         """Setup output directories."""
         self.logger.info('Saving model to: {}'.format(self.model_dir))
@@ -1181,8 +1181,8 @@ class GQCNNTrainerTF(object):
 
             # init buffers
             train_images = np.zeros(
-                [self.train_batch_size, self.im_height, self.im_width, self.im_channels]).astype(np.float32)
-            train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(np.float32)
+                [self.train_batch_size, self.im_height, self.im_width, self.im_channels]).astype(GeneralConstants.NP_DTYPE)
+            train_poses = np.zeros([self.train_batch_size, self.pose_dim]).astype(GeneralConstants.NP_DTYPE)
             train_labels = np.zeros(self.train_batch_size).astype(self.numpy_dtype)
             if self._angular_bins > 0 or self.multi_head:
                 train_pred_mask = np.zeros((self.train_batch_size, self.num_mask_outputs*2), dtype=bool)
@@ -1331,8 +1331,8 @@ class GQCNNTrainerTF(object):
                 end_i = start_i + num_loaded
 
                 # enqueue training data batch
-                train_images[start_i:end_i, ...] = train_images_arr.copy()
-                train_poses[start_i:end_i,:] = train_poses_arr.copy()
+                train_images[start_i:end_i, ...] = train_images_arr.copy().astype(GeneralConstants.NP_DTYPE)
+                train_poses[start_i:end_i,:] = train_poses_arr.copy().astype(GeneralConstants.NP_DTYPE)
                 train_labels[start_i:end_i] = train_label_arr.copy()
                 if self._angular_bins > 0 or self.multi_head:
                     train_pred_mask[start_i:end_i] = train_pred_mask_arr.copy()
