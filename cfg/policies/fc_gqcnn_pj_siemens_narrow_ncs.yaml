@@ -1,0 +1,43 @@
+policy:
+  type: fully_conv_pj
+
+  sampling_method: top_k
+  num_depth_bins: 10
+  gripper_width: 0.075
+  gqcnn_stride: 2
+  gqcnn_recep_h: 48
+  gqcnn_recep_w: 48
+
+  # grasp filtering
+  filter_grasps: 0
+  max_grasps_to_filter: 50
+
+  # metrics
+  metric:
+    type: ncsfcgqcnn
+    gqcnn_model: models/FC-GQCNN-SIEMENS-NARROW-JAWS
+    gqcnn_backend: tf
+    fully_conv_gqcnn_config:
+      im_height: 64
+      im_width: 64
+
+  # visualization
+  policy_vis:
+    scale: 0.5
+    show_axis: 1
+    num_samples: 0
+    actions_2d: 0
+    actions_3d: 0
+    affordance_map: 0
+
+  # visualization
+  vis:
+    final_grasp: 1
+    3d: 1
+    
+    vmin: 0.4
+    vmax: 0.7
+
+# image pre-processing before input to policy
+inpaint_rescale_factor: 0.5
+      
