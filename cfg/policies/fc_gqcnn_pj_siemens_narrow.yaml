@@ -3,7 +3,7 @@ policy:
 
   sampling_method: top_k
   num_depth_bins: 10
-  gripper_width: 0.085
+  gripper_width: 0.075
   gqcnn_stride: 2
   gqcnn_recep_h: 48
   gqcnn_recep_w: 48
@@ -15,7 +15,7 @@ policy:
   # metrics
   metric:
     type: fcgqcnn
-    gqcnn_model: models/FC-GQCNN-4.0-SIEMENS-4X-DOWNSAMPLING
+    gqcnn_model: models/FC-GQCNN-SIEMENS-NARROW-JAWS
     gqcnn_backend: tf
     fully_conv_gqcnn_config:
       im_height: 64

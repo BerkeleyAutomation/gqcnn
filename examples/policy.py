@@ -37,6 +37,7 @@ import numpy as np
 from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
+from visualization import Visualizer3D as vis3d
 
 from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction, FullyConvolutionalGraspingPolicyMultiSuction, FullyConvolutionalGraspingPolicyMultiGripper
 from gqcnn.utils import GripperMode, NoValidGraspsException
@@ -188,7 +189,7 @@ if __name__ == '__main__':
         depth_im = depth_im.resize(rescale_factor, interp='nearest')
         segmask = segmask.resize(rescale_factor, interp='nearest')
         camera_intr = camera_intr.resize(rescale_factor)
-        
+
     # visualize input images
     if 'input_images' in policy_config['vis'].keys() and policy_config['vis']['input_images']:
         vis.figure(size=(10,10))
@@ -249,3 +250,11 @@ if __name__ == '__main__':
         vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
         vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
         vis.show()
+
+    # vis 3d grasp
+    if '3d' in policy_config['vis'].keys() and policy_config['vis']['3d']:
+        point_cloud = camera_intr.deproject(depth_im)
+        vis3d.figure()
+        vis3d.points(point_cloud, scale=0.001)
+        vis3d.pose(action.grasp.pose())
+        vis3d.show()        
