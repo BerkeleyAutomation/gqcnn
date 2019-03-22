@@ -312,15 +312,15 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
 
     def _sample_depths(self, raw_depth_im, raw_seg):
         """Sample depths from the raw depth image."""
-        max_depth = np.max(raw_depth_im) + self._depth_offset
+        max_depth = np.percentile(raw_depth_im, 95) + self._depth_offset
 
         # for sampling the min depth, we only sample from the portion of the depth image in the object segmask because sometimes the rim of the bin is not properly subtracted out of the depth image
         raw_depth_im_segmented = np.zeros(raw_depth_im.shape)
         raw_depth_im_segmented[raw_seg > 0] = raw_depth_im[raw_seg > 0]
-            
+
         min_depth = self._depth_offset
         if np.any(raw_seg > 0):
-            min_depth = np.min(raw_depth_im_segmented[raw_seg > 0]) + self._depth_offset
+            min_depth = np.percentile(raw_depth_im_segmented[raw_seg > 0], 5) + self._depth_offset
         
         depth_bin_width = (max_depth - min_depth) / self._num_depth_bins
         depths = np.zeros((self._num_depth_bins, 1)) 
