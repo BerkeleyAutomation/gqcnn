@@ -436,7 +436,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             i += 1
         raise NoValidGraspsException('No grasps satisfied filters')
 
-    def action_set(self, state):
+    def action_set(self, state, num_actions):
         """ Plans the grasp with the highest probability of success on
         the given RGB-D image.
 
@@ -444,6 +444,8 @@ class RobustGraspingPolicy(GraspingPolicy):
         ----------
         state : :obj:`RgbdImageState`
             image to plan grasps on
+        num_actions : int
+            the number of actions to plan
 
         Returns
         -------
@@ -461,7 +463,7 @@ class RobustGraspingPolicy(GraspingPolicy):
 
         # sample grasps
         grasps = self._grasp_sampler.sample(rgbd_im, camera_intr,
-                                            self._num_grasp_samples,
+                                            num_actions,
                                             segmask=segmask,
                                             visualize=self.config['vis']['grasp_sampling'],
                                             constraint_fn=self._grasp_constraint_fn,
@@ -496,7 +498,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             vis.show(filename)
 
         # return actions
-        actions = [GraspAction(grasp, q_value, state.rgbd_im.depth) for grasp, q_value in zip(grasps, q_values)]
+        actions = [GraspAction(grasp, q_value, state.rgbd_im.depth, gripper_name=self.name) for grasp, q_value in zip(grasps, q_values)]
         actions.sort(key = lambda x: x.q_value, reverse=True)
         return actions
     
@@ -532,7 +534,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             vis.title('Best Grasp: d=%.3f, q=%.3f' %(grasp.depth, q_value))
             vis.show()
 
-        return GraspAction(grasp, q_value, state.rgbd_im.depth)
+        return GraspAction(grasp, q_value, state.rgbd_im.depth, gripper_name=self.name)
 
 class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
     """ Optimizes a set of grasp candidates in image space using the 
@@ -576,8 +578,6 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         self._parse_config()
         self._filters = filters
 
-        self._case_counter = 0
-        
     def _parse_config(self):
         """ Parses the parameters of the policy. """
         # cross entropy method parameters
@@ -725,7 +725,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             save_path = os.path.join(save_path, save_fname)
         vis.show(save_path) 
 
-    def action_set(self, state):
+    def action_set(self, state, num_actions):
         """ Plan a set of grasps with the highest probability of success on
         the given RGB-D image.
 
@@ -733,6 +733,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         ----------
         state : :obj:`RgbdImageState`
             image to plan grasps on
+        num_actions : int
+            the number of actions to plan
 
         Returns
         -------
@@ -987,7 +989,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         # create the list of grasp actions
         grasp_actions = []
         for grasp, q in zip(grasps, q_values):
-            grasp_actions.append(GraspAction(grasp, q, None))
+            grasp_actions.append(GraspAction(grasp, q, None, gripper_name=self.name))
+        grasp_actions.sort(key = lambda x: x.q_value, reverse=True)
+        if len(grasp_actions) > num_actions:
+            grasp_actions = grasp_actions[:num_actions]
         return grasp_actions
 
     def _action(self, state):
@@ -1043,7 +1048,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                frame=state.rgbd_im.frame)
 
         # return action
-        action = GraspAction(grasp, q_value, image)
+        action = GraspAction(grasp, q_value, image, gripper_name=self.name)
         return action
         
 class QFunctionRobustGraspingPolicy(CrossEntropyRobustGraspingPolicy):

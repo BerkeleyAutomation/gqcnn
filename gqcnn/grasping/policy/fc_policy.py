@@ -32,7 +32,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from autolab_core import Logger, Point, RigidTransform
-from perception import DepthImage, CameraIntrinsics
+from perception import BinaryImage, DepthImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 from gqcnn.utils import NoValidGraspsException, GripperMode
@@ -225,7 +225,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             state.rgbd_im.color.save('color.png')
             state.camera_intr.save('camera.intr')
             state.segmask.save('segmask.png')
-        
+
         # predict
         images, depths = self._gen_images_and_depths(raw_depth, raw_seg)
 
