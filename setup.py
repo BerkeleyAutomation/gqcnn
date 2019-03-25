@@ -21,7 +21,10 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
 Setup of gqcnn python codebase
-Author: Vishal Satish
+
+Author 
+------
+Jeff Mahler & Vishal Satish
 """
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop

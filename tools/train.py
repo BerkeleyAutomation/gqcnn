@@ -20,7 +20,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Script for training a Grasp Quality Neural Network (GQ-CNN) from scratch.
+Script for training a Grasp Quality Neural Network (GQ-CNN).
 
 Author
 ------
@@ -39,7 +39,7 @@ logger = Logger.get_logger('tools/train.py')
 
 if __name__ == '__main__':
     # parse args
-    parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network from scratch with TensorFlow')
+    parser = argparse.ArgumentParser(description='Train a Grasp Quality Convolutional Neural Network with TensorFlow')
     parser.add_argument('dataset_dir', type=str, default=None,
                         help='path to the dataset to use for training and validation')
     parser.add_argument('--split_name', type=str, default='image_wise',
