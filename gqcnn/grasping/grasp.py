@@ -127,7 +127,7 @@ class Grasp2D(object):
     
 
     @staticmethod
-    def from_feature_vec(v, width=0.0, camera_intr=None):
+    def from_feature_vec(v, width=0.0, height_offset=0.0, camera_intr=None):
         """ Creates a Grasp2D obj from a feature vector and additional parameters.
 
         Parameters

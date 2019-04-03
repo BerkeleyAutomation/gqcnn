@@ -15,17 +15,18 @@ policy:
   # sampling params
   sampling:
     # type
-    type: antipodal_depth
+    type: hsr
 
     # antipodality
     friction_coef: 0.8
-    depth_grad_thresh: 0.005
+    depth_grad_thresh: 0.004
     depth_grad_gaussian_sigma: 1.0
     downsample_rate: 2
     max_rejection_samples: 4000
 
     # distance
     max_dist_from_center: 160
+    # min_dist_boundary is set to 68 in policy.py line 205
     min_dist_from_boundary: 45
     min_grasp_dist: 2.5
     angle_dist_weight: 5.0
