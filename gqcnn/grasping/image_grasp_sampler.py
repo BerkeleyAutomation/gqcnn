@@ -839,7 +839,12 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
             p4 = p2 + (p1 - p2) / 10
             n1 = contact_normals1[grasp_ind,:]
             n2 = contact_normals2[grasp_ind,:]
-            width = np.linalg.norm(p1 - p2)
+
+            # compute depths
+            depth = (depth_im.data[p3[0],p3[1]] + depth_im.data[p4[0],p4[1]]) / 2
+            pixel_dist = p1 - p2
+            width = math.sqrt(np.dot(pixel_dist, pixel_dist)) * 0.0018 / depth
+
             k += 1
 
             ''' HSR with camera elevation angle of 14 degrees specific:
@@ -855,8 +860,10 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
 
             # combine height offset and contact points to project surface grasp center to actual grasp center
             depth_offset_from_height_offset = height_offset / math.cos(math.radians(14))
-            p1[0] += depth_offset_from_height_offset * math.sin(math.radians(14))
-            p2[0] += depth_offset_from_height_offset * math.sin(math.radians(14))
+            depth += depth_offset_from_height_offset
+            print('in m %f in pixel %f' %(depth_offset_from_height_offset, (depth_offset_from_height_offset * math.sin(math.radians(14))) * depth / 0.0018))
+            p1[0] += (depth_offset_from_height_offset * math.sin(math.radians(14))) * depth / 0.0018
+            p2[0] += (depth_offset_from_height_offset * math.sin(math.radians(14))) * depth / 0.0018
 
             # compute center and axis
             grasp_center = (p1 + p2) / 2
@@ -884,12 +891,6 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
                grasp_center[0] > depth_im.height - self._min_dist_from_boundary or \
                grasp_center[1] > depth_im.width - self._min_dist_from_boundary:
                 continue
-            # compute depths
-            depth = (depth_im.data[p3[0],p3[1]] + depth_im.data[p4[0],p4[1]]) / 2
-            print('old depth %f new depth %f' %(depth, depth + depth_offset_from_height_offset))
-            depth += depth_offset_from_height_offset
-            pixel_dist = p1 - p2
-            width = math.sqrt(np.dot(pixel_dist, pixel_dist)) * 0.0018 / depth
 
             candidate_grasp = Grasp2D(grasp_center_pt,
                                           grasp_theta,
