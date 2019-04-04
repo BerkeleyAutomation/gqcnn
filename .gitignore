@@ -90,3 +90,6 @@ ENV/
 *~
 .#*
 #*
+
+analysis/*
+models/*
