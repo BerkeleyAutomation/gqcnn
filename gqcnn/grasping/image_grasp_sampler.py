@@ -818,14 +818,45 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
         k = 0
         grasps = []
         near_grasps = []
+        print(num_samples)
+        ''' This grasp sampler only considers grasps that are closest among all grasps
+            in the depth image. This was done to focus dex-net on close objects to
+            avoid collisions when targeting further objects. However, we implemented
+            this behaviour afterwards also in the object recognition part when 
+            selected the closes object as target object. Therefore, this near grasp
+            focus here is deprecated. We still leave it here in case we have a huge
+            object bounding box in which near grasps within this box could again
+            become relevant.
+        '''
         while k < sample_size and len(near_grasps) <= num_samples:
             grasp_ind = grasp_indices[k]
             p1 = contact_points1[grasp_ind,:]
             p2 = contact_points2[grasp_ind,:]
+            # most contact points are not on object but outside
+            # thus, drive them towards each other to get more
+            # reliable depth values on object instead of floor
+            p3 = p1 + (p2 - p1) / 10
+            p4 = p2 + (p1 - p2) / 10
             n1 = contact_normals1[grasp_ind,:]
             n2 = contact_normals2[grasp_ind,:]
             width = np.linalg.norm(p1 - p2)
             k += 1
+
+            ''' HSR with camera elevation angle of 14 degrees specific:
+                The sampled grasp center is on the object surface.
+                To lower the grasp from this point, we sample a height offset
+                With a overhead camera, we can just add this height offset to the depth
+                of the current grasp center point as done for Dex-Net 4.0
+                With a tilted camera angle, we have to modify both the depth
+                and grasp center to achieve the same. This is done here in lines 838-847 
+            '''
+            # sample height offset from surface into object
+            height_offset = 0.015 + np.random.random() * 0.03
+
+            # combine height offset and contact points to project surface grasp center to actual grasp center
+            depth_offset_from_height_offset = height_offset / math.cos(math.radians(14))
+            p1[0] += depth_offset_from_height_offset * math.sin(math.radians(14))
+            p2[0] += depth_offset_from_height_offset * math.sin(math.radians(14))
 
             # compute center and axis
             grasp_center = (p1 + p2) / 2
@@ -854,14 +885,11 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
                grasp_center[1] > depth_im.width - self._min_dist_from_boundary:
                 continue
             # compute depths
-            p3 = p1 + (p2 - p1) / 10
-            p4 = p2 + (p1 - p2) / 10
             depth = (depth_im.data[p3[0],p3[1]] + depth_im.data[p4[0],p4[1]]) / 2
+            print('old depth %f new depth %f' %(depth, depth + depth_offset_from_height_offset))
+            depth += depth_offset_from_height_offset
             pixel_dist = p1 - p2
             width = math.sqrt(np.dot(pixel_dist, pixel_dist)) * 0.0018 / depth
-
-            # sample height offset from surface into object
-            height_offset = 0.015 + np.random.random() * 0.01
 
             candidate_grasp = Grasp2D(grasp_center_pt,
                                           grasp_theta,
@@ -895,15 +923,15 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
                 for near_grasp in new_near_grasps:
                     near_grasps.append(near_grasp)
                 grasps = []
-            # find nearest grasp
-            max_y = 0
-            for grasp in grasps:
-                if grasp.center[1] > max_y:
-                    max_y = grasp.center[1]
-                    nearest_grasp = grasp
-            new_near_grasps = [grasp for grasp in grasps if not grasp.center[1] <= max_y - 50]
-            for near_grasp in new_near_grasps:
-                near_grasps.append(near_grasp)
+        # find nearest grasp
+        max_y = 0
+        for grasp in grasps:
+            if grasp.center[1] > max_y:
+                max_y = grasp.center[1]
+                nearest_grasp = grasp
+        new_near_grasps = [grasp for grasp in grasps if not grasp.center[1] <= max_y - 50]
+        for near_grasp in new_near_grasps:
+            near_grasps.append(near_grasp)
         # return sampled grasps
         self._logger.debug('Loop took %.3f sec' %(time() - sample_start))
         return near_grasps
