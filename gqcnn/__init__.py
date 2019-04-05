@@ -19,32 +19,11 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from .version import __version__
-from .optimizer_constants import ImageMode, TrainingMode, PreprocMode, InputDataMode, GeneralConstants, ImageFileTemplates
-from .train_stats_logger import TrainStatsLogger
-from .learning_analysis import ClassificationResult, RegressionResult, ConfusionMatrix
+from model import get_gqcnn_model, get_fc_gqcnn_model 
+from training import get_gqcnn_trainer
+from grasping import RobustGraspingPolicy, UniformRandomGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
+from analysis import GQCNNAnalyzer
+from search import GQCNNSearch
+from utils import NoValidGraspsException, NoAntipodalPairsFoundException
 
-from .neural_networks import GQCNN
-from .sgd_optimizer import SGDOptimizer
-from .gqcnn_analyzer import GQCNNAnalyzer
-
-from .grasp import Grasp2D
-from .visualizer import Visualizer
-from .policy_exceptions import NoValidGraspsException, NoAntipodalPairsFoundException
-from .image_grasp_sampler import ImageGraspSampler, AntipodalDepthImageGraspSampler, ImageGraspSamplerFactory
-from .policy import Policy, GraspingPolicy, AntipodalGraspingPolicy, CrossEntropyAntipodalGraspingPolicy, QFunctionAntipodalGraspingPolicy, EpsilonGreedyQFunctionAntipodalGraspingPolicy, RgbdImageState, ParallelJawGrasp
-from .gqcnn_prediction_visualizer import GQCNNPredictionVisualizer
-
-__all__ = ['GQCNN', 
-           'SGDOptimizer',
-           'GQCNNAnalyzer',
-           'ImageMode', 'TrainingMode', 'PreprocMode', 'InputDataMode',
-           'TrainStatsLogger',
-           'ClassificationResult', 'RegressionResult', 'ConfusionMatrix',
-           'Grasp2D',
-           'ImageGraspSampler', 'AntipodalDepthImageGraspSampler', 'ImageGraspSamplerFactory'
-           'Visualizer', 'RobotGripper',
-           'ParallelJawGrasp', 'Policy', 'GraspingPolicy', 'AntipodalGraspingPolicy', 'CrossEntropyAntipodalGraspingPolicy',
-           'RgbdImageState',
-           'NoValidGraspsException', 'NoAntipodalPairsFoundException',
-           'GQCNNPredictionVisualizer']
+__all__ = ['get_gqcnn_model', 'get_fc_gqcnn_model', 'get_gqcnn_trainer', 'RobustGraspingPolicy', 'UniformRandomGraspingPolicy', 'CrossEntropyRobustGraspingPolicy', 'RgbdImageState','FullyConvolutionalGraspingPolicyParallelJaw', 'FullyConvolutionalGraspingPolicySuction', 'GQCNNAnalyzer', 'GQCNNSearch', 'NoValidGraspsException', 'NoAntipodalPairsFoundException']

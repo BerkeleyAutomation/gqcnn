@@ -48,12 +48,16 @@ catkin_python_setup()
    FILES
    GQCNNGrasp.msg
    BoundingBox.msg
+   Action.msg
+   Observation.msg
  )
 
 ## Generate services in the 'srv' folder
  add_service_files(
   FILES
   GQCNNGraspPlanner.srv
+  GQCNNGraspPlannerBoundingBox.srv
+  GQCNNGraspPlannerSegmask.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -133,7 +137,7 @@ include_directories(
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(yumipy_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(gqcnn gqcnn_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(yumipy_node

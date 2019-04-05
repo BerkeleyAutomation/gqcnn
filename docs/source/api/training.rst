@@ -1,54 +1,17 @@
 Training
-==============
+========
 
-SGDOptimizer
-~~~~~~~~~~~~~
-A tool for training GQ-CNN objects using Stochastic-Gradient-Descent.
+GQ-CNN training classes are **never accessed directly**, but through a lightweight factory function that returns the corresponding class depending on the specified backend. ::
 
-.. autoclass:: gqcnn.SGDOptimizer
+    $ from gqcnn import get_gqcnn_trainer
+    $
+    $ backend = 'tf'
+    $ my_trainer = get_gqcnn_trainer(backend)(<class initializer args>)
 
-TrainStatsLogger
-~~~~~~~~~~~~~~~~
-A tool for saving training data and metrics to disk while training a GQCNN.
+.. autofunction:: gqcnn.get_gqcnn_trainer
 
-.. autoclass:: gqcnn.TrainStatsLogger
+GQCNNTrainerTF
+~~~~~~~~~~~~~~
 
-GeneralConstants
-~~~~~~~~~~~~~~~~
-Enum for holding general DeepOptimizer constants such as random SEED and timeouts.
-
-.. autoclass:: gqcnn.GeneralConstants
-
-ImageFileTemplates
-~~~~~~~~~~~~~~~~~~
-Enum for holding dataset file naming templates for use when reading in files from dataset
-directory.
-
-.. autoclass:: gqcnn.ImageFileTemplates
-
-ImageMode
-~~~~~~~~~
-Enum for holding various image modalities.
-
-.. autoclass:: gqcnn.ImageMode
-
-TrainingMode
-~~~~~~~~~~~~
-Enum for holding specific training mode(classification vs. regression).
-
-.. autoclass:: gqcnn.TrainingMode
-
-PreprocMode
-~~~~~~~~~~~
-Enum for holding pre-processing mode for use during regression.
-
-.. autoclass:: gqcnn.PreprocMode
-
-InputDataMode
-~~~~~~~~~~~~~
-Enum for holding format of input pose data.
-
-..autoclass:: gqcnn.InputDataMode 
-
-
+.. autoclass:: gqcnn.training.tf.GQCNNTrainerTF
 

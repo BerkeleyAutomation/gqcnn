@@ -1,0 +1,60 @@
+# policy params
+policy:
+  # optimization params
+  num_seed_samples: 250
+  num_gmm_samples: 50
+  num_iters: 3
+  gmm_refit_p: 0.25
+  gmm_component_frac: 0.4
+  gmm_reg_covar: 0.01
+
+  # general params
+  deterministic: 1
+  max_approach_angle: 80
+
+  # sampling params
+  sampling:
+    # type
+    type: suction
+
+    # params
+    max_suction_dir_optical_axis_angle: 30
+    delta_theta: 1
+    delta_phi: 1
+    mean_depth: 0.0025
+    sigma_depth: 0.000001
+    min_suction_dist: 1.0
+    angle_dist_weight: 5.0
+    depth_gaussian_sigma: 1.0
+
+    max_dist_from_center: 10000000000
+    max_num_samples: 10000
+
+    num_grasp_samples: 500
+
+  # metric params
+  metric:
+    type: gqcnn
+    gqcnn_model: models/GQCNN-3.0
+
+    crop_height: 96
+    crop_width: 96
+
+  # visualization
+  vis:
+    grasp_sampling : 0
+    tf_images: 0
+    plane: 0
+    grasp_candidates: 0
+    elite_grasps: 0
+    grasp_ranking: 0
+    grasp_plan: 0
+    final_grasp: 1
+
+    vmin: 0.0
+    vmax: 1.0
+
+    k: 25
+
+# image proc params
+inpaint_rescale_factor: 0.5

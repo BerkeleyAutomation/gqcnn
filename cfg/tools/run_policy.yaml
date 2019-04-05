@@ -1,0 +1,93 @@
+# policy params
+policy:
+    # optimization params
+    num_seed_samples: 250
+    num_gmm_samples: 100
+    num_iters: 3
+    gmm_refit_p: 0.125
+    gmm_component_frac: 0.8
+    gmm_reg_covar: 0.01
+    max_resamples_per_iteration: 10
+
+    # general params
+    deterministic: 0
+    gripper: yumi_metal_spline
+    gripper_width: 0.05
+    max_approach_angle: 60
+    logging_dir: logs/debug
+    
+    # sampling params
+    sampling:
+      # type
+      type: antipodal_depth
+
+      # antipodality
+      friction_coef: 0.8
+      depth_grad_thresh: 0.002
+      depth_grad_gaussian_sigma: 0.5
+      min_num_edge_pixels: 25
+      downsample_rate: 2
+      max_rejection_samples: 4000
+
+      # distance
+      max_dist_from_center: 100000
+      min_dist_from_boundary: 45
+      min_grasp_dist: 1.0
+      angle_dist_weight: 5.0
+
+      # depth sampling
+      depth_samples_per_grasp: 1
+      depth_sample_win_height: 1
+      depth_sample_win_width: 1
+
+      depth_sampling_mode: uniform
+      min_depth_offset: 0.015
+      max_depth_offset: 0.04
+
+    # metric params
+    metric:
+      type: gqcnn
+
+      gqcnn_model: /mnt/data/diskstation/models/icra2019/gqcnn_mini_dexnet/
+
+      crop_height: 96
+      crop_width: 96
+
+    # filter params
+    filter_collisions: 1
+    filter_ik: 1
+    filter_unreachable: 0
+    max_grasps_filter: 10
+
+    collision_free_filter:
+      approach_dist: 0.075
+      rescale_factor: 0.125
+    ik_filter:
+      approach_dist: 0.075
+      traj_len: 0
+      group_name: left_jaws
+      ik_timeout: 0.1
+    reachability_filter:
+      unreachable_pose_dir: /mnt/data/diskstation/unreachable_poses/left/
+      min_rot_dist: 0.1
+      min_trans_dist: 0.01
+
+    # visualization
+    vis:
+      input_images: 0
+      grasp_sampling : 0
+      tf_images: 0
+      grasp_candidates: 0
+      elite_grasps: 0
+      grasp_ranking: 0
+      grasp_plan: 0
+      seg_point_cloud: 0
+      filtered_point_cloud: 0
+      final_grasp: 1
+
+      grasp_scale: 1
+      
+      vmin: 0.6
+      vmax: 0.9
+
+      k: 25

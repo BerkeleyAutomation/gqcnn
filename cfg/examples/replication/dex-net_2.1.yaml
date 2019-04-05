@@ -1,0 +1,65 @@
+# policy params
+policy:
+  # optimization params
+  num_seed_samples: 250
+  num_gmm_samples: 50
+  num_iters: 3
+  gmm_refit_p: 0.25
+  gmm_component_frac: 0.4
+  gmm_reg_covar: 0.01
+
+  # general params
+  deterministic: 1
+  gripper_width: 0.05
+
+  # sampling params
+  sampling:
+    # type
+    type: antipodal_depth
+
+    # antipodality
+    friction_coef: 0.8
+    depth_grad_thresh: 0.0025
+    depth_grad_gaussian_sigma: 1.0
+    downsample_rate: 2
+    max_rejection_samples: 4000
+
+    # distance
+    max_dist_from_center: 160
+    min_dist_from_boundary: 45
+    min_grasp_dist: 2.5
+    angle_dist_weight: 5.0
+
+    # depth sampling
+    depth_sampling_mode: uniform
+    depth_samples_per_grasp: 1
+    depth_sample_win_height: 1
+    depth_sample_win_width: 1
+    min_depth_offset: 0.005
+    max_depth_offset: 0.04
+
+  # metrics
+  metric:
+    type: gqcnn
+    gqcnn_model: models/GQCNN-2.1
+    
+    crop_height: 96
+    crop_width: 96
+
+  # visualization
+  vis:
+    grasp_sampling : 0
+    tf_images: 0
+    grasp_candidates: 0
+    elite_grasps: 0
+    grasp_ranking: 0
+    grasp_plan: 0
+    final_grasp: 1
+
+    vmin: 0.0
+    vmax: 1.0
+
+    k: 25
+
+# image proc params
+inpaint_rescale_factor: 0.5

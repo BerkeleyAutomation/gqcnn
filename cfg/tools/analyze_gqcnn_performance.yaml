@@ -1,13 +1,6 @@
-model_dir: /mnt/hdd/dex-net/data/models/grasp_quality
-output_dir: /mnt/hdd/dex-net/data/analyses/gqcnn_training_performance
-
-out_rate: 1
+log_rate: 10
 font_size: 15
+line_width: 4
 dpi: 100
-
-models:
-  mini_dexnet_all_trans_01_20_17_trained_06_18_17 :
-    tag: GQCNN (N=100)
-    type: gqcnn
-    split_type: image_wise # valid split-types are image_wise, object_wise, image_stable_pose_wise
-    vis_conv: 0
+num_bins: 100
+num_vis: 10

@@ -1,0 +1,37 @@
+policy:
+  type: fully_conv_suction
+
+  sampling_method: top_k
+  gqcnn_stride: 4
+  gqcnn_recep_h: 96
+  gqcnn_recep_w: 96
+
+  # filtering params
+  max_grasps_to_filter: 50
+  filter_grasps: 0
+
+  # metrics
+  metric:
+    type: fcgqcnn
+    gqcnn_model: models/FCGQCNN-4.0-SUCTION
+    gqcnn_backend: tf
+    fully_conv_gqcnn_config:
+      im_height: 480
+      im_width: 640
+
+  # visualization
+  policy_vis:
+    scale: 0.5
+    show_axis: 1
+    num_samples: 0
+    actions_2d: 0
+    actions_3d: 0
+    affordance_map: 0
+  vis:
+    final_grasp: 1
+
+    vmin: 0.0
+    vmax: 1.0
+
+# image pre-processing before input to policy
+inpaint_rescale_factor: 0.5

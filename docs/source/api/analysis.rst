@@ -3,25 +3,7 @@ Analysis
 
 GQCNNAnalyzer
 ~~~~~~~~~~~~~
-A tool for analyzing GQCNN objects for grasp quality prediction. Calculates various training curves
-such as Training Precision-Recall, Training ROC, Validation Precision-Recall, Validation ROC. 
+A tool for analyzing trained GQ-CNNs. Calculates statistics such as training/valiation errors and losses. Also plots Precision-Recall Curve and ROC, and saves sample TP/TN/FP/FN training/validation examples. 
 
 .. autoclass:: gqcnn.GQCNNAnalyzer
 
-ConfusionMatrix
-~~~~~~~~~~~~~~~
-A model for a ConfusionMatrix for storing and accessing classification errors.
-
-.. autoclass:: gqcnn.ConfusionMatrix
-
-RegressionResult
-~~~~~~~~~~~~~~~~
-A model for storing and accessing various attributes of a regression metric.
-
-.. autoclass:: gqcnn.RegressionResult
-
-ClassificationResult
-~~~~~~~~~~~~~~~~~~~~
-A model for storing and accessing various attributes of a classification metric.
-
-.. autoclass:: gqcnn.ClassificationResult

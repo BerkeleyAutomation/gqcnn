@@ -21,21 +21,39 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
 Setup of gqcnn python codebase
-Author: Vishal Satish
+
+Author 
+------
+Jeff Mahler & Vishal Satish
 """
-from setuptools import setup
+from setuptools import setup, find_packages
+from setuptools.command.develop import develop
+from setuptools.command.install import install
+import os
+
+class PostDevelopCmd(develop):
+    def run(self):
+        develop.run(self)
+        os.system('sh scripts/downloads/download_example_data.sh')
+
+class PostInstallCmd(install):
+    def run(self):
+        install.do_egg_install(self) #TODO: @Vishal figure out why install.run(self) causes install_requires to be ignored
+        os.system('sh scripts/downloads/download_example_data.sh')
 
 requirements = [
-    'autolab_core',
-    'autolab_perception',
-    'numpy',
+    'autolab-core',
+    'autolab-perception',
+    'visualization',
+    'numpy>=1.14.0',
     'scipy',
-    'matplotlib',
+    'matplotlib<3.0',
     'opencv-python',
-    'tensorflow>=1.0',
-    'ipython',
+    'tensorflow>=1.10.0',
     'scikit-image',
-    'scikit-learn'
+    'scikit-learn',
+    'psutil',
+    'gputil'
 ]
 
 exec(open('gqcnn/version.py').read())
@@ -45,26 +63,25 @@ setup(name='gqcnn',
       description='Project code for running Grasp Quality Convolutional Neural Networks', 
       author='Vishal Satish', 
       author_email='vsatish@berkeley.edu', 
-      license = 'Apache Software License',
+      license = 'Berkeley Copyright',
       url = 'https://github.com/BerkeleyAutomation/gqcnn',
       keywords = 'robotics grasping vision deep learning',
       classifiers = [
           'Development Status :: 4 - Beta',
-          'License :: OSI Approved :: Apache Software License',
-          'Programming Language :: Python',
-          'Programming Language :: Python :: 2.7',
-          'Programming Language :: Python :: 3.5',
-          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 2.7 :: Only',
           'Natural Language :: English',
           'Topic :: Scientific/Engineering'
       ],      
-      packages=['gqcnn'], 
-      setup_requres = requirements,
+      packages=find_packages(), 
       install_requires = requirements,
       extras_require = { 'docs' : [
           'sphinx',
           'sphinxcontrib-napoleon',
           'sphinx_rtd_theme'
       ],
+      },
+      cmdclass={
+        'install': PostInstallCmd,
+        'develop': PostDevelopCmd
       }
 )

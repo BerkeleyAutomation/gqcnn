@@ -1,0 +1,8 @@
+# request params
+sensor_msgs/Image color_image
+sensor_msgs/Image depth_image
+sensor_msgs/CameraInfo camera_info
+sensor_msgs/Image segmask
+---
+# response params
+GQCNNGrasp grasp

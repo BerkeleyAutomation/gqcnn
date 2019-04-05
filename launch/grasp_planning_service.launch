@@ -1,0 +1,13 @@
+<launch>
+  <!-- Namespace for the node and services -->
+  <arg name="ns"  default="gqcnn" />
+  
+  <!-- Configuration file for Grasp Planner Node -->
+  <arg name="model_name"        default="GQCNN-2.0" />
+  <arg name="model_dir"        default="default" />
+  
+  <node name="grasp_planner"  pkg="gqcnn" type="grasp_planner_node.py" ns="$(arg ns)" output="screen" >
+    	<param name="model_name"           value="$(arg model_name)" />
+    	<param name="model_dir"           value="$(arg model_dir)" />
+  </node>
+</launch>

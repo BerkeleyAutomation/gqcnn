@@ -21,181 +21,204 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
 Displays robust grasps planned using a GQ-CNN-based policy on a set of saved RGB-D images.
-The default configuration is cfg/examples/policy.yaml.
+The default configuration for the standard GQ-CNN policy is cfg/examples/policy.yaml. The default configuration for the Fully-Convolutional GQ-CNN policy is cfg/examples/fc_policy.yaml.
 
 Author
 ------
-Jeff Mahler
-
-YAML Configuration File Parameters
-----------------------------------
-sensor/image_dir : str
-    directory to the sample images, specified relative to /path/to/your/gqcnn/ (change this to try your own images!)
-sensor/type : str
-    type of sensor to use (virtual_primesense by default to use pre-stored images)
-sensor/frame : str
-    name of the sensor frame of references
-
-calib_dir : str
-    directory to the sample camera calibration files, specified relative to /path/to/your/gqcnn/
-
-policy/gqcnn_model : str
-    path to a directory containing a GQ-CNN model (change this to try your own networks!)
-policy/num_seed_samples : int
-    number of initial samples to take in the cross-entropy method (CEM) optimizer (smaller means faster grasp planning, lower-quality grasps)
-policy/num_gmm_samples : int
-    number of samples to take from the Gaussian Mixture Models on each iteration of the CEM optimizer
-policy/num_iters : int
-    number of sample-and-refit iterations of CEM
-policy/gmm_refit_p : flota
-    percentage of samples to use in the elite set on each iteration of CEM
-policy/gmm_component_frac : float
-    number of GMM components to use as a fraction of the sample size
-policy/gmm_reg_covat : float
-    regularization constant to ensure GMM sample diversity
-policy/deterministic : bool
-    True (1) if execution should be deterministic (via setting a random seed) and False (0) otherwise
-policy/gripper_width : float
-    distance between the jaws, in meters
-policy/crop_height : int
-    height of bounding box to use for cropping the image around a grasp candidate before passing it into the GQ-CNN
-policy/crop_width : int
-    width of bounding box to use for cropping the image around a grasp candidate before passing it into the GQ-CNN
-policy/sampling/type : str
-    grasp sampling type (use antipodal_depth to sample antipodal pairs in image space)
-policy/sampling/friction_coef : float
-    friction coefficient to use in sampling
-policy/sampling/depth_grad_thresh : float
-    threshold on depth image gradients for edge detection
-policy/sampling/depth_grad_gaussian_sigma : float
-    variance for gaussian filter to smooth image before taking gradients
-policy/sampling/downsample_rate : float
-    factor by which to downsample the image when detecting edges (larger number means edges are smaller images, which speeds up performance)
-policy/sampling/max_rejection_samples : int
-    maximum number of samples to take when sampling antipodal candidates (larger means potentially longer runtimes)
-policy/sampling/max_dist_from_center : int
-    maximum distance, in pixels, from the image center allowed in grasp sampling
-policy/sampling/min_dist_from_boundary : int
-    minimum distance, in pixels, of a grasp from the image boundary
-policy/sampling/min_grasp_dist : float
-    minimum distance between grasp vectors allowed in sampling (larger means greater sample diversity but potentially lower precision)
-policy/sampling/angle_dist_weight : float
-    weight for the distance between grasp axes in radians (we recommend keeping the default)
-policy/sampling/depth_samples_per_grasp : int
-    number of depth samples to take per independent antipodal grasp sample in image space
-policy/sampling/depth_sample_win_height: int
-    height of window used to compute the minimum depth for grasp depth sampling
-policy/sampling/depth_sample_win_width: int
-    width of window used to compute the minimum depth for grasp depth sampling
-policy/sampling/min_depth_offset : float
-    offset, in cm, from the min depth
-policy/sampling/max_depth_offset : float
-    offset, in cm, from the max depth
-
-policy/vis/grasp_sampling : bool
-    True (1) if grasp sampling should be displayed (for debugging)
-policy/vis/tf_images : bool
-    True (1) if transformed images should be displayed (for debugging)
-policy/vis/grasp_candidates : bool
-    True (1) if grasp candidates should be displayed (for debugging)
-policy/vis/elite_grasps : bool
-    True (1) if the elite set should be displayed (for debugging)
-policy/vis/grasp_ranking : bool
-    True (1) if the ranked grasps should be displayed (for debugging)
-policy/vis/grasp_plan : bool
-    True (1) if the planned grasps should be displayed (for debugging)
-policy/vis/final_grasp : bool
-    True (1) if the final planned grasp should be displayed (for debugging)
-policy/vis/k : int
-    number of grasps to display
-
-inpaint_rescale_factor : float
-    scale factor to resize the image by before inpainting (smaller means faster performance by less precise)
-
+Jeff Mahler and Vishal Satish
 """
 import argparse
-import logging
-import IPython
-import numpy as np
+import json
 import os
-import sys
 import time
 
-from autolab_core import RigidTransform, YamlConfig
-from perception import RgbdImage, RgbdSensorFactory
+import numpy as np
 
-from gqcnn import CrossEntropyAntipodalGraspingPolicy, RgbdImageState
-from gqcnn import Visualizer as vis
+from autolab_core import RigidTransform, YamlConfig, Logger
+from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
+from visualization import Visualizer2D as vis
+
+from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState, FullyConvolutionalGraspingPolicyParallelJaw, FullyConvolutionalGraspingPolicySuction
+from gqcnn.utils import GripperMode, NoValidGraspsException
+
+# set up logger
+logger = Logger.get_logger('examples/policy.py')
 
 if __name__ == '__main__':
-    # set up logger
-    logging.getLogger().setLevel(logging.DEBUG)
-
     # parse args
-    parser = argparse.ArgumentParser(description='Run a GQ-CNN-based grasping policy')
-    parser.add_argument('--config_filename', type=str, default='cfg/examples/policy.yaml', help='path to configuration file to use')
+    parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
+    parser.add_argument('model_name', type=str, default=None, help='name of a trained model to run')
+    parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')
+    parser.add_argument('--segmask', type=str, default=None, help='path to an optional segmask to use')
+    parser.add_argument('--camera_intr', type=str, default=None, help='path to the camera intrinsics')
+    parser.add_argument('--model_dir', type=str, default=None, help='path to the folder in which the model is stored')
+    parser.add_argument('--config_filename', type=str, default=None, help='path to configuration file to use')
+    parser.add_argument('--fully_conv', action='store_true', help='run Fully-Convolutional GQ-CNN policy instead of standard GQ-CNN policy')
     args = parser.parse_args()
+    model_name = args.model_name
+    depth_im_filename = args.depth_image
+    segmask_filename = args.segmask
+    camera_intr_filename = args.camera_intr
+    model_dir = args.model_dir
     config_filename = args.config_filename
+    fully_conv = args.fully_conv
 
-    # make relative paths absolute
-    if not os.path.isabs(config_filename):
-        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       '..',
-                                       config_filename)
+    assert not (fully_conv and depth_im_filename is not None and segmask_filename is None), 'Fully-Convolutional policy expects a segmask.'
 
+    if depth_im_filename is None:
+        if fully_conv:
+            depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                             '..',
+                                             'data/examples/clutter/primesense/depth_0.npy')
+        else:
+            depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                             '..',
+                                             'data/examples/single_object/primesense/depth_0.npy')
+    if fully_conv and segmask_filename is None:
+        segmask_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        '..',
+                                        'data/examples/clutter/primesense/segmask_0.png')
+    if camera_intr_filename is None:
+        camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            '..',
+                                            'data/calib/primesense/primesense.intr')    
+   
+
+    # set model if provided 
+    if model_dir is None:
+        model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                 '../models')
+    model_path = os.path.join(model_dir, model_name)
+
+    # get configs
+    model_config = json.load(open(os.path.join(model_path, 'config.json'), 'r'))
+    try:
+        gqcnn_config = model_config['gqcnn']
+        gripper_mode = gqcnn_config['gripper_mode']
+    except:
+        gqcnn_config = model_config['gqcnn_config']
+        input_data_mode = gqcnn_config['input_data_mode']
+        if input_data_mode == 'tf_image':
+            gripper_mode = GripperMode.LEGACY_PARALLEL_JAW
+        elif input_data_mode == 'tf_image_suction':
+            gripper_mode = GripperMode.LEGACY_SUCTION                
+        elif input_data_mode == 'suction':
+            gripper_mode = GripperMode.SUCTION                
+        elif input_data_mode == 'multi_suction':
+            gripper_mode = GripperMode.MULTI_SUCTION                
+        elif input_data_mode == 'parallel_jaw':
+            gripper_mode = GripperMode.PARALLEL_JAW
+        else:
+            raise ValueError('Input data mode {} not supported!'.format(input_data_mode))
+    
+    # set config
+    if config_filename is None:
+        if gripper_mode == GripperMode.LEGACY_PARALLEL_JAW or gripper_mode == GripperMode.PARALLEL_JAW:
+            if fully_conv:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/examples/fc_gqcnn_pj.yaml')
+            else:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/examples/gqcnn_pj.yaml')
+        elif gripper_mode == GripperMode.LEGACY_SUCTION or gripper_mode == GripperMode.SUCTION:
+            if fully_conv:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/examples/fc_gqcnn_suction.yaml')
+            else:
+                config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               '..',
+                                               'cfg/examples/gqcnn_suction.yaml')
+            
     # read config
     config = YamlConfig(config_filename)
-    sensor_type = config['sensor']['type']
-    sensor_frame = config['sensor']['frame']
     inpaint_rescale_factor = config['inpaint_rescale_factor']
     policy_config = config['policy']
 
     # make relative paths absolute
-    if not os.path.isabs(config['calib_dir']):
-        config['calib_dir'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           '..',
-                                           config['calib_dir'])
-    if not os.path.isabs(config['sensor']['image_dir']):
-        config['sensor']['image_dir'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                     '..',
-                                                     config['sensor']['image_dir'])
-
-    if not os.path.isabs(config['policy']['gqcnn_model']):
-        config['policy']['gqcnn_model'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '..',
-                                                       config['policy']['gqcnn_model'])
-
-    # read camera calib
-    tf_filename = '%s_to_world.tf' %(sensor_frame)
-    T_camera_world = RigidTransform.load(os.path.join(config['calib_dir'], sensor_frame, tf_filename))
-
+    if 'gqcnn_model' in policy_config['metric'].keys():
+        policy_config['metric']['gqcnn_model'] = model_path
+        if not os.path.isabs(policy_config['metric']['gqcnn_model']):
+            policy_config['metric']['gqcnn_model'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                                  '..',
+                                                                  policy_config['metric']['gqcnn_model'])
+            
     # setup sensor
-    sensor = RgbdSensorFactory.sensor(sensor_type, config['sensor'])
-    sensor.start()
-    camera_intr = sensor.ir_intrinsics
-
+    camera_intr = CameraIntrinsics.load(camera_intr_filename)
+        
     # read images
-    color_im, depth_im, _ = sensor.frames()
-    color_im = color_im.inpaint(rescale_factor=inpaint_rescale_factor)
+    depth_data = np.load(depth_im_filename)
+    depth_im = DepthImage(depth_data, frame=camera_intr.frame)
+    color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
+                          frame=camera_intr.frame)
+    
+    # optionally read a segmask
+    segmask = None
+    if segmask_filename is not None:
+        segmask = BinaryImage.open(segmask_filename)
+    valid_px_mask = depth_im.invalid_pixel_mask().inverse()
+    if segmask is None:
+        segmask = valid_px_mask
+    else:
+        segmask = segmask.mask_binary(valid_px_mask)
+    
+    # inpaint
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
+        
+    if 'input_images' in policy_config['vis'].keys() and policy_config['vis']['input_images']:
+        vis.figure(size=(10,10))
+        num_plot = 1
+        if segmask is not None:
+            num_plot = 2
+        vis.subplot(1,num_plot,1)
+        vis.imshow(depth_im)
+        if segmask is not None:
+            vis.subplot(1,num_plot,2)
+            vis.imshow(segmask)
+        vis.show()
+        
+    # create state
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
-    state = RgbdImageState(rgbd_im, camera_intr)
+    state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
+
+    # set input sizes for fully-convolutional policy
+    if fully_conv:
+        policy_config['metric']['fully_conv_gqcnn_config']['im_height'] = depth_im.shape[0]
+        policy_config['metric']['fully_conv_gqcnn_config']['im_width'] = depth_im.shape[1]
 
     # init policy
-    policy = CrossEntropyAntipodalGraspingPolicy(policy_config)
+    if fully_conv:
+        #TODO: @Vishal we should really be doing this in some factory policy
+        if policy_config['type'] == 'fully_conv_suction':
+            policy = FullyConvolutionalGraspingPolicySuction(policy_config)
+        elif policy_config['type'] == 'fully_conv_pj':
+            policy = FullyConvolutionalGraspingPolicyParallelJaw(policy_config)
+        else:
+            raise ValueError('Invalid fully-convolutional policy type: {}'.format(policy_config['type']))
+    else:
+        policy_type = 'cem'
+        if 'type' in policy_config.keys():
+            policy_type = policy_config['type']
+        if policy_type == 'ranking':
+            policy = RobustGraspingPolicy(policy_config)
+        elif policy_type == 'cem':
+            policy = CrossEntropyRobustGraspingPolicy(policy_config)
+        else:
+            raise ValueError('Invalid policy type: {}'.format(policy_type))
+
+    # query policy
     policy_start = time.time()
     action = policy(state)
-    logging.info('Planning took %.3f sec' %(time.time() - policy_start))
+    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
     # vis final grasp
     if policy_config['vis']['final_grasp']:
         vis.figure(size=(10,10))
-        vis.subplot(1,2,1)
-        vis.imshow(rgbd_im.color)
-        vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on color (Q=%.3f)' %(action.q_value))
-        vis.subplot(1,2,2)
-        vis.imshow(rgbd_im.depth)
-        vis.grasp(action.grasp, scale=1.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
+        vis.imshow(rgbd_im.depth,
+                   vmin=policy_config['vis']['vmin'],
+                   vmax=policy_config['vis']['vmax'])
+        vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
+        vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
         vis.show()
