@@ -10,6 +10,12 @@ Overview
 --------
 The `gqcnn` package is a Python API for training and deploying `Grasp Quality Convolutional Neural Networks (GQ-CNNs)`_ for grasp planning using training datasets from the `Dexterity Network (Dex-Net)`_, developed by the `Berkeley AUTOLAB`_ and introduced in the `Dex-Net 2.0 paper`_.
 
+.. note:: We're excited to announce **version 1.0**, which brings the GQ-CNN package up to date with recent research in `Dex-Net`_.
+   Version 1.0 introduces support for:
+
+   #. **Dex-Net 4.0:** Composite policies that decide whether to use a suction cup or parallel-jaw gripper.
+   #. **Fully Convolutional GQ-CNNs:** Fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.
+
 Links
 -----
 * `Source Code`_
@@ -25,55 +31,61 @@ Links
 .. _UC Berkeley AUTOLAB: http://autolab.berkeley.edu
 
 .. image:: images/gqcnn.png
-   :height: 800px
-   :width: 800 px
-   :scale: 100 %
-   :align: center
+   :width: 100 %
 
 Project Goals
 -------------
 The goals of this project are to facilitate:
 
-1) **Replicability** of GQ-CNN training from the `Dex-Net 2.0 paper`_.
-2) **Research extensions** on novel GQ-CNN architectures that have higher performance on Dex-Net 2.0 training datasets.
+#. **Replicability** of GQ-CNN training and deployment from:
+    #. The latest `Dex-Net 4.0`_ results.
+    #. Older results such as `Dex-Net 2.0`_, `Dex-Net 2.1`_ and `Dex-Net 3.0`_.
+    #. Experimental results such as `FC-GQ-CNN`_.
+#. **Research extensions** on novel GQ-CNN architectures that have higher performance on `Dex-Net 4.0`_ training datasets.
 
-Our longer-term goal is to encourage development of GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.
+.. _Dex-Net 2.0: https://berkeleyautomation.github.io/dex-net/#dexnet_2
+.. _Dex-Net 2.1: https://berkeleyautomation.github.io/dex-net/#dexnet_21
+.. _Dex-Net 3.0: https://berkeleyautomation.github.io/dex-net/#dexnet_3
+.. _Dex-Net 4.0: https://berkeleyautomation.github.io/dex-net/#dexnet_4
+.. _FC-GQ-CNN: https://berkeleyautomation.github.io/fcgqcnn
 
-System Requirements
--------------------
-The `gqcnn` package currently supports only training of GQ-CNN on Dex-Net 2.0 datasets.
-We are working toward a grasp planning ROS service based on GQ-CNNs to work toward GQ-CNNs that work on other robot hardware setups.
+Our longer-term goal is to encourage development of robust GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.
 
-Please note that **performance on current datasets is not indicative of performance on other hardware setups** because our datasets are specific to:
+Disclaimer
+----------
+GQ-CNN models are sensitive to the following parameters used during dataset generation:
+   #. The robot gripper
+   #. The depth camera
+   #. The distance between the camera and workspace.
 
-1) Our ABB YuMi parallel-jaw gripper with custom fingertips due to collision geometry.
-2) A Primense Carmine 1.09 due to camera parameters.
-3) A camera positioned between 50-70cm above a table looking down due to image rendering parameters.
-
-We are currently researching how to generate datasets that can generalize across robots, cameras, and viewpoints.
+As a result, we cannot guarantee performance of our pre-trained models on other physical setups. If you have a specific use-case in mind, please reach out to us. It might be possible to generate a custom dataset for you particular setup. We are actively researching how to generate more robust datasets that can generalize across robots, cameras, and viewpoints.
 
 Development
 -----------
-The package is currently under active development. Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.
-
-Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
-For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.edu) with the subject line starting with "gqcnn development: "
+The package is currently under active development. Please raise all bugs, feature requests, and other issues under the `Github Issues`_.
+For other questions or concerns, please contact Jeff Mahler (jmahler@berkeley.edu) or Vishal Satish (vsatish@berkeley.edu) with the subject line starting with "GQ-CNN Development".
 
 Academic Use
 ------------
-If you use the code, datasets, or models in a publication, please `cite the Dex-Net 2.0 paper`_.
+If you use the code, datasets, or models in a publication, please cite the appropriate paper:
+
+#. **Dex-Net 2.0** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_rss2017.bib>`__
+#. **Dex-Net 2.1** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_corl2017.bib>`__
+#. **Dex-Net 3.0** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_icra2018.bib>`__
+#. **Dex-Net 4.0** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_sciencerobotics2019.bib>`__
+#. **FC-GQ-CNN** `(bibtex) <https://raw.githubusercontent.com/BerkeleyAutomation/fcgqcnn/gh-pages/docs/fcgqcnn_ral2019.bib>`__
 
 .. _Grasp Quality Convolutional Neural Networks (GQ-CNNs): info/info.html
 
 .. _Dexterity Network (Dex-Net): https://berkeleyautomation.github.io/dex-net
+
+.. _Dex-Net: https://berkeleyautomation.github.io/dex-net
 
 .. _Berkeley AUTOLAB: http://autolab.berkeley.edu/
 
 .. _Dex-Net 2.0 paper: https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf
 
 .. _Github Issues: https://github.com/BerkeleyAutomation/gqcnn/issues
-
-.. _cite the Dex-Net 2.0 paper: https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017.bib
 
 .. toctree::
    :maxdepth: 2
@@ -89,35 +101,37 @@ If you use the code, datasets, or models in a publication, please `cite the Dex-
 
 .. toctree::
    :maxdepth: 2
-   :caption: Data
-
-   data/data.rst
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Benchmarks
-
-   /benchmarks/benchmarks.rst
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Tutorial
+   :caption: Getting Started
 
    tutorials/tutorial.rst
 
 .. toctree::
    :maxdepth: 2
-   :caption: Documentation for Scripts
-   :glob:
+   :caption: Replication
 
-   scripts/*
+   replication/replication.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Benchmarks
+
+   benchmarks/benchmarks.rst
 
 .. toctree::
    :maxdepth: 2
    :caption: API Documentation
    :glob:
 
-   api/*
+   api/gqcnn.rst
+   api/training.rst
+   api/analysis.rst
+   api/policies.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: License
+
+   license/license.rst
 
 Indices and tables
 ==================

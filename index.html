@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Berkeley AUTOLAB’s GQCNN Package &mdash; GQCNN 0.1.0 documentation</title>
+  <title>Berkeley AUTOLAB’s GQCNN Package &mdash; GQCNN 1.0.0 documentation</title>
   
 
   
@@ -17,41 +17,35 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="GQCNN 0.1.0 documentation" href="#"/>
-        <link rel="next" title="What are GQ-CNNs?" href="info/info.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="What are GQ-CNNs?" href="info/info.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -65,7 +59,7 @@
             
             
               <div class="version">
-                0.1.0
+                1.0.0
               </div>
             
           
@@ -95,42 +89,36 @@
 </ul>
 <p class="caption"><span class="caption-text">Installation Guide</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="install/install.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install/install.html">Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install/install.html#dependencies">Dependencies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install/install.html#python-installation">Python Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install/install.html#ros-installation">ROS Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install/install.html#quick-start-guide">Quick Start Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install/install.html#documentation">Documentation</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Data</span></p>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="data/data.html">Download Link</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data/data.html#datasets">Datasets</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data/data.html#models">Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data/data.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#analysis">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#grasp-planning">Grasp Planning</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Replication</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="replication/replication.html">Replicating Results</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Benchmarks</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="benchmarks/benchmarks.html">Dex-Net 2.0</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Tutorial</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#training">Training</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#grasp-planning">Grasp Planning</a></li>
-</ul>
-<p class="caption"><span class="caption-text">Documentation for Scripts</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="scripts/examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scripts/tools.html">Tools</a></li>
-</ul>
 <p class="caption"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api/analysis.html">Analysis</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api/gqcnn.html">GQCNN</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api/grasping.html">Grasping</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api/policy.html">Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/gqcnn.html">GQ-CNN</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/training.html">Training</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api/visualization.html">Visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/analysis.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/policies.html">Policies</a></li>
+</ul>
+<p class="caption"><span class="caption-text">License</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="license/license.html">License</a></li>
 </ul>
 
             
@@ -142,7 +130,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="#">GQCNN</a>
@@ -150,9 +138,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -199,6 +188,15 @@
 <div class="section" id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>gqcnn</cite> package is a Python API for training and deploying <a class="reference external" href="info/info.html">Grasp Quality Convolutional Neural Networks (GQ-CNNs)</a> for grasp planning using training datasets from the <a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dexterity Network (Dex-Net)</a>, developed by the <a class="reference external" href="http://autolab.berkeley.edu/">Berkeley AUTOLAB</a> and introduced in the <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf">Dex-Net 2.0 paper</a>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>We’re excited to announce <strong>version 1.0</strong>, which brings the GQ-CNN package up to date with recent research in <a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dex-Net</a>.
+Version 1.0 introduces support for:</p>
+<ol class="last arabic simple">
+<li><strong>Dex-Net 4.0:</strong> Composite policies that decide whether to use a suction cup or parallel-jaw gripper.</li>
+<li><strong>Fully Convolutional GQ-CNNs:</strong> Fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.</li>
+</ol>
+</div>
 </div>
 <div class="section" id="links">
 <h2>Links<a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h2>
@@ -209,38 +207,54 @@
 <li><a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dex-Net Website</a></li>
 <li><a class="reference external" href="http://autolab.berkeley.edu">UC Berkeley AUTOLAB</a></li>
 </ul>
-<a class="reference internal image-reference" href="_images/gqcnn.png"><img alt="_images/gqcnn.png" class="align-center" src="_images/gqcnn.png" style="width: 800.0px; height: 800.0px;" /></a>
+<a class="reference internal image-reference" href="_images/gqcnn.png"><img alt="_images/gqcnn.png" src="_images/gqcnn.png" style="width: 100%;" /></a>
 </div>
 <div class="section" id="project-goals">
 <h2>Project Goals<a class="headerlink" href="#project-goals" title="Permalink to this headline">¶</a></h2>
 <p>The goals of this project are to facilitate:</p>
 <ol class="arabic simple">
-<li><strong>Replicability</strong> of GQ-CNN training from the <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf">Dex-Net 2.0 paper</a>.</li>
-<li><strong>Research extensions</strong> on novel GQ-CNN architectures that have higher performance on Dex-Net 2.0 training datasets.</li>
+<li><dl class="first docutils">
+<dt><strong>Replicability</strong> of GQ-CNN training and deployment from:</dt>
+<dd><ol class="first last arabic">
+<li>The latest <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> results.</li>
+<li>Older results such as <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a> and <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_3">Dex-Net 3.0</a>.</li>
+<li>Experimental results such as <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>.</li>
 </ol>
-<p>Our longer-term goal is to encourage development of GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.</p>
+</dd>
+</dl>
+</li>
+<li><strong>Research extensions</strong> on novel GQ-CNN architectures that have higher performance on <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> training datasets.</li>
+</ol>
+<p>Our longer-term goal is to encourage development of robust GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.</p>
 </div>
-<div class="section" id="system-requirements">
-<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>gqcnn</cite> package currently supports only training of GQ-CNN on Dex-Net 2.0 datasets.
-We are working toward a grasp planning ROS service based on GQ-CNNs to work toward GQ-CNNs that work on other robot hardware setups.</p>
-<p>Please note that <strong>performance on current datasets is not indicative of performance on other hardware setups</strong> because our datasets are specific to:</p>
-<ol class="arabic simple">
-<li>Our ABB YuMi parallel-jaw gripper with custom fingertips due to collision geometry.</li>
-<li>A Primense Carmine 1.09 due to camera parameters.</li>
-<li>A camera positioned between 50-70cm above a table looking down due to image rendering parameters.</li>
+<div class="section" id="disclaimer">
+<h2>Disclaimer<a class="headerlink" href="#disclaimer" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>GQ-CNN models are sensitive to the following parameters used during dataset generation:</dt>
+<dd><ol class="first last arabic simple">
+<li>The robot gripper</li>
+<li>The depth camera</li>
+<li>The distance between the camera and workspace.</li>
 </ol>
-<p>We are currently researching how to generate datasets that can generalize across robots, cameras, and viewpoints.</p>
+</dd>
+</dl>
+<p>As a result, we cannot guarantee performance of our pre-trained models on other physical setups. If you have a specific use-case in mind, please reach out to us. It might be possible to generate a custom dataset for you particular setup. We are actively researching how to generate more robust datasets that can generalize across robots, cameras, and viewpoints.</p>
 </div>
 <div class="section" id="development">
 <h2>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h2>
-<p>The package is currently under active development. Installation has been tested on Ubuntu 12.04, 14.04, and 16.04.</p>
-<p>Please raise all bugs, feature requests, and other issues under the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/issues">Github Issues</a>.
-For other questions or concerns, please contact Jeff Mahler (<a class="reference external" href="mailto:jmahler&#37;&#52;&#48;berkeley&#46;edu">jmahler<span>&#64;</span>berkeley<span>&#46;</span>edu</a>) with the subject line starting with “gqcnn development: “</p>
+<p>The package is currently under active development. Please raise all bugs, feature requests, and other issues under the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn/issues">Github Issues</a>.
+For other questions or concerns, please contact Jeff Mahler (<a class="reference external" href="mailto:jmahler&#37;&#52;&#48;berkeley&#46;edu">jmahler<span>&#64;</span>berkeley<span>&#46;</span>edu</a>) or Vishal Satish (<a class="reference external" href="mailto:vsatish&#37;&#52;&#48;berkeley&#46;edu">vsatish<span>&#64;</span>berkeley<span>&#46;</span>edu</a>) with the subject line starting with “GQ-CNN Development”.</p>
 </div>
 <div class="section" id="academic-use">
 <h2>Academic Use<a class="headerlink" href="#academic-use" title="Permalink to this headline">¶</a></h2>
-<p>If you use the code, datasets, or models in a publication, please <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017.bib">cite the Dex-Net 2.0 paper</a>.</p>
+<p>If you use the code, datasets, or models in a publication, please cite the appropriate paper:</p>
+<ol class="arabic simple">
+<li><strong>Dex-Net 2.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_rss2017.bib">(bibtex)</a></li>
+<li><strong>Dex-Net 2.1</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_corl2017.bib">(bibtex)</a></li>
+<li><strong>Dex-Net 3.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_icra2018.bib">(bibtex)</a></li>
+<li><strong>Dex-Net 4.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_sciencerobotics2019.bib">(bibtex)</a></li>
+<li><strong>FC-GQ-CNN</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/fcgqcnn/gh-pages/docs/fcgqcnn_ral2019.bib">(bibtex)</a></li>
+</ol>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Background</span></p>
 <ul>
@@ -250,7 +264,13 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Installation Guide</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="install/install.html">Dependencies</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="install/install.html">Prerequisites</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install/install.html#python">Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install/install.html#ubuntu">Ubuntu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install/install.html#virtualenv">Virtualenv</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install/install.html#dependencies">Dependencies</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="install/install.html#pypi-packages">PyPI Packages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install/install.html#berkeleyautomation-packages">BerkeleyAutomation Packages</a></li>
 </ul>
@@ -265,21 +285,40 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
 <li class="toctree-l2"><a class="reference internal" href="install/install.html#build-the-catkin-package">2. Build the catkin package</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="install/install.html#quick-start-guide">Quick Start Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install/install.html#documentation">Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="install/install.html#building">Building</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install/install.html#deploying">Deploying</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#running-python-scripts">Running Python Scripts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#training">Training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#visualizing-training">Visualizing Training</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#analysis">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#grasp-planning">Grasp Planning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#sample-inputs">Sample Inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#pre-trained-models">Pre-trained Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#python-policy">Python Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#ros-policy">ROS Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#usage-on-a-physical-robot-with-ros">Usage on a Physical Robot with ROS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#fc-gq-cnn-policy">FC-GQ-CNN Policy</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Data</span></p>
+<p class="caption"><span class="caption-text">Replication</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="data/data.html">Download Link</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data/data.html#datasets">Datasets</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data/data.html#models">Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data/data.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="replication/replication.html">Replicating Results</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="replication/replication.html#using-a-pre-trained-model">Using a Pre-trained Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="replication/replication.html#training-from-scratch">Training from Scratch</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -289,93 +328,33 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Tutorial</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html">Overview</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#running-python-scripts">Running Python Scripts</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#training">Training</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#setup">Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#training-a-network-from-scratch">Training a Network from Scratch</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#visualizing-training-progress">Visualizing Training Progress</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#prediction">Prediction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#analysis">Analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#fine-tuning-a-network">Fine-Tuning a Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#visualizing-gqcnn-predictions">Visualizing GQCNN Predictions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials/tutorial.html#grasp-planning">Grasp Planning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#edit-the-configuration-file">Edit the Configuration File</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#run-the-example-python-script">Run the Example Python Script</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/tutorial.html#ros-package">ROS Package</a></li>
-</ul>
-</li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Documentation for Scripts</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="scripts/examples.html">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="scripts/examples.html#module-policy">policy.py</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="scripts/tools.html">Tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="scripts/tools.html#module-training">training.py</a></li>
-<li class="toctree-l2"><a class="reference internal" href="scripts/tools.html#module-visualize_predictions">visualize_predictions.py</a></li>
-<li class="toctree-l2"><a class="reference internal" href="scripts/tools.html#module-plot_training_losses">plot_training_losses.py</a></li>
-</ul>
-</li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api/analysis.html">Analysis</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/analysis.html#gqcnnanalyzer">GQCNNAnalyzer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/analysis.html#confusionmatrix">ConfusionMatrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/analysis.html#regressionresult">RegressionResult</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/analysis.html#classificationresult">ClassificationResult</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api/gqcnn.html">GQCNN</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/gqcnn.html#id1">GQCNN</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api/grasping.html">Grasping</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/grasping.html#grasp2d">Grasp2D</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/grasping.html#imagegraspsampler">ImageGraspSampler</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/grasping.html#antipodaldepthimagegraspsampler">AntipodalDepthImageGraspSampler</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/grasping.html#imagegraspsamplerfactory">ImageGraspSamplerFactory</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api/policy.html">Policy</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/policy.html#id1">Policy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/policy.html#graspingpolicy">GraspingPolicy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/policy.html#antipodalgraspingpolicy">AntipodalGraspingPolicy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/policy.html#crossentropyantipodalgraspingpolicy">CrossEntropyAntipodalGraspingPolicy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/policy.html#rgbdimagestate">RgbdImageState</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/policy.html#paralleljawgrasp">ParallelJawGrasp</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/policy.html#novalidgraspsexception">NoValidGraspsException</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/policy.html#noantipodalpairsfoundexception">NoAntipodalPairsFoundException</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/gqcnn.html">GQ-CNN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/gqcnn.html#gqcnntf">GQCNNTF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/gqcnn.html#fcgqcnntf">FCGQCNNTF</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api/training.html">Training</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/training.html#sgdoptimizer">SGDOptimizer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/training.html#trainstatslogger">TrainStatsLogger</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/training.html#generalconstants">GeneralConstants</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/training.html#imagefiletemplates">ImageFileTemplates</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/training.html#imagemode">ImageMode</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/training.html#trainingmode">TrainingMode</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/training.html#preprocmode">PreprocMode</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/training.html#inputdatamode">InputDataMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/training.html#gqcnntrainertf">GQCNNTrainerTF</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="api/visualization.html">Visualization</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/visualization.html#visualizer">Visualizer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/visualization.html#gqcnnpredictionvisualizer">GQCNNPredictionVisualizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/analysis.html">Analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/analysis.html#gqcnnanalyzer">GQCNNAnalyzer</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="api/policies.html">Policies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/policies.html#primary-policies">Primary Policies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/policies.html#grasps-and-image-wrappers">Grasps and Image Wrappers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/policies.html#miscellaneous-and-parent-policies">Miscellaneous and Parent Policies</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">License</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="license/license.html">License</a></li>
 </ul>
 </div>
 </div>
@@ -391,9 +370,7 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -409,11 +386,11 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Vishal Satish, Jeff Mahler.
+        &copy; Copyright 2019, The Regents of the University of California
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -426,36 +403,15 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.1.0',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>
