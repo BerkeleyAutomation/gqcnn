@@ -38,7 +38,7 @@ class PostDevelopCmd(develop):
 
 class PostInstallCmd(install):
     def run(self):
-        install.do_egg_install(self) #TODO: @Vishal figure out why install.run(self) causes install_requires to be ignored
+        install.do_egg_install(self) #TODO(vsatish): Figure out why install.run(self) causes install_requires to be ignored
         os.system('sh scripts/downloads/download_example_data.sh')
 
 requirements = [
@@ -47,10 +47,10 @@ requirements = [
     'visualization',
     'numpy>=1.14.0',
     'scipy',
-    'matplotlib<3.0',
+    'matplotlib<3.0.0',
     'opencv-python',
     'tensorflow>=1.10.0',
-    'scikit-image',
+    'scikit-image<0.15.0',
     'scikit-learn',
     'psutil',
     'gputil'
