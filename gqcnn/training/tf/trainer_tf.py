@@ -39,7 +39,6 @@ import time
 import multiprocessing as mp
 import Queue
 
-import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import scipy.misc as sm

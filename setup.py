@@ -20,16 +20,23 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
 """
-Setup of gqcnn python codebase
+Setup of gqcnn python codebase.
 
 Author 
 ------
 Jeff Mahler & Vishal Satish
 """
+import os
+import logging
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
-import os
+from subprocess import check_output, CalledProcessError
+
+# set up logger
+logging.basicConfig() # configure the root logger
+logger = logging.getLogger('setup.py')
+logger.setLevel(logging.INFO)
 
 class PostDevelopCmd(develop):
     def run(self):
@@ -38,7 +45,7 @@ class PostDevelopCmd(develop):
 
 class PostInstallCmd(install):
     def run(self):
-        install.do_egg_install(self) #TODO(vsatish): Figure out why install.run(self) causes install_requires to be ignored
+        install.run(self)
         os.system('sh scripts/downloads/download_example_data.sh')
 
 requirements = [
@@ -49,12 +56,24 @@ requirements = [
     'scipy',
     'matplotlib<3.0.0',
     'opencv-python',
-    'tensorflow>=1.10.0',
     'scikit-image<0.15.0',
     'scikit-learn',
     'psutil',
     'gputil'
 ]
+
+# check whether or not the Nvidia driver and GPUs are available and add the corresponding Tensorflow dependency
+tf_min_version = '1.10.0'
+tf_max_version = '1.13.1'
+try:
+    gpus = check_output(['nvidia-smi', '--query-gpu=gpu_name', '--format=csv']).decode().strip().split('\n')[1:]
+    if len(gpus) > 0:
+        tf_dep = 'tensorflow-gpu>={},<={}'.format(tf_min_version, tf_max_version)
+    else:
+        logger.warning('Found Nvidia device driver but no devices...installing Tensorflow for CPU.')
+except CalledProcessError:
+    logger.warning('Could not find Nvidia device driver...installing Tensorflow for CPU.')
+requirements.append(tf_dep)
 
 exec(open('gqcnn/version.py').read())
 
