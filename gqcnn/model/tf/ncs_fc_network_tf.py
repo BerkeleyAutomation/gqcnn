@@ -109,7 +109,8 @@ class NCSFCGQCNNTF(FCGQCNNTF):
                 self._logger.info('Building Pair-wise Softmax Layer...')
                 binwise_split_output = [tf.slice(self._output_tensor, (0, 0, 0, i*2), self._output_tensor.get_shape().as_list()[:-1] + [2]) for i in range(num_outputs)]
                 binwise_split_output_soft = [tf.nn.softmax(s, name='output_%03d'%(i)) for i, s in enumerate(binwise_split_output)]
-                self._output_tensor = tf.concat(binwise_split_output_soft, -1, name='output')
+                self._output_tensor = tf.concat(binwise_split_output_soft, -1)
+                self._output_tensor = tf.reshape(self._output_tensor, self._output_tensor.get_shape(), name='output')
             else:    
                 self._logger.info('Building Softmax Layer...')
                 self._output_tensor = tf.nn.softmax(self._output_tensor, name='output')
