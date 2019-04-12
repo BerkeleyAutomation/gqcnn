@@ -65,6 +65,7 @@ requirements = [
 # check whether or not the Nvidia driver and GPUs are available and add the corresponding Tensorflow dependency
 tf_min_version = '1.10.0'
 tf_max_version = '1.13.1'
+tf_dep = 'tensorflow>={},<={}'.format(tf_min_version, tf_max_version)
 try:
     gpus = check_output(['nvidia-smi', '--query-gpu=gpu_name', '--format=csv']).decode().strip().split('\n')[1:]
     if len(gpus) > 0:
