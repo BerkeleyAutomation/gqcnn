@@ -26,6 +26,7 @@ Author
 ------
 Jeff Mahler & Vishal Satish
 """
+import os
 import sys
 import logging
 import subprocess
@@ -55,9 +56,6 @@ def get_tf_dep():
         logger.warning('Could not find Nvidia device driver...installing Tensorflow for CPU.')
     return tf_dep
 
-def download_example_data():
-    subprocess.Popen(['sh', DOWNLOAD_EXAMPLE_DATA_SCRIPT]).wait()
-
 class DevelopCmd(develop):
     user_options_custom = [
         ('docker', None, 'this is a docker installation'),
@@ -84,9 +82,6 @@ class DevelopCmd(develop):
 
         # run installation
         develop.run(self)
-
-        # download example data
-        download_example_data()
 
 class InstallCmd(install, object):
     user_options_custom = [
@@ -115,9 +110,6 @@ class InstallCmd(install, object):
         # run installation
         install.run(self)
 
-        # download example data
-        download_example_data()
-
 requirements = [
     'autolab-core',
     'autolab-perception',
@@ -132,7 +124,7 @@ requirements = [
     'gputil'
 ]
 
-exec(open('gqcnn/version.py').read())
+exec(open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gqcnn/version.py')).read())
 
 setup(name='gqcnn', 
       version=__version__, 
