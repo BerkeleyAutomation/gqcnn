@@ -26,27 +26,14 @@ Author
 ------
 Jeff Mahler & Vishal Satish
 """
-import os
 import logging
 from setuptools import setup, find_packages
-from setuptools.command.develop import develop
-from setuptools.command.install import install
 from subprocess import check_output
 
 # set up logger
 logging.basicConfig() # configure the root logger
 logger = logging.getLogger('setup.py')
 logger.setLevel(logging.INFO)
-
-class PostDevelopCmd(develop):
-    def run(self):
-        develop.run(self)
-        os.system('sh scripts/downloads/download_example_data.sh')
-
-class PostInstallCmd(install):
-    def run(self):
-        install.run(self)
-        os.system('sh scripts/downloads/download_example_data.sh')
 
 requirements = [
     'autolab-core',
@@ -100,8 +87,5 @@ setup(name='gqcnn',
           'sphinx_rtd_theme'
       ],
       },
-      cmdclass={
-        'install': PostInstallCmd,
-        'develop': PostDevelopCmd
-      }
 )
+

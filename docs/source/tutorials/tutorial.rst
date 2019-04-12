@@ -16,8 +16,6 @@ Before running the tutorials please download the example models and datasets: ::
 
     $ cd /path/to/your/gqcnn
     $ ./scripts/downloads/download_example_data.sh
-    $ ./scripts/downloads/models/download_models.sh
-
 
 Running Python Scripts
 ----------------------
