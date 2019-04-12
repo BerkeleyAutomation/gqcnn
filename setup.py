@@ -31,7 +31,7 @@ import logging
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output
 
 # set up logger
 logging.basicConfig() # configure the root logger
@@ -71,7 +71,7 @@ try:
         tf_dep = 'tensorflow-gpu>={},<={}'.format(tf_min_version, tf_max_version)
     else:
         logger.warning('Found Nvidia device driver but no devices...installing Tensorflow for CPU.')
-except CalledProcessError:
+except OSError:
     logger.warning('Could not find Nvidia device driver...installing Tensorflow for CPU.')
 requirements.append(tf_dep)
 
