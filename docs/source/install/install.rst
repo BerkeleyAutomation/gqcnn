@@ -67,7 +67,7 @@ Then re-source `devel/setup.bash` for the package to be available through Python
 Docker Installation
 ~~~~~~~~~~~~~~~~~~~
 
-We currently do not provide pre-built Docker images, but you can build them yourself. This will require you to have installed `Docker`_ or `Nvidia-Docker`_ if you plan on using GPUs. Note that our provided build for GPUs uses CUDA 10.0 and cuDNN 7.0, so make sure that this is compatible with your GPU hardware. If you wish to use a different CUDA/cuDNN version, change the base Nvidia-Docker image in `docker/gpu/Dockerfile` to the desired `CUDA/cuDNN image distribution`. **Note that other versions have not been tested and are not guaranteed to play well with other dependenices.**
+We currently do not provide pre-built Docker images, but you can build them yourself. This will require you to have installed `Docker`_ or `Nvidia-Docker`_ if you plan on using GPUs. Note that our provided build for GPUs uses CUDA 10.0 and cuDNN 7.0, so make sure that this is compatible with your GPU hardware. If you wish to use a different CUDA/cuDNN version, change the base image in `docker/gpu/Dockerfile` to the desired `CUDA/cuDNN image distribution`_. **Note that other images have not yet been tested.**
 
 .. _Docker: https://www.docker.com/
 .. _Nvidia-Docker: https://github.com/NVIDIA/nvidia-docker
@@ -101,5 +101,9 @@ To run `gqcnn/gpu`: ::
 
 Note the use of `nvidia-docker` in the latter to enable the Nvidia runtime.
 
-This will place you into an interactive shell in the `gqcnn` repository from which you can proceed to run the examples and tutorial.
+You will then see an interactive shell like this: ::
+
+    $ root@a96488604093:~/Workspace/gqcnn#
+
+Now you can proceed to run the examples and tutorial!
 
