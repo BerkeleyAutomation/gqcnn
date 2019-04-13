@@ -36,7 +36,6 @@ from setuptools.command.install import install
 
 TF_MIN_VERSION = '1.10.0'
 TF_MAX_VERSION = '1.13.1'
-DOWNLOAD_EXAMPLE_DATA_SCRIPT = 'scripts/downloads/download_example_data.sh'
 
 # set up logger
 logging.basicConfig() # configure the root logger
@@ -56,9 +55,10 @@ def get_tf_dep():
         logger.warning('Could not find Nvidia device driver...installing Tensorflow for CPU.')
     return tf_dep
 
+#TODO(vsatish): Use inheritance here
 class DevelopCmd(develop):
     user_options_custom = [
-        ('docker', None, 'this is a docker installation'),
+        ('docker', None, 'installing in Docker'),
     ]
     user_options = getattr(develop, 'user_options', []) + user_options_custom
 
@@ -77,7 +77,7 @@ class DevelopCmd(develop):
             tf_dep = get_tf_dep()
             subprocess.Popen([sys.executable, '-m', 'pip', 'install', tf_dep]).wait()
         else:
-            # if we're using docker, this will already have been installed explicitly through the correct requirements.txt; there is no way to check for CUDA/GPUs at docker build time because there is no easy way to set the nvidia runtime
+            # if we're using docker, this will already have been installed explicitly through the correct {cpu/gpu}_requirements.txt; there is no way to check for CUDA/GPUs at docker build time because there is no easy way to set the nvidia runtime
             logger.warning('Omitting Tensorflow dependency because of Docker installation.') #TODO(vsatish): Figure out why this isn't printed
 
         # run installation
@@ -85,7 +85,7 @@ class DevelopCmd(develop):
 
 class InstallCmd(install, object):
     user_options_custom = [
-        ('docker', None, 'this is a docker installation'),
+        ('docker', None, 'installing in Docker'),
     ]
     user_options = getattr(install, 'user_options', []) + user_options_custom
 
@@ -104,7 +104,7 @@ class InstallCmd(install, object):
             tf_dep = get_tf_dep()
             subprocess.Popen([sys.executable, '-m', 'pip', 'install', tf_dep]).wait()
         else:
-            # if we're using docker, this will already have been installed explicitly through the correct requirements.txt; there is no way to check for CUDA/GPUs at docker build time because there is no easy way to set the nvidia runtime
+            # if we're using docker, this will already have been installed explicitly through the correct {cpu/gpu}_requirements.txt; there is no way to check for CUDA/GPUs at docker build time because there is no easy way to set the nvidia runtime
             logger.warning('Omitting Tensorflow dependency because of Docker installation.') #TODO(vsatish): Figure out why this isn't printed
 
         # run installation

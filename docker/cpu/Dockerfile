@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04
+FROM ubuntu:xenial
 
 MAINTAINER Vishal Satish <vsatish@berkeley.edu>
 
@@ -32,7 +32,7 @@ WORKDIR ${work_dir}
 ADD docker/gqcnn.tar .
 
 # This is because `python setup.py develop` skips install_requires (I think) and also because we want to explicitly use the GPU requirements
-RUN pip install -r gqcnn/requirements/gpu_requirements.txt
+RUN pip install -r gqcnn/requirements/cpu_requirements.txt
 
 # Install the library in editable mode because it's more versatile (in case we want to develop or if users want to modify things)
 # Keep the egg outside of the library in site-packages in case we want to mount the library (overwriting it) for development with docker
@@ -40,6 +40,6 @@ ENV PYTHONPATH ${work_dir}/gqcnn
 WORKDIR /usr/local/lib/python2.7/site-packages/
 RUN python ${work_dir}/gqcnn/setup.py develop --docker
 
-# Move to the base library dir 
+# Move to the base library dir
 WORKDIR ${work_dir}/gqcnn
 

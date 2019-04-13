@@ -14,7 +14,7 @@ The `gqcnn` package has only been tested with `Ubuntu 12.04`, `Ubuntu 14.04` and
 Virtualenv
 """"""""""
 
-We highly recommend using a Python environment management system, in particular `Virtualenv`. **Note: Several users have encountered problems with dependencies when using Conda.**
+We highly recommend using a Python environment management system, in particular `Virtualenv`, with the Pip and ROS installations. **Note: Several users have encountered problems with dependencies when using Conda.**
 
 Pip Installation
 ~~~~~~~~~~~~~~~~
@@ -34,12 +34,12 @@ Clone or download the `project`_ from Github. ::
 .. _project: https://github.com/BerkeleyAutomation/gqcnn
 
 2. Run pip installation
-""""""""""""""""""""""""""
+"""""""""""""""""""""""
 Change directories into the `gqcnn` repository and run the pip installation. ::
 
     $ pip install .
 
-This will install `gqcnn` in your current virtual environment and automatically download the example models and datasets.
+This will install `gqcnn` in your current virtual environment.
 
 .. _ros-install:
 
@@ -63,4 +63,43 @@ Build the catkin package. ::
     $ catkin_make
 
 Then re-source `devel/setup.bash` for the package to be available through Python.
+
+Docker Installation
+~~~~~~~~~~~~~~~~~~~
+
+We currently do not provide pre-built Docker images, but you can build them yourself. This will require you to have installed `Docker`_ or `Nvidia-Docker`_ if you plan on using GPUs. Note that our provided build for GPUs uses CUDA 10.0 and cuDNN 7.0, so make sure that this is compatible with your GPU hardware. If you wish to use a different CUDA/cuDNN version, change the base Nvidia-Docker image in `docker/gpu/Dockerfile` to the desired `CUDA/cuDNN image distribution`. **Note that other versions have not been tested and are not guaranteed to play well with other dependenices.**
+
+.. _Docker: https://www.docker.com/
+.. _Nvidia-Docker: https://github.com/NVIDIA/nvidia-docker
+.. _CUDA/cuDNN image distribution: https://hub.docker.com/r/nvidia/cuda/
+
+1. Clone the repository
+"""""""""""""""""""""""
+Clone or download the `project`_ from Github. ::
+
+    $ git clone https://github.com/BerkeleyAutomation/gqcnn.git
+
+.. _project: https://github.com/BerkeleyAutomation/gqcnn
+
+2. Build Docker images
+""""""""""""""""""""""
+Change directories into the `gqcnn` repository and run the build script. ::
+
+    $ ./scripts/docker/build-docker.sh
+
+This will build the images `gqcnn/cpu` and `gqcnn/gpu`.
+
+3. Run Docker image
+""""""""""""""""""""
+To run `gqcnn/cpu`: ::
+
+    $ docker run --rm -it gqcnn/cpu
+
+To run `gqcnn/gpu`: ::
+    
+    $ nvidia-docker run --rm -it gqcnn/gpu
+
+Note the use of `nvidia-docker` in the latter to enable the Nvidia runtime.
+
+This will place you into an interactive shell in the `gqcnn` repository from which you can proceed to run the examples and tutorial.
 
