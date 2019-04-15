@@ -17,36 +17,34 @@
   
 
   
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
+  
+  
     
 
   
+
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Overview" href="../tutorials/tutorial.html" />
     <link rel="prev" title="What are GQ-CNNs?" href="../info/info.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
+
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+        <div class="wy-side-nav-search">
           
 
           
@@ -96,19 +94,20 @@
 <li class="toctree-l2"><a class="reference internal" href="#virtualenv">Virtualenv</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#dependencies">Dependencies</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#pypi-packages">PyPI Packages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#berkeleyautomation-packages">BerkeleyAutomation Packages</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#python-installation">Python Installation</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="#pip-installation">Pip Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#clone-the-repository">1. Clone the repository</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#run-installation-script">2. Run installation script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-pip-installation">2. Run pip installation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#ros-installation">ROS Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">1. Clone the repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#build-the-catkin-package">2. Build the catkin package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#docker-installation">Docker Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id2">1. Clone the repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-docker-images">2. Build Docker images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-docker-image">3. Run Docker image</a></li>
 </ul>
 </li>
 </ul>
@@ -213,30 +212,12 @@
 </div>
 <div class="section" id="virtualenv">
 <h2>Virtualenv<a class="headerlink" href="#virtualenv" title="Permalink to this headline">¶</a></h2>
-<p>We highly recommend using a Python environment management system, in particular <cite>Virtualenv</cite>. <strong>Note: Several users have encountered problems with dependencies when using Conda.</strong></p>
+<p>We highly recommend using a Python environment management system, in particular <cite>Virtualenv</cite>, with the Pip and ROS installations. <strong>Note: Several users have encountered problems with dependencies when using Conda.</strong></p>
 </div>
 </div>
-<div class="section" id="dependencies">
-<h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="pypi-packages">
-<h2>PyPI Packages<a class="headerlink" href="#pypi-packages" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>gqcnn</cite> package  depends on <a class="reference external" href="http://www.numpy.org/">numpy</a>, <a class="reference external" href="https://www.scipy/org/">scipy</a>, <a class="reference external" href="http://www.matplotlib.org/">matplotlib</a>, <a class="reference external" href="https://www.tensorflow.org/">tensorflow</a>, <a class="reference external" href="http://opencv.org/">cv2</a>, <a class="reference external" href="http://scikit-image.org/">sklearn</a>, <a class="reference external" href="https://github.com/anderskm/gputil">gputil</a>, and <a class="reference external" href="https://github.com/giampaolo/psutil">psutil</a>, which should be installed automatically.
-You can also install these manually if necessary:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install numpy&gt;=1.14.0 scipy matplotlib&gt;=1.5.0 tensorflow&gt;=1.10.0 opencv-python scikit-learn psutil gputil
-</pre></div>
-</div>
-<p>If you wish to use a GPU, then substitute <cite>tensorflow-gpu</cite> for <cite>tensorflow</cite>.</p>
-</div>
-<div class="section" id="berkeleyautomation-packages">
-<h2>BerkeleyAutomation Packages<a class="headerlink" href="#berkeleyautomation-packages" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>gqcnn</cite> package also depends on <a class="reference external" href="https://github.com/BerkeleyAutomation">BerkeleyAutomation’s</a> <a class="reference external" href="https://github.com/BerkeleyAutomation/autolab_core">autolab_core</a>, <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a>, and <a class="reference external" href="https://github.com/BerkeleyAutomation/visualization">visualization</a> packages. These will also be installed automatically through PyPI.</p>
-<p>To install these dependencies manually, follow the <a class="reference external" href="https://BerkeleyAutomation.github.io/autolab_core/install/install.html">installation instructions for autolab_core</a>, the <a class="reference external" href="https://berkeleyautomation.github.io/perception/install/install.html">installation instructions for perception</a>, and the <a class="reference external" href="https://berkeleyautomation.github.io/visualization/install/install.html">installation instructions for visualization</a>.
-If you are installing <cite>gqcnn</cite> as a ROS package, we suggest installing both <a class="reference external" href="https://github.com/BerkeleyAutomation/autolab_core">autolab_core</a> and <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> as ROS packages by checking out the repos into your catkin workspace and running <cite>catkin_make</cite>.</p>
-</div>
-</div>
-<div class="section" id="python-installation">
-<h1>Python Installation<a class="headerlink" href="#python-installation" title="Permalink to this headline">¶</a></h1>
-<p>The Python-only installation is intended for users who are <strong>only interested in 1) Training GQ-CNNs or 2) Grasp planning on saved RGBD images</strong>, not
+<div class="section" id="pip-installation">
+<h1>Pip Installation<a class="headerlink" href="#pip-installation" title="Permalink to this headline">¶</a></h1>
+<p>The pip installation is intended for users who are <strong>only interested in 1) Training GQ-CNNs or 2) Grasp planning on saved RGBD images</strong>, not
 interfacing with a physical robot.
 If you have intentions of using GQ-CNNs for grasp planning on a physical robot, we suggest you <a class="reference external" href="https://berkeleyautomation.github.io/gqcnn/install/install.html#ros-installation">install as a ROS package</a>.</p>
 <div class="section" id="clone-the-repository">
@@ -246,13 +227,13 @@ If you have intentions of using GQ-CNNs for grasp planning on a physical robot, 
 </pre></div>
 </div>
 </div>
-<div class="section" id="run-installation-script">
-<h2>2. Run installation script<a class="headerlink" href="#run-installation-script" title="Permalink to this headline">¶</a></h2>
-<p>Change directories into the <cite>gqcnn</cite> repository and run the setup script.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python setup.py install
+<div class="section" id="run-pip-installation">
+<h2>2. Run pip installation<a class="headerlink" href="#run-pip-installation" title="Permalink to this headline">¶</a></h2>
+<p>Change directories into the <cite>gqcnn</cite> repository and run the pip installation.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install .
 </pre></div>
 </div>
-<p>This will install <cite>gqcnn</cite> in your current virtual environment and automatically download the example models and datasets.</p>
+<p>This will install <cite>gqcnn</cite> in your current virtual environment.</p>
 </div>
 </div>
 <div class="section" id="ros-installation">
@@ -276,6 +257,42 @@ $ catkin_make
 <p>Then re-source <cite>devel/setup.bash</cite> for the package to be available through Python.</p>
 </div>
 </div>
+<div class="section" id="docker-installation">
+<h1>Docker Installation<a class="headerlink" href="#docker-installation" title="Permalink to this headline">¶</a></h1>
+<p>We currently do not provide pre-built Docker images, but you can build them yourself. This will require you to have installed <a class="reference external" href="https://www.docker.com/">Docker</a> or <a class="reference external" href="https://github.com/NVIDIA/nvidia-docker">Nvidia-Docker</a> if you plan on using GPUs. Note that our provided build for GPUs uses CUDA 10.0 and cuDNN 7.0, so make sure that this is compatible with your GPU hardware. If you wish to use a different CUDA/cuDNN version, change the base image in <cite>docker/gpu/Dockerfile</cite> to the desired <a class="reference external" href="https://hub.docker.com/r/nvidia/cuda/">CUDA/cuDNN image distribution</a>. <strong>Note that other images have not yet been tested.</strong></p>
+<div class="section" id="id2">
+<h2>1. Clone the repository<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>Clone or download the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">project</a> from Github.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/BerkeleyAutomation/gqcnn.git
+</pre></div>
+</div>
+</div>
+<div class="section" id="build-docker-images">
+<h2>2. Build Docker images<a class="headerlink" href="#build-docker-images" title="Permalink to this headline">¶</a></h2>
+<p>Change directories into the <cite>gqcnn</cite> repository and run the build script.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/docker/build-docker.sh
+</pre></div>
+</div>
+<p>This will build the images <cite>gqcnn/cpu</cite> and <cite>gqcnn/gpu</cite>.</p>
+</div>
+<div class="section" id="run-docker-image">
+<h2>3. Run Docker image<a class="headerlink" href="#run-docker-image" title="Permalink to this headline">¶</a></h2>
+<p>To run <cite>gqcnn/cpu</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker run --rm -it gqcnn/cpu
+</pre></div>
+</div>
+<p>To run <cite>gqcnn/gpu</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ nvidia-docker run --rm -it gqcnn/gpu
+</pre></div>
+</div>
+<p>Note the use of <cite>nvidia-docker</cite> in the latter to enable the Nvidia runtime.</p>
+<p>You will then see an interactive shell like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ root@a96488604093:~/Workspace/gqcnn#
+</pre></div>
+</div>
+<p>Now you can proceed to run the examples and tutorial!</p>
+</div>
+</div>
 
 
            </div>
@@ -288,7 +305,7 @@ $ catkin_make
         <a href="../tutorials/tutorial.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../info/info.html" class="btn btn-neutral float-left" title="What are GQ-CNNs?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../info/info.html" class="btn btn-neutral" title="What are GQ-CNNs?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -314,16 +331,26 @@ $ catkin_make
   
 
 
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
