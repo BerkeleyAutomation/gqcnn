@@ -14,48 +14,12 @@ The `gqcnn` package has only been tested with `Ubuntu 12.04`, `Ubuntu 14.04` and
 Virtualenv
 """"""""""
 
-We highly recommend using a Python environment management system, in particular `Virtualenv`. **Note: Several users have encountered problems with dependencies when using Conda.**
+We highly recommend using a Python environment management system, in particular `Virtualenv`, with the Pip and ROS installations. **Note: Several users have encountered problems with dependencies when using Conda.**
 
-Dependencies
-~~~~~~~~~~~~
+Pip Installation
+~~~~~~~~~~~~~~~~
 
-PyPI Packages
-"""""""""""""
-The `gqcnn` package  depends on `numpy`_, `scipy`_, `matplotlib`_, `tensorflow`_, `cv2`_, `sklearn`_, `gputil`_, and `psutil`_, which should be installed automatically.
-You can also install these manually if necessary: ::
-
-    $ pip install numpy>=1.14.0 scipy matplotlib>=1.5.0 tensorflow>=1.10.0 opencv-python scikit-learn psutil gputil
-
-.. _numpy: http://www.numpy.org/
-.. _scipy: https://www.scipy/org/
-.. _matplotlib: http://www.matplotlib.org/
-.. _tensorflow: https://www.tensorflow.org/
-.. _cv2: http://opencv.org/
-.. _sklearn: http://scikit-image.org/
-.. _psutil: https://github.com/giampaolo/psutil
-.. _gputil: https://github.com/anderskm/gputil
-
-If you wish to use a GPU, then substitute `tensorflow-gpu` for `tensorflow`.
-
-BerkeleyAutomation Packages
-"""""""""""""""""""""""""""
-The `gqcnn` package also depends on `BerkeleyAutomation's`_ `autolab_core`_, `perception`_, and `visualization`_ packages. These will also be installed automatically through PyPI.
-
-To install these dependencies manually, follow the `installation instructions for autolab_core`_, the `installation instructions for perception`_, and the `installation instructions for visualization`_.
-If you are installing `gqcnn` as a ROS package, we suggest installing both `autolab_core`_ and `perception`_ as ROS packages by checking out the repos into your catkin workspace and running `catkin_make`.
-
-.. _BerkeleyAutomation's: https://github.com/BerkeleyAutomation
-.. _autolab_core: https://github.com/BerkeleyAutomation/autolab_core
-.. _perception: https://github.com/BerkeleyAutomation/perception
-.. _visualization: https://github.com/BerkeleyAutomation/visualization
-.. _installation instructions for autolab_core: https://BerkeleyAutomation.github.io/autolab_core/install/install.html
-.. _installation instructions for perception: https://berkeleyautomation.github.io/perception/install/install.html
-.. _installation instructions for visualization: https://berkeleyautomation.github.io/visualization/install/install.html
-
-Python Installation
-~~~~~~~~~~~~~~~~~~~
-
-The Python-only installation is intended for users who are **only interested in 1) Training GQ-CNNs or 2) Grasp planning on saved RGBD images**, not
+The pip installation is intended for users who are **only interested in 1) Training GQ-CNNs or 2) Grasp planning on saved RGBD images**, not
 interfacing with a physical robot.
 If you have intentions of using GQ-CNNs for grasp planning on a physical robot, we suggest you `install as a ROS package`_.
 
@@ -69,13 +33,13 @@ Clone or download the `project`_ from Github. ::
 
 .. _project: https://github.com/BerkeleyAutomation/gqcnn
 
-2. Run installation script
-""""""""""""""""""""""""""
-Change directories into the `gqcnn` repository and run the setup script. ::
+2. Run pip installation
+"""""""""""""""""""""""
+Change directories into the `gqcnn` repository and run the pip installation. ::
 
-    $ python setup.py install
+    $ pip install .
 
-This will install `gqcnn` in your current virtual environment and automatically download the example models and datasets.
+This will install `gqcnn` in your current virtual environment.
 
 .. _ros-install:
 
@@ -99,4 +63,47 @@ Build the catkin package. ::
     $ catkin_make
 
 Then re-source `devel/setup.bash` for the package to be available through Python.
+
+Docker Installation
+~~~~~~~~~~~~~~~~~~~
+
+We currently do not provide pre-built Docker images, but you can build them yourself. This will require you to have installed `Docker`_ or `Nvidia-Docker`_ if you plan on using GPUs. Note that our provided build for GPUs uses CUDA 10.0 and cuDNN 7.0, so make sure that this is compatible with your GPU hardware. If you wish to use a different CUDA/cuDNN version, change the base image in `docker/gpu/Dockerfile` to the desired `CUDA/cuDNN image distribution`_. **Note that other images have not yet been tested.**
+
+.. _Docker: https://www.docker.com/
+.. _Nvidia-Docker: https://github.com/NVIDIA/nvidia-docker
+.. _CUDA/cuDNN image distribution: https://hub.docker.com/r/nvidia/cuda/
+
+1. Clone the repository
+"""""""""""""""""""""""
+Clone or download the `project`_ from Github. ::
+
+    $ git clone https://github.com/BerkeleyAutomation/gqcnn.git
+
+.. _project: https://github.com/BerkeleyAutomation/gqcnn
+
+2. Build Docker images
+""""""""""""""""""""""
+Change directories into the `gqcnn` repository and run the build script. ::
+
+    $ ./scripts/docker/build-docker.sh
+
+This will build the images `gqcnn/cpu` and `gqcnn/gpu`.
+
+3. Run Docker image
+""""""""""""""""""""
+To run `gqcnn/cpu`: ::
+
+    $ docker run --rm -it gqcnn/cpu
+
+To run `gqcnn/gpu`: ::
+    
+    $ nvidia-docker run --rm -it gqcnn/gpu
+
+Note the use of `nvidia-docker` in the latter to enable the Nvidia runtime.
+
+You will then see an interactive shell like this: ::
+
+    $ root@a96488604093:~/Workspace/gqcnn#
+
+Now you can proceed to run the examples and tutorial!
 
