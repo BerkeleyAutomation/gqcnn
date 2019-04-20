@@ -30,12 +30,10 @@ import os
 
 class PostDevelopCmd(develop):
     def run(self):
-        os.system('sh scripts/download_data.sh')
         develop.run(self)
 
 class PostInstallCmd(install):
     def run(self):
-        os.system('sh scripts/download_data.sh')
         install.run(self)
 
 requirements = [
