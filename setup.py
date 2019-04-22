@@ -79,8 +79,8 @@ setup(name='gqcnn',
           'sphinx_rtd_theme'
       ],
       },
-      cmdclass={
-        'install': PostInstallCmd,
-        'develop': PostDevelopCmd
-      }
+#      cmdclass={
+#        'install': PostInstallCmd,
+#        'develop': PostDevelopCmd
+#      }
 )
