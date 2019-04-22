@@ -143,7 +143,7 @@ class GraspPlanner(object):
         color_im, depth_im, camera_intr = self.read_images(req)
         raw_segmask = req.segmask
         try:
-            segmask = BinaryImage(self.cv_bridge.imgmsg_to_cv2(raw_segmask, desired_encoding = "mono8"), frame=camera_intr.frame)
+            segmask = BinaryImage(self.cv_bridge.imgmsg_to_cv2(raw_segmask, desired_encoding = "passthrough"), frame=camera_intr.frame)
         except CvBridgeError as cv_bridge_exception:
             rospy.logerr(cv_bridge_exception)
         if color_im.height != segmask.height or \
@@ -326,11 +326,11 @@ if __name__ == '__main__':
     # set config
     config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                    '..',
-                                   'cfg/policies/gqcnn_suction.yaml')
+                                   'cfg/examples/ros/gqcnn_suction.yaml')
     if gripper_mode == GripperMode.LEGACY_PARALLEL_JAW or gripper_mode == GripperMode.PARALLEL_JAW:
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                        '..',
-                                       'cfg/policies/gqcnn_pj.yaml')
+                                       'cfg/examples/ros/gqcnn_pj.yaml')
 
     # read config
     cfg = YamlConfig(config_filename)
