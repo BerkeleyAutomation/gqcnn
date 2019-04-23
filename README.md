@@ -1,7 +1,5 @@
 # Berkeley AUTOLAB's GQCNN Package
 
-[Installation and Usage](https://berkeleyautomation.github.io/gqcnn)
-
 ## Version 1.0 Release
 We're excited to announce version 1.0, which brings the GQ-CNN package up to date with recent research in the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project.
 Version 1.0 introduces support for:
@@ -22,7 +20,10 @@ Version 1.0 also provide a more robust ROS grasp planning service that includes 
 ## Package Overview
 The gqcnn Python package is for training and analysis of Grasp Quality Convolutional Neural Networks (GQ-CNNs).
 
-This package is part of the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project: https://berkeleyautomation.github.io/dex-net created and maintained by the [AUTOLAB](https://autolab.berkeley.edu) at UC Berkeley.
+This package is part of the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project created and maintained by the [AUTOLAB](https://autolab.berkeley.edu) at UC Berkeley.
+
+## Installation and Usage
+Please see the [docs](https://berkeleyautomation.github.io/gqcnn/) for installation and usage instructions.
 
 ## License
 As of Feb. 1, 2018, the code is licensed according to the UC Berkeley Copyright and Disclaimer Notice.
