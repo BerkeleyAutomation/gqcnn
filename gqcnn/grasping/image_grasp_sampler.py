@@ -466,7 +466,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             grasp_theta = np.pi / 2
             if grasp_axis[1] != 0:
                 grasp_theta = np.arctan2(grasp_axis[0], grasp_axis[1])
-            grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
+            grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]), frame=camera_intr.frame)
 
             # compute grasp points in 3D
             x1 = point_cloud_im[p1[0], p1[1]]
