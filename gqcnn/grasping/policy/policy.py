@@ -436,7 +436,7 @@ class RobustGraspingPolicy(GraspingPolicy):
             i += 1
         raise NoValidGraspsException('No grasps satisfied filters')
 
-    def action_set(self, state, num_actions):
+    def action_set(self, state, num_actions=1000):
         """ Plans the grasp with the highest probability of success on
         the given RGB-D image.
 
@@ -725,7 +725,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             save_path = os.path.join(save_path, save_fname)
         vis.show(save_path) 
 
-    def action_set(self, state, num_actions):
+    def action_set(self, state, num_actions=1000):
         """ Plan a set of grasps with the highest probability of success on
         the given RGB-D image.
 
@@ -1350,7 +1350,7 @@ class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
         actions.sort(key = lambda x: x.q_value, reverse=True)
         return actions[0]
 
-    def action_set(self, state, policy_subset=None, min_q_value=-1.0):
+    def action_set(self, state, num_actions=1000, policy_subset=None, min_q_value=-1.0):
         """ Returns an action for a given state.
         """
         actions = []
