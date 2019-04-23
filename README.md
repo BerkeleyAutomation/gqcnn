@@ -1,6 +1,6 @@
 <p align="center">
     <a href="https://github.com/BerkeleyAutomation/gqcnn/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/BerkeleyAutomation/gqcnn.svg?style=flat"></a>
-    <a href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-REGENTS-brightgreen.svg"></a>
+    <a href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/LICENSE"><img alt="Software License" src="https://img.shields.io/badge/license-REGENTS-brightgreen.svg"></a>
 </p>
 
 # Berkeley AUTOLAB's GQCNN Package
