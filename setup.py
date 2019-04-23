@@ -30,12 +30,10 @@ import os
 
 class PostDevelopCmd(develop):
     def run(self):
-        os.system('sh scripts/download_data.sh')
         develop.run(self)
 
 class PostInstallCmd(install):
     def run(self):
-        os.system('sh scripts/download_data.sh')
         install.run(self)
 
 requirements = [
@@ -81,8 +79,8 @@ setup(name='gqcnn',
           'sphinx_rtd_theme'
       ],
       },
-      cmdclass={
-        'install': PostInstallCmd,
-        'develop': PostDevelopCmd
-      }
+#      cmdclass={
+#        'install': PostInstallCmd,
+#        'develop': PostDevelopCmd
+#      }
 )
