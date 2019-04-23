@@ -1,5 +1,17 @@
 # Berkeley AUTOLAB's GQCNN Package
 
+## Package Overview
+The gqcnn Python package is for training and analysis of Grasp Quality Convolutional Neural Networks (GQ-CNNs). It is part of the ongoing [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project created and maintained by the [AUTOLAB](https://autolab.berkeley.edu) at UC Berkeley.
+
+## Installation and Usage
+Please see the [docs](https://berkeleyautomation.github.io/gqcnn/) for installation and usage instructions.
+
+## License
+As of Feb. 1, 2018, the code is licensed according to the UC Berkeley Copyright and Disclaimer Notice.
+The code is available for educational, research, and not-for-profit purposes (for full details, see [LICENSE](https://github.com/BerkeleyAutomation/gqcnn/blob/release-prep/LICENSE)).
+If you use any part of this code in a publication, please cite [the appropriate Dex-Net publication](https://berkeleyautomation.github.io/gqcnn/index.html#academic-use).
+
+
 ## Version 1.0 Release
 We're excited to announce version 1.0, which brings the GQ-CNN package up to date with recent research in the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project.
 Version 1.0 introduces support for:
@@ -17,15 +29,3 @@ Version 1.0 also provide a more robust ROS grasp planning service that includes 
 * Faster training due to improved parallelism in data prefetch/pre-processing.
 * Easy-to-use shell scripts for replication of published results from Dex-Net {[2.0](https://berkeleyautomation.github.io/dex-net/#dexnet_2),[2.1](https://berkeleyautomation.github.io/dex-net/#dexnet_21),[3.0](https://berkeleyautomation.github.io/dex-net/#dexnet_3),[4.0](https://berkeleyautomation.github.io/dex-net/#dexnet_4)} and [FC-GQ-CNN](https://berkeleyautomation.github.io/fcgqcnn).
 
-## Package Overview
-The gqcnn Python package is for training and analysis of Grasp Quality Convolutional Neural Networks (GQ-CNNs).
-
-This package is part of the [Dexterity-Network (Dex-Net)](https://berkeleyautomation.github.io/dex-net/) project created and maintained by the [AUTOLAB](https://autolab.berkeley.edu) at UC Berkeley.
-
-## Installation and Usage
-Please see the [docs](https://berkeleyautomation.github.io/gqcnn/) for installation and usage instructions.
-
-## License
-As of Feb. 1, 2018, the code is licensed according to the UC Berkeley Copyright and Disclaimer Notice.
-The code is available for educational, research, and not-for-profit purposes (for full details, see [LICENSE](https://github.com/BerkeleyAutomation/gqcnn/blob/release-prep/LICENSE)).
-If you use any part of this code in a publication, please cite [the appropriate Dex-Net publication](https://berkeleyautomation.github.io/gqcnn/index.html#academic-use).
