@@ -818,7 +818,6 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
         k = 0
         grasps = []
         near_grasps = []
-        print(num_samples)
         ''' This grasp sampler only considers grasps that are closest among all grasps
             in the depth image. This was done to focus dex-net on close objects to
             avoid collisions when targeting further objects. However, we implemented
@@ -861,7 +860,6 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
             # combine height offset and contact points to project surface grasp center to actual grasp center
             depth_offset_from_height_offset = height_offset / math.cos(math.radians(14))
             depth += depth_offset_from_height_offset
-            print('in m %f in pixel %f' %(depth_offset_from_height_offset, (depth_offset_from_height_offset * math.sin(math.radians(14))) * depth / 0.0018))
             p1[0] += (depth_offset_from_height_offset * math.sin(math.radians(14))) * depth / 0.0018
             p2[0] += (depth_offset_from_height_offset * math.sin(math.radians(14))) * depth / 0.0018
 
