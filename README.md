@@ -3,7 +3,6 @@
     <a href="https://github.com/BerkeleyAutomation/gqcnn/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/BerkeleyAutomation/gqcnn.svg?style=flat"></a>
     <a href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/LICENSE"><img alt="Software License" src="https://img.shields.io/badge/license-REGENTS-brightgreen.svg"></a>
     <a><img alt="Python Version" src="https://img.shields.io/badge/python-2.7-yellow.svg"></a>
-<
 </p>
 
 ## Package Overview
