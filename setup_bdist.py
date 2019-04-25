@@ -100,7 +100,7 @@ setup(name='gqcnn',
         'Topic :: Scientific/Engineering'
     ],
     packages=[],
-    setup_requres = requirements,
+    setup_requires = ['cython'],
     install_requires = requirements,
     extras_require = { 'docs' : [
         'sphinx',
