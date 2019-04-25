@@ -36,6 +36,7 @@ import six
 
 import numpy as np
 from sklearn.mixture import GaussianMixture
+import scipy.stats as ss
 import scipy.ndimage.filters as snf
 import matplotlib.pyplot as plt
 
@@ -519,15 +520,15 @@ class RobustGraspingPolicy(GraspingPolicy):
         # plan a set of grasps
         grasp_actions = self.action_set(state)
         grasps = [a.grasp for a in grasp_actions]
-        q_values = [a.q_value for a in grasp_action]
-        
+        q_values = [a.q_value for a in grasp_actions]
+
         # select grasp
         index = self.select(grasps, q_values, state)
         grasp = grasps[index]
         q_value = q_values[index]
         if self.config['vis']['grasp_plan']:
             vis.figure()
-            vis.imshow(rgbd_im.depth,
+            vis.imshow(state.depth,
                        vmin=self.config['vis']['vmin'],
                        vmax=self.config['vis']['vmax'])
             vis.grasp(grasp, scale=2.0, show_axis=True)
@@ -1024,21 +1025,21 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         index = self.select(grasps, q_values, state)
         grasp = grasps[index]
         q_value = q_values[index]
-        if self.config['vis']['grasp_plan']:
-            title = 'Best Grasp: d=%.3f, q=%.3f' %(grasp.depth, q_value)
-            if self._vis_grasp_affordance_map:
-                self._plot_grasp_affordance_map(state, grasp_affordance_map, grasps=[grasp], q_values=[q_value], scale=2.0, title=title, save_fname=os.path.join(case_output_dir, 'best_grasp.png'))
-            else:
-                vis.figure()
-                vis.imshow(rgbd_im.depth,
-                           vmin=self.config['vis']['vmin'],
-                           vmax=self.config['vis']['vmax'])
-                vis.grasp(grasp, scale=5.0, show_center=False, show_axis=True, jaw_width=1.0, grasp_axis_width=0.2)
-                vis.title(title)
-                filename = None
-                if self._logging_dir is not None:
-                    filename = os.path.join(self._logging_dir, 'planned_grasp.png')
-                vis.show(filename)
+        #if self.config['vis']['grasp_plan']:
+        #    title = 'Best Grasp: d=%.3f, q=%.3f' %(grasp.depth, q_value)
+        #    if self._vis_grasp_affordance_map:
+        #        self._plot_grasp_affordance_map(state, grasp_affordance_map, grasps=[grasp], q_values=[q_value], scale=2.0, title=title, save_fname=os.path.join(case_output_dir, 'best_grasp.png'))
+        #    else:
+        #        vis.figure()
+        #        vis.imshow(rgbd_im.depth,
+        #                   vmin=self.config['vis']['vmin'],
+        #                   vmax=self.config['vis']['vmax'])
+        #        vis.grasp(grasp, scale=5.0, show_center=False, show_axis=True, jaw_width=1.0, grasp_axis_width=0.2)
+        #        vis.title(title)
+        #        filename = None
+        #        if self._logging_dir is not None:
+        #            filename = os.path.join(self._logging_dir, 'planned_grasp.png')
+        #        vis.show(filename)
 
         # form return image
         image = state.rgbd_im.depth
@@ -1288,7 +1289,7 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
                 continue
             self._logger.info('Planning action for sub-policy {}'.format(name))
             try:
-                action = self.policies[policy_name].action(state)
+                action = self.policies[name].action(state)
                 action.gripper_name = name
                 max_q = action.q_value
             except NoValidGraspsException:
@@ -1339,8 +1340,8 @@ class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
             try:
                 action = policy.action(state)
                 action.gripper_name = name
-                actions.append()
-            except NoActionFoundException:
+                actions.append(action)
+            except Exception:
                 pass
 
         if len(actions) == 0:

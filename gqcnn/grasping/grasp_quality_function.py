@@ -751,7 +751,7 @@ class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction
 
         if params['vis']['hist']:
             plt.figure()
-            utils.histogram(curvature, 100, (np.min(curvature), np.max(curvature)), normalized=False, plot=True)
+            utils.histogram(curvature_q, 100, (np.min(curvature_q), np.max(curvature_q)), normalized=False, plot=True)
             plt.show()
 
         # compute object centroid

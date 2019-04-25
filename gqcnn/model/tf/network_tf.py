@@ -31,6 +31,11 @@ import time
 import operator
 import sys
 
+try:
+    from functools import reduce
+except Exception:
+    pass
+
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf
@@ -624,7 +629,8 @@ class GQCNNTF(object):
             filters = self._sess.run(self._weights.weights['{}_weights'.format(first_layer_name)])
         except:
             # legacy support
-            filters = self._sess.run(self._weights.weights['{}W'.format(first_layer_im_stream)])
+            raise Exception()
+            # filters = self._sess.run(self._weights.weights['{}W'.format(first_layer_im_stream)])
  
         if close_sess:
             self.close_session()
