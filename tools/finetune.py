@@ -137,4 +137,4 @@ if __name__ == '__main__':
                                          train_config,
                                          name=name)
     trainer.finetune(model_dir)
-    logger.info('Total Fine-tuning Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 
+    logger.info('Total Fine-tuning Time: ' + str(utils.get_elapsed_time(time.time() - start_time))) 
