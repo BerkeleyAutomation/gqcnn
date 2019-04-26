@@ -308,10 +308,11 @@ class GQCNNTrainerTF(object):
 
         # begin optimization loop
         try:
+            # start prefetch queue workers
             self.prefetch_q_workers = []
-            seed = self.cfg['seed']
+            seed = self._seed
             for i in range(self.num_prefetch_q_workers):
-                if self.num_prefetch_q_workers > 1:
+                if self.num_prefetch_q_workers > 1 or not self._debug:
                     seed = np.random.randint(GeneralConstants.SEED_SAMPLE_MAX)
                 p = mp.Process(target=self._load_and_enqueue, args=(seed,))
                 p.start()
@@ -865,9 +866,6 @@ class GQCNNTrainerTF(object):
         self.num_prefetch_q_workers = GeneralConstants.NUM_PREFETCH_Q_WORKERS
         if 'num_prefetch_q_workers' in self.cfg.keys():
             self.num_prefetch_q_workers = self.cfg['num_prefetch_q_workers']
-        if self.num_prefetch_q_workers > 1:
-            self.logger.warning('Deterministic execution is not possible with '
-                                'more than one prefetch queue worker even with random seed.')
 
         # re-weighting positives / negatives
         self.pos_weight = 0.0
@@ -899,6 +897,18 @@ class GQCNNTrainerTF(object):
         if self._angular_bins > 0:
             assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training'
             self._bin_width = self._max_angle / self._angular_bins
+
+        # debugging
+        self._debug = self.cfg['debug']
+        self._seed = self.cfg['seed']
+        if self._debug:
+            if self.num_prefetch_q_workers > 1:
+                self.logger.warning('Deterministic execution is not possible with '
+                                    'more than one prefetch queue worker even in debug mode.')
+            self.num_random_files = self.cfg['debug_num_files'] # this reduces initialization time
+
+            np.random.seed(self._seed)
+            random.seed(self._seed)
 
     def _setup_denoising_and_synthetic(self):
         """ Setup denoising and synthetic data parameters """
@@ -1064,10 +1074,6 @@ class GQCNNTrainerTF(object):
         self.queue_thread_exited = False
         self.forceful_exit = False
 
-        # set random seed for deterministic execution
-        np.random.seed(self.cfg['seed'])
-        random.seed(self.cfg['seed'])
-
         # setup output directories
         self._setup_output_dirs()
 
@@ -1099,6 +1105,7 @@ class GQCNNTrainerTF(object):
         """ Loads and enqueues a batch of images for training """
         signal.signal(signal.SIGINT, signal.SIG_IGN) # when the parent process receives a SIGINT, it will itself handle cleaning up child processes
 
+        print("SEED", seed)
         # set the random seed explicitly to prevent all workers from possible inheriting
         # the same seed on process initialization
         np.random.seed(seed)
