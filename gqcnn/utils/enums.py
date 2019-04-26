@@ -29,6 +29,7 @@ import math
 # other constants
 class GeneralConstants:
     SEED = 3472134
+    SEED_SAMPLE_MAX = 2**32 - 1 # max range for seed (at least for np.random.seed)
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
     JSON_INDENT = 2
     MAX_PREFETCH_Q_SIZE = 250

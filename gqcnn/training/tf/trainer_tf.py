@@ -308,15 +308,20 @@ class GQCNNTrainerTF(object):
 
         # begin optimization loop
         try:
+            # start prefetch queue workers
             self.prefetch_q_workers = []
+            seed = self._seed
             for i in range(self.num_prefetch_q_workers):
-                p = mp.Process(target=self._load_and_enqueue)
+                if self.num_prefetch_q_workers > 1 or not self._debug:
+                    seed = np.random.randint(GeneralConstants.SEED_SAMPLE_MAX)
+                p = mp.Process(target=self._load_and_enqueue, args=(seed,))
                 p.start()
                 self.prefetch_q_workers.append(p)
 
-            # init and run tf self.sessions
+            # init TF variables
             init = tf.global_variables_initializer()
             self.sess.run(init)
+
             self.logger.info('Beginning Optimization...')
 
             # create a TrainStatsLogger object to log training statistics at certain intervals
@@ -893,6 +898,18 @@ class GQCNNTrainerTF(object):
             assert not self.cfg['symmetrize'], 'Symmetrization denoising must be turned off during angular training'
             self._bin_width = self._max_angle / self._angular_bins
 
+        # debugging
+        self._debug = self.cfg['debug']
+        self._seed = self.cfg['seed']
+        if self._debug:
+            if self.num_prefetch_q_workers > 1:
+                self.logger.warning('Deterministic execution is not possible with '
+                                    'more than one prefetch queue worker even in debug mode.')
+            self.num_random_files = self.cfg['debug_num_files'] # this reduces initialization time
+
+            np.random.seed(self._seed)
+            random.seed(self._seed)
+
     def _setup_denoising_and_synthetic(self):
         """ Setup denoising and synthetic data parameters """
         # multiplicative denoising
@@ -1032,8 +1049,9 @@ class GQCNNTrainerTF(object):
         for p in self.prefetch_q_workers:
             p.join()
 
-        # close tensorboard
-        self._close_tensorboard()
+        # close tensorboard if started
+        if self.tensorboard_has_launched:
+            self._close_tensorboard()
 
         # close tensorflow session
         self.gqcnn.close_session()
@@ -1055,10 +1073,6 @@ class GQCNNTrainerTF(object):
         # initialize data prefetch queue thread exit booleans
         self.queue_thread_exited = False
         self.forceful_exit = False
-
-        # set random seed for deterministic execution
-        np.random.seed(self.cfg['seed'])
-        random.seed(self.cfg['seed'])
 
         # setup output directories
         self._setup_output_dirs()
@@ -1087,9 +1101,15 @@ class GQCNNTrainerTF(object):
         # setup summaries for visualizing metrics in tensorboard
         self._setup_summaries()
 
-    def _load_and_enqueue(self):
+    def _load_and_enqueue(self, seed):
         """ Loads and enqueues a batch of images for training """
         signal.signal(signal.SIGINT, signal.SIG_IGN) # when the parent process receives a SIGINT, it will itself handle cleaning up child processes
+
+        print("SEED", seed)
+        # set the random seed explicitly to prevent all workers from possible inheriting
+        # the same seed on process initialization
+        np.random.seed(seed)
+        random.seed(seed)
 
         # open dataset
         dataset = TensorDataset.open(self.dataset_dir)

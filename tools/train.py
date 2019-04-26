@@ -46,7 +46,7 @@ if __name__ == '__main__':
                         help='name of the split to train on')
     parser.add_argument('--output_dir', type=str, default=None,
                         help='path to store the model')
-    parser.add_argument('--tensorboard_port', type=int, default=6006,
+    parser.add_argument('--tensorboard_port', type=int, default=None,
                         help='port to launch tensorboard on')
     parser.add_argument('--seed', type=int, default=None,
                         help='random seed for training')
@@ -93,8 +93,11 @@ if __name__ == '__main__':
         
     # open train config
     train_config = YamlConfig(config_filename)
-    train_config['seed'] = seed
-    train_config['tensorboard_port'] = tensorboard_port
+    if seed is not None:
+        train_config['seed'] = seed
+        train_config['gqcnn']['seed'] = seed
+    if tensorboard_port is not None:
+        train_config['tensorboard_port'] = tensorboard_port
     gqcnn_params = train_config['gqcnn']
 
     # create a unique output folder based on the date and time
@@ -118,4 +121,4 @@ if __name__ == '__main__':
                                            train_config,
                                            name=name)
     trainer.train()
-    logger.info('Total Training Time:' + str(utils.get_elapsed_time(time.time() - start_time))) 
+    logger.info('Total Training Time: ' + str(utils.get_elapsed_time(time.time() - start_time))) 

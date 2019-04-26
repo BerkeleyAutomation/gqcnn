@@ -55,9 +55,9 @@ gaussian_process_sigma: 0.005
 tensorboard_port: 6006
 
 # debugging params
-debug: 0
-debug_num_files: 1000000000
-seed: 24098
+debug: &debug 0
+debug_num_files: 10 # speeds up initialization
+seed: &seed 24098
 
 ### GQCNN CONFIG ###
 gqcnn:
@@ -65,8 +65,8 @@ gqcnn:
   im_height: 96
   im_width: 96
   im_channels: 1
-  debug: 0
-  seed: 24098
+  debug: *debug
+  seed: *seed
 
   # needs to match input data mode that was used for training, determines the pose dimensions for the network
   gripper_mode: suction
