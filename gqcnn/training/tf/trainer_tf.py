@@ -1105,7 +1105,6 @@ class GQCNNTrainerTF(object):
         """ Loads and enqueues a batch of images for training """
         signal.signal(signal.SIGINT, signal.SIG_IGN) # when the parent process receives a SIGINT, it will itself handle cleaning up child processes
 
-        print("SEED", seed)
         # set the random seed explicitly to prevent all workers from possible inheriting
         # the same seed on process initialization
         np.random.seed(seed)
