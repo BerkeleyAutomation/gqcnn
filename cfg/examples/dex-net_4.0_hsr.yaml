@@ -42,7 +42,8 @@ policy:
   # metrics
   metric:
     type: gqcnn
-    gqcnn_model: models/GQCNN-4.0-HSR-PJ-10-15    
+    gqcnn_model: models/GQCNN-MM-50
+    #gqcnn_model: models/GQCNN-4.0-HSR-PJ-10-15    
     crop_height: 96
     crop_width: 96
 
