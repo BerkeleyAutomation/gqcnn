@@ -34,6 +34,9 @@ import autolab_core.utils as utils
 from autolab_core import YamlConfig, Logger
 from gqcnn import get_gqcnn_model, get_gqcnn_trainer, utils as gqcnn_utils
 
+#cpu_cores = [4,5,6,7] # Cores (numbered 0-11)
+#os.system("taskset -pc {} {}".format(",".join(str(i) for i in cpu_cores), os.getpid()))
+
 # setup logger
 logger = Logger.get_logger('tools/train.py')
 

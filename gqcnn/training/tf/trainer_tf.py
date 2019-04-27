@@ -1129,7 +1129,10 @@ class GQCNNTrainerTF(object):
                 # get batch indices uniformly at random
                 train_ind = self.train_index_map[file_num]
                 np.random.shuffle(train_ind)
-                if self.gripper_mode == GripperMode.LEGACY_SUCTION:
+                if self.gripper_mode == GripperMode.PARALLEL_JAW:
+                    valid_ind = np.where(train_poses_tensor.data[train_ind,5] < 0.8 * min(self.im_height, self.im_width))[0]
+                    train_ind = train_ind[valid_ind]
+                elif self.gripper_mode == GripperMode.LEGACY_SUCTION:
                     tp_tmp = read_pose_data(train_poses_tensor.data, self.gripper_mode)
                     train_ind = train_ind[np.isfinite(tp_tmp[train_ind,1])]
                     

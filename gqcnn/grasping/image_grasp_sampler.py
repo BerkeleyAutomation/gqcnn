@@ -818,7 +818,6 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
         k = 0
         grasps = []
         near_grasps = []
-        print(num_samples)
         ''' This grasp sampler only considers grasps that are closest among all grasps
             in the depth image. This was done to focus dex-net on close objects to
             avoid collisions when targeting further objects. However, we implemented
