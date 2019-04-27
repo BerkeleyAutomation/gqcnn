@@ -9,7 +9,7 @@ save_frequency: 10    # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
 log_frequency: 1      # how often to log output (in steps)
 
-# train / val split params 
+# train / val split params
 train_pct: 0.9              # percentage of the data to use for training vs validation
 total_pct: 1.0              # percentage of all the files to use
 eval_total_train_error: 0   # whether or not to evaluate the total training error on each validataion
@@ -73,7 +73,7 @@ gqcnn:
 
   # method by which to integrate depth into the network
   input_depth_mode: pose_stream
-  
+
   # used for training with multiple angular predictions
   angular_bins: 0
 
@@ -88,7 +88,7 @@ gqcnn:
         filt_dim: 9
         num_filt: 8
         pool_size: 2
-        pool_stride: 2  
+        pool_stride: 2
         pad: VALID
         norm: 0
         norm_type: local_response
@@ -145,3 +145,8 @@ gqcnn:
 
   # leaky relu coefficient
   relu_coeff: 0.0
+
+dataset_dir: /Users/rliaw/Research/riselab/gqcnn/data/training/example_pj
+split_name: image_wise
+output_dir: /Users/rliaw/Research/riselab/gqcnn/models
+model_name: test
