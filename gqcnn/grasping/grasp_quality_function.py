@@ -1156,9 +1156,6 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         # init fcgqcnn
         self._fcgqcnn = get_fc_gqcnn_model(backend=self._backend).load(self._model_dir, self._fully_conv_config)
 
-        # open tensorflow session for fcgqcnn
-        self._fcgqcnn.open_session()
-
     def __del__(self):
         try:
             self._fcgqcnn.close_session()
@@ -1177,6 +1174,8 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         return self._config
 
     def quality(self, images, depths, params=None): 
+        # open tensorflow session for fcgqcnn
+        self._fcgqcnn.open_session()
         return self._fcgqcnn.predict(images, depths)
 
 class GraspQualityFunctionFactory(object):
