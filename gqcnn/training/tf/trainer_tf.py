@@ -1171,6 +1171,8 @@ class GQCNNTrainerTF(object):
         # open dataset
         dataset = TensorDataset.open(self.dataset_dir)
 
+        np.random.seed()
+        
         while not self.term_event.is_set():
             # loop through data
             num_queued = 0
@@ -1178,7 +1180,8 @@ class GQCNNTrainerTF(object):
             end_i = 0
             file_num = 0
             queue_start = time.time()
-
+            x = 0
+            
             # init buffers
             train_images = np.zeros(
                 [self.train_batch_size, self.im_height, self.im_width, self.im_channels]).astype(GeneralConstants.NP_DTYPE)
@@ -1231,7 +1234,7 @@ class GQCNNTrainerTF(object):
                 ind = train_ind[:upper]
                 num_loaded = ind.shape[0]
                 if num_loaded == 0:
-                    self.logger.warning('Queueing zero examples!!!!')
+                    self.logger.info('Queueing zero examples!!!!')
                     continue
                 
                 # subsample data
@@ -1346,7 +1349,8 @@ class GQCNNTrainerTF(object):
                 # update start index
                 start_i = end_i
                 num_queued += num_loaded
-
+                x += 1
+                
             # send data to queue
             if not self.term_event.is_set():
                 try:

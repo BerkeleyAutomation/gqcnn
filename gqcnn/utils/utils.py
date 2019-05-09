@@ -27,6 +27,11 @@ import os
 
 import numpy as np
 
+try:
+    from functools import reduce
+except Exception:
+    pass
+
 from autolab_core import Logger
 from .enums import GripperMode
 
