@@ -371,12 +371,16 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
 
 class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
     """Suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
-    def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
+    def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions,
+                     rescale_factor=0.25, kernel_size=5):
         """Generate the actions to be returned."""
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
-        point_cloud_im = camera_intr.deproject_to_image(depth_im)
-        normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=9)
 
+        rescaled_depth_im = depth_im.resize(rescale_factor, interp='nearest')
+        rescaled_camera_intr = camera_intr.rescale(rescale_factor)
+        point_cloud_im = rescaled_camera_intr.deproject_to_image(rescaled_depth_im)
+        normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=kernel_size)
+        
         max_angle = 2 * math.pi
         bin_width = max_angle / preds.shape[-1]
         num_angles = 2 * preds.shape[-1]
@@ -393,7 +397,8 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
                 ang_idx = ind[i, 3]
                 ang = ang_idx * bin_width + bin_width / 2
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]))
-            axis = -normal_cloud_im[center.y, center.x]
+            rescaled_center = (rescale_factor * np.array([center.y, center.x])).astype(np.uint32)
+            axis = -normal_cloud_im[rescaled_center[0], rescaled_center[1]]
             if np.linalg.norm(axis) == 0:
                 continue
             depth = depth_im[center.y, center.x, 0]
@@ -440,12 +445,16 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
 
 class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPolicy):
     """Multi suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
-    def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
+    def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions,
+                     rescale_factor=0.25, kernel_size=5):
         """Generate the actions to be returned."""
         # compute point cloud and normals
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
-        point_cloud_im = camera_intr.deproject_to_image(depth_im)
-        normal_cloud_im = point_cloud_im.normal_cloud_im()#ksize=9)
+
+        rescaled_depth_im = depth_im.resize(rescale_factor, interp='nearest')
+        rescaled_camera_intr = camera_intr.rescale(rescale_factor)
+        point_cloud_im = rescaled_camera_intr.deproject_to_image(rescaled_depth_im)
+        normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=kernel_size)
 
         # set angle params
         max_angle = 2 * math.pi
@@ -464,7 +473,8 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
                                        h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]),
                            frame=camera_intr.frame)
-            axis = -normal_cloud_im[center.y, center.x]
+            rescaled_center = (rescale_factor * np.array([center.y, center.x])).astype(np.uint32)
+            axis = -normal_cloud_im[rescaled_center[0], rescaled_center[1]]
             if np.linalg.norm(axis) == 0:
                 axis = np.array([0,0,1])
             ang = ang_idx * bin_width + bin_width / 2
@@ -575,11 +585,15 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
         images = np.tile(np.asarray([depth]), (self._num_depth_bins, 1, 1, 1))
         return images, depths
     
-    def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
+    def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions,
+                     rescale_factor=0.25, kernel_size=5):
         """Generate the actions to be returned."""
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
-        point_cloud_im = camera_intr.deproject_to_image(depth_im)
-        normal_cloud_im = point_cloud_im.normal_cloud_im()
+
+        rescaled_depth_im = depth_im.resize(rescale_factor, interp='nearest')
+        rescaled_camera_intr = camera_intr.rescale(rescale_factor)
+        point_cloud_im = rescaled_camera_intr.deproject_to_image(rescaled_depth_im)
+        normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=kernel_size)
 
         num_grippers = len(self._gripper_types.keys())
         
@@ -625,7 +639,8 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                            frame=camera_intr.frame)
             if gripper_type == GripperMode.SUCTION or gripper_type == GripperMode.LEGACY_SUCTION:
                 # read axis and depth from the images
-                axis = -normal_cloud_im[center.y, center.x]
+                rescaled_center = (rescale_factor * np.array([center.y, center.x])).astype(np.uint32)
+                axis = -normal_cloud_im[rescaled_center[0], rescaled_center[1]]
                 if np.linalg.norm(axis) == 0:
                     axis = np.array([0,0,1])
                 depth = depth_im[center.y, center.x, 0]
@@ -652,7 +667,8 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                 # read axis, angle, and depth
                 ang_idx = g_idx - g_start_idx
                 ang = ang_idx * bin_width + bin_width / 2
-                axis = -normal_cloud_im[center.y, center.x]
+                rescaled_center = (rescale_factor * np.array([center.y, center.x])).astype(np.uint32)
+                axis = -normal_cloud_im[rescaled_center[0], rescaled_center[1]]
                 if np.linalg.norm(axis) == 0:
                     axis = np.array([0,0,1])
                 depth = depth_im[center.y, center.x, 0]
