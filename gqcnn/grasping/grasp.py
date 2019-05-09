@@ -289,7 +289,7 @@ class SuctionPoint2D(object):
         suction_rot_camera = np.c_[suction_x_camera, suction_y_camera, suction_z_camera]
 
         # rotate to align with the angle
-        num_rot = 32
+        num_rot = 4
         max_dot = -1
         best_angle = self.angle
         target_vec = np.array([np.cos(self.angle), np.sin(self.angle)])

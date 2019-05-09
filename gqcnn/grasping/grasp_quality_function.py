@@ -789,9 +789,6 @@ class GQCnnQualityFunction(GraspQualityFunction):
         # init GQ-CNN
         self._gqcnn = get_gqcnn_model().load(self._gqcnn_model_dir)
 
-        # open tensorflow session for gqcnn
-        self._gqcnn.open_session()
-
     def __del__(self):
         try:
             self._gqcnn.close_session()
@@ -894,6 +891,10 @@ class GQCnnQualityFunction(GraspQualityFunction):
         :obj:`list` of float
             real-valued grasp quality predictions for each action, between 0 and 1
         """
+        # open tensorflow session for gqcnn
+        if self._gqcnn.sess is None:
+            self._gqcnn.open_session()
+
         # form tensors
         tensor_start = time()
         image_tensor, pose_tensor = self.grasps_to_tensors(actions, state)
@@ -1156,9 +1157,6 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         # init fcgqcnn
         self._fcgqcnn = get_fc_gqcnn_model(backend=self._backend).load(self._model_dir, self._fully_conv_config)
 
-        # open tensorflow session for fcgqcnn
-        self._fcgqcnn.open_session()
-
     def __del__(self):
         try:
             self._fcgqcnn.close_session()
@@ -1177,6 +1175,10 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         return self._config
 
     def quality(self, images, depths, params=None): 
+        # open tensorflow session for fcgqcnn
+        if self._fcgqcnn.sess is None:
+            self._fcgqcnn.open_session()
+
         return self._fcgqcnn.predict(images, depths)
 
 class GraspQualityFunctionFactory(object):

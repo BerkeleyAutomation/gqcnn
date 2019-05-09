@@ -174,7 +174,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         from perception import DepthImage
         vis.imshow(DepthImage(wrapped_depth_im.data))
         actions.sort(key = lambda x: x.q_value)
-        for i in range(num_actions):
+        for i in range(len(actions)):
             vis.grasp(actions[i].grasp, scale=scale, show_axis=show_axis, color=plt.cm.RdYlGn(actions[i].q_value))
         vis.title('Top {} Grasps'.format(num_actions))
         if output_dir is not None:
@@ -268,7 +268,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             self._visualize_affordance_map(preds_success_only, wrapped_depth, self._vis_scale, output_dir=state_output_dir)
 
         actions.sort(reverse=True, key=lambda action: action.q_value)
-        return actions[0] if (self._filter_grasps or num_actions == 1) else actions[-(num_actions+1):]
+        return actions[0] if (self._filter_grasps or num_actions == 1) else actions[:num_actions]
 
     def action_set(self, state, num_actions, policy_subset=None, min_q_value=-1):
         """ Plan a set of actions.
