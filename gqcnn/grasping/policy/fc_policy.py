@@ -41,6 +41,8 @@ from .enums import SamplingMethod
 from .policy import GraspingPolicy, GraspAction
 
 MASKED_FLAG = -1
+DEFAULT_RESCALE_FACTOR = 1.0
+DEFAULT_KERNEL_SIZE = 5
 
 class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """Abstract grasp sampling policy class using Fully-Convolutional GQ-CNN network."""
@@ -372,7 +374,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
 class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
     """Suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions,
-                     rescale_factor=0.25, kernel_size=5):
+                     rescale_factor=DEFAULT_RESCALE_FACTOR, kernel_size=DEFAULT_KERNEL_SIZE):
         """Generate the actions to be returned."""
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
 
@@ -446,7 +448,7 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
 class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPolicy):
     """Multi suction grasp sampling policy using Fully-Convolutional GQ-CNN network."""
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions,
-                     rescale_factor=0.25, kernel_size=5):
+                     rescale_factor=DEFAULT_RESCALE_FACTOR, kernel_size=DEFAULT_KERNEL_SIZE):
         """Generate the actions to be returned."""
         # compute point cloud and normals
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
@@ -586,7 +588,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
         return images, depths
     
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions,
-                     rescale_factor=0.25, kernel_size=5):
+                     rescale_factor=DEFAULT_RESCALE_FACTOR, kernel_size=DEFAULT_KERNEL_SIZE):
         """Generate the actions to be returned."""
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
 
