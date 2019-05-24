@@ -41,7 +41,6 @@ import scipy.stats as ss
 import scipy.ndimage.filters as snf
 import matplotlib.pyplot as plt
 
-import autolab_core.utils as utils
 from ambicore import BinaryImage, ColorImage, DepthImage, RGBDImage, SegmentationImage
 from ambicore import Visualizer2D as vis
 
@@ -273,6 +272,11 @@ class GraspingPolicy(Policy):
         
     def set_constraint_fn(self, constraint_fn):
         self._grasp_constraint_fn = constraint_fn    
+
+    def _gen_experiment_id(self):
+        chrs = 'abcdefghijklmnopqrstuvwxyz'
+        inds = np.random.randint(0,len(chrs), size=n)
+        return ''.join([chrs[i] for i in inds])
     
     def action(self, state):
         """ Returns an action for a given state.
@@ -280,10 +284,10 @@ class GraspingPolicy(Policy):
         """
         # save state
         if self._logging_dir is not None:
-            policy_id = utils.gen_experiment_id()
+            policy_id = self._gen_experiment_id()
             policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' % (policy_id))
             while os.path.exists(policy_dir):
-                policy_id = utils.gen_experiment_id()
+                policy_id = self._gen_experiment_id()
                 policy_dir = os.path.join(self._logging_dir, 'policy_output_%s' % (policy_id))
             self._policy_dir = policy_dir
             os.mkdir(self._policy_dir)

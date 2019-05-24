@@ -29,12 +29,11 @@ import math
 import time
 import sys
 import os
+import logging
 
 import numpy as np
 import psutil
 import GPUtil
-
-from autolab_core import Logger
 
 CPU_LOAD_SAMPLE_INTERVAL = 4.0
 CPU_LOAD_OFFSET = 50 # this is a hack because it seems that psutil is returning a lower load than htop, which could be because htop takes into account queued tasks
@@ -47,7 +46,7 @@ class ResourceManager(object):
         self._monitor_gpu = monitor_gpu
 
         # set up logger
-        self._logger = Logger.get_logger(self.__class__.__name__)
+        self._logger = logging.getLogger(self.__class__.__name__)
 
         if not monitor_cpu:
             self._logger.warning('Not monitoring cpu resources is not advised.')   

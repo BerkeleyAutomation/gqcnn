@@ -29,6 +29,7 @@ import math
 import time
 import operator
 import os
+import logging
 try:
     from Queue import Queue
 except:
@@ -40,7 +41,6 @@ from .trial import GQCNNTrainingAndAnalysisTrial, GQCNNFineTuningAndAnalysisTria
 from .utils import gen_trial_params, gen_timestamp, log_trial_status
 from .enums import TrialConstants, SearchConstants
 
-from autolab_core import Logger
 from gqcnn.utils import GQCNNTrainingStatus
 
 class GQCNNSearch(object):
@@ -57,7 +57,7 @@ class GQCNNSearch(object):
             os.makedirs(self._trial_output_dir)
 
         # set up logger
-        self._logger = Logger.get_logger(self.__class__.__name__, log_file=os.path.join(self._trial_output_dir, 'search.log'), global_log_file=True)
+        self._logger = logging.getLogger(self.__class__.__name__)
 
         # init resource manager
         self._resource_manager = ResourceManager(TrialConstants.TRIAL_CPU_LOAD, TrialConstants.TRIAL_GPU_LOAD, TrialConstants.TRIAL_GPU_MEM, monitor_cpu=monitor_cpu, monitor_gpu=monitor_gpu, cpu_cores=cpu_cores, gpu_devices=gpu_devices)

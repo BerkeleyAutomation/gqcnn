@@ -24,6 +24,7 @@ Simple utility functions
 Authors: Jeff Mahler, Vishal Satish, Lucas Manuelli
 """
 import os
+import logging
 
 import numpy as np
 
@@ -32,11 +33,10 @@ try:
 except Exception:
     pass
 
-from autolab_core import Logger
 from .enums import GripperMode
 
 # set up logger
-logger = Logger.get_logger('gqcnn/utils/utils.py')
+logger = logging.getLogger('gqcnn/utils/utils.py')
 
 def set_cuda_visible_devices(gpu_list):
     """

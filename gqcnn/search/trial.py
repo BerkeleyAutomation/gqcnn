@@ -33,9 +33,7 @@ from abc import abstractmethod, ABCMeta
 import numpy as np
 
 from gqcnn.model import get_gqcnn_model
-from gqcnn.training import get_gqcnn_trainer
 from gqcnn.utils import GQCNNTrainingStatus
-from gqcnn.analysis import GQCNNAnalyzer
 from gqcnn.utils import GeneralConstants
 
 class TrialStatus:
@@ -79,6 +77,7 @@ class GQCNNTrialWithAnalysis(object):
             os.environ["CUDA_VISIBLE_DEVICES"] = gpu_avail
 
             gqcnn = get_gqcnn_model(backend, verbose=False)(train_config['gqcnn'], verbose=False)
+            from gqcnn.training import get_gqcnn_trainer
             trainer = get_gqcnn_trainer(backend)(gqcnn,
                                                  dataset_dir,
                                                  split_name,
@@ -93,6 +92,7 @@ class GQCNNTrialWithAnalysis(object):
                 json.dump(hyperparam_summary, fhandle, indent=GeneralConstants.JSON_INDENT)
             
             train_progress_dict['training_status'] = 'analyzing'
+            from gqcnn.analysis import GQCNNAnalyzer
             analyzer = GQCNNAnalyzer(analysis_config, verbose=False)
             _, _, init_train_error, final_train_error, init_train_loss, final_train_loss, init_val_error, final_val_error, norm_final_val_error = analyzer.analyze(os.path.join(output_dir, model_name), output_dir)
             analysis_dict = {}

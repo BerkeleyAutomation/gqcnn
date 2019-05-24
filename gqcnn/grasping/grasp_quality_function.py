@@ -32,7 +32,6 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-import autolab_core.utils as utils
 from ambicore import DepthImage, Transform
 from gqcnn import get_gqcnn_model, get_fc_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
@@ -544,7 +543,7 @@ class ComApproachPlanaritySuctionQualityFunction(ApproachPlanaritySuctionQuality
 
         if params['vis']['hist']:
             plt.figure()
-            utils.histogram(sse, 100, (np.min(sse), np.max(sse)), normalized=False, plot=True)
+            # utils.histogram(sse, 100, (np.min(sse), np.max(sse)), normalized=False, plot=True)
             plt.show()
 
         # compute object centroid
@@ -599,7 +598,7 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
 
         if params['vis']['hist']:
             plt.figure()
-            utils.histogram(sse_q, 100, (np.min(sse_q), np.max(sse_q)), normalized=False, plot=True)
+            # utils.histogram(sse_q, 100, (np.min(sse_q), np.max(sse_q)), normalized=False, plot=True)
             plt.show()
 
         # compute object centroid
@@ -751,7 +750,7 @@ class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction
 
         if params['vis']['hist']:
             plt.figure()
-            utils.histogram(curvature_q, 100, (np.min(curvature_q), np.max(curvature_q)), normalized=False, plot=True)
+            # utils.histogram(curvature_q, 100, (np.min(curvature_q), np.max(curvature_q)), normalized=False, plot=True)
             plt.show()
 
         # compute object centroid
@@ -902,7 +901,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         if params is not None and params['vis']['tf_images']:
             # read vis params
             k = params['vis']['k']
-            d = utils.sqrt_ceil(k)
+            d = int(np.ceil(np.sqrt(k)))
 
             # display grasp transformed images
             from ambicore import Visualizer2D as vis2d
@@ -1116,7 +1115,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
         if params is not None and params['vis']['tf_images']:
             # read vis params
             k = params['vis']['k']
-            d = utils.sqrt_ceil(k)
+            d = int(np.ceil(np.sqrt(k)))
 
             # display grasp transformed images
             from ambicore import Visualizer2D as vis2d

@@ -25,11 +25,11 @@ Currently only Tensorflow is supported.
 
 Author: Vishal Satish
 """
-from .tf import *
+# from .tf import *
 
-def get_gqcnn_trainer(backend='tf'):
-    # return desired GQCNNTrainer instance based on backend
-    if backend == 'tf':
-        return GQCNNTrainerTF
-    else:
-        raise ValueError('Invalid backend: {}'.format(backend))
+# def get_gqcnn_trainer(backend='tf'):
+#     # return desired GQCNNTrainer instance based on backend
+#     if backend == 'tf':
+#         return GQCNNTrainerTF
+#     else:
+#         raise ValueError('Invalid backend: {}'.format(backend))

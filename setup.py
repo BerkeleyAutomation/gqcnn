@@ -26,7 +26,7 @@ Author: Vishal Satish
 from setuptools import setup, find_packages
 
 requirements = [
-    'autolab-core',
+#    'autolab-core',
 #    'autolab-perception',
 #    'visualization',
     'numpy',
