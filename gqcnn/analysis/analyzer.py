@@ -43,8 +43,8 @@ import scipy.misc as sm
 import autolab_core.utils as utils
 from autolab_core import BinaryClassificationResult, Point, TensorDataset, Logger
 from autolab_core.constants import *
-from perception import DepthImage
-from visualization import Visualizer2D as vis2d
+from ambicore import DepthImage
+from ambicore import Visualizer2D as vis2d
 
 from gqcnn import get_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D

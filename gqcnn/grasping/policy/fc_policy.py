@@ -27,13 +27,12 @@ import math
 from abc import abstractmethod, ABCMeta
 import os
 import time
+import logging
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from autolab_core import Logger, Point, RigidTransform
-from perception import BinaryImage, DepthImage, CameraIntrinsics
-from visualization import Visualizer2D as vis
+from ambicore import DepthImage, Transform, Visualizer2D as vis
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 from gqcnn.utils import NoValidGraspsException, GripperMode
 
@@ -60,7 +59,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         GraspingPolicy.__init__(self, cfg, init_sampler=False)
 
         # init logger
-        self._logger = Logger.get_logger(self.__class__.__name__)
+        self._logger = logging.getLogger(self.__class__.__name__)
 
         self._cfg = cfg
         self._sampling_method = self._cfg['sampling_method']
@@ -173,7 +172,6 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # plot actions in 2D
         vis.figure()
-        from perception import DepthImage
         vis.imshow(DepthImage(wrapped_depth_im.data))
         actions.sort(key = lambda x: x.q_value)
         for i in range(len(actions)):
@@ -343,7 +341,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
             h_idx = ind[i, 1]
             w_idx = ind[i, 2]
             ang_idx = ind[i, 3]
-            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2]))
+            center = np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w / 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h / 2])
             ang = ang_idx * bin_width + bin_width / 2
             depth = depths[im_idx, 0]
             grasp = Grasp2D(center, ang, depth, width=self._gripper_width, camera_intr=camera_intr)
@@ -378,7 +376,7 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
         """Generate the actions to be returned."""
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
 
-        rescaled_depth_im = depth_im.resize(rescale_factor, interp='nearest')
+        rescaled_depth_im = depth_im.rescale(rescale_factor, interp='nearest')
         rescaled_camera_intr = camera_intr.rescale(rescale_factor)
         point_cloud_im = rescaled_camera_intr.deproject_to_image(rescaled_depth_im)
         normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=kernel_size)
@@ -398,12 +396,12 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
             if ind.shape[1] > 3:
                 ang_idx = ind[i, 3]
                 ang = ang_idx * bin_width + bin_width / 2
-            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]))
-            rescaled_center = (rescale_factor * np.array([center.y, center.x])).astype(np.uint32)
+            center = np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2])
+            rescaled_center = (rescale_factor * np.array([center[1], center[0]])).astype(np.uint32)
             axis = -normal_cloud_im[rescaled_center[0], rescaled_center[1]]
             if np.linalg.norm(axis) == 0:
                 continue
-            depth = depth_im[center.y, center.x, 0]
+            depth = depth_im[center[1], center[0]]
             if depth == 0.0:
                 continue
             grasp = SuctionPoint2D(center, axis=axis, depth=depth, camera_intr=camera_intr, angle=ang)
@@ -422,7 +420,7 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy):
         self._logger.info('Visualizing affordance map...')
 
         affordance_map = preds[0, ..., 0]
-        tf_depth_im = depth_im.crop(depth_im.shape[0] - self._gqcnn_recep_h, depth_im.shape[1] - self._gqcnn_recep_w).resize(1.0 / self._gqcnn_stride)
+        tf_depth_im = depth_im.crop(depth_im.shape[0] - self._gqcnn_recep_h, depth_im.shape[1] - self._gqcnn_recep_w).rescale(1.0 / self._gqcnn_stride)
 
         # plot
         vis.figure()
@@ -453,7 +451,7 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
         # compute point cloud and normals
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
 
-        rescaled_depth_im = depth_im.resize(rescale_factor, interp='nearest')
+        rescaled_depth_im = depth_im.rescale(rescale_factor, interp='nearest')
         rescaled_camera_intr = camera_intr.rescale(rescale_factor)
         point_cloud_im = rescaled_camera_intr.deproject_to_image(rescaled_depth_im)
         normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=kernel_size)
@@ -472,15 +470,14 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             ang_idx = ind[i, 3]
 
             # read center, axis and depth
-            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
-                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]),
-                           frame=camera_intr.frame)
-            rescaled_center = (rescale_factor * np.array([center.y, center.x])).astype(np.uint32)
+            center =(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
+                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]))
+            rescaled_center = (rescale_factor * np.array([center[1], center[0]])).astype(np.uint32)
             axis = -normal_cloud_im[rescaled_center[0], rescaled_center[1]]
             if np.linalg.norm(axis) == 0:
                 axis = np.array([0,0,1])
             ang = ang_idx * bin_width + bin_width / 2
-            depth = depth_im[center.y, center.x, 0]
+            depth = depth_im[center[1], center[0]]
             if depth == 0.0:
                 continue
 
@@ -499,19 +496,15 @@ class FullyConvolutionalGraspingPolicyMultiSuction(FullyConvolutionalGraspingPol
             aligned_R = R.copy()
             for k in range(num_angles):
                 theta = float(k * max_angle) / num_angles
-                R_tf = R.dot(RigidTransform.x_axis_rotation(theta))
+                R_tf = R.dot(Transform.x_axis_rotation(theta).R)
                 dot = R_tf[:,1].dot(y_axis_im)
                 if dot > max_dot:
                     max_dot = dot
                     aligned_R = R_tf.copy()
 
             # define multi cup suction point by the aligned pose
-            if isinstance(camera_intr, CameraIntrinsics):
-                t = camera_intr.deproject_pixel(depth, center).data
-            else:
-                import ambicore
-                t = camera_intr.deproject_pixel(depth, center.data)
-            T = RigidTransform(rotation=aligned_R,
+            t = camera_intr.deproject_pixel(depth, center)
+            T = Transform(rotation=aligned_R,
                                translation=t,
                                from_frame='grasp',
                                to_frame=camera_intr.frame)
@@ -592,7 +585,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
         """Generate the actions to be returned."""
         depth_im = DepthImage(images[0], frame=camera_intr.frame)
 
-        rescaled_depth_im = depth_im.resize(rescale_factor, interp='nearest')
+        rescaled_depth_im = depth_im.rescale(rescale_factor, interp='nearest')
         rescaled_camera_intr = camera_intr.rescale(rescale_factor)
         point_cloud_im = rescaled_camera_intr.deproject_to_image(rescaled_depth_im)
         normal_cloud_im = point_cloud_im.normal_cloud_im(ksize=kernel_size)
@@ -636,16 +629,15 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                 tool_config = self._tool_configs[gripper_id]
                 
             # determine grasp pose
-            center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
-                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]),
-                           frame=camera_intr.frame)
+            center = np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
+                                       h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2])
             if gripper_type == GripperMode.SUCTION or gripper_type == GripperMode.LEGACY_SUCTION:
                 # read axis and depth from the images
-                rescaled_center = (rescale_factor * np.array([center.y, center.x])).astype(np.uint32)
+                rescaled_center = (rescale_factor * np.array([center[1], center[0]])).astype(np.uint32)
                 axis = -normal_cloud_im[rescaled_center[0], rescaled_center[1]]
                 if np.linalg.norm(axis) == 0:
                     axis = np.array([0,0,1])
-                depth = depth_im[center.y, center.x, 0]
+                depth = depth_im[center[1], center[0]]
                 if depth == 0.0:
                     continue
 
@@ -669,11 +661,11 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                 # read axis, angle, and depth
                 ang_idx = g_idx - g_start_idx
                 ang = ang_idx * bin_width + bin_width / 2
-                rescaled_center = (rescale_factor * np.array([center.y, center.x])).astype(np.uint32)
+                rescaled_center = (rescale_factor * np.array([center[1], center[0]])).astype(np.uint32)
                 axis = -normal_cloud_im[rescaled_center[0], rescaled_center[1]]
                 if np.linalg.norm(axis) == 0:
                     axis = np.array([0,0,1])
-                depth = depth_im[center.y, center.x, 0]
+                depth = depth_im[center[1], center[0]]
                 if depth == 0.0:
                     continue
 
@@ -692,19 +684,15 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
                 aligned_R = R.copy()
                 for k in range(num_angles):
                     theta = float(k * max_angle) / num_angles
-                    R_tf = R.dot(RigidTransform.x_axis_rotation(theta))
+                    R_tf = R.dot(Transform.x_axis_rotation(theta).R)
                     dot = R_tf[:,1].dot(y_axis_im)
                     if dot > max_dot:
                         max_dot = dot
                         aligned_R = R_tf.copy()
 
                 # define multi cup suction point by the aligned pose
-                if isinstance(camera_intr, CameraIntrinsics):
-                    t = camera_intr.deproject_pixel(depth, center).data
-                else:
-                    import ambicore
-                    t = camera_intr.deproject_pixel(depth, center.data)
-                T = RigidTransform(rotation=aligned_R,
+                t = camera_intr.deproject_pixel(depth, center)
+                T = Transform(rotation=aligned_R,
                                    translation=t,
                                    from_frame='grasp',
                                    to_frame=camera_intr.frame)
@@ -737,7 +725,7 @@ class FullyConvolutionalGraspingPolicyMultiGripper(FullyConvolutionalGraspingPol
         
         for i in ind:
             affordance_map = preds[0, ..., i]
-            tf_depth_im = depth_im.crop(depth_im.shape[0] - self._gqcnn_recep_h, depth_im.shape[1] - self._gqcnn_recep_w).resize(1.0 / self._gqcnn_stride)
+            tf_depth_im = depth_im.crop(depth_im.shape[0] - self._gqcnn_recep_h, depth_im.shape[1] - self._gqcnn_recep_w).rescale(1.0 / self._gqcnn_stride)
 
             # plot
             vis.figure()

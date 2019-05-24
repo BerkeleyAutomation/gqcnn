@@ -30,6 +30,7 @@ import math
 import time
 import operator
 import sys
+import logging
 
 try:
     from functools import reduce
@@ -40,7 +41,6 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.framework as tcf
 
-from autolab_core import Logger
 from gqcnn.utils import reduce_shape, read_pose_data, pose_dim, weight_name_to_layer_name, GeneralConstants, GripperMode, TrainingMode, InputDepthMode
 
 class GQCNNWeights(object):
@@ -62,7 +62,7 @@ class GQCNNTF(object):
         self._graph = tf.Graph()
 
         # set up logger
-        self._logger = Logger.get_logger(self.__class__.__name__, log_file=log_file, silence=(not verbose), global_log_file=verbose)
+        self._logger = logging.getLogger(self.__class__.__name__)
             
         self._weights = GQCNNWeights()
         self._parse_config(gqcnn_config)

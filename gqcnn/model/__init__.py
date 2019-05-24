@@ -26,13 +26,12 @@ Author
 ------
 Vishal Satish
 """
+import logging
 from .tf import *
-
-from autolab_core import Logger
  
 def get_gqcnn_model(backend='tf', verbose=True):
     # set up logger
-    logger = Logger.get_logger('GQCNNModelFactory', silence=(not verbose))
+    logger = logging.getLogger('GQCNNModelFactory')
 
     # return desired GQ-CNN instance based on backend
     if backend == 'tf':
@@ -43,7 +42,7 @@ def get_gqcnn_model(backend='tf', verbose=True):
 
 def get_fc_gqcnn_model(backend='tf', verbose=True):
     # set up logger
-    logger = Logger.get_logger('FCGQCNNModelFactory', silence=(not verbose))
+    logger = logging.getLogger('FCGQCNNModelFactory')
 
     # return desired Fully-Convolutional GQ-CNN instance based on backend
     if backend == 'tf':

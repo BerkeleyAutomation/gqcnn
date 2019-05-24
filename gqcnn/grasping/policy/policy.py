@@ -33,6 +33,7 @@ import os
 from time import time
 import copy
 import six
+import logging
 
 import numpy as np
 from sklearn.mixture import GaussianMixture
@@ -41,9 +42,8 @@ import scipy.ndimage.filters as snf
 import matplotlib.pyplot as plt
 
 import autolab_core.utils as utils
-from autolab_core import Point, Logger
-from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
-from visualization import Visualizer2D as vis
+from ambicore import BinaryImage, ColorImage, DepthImage, RGBDImage, SegmentationImage
+from ambicore import Visualizer2D as vis
 
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D, ImageGraspSamplerFactory, GraspQualityFunctionFactory, GQCnnQualityFunction, GraspConstraintFnFactory
 from gqcnn.utils import GripperMode, NoValidGraspsException
@@ -108,19 +108,19 @@ class RgbdImageState(object):
         segmask_filename = os.path.join(save_dir, 'segmask.npy')
         obj_segmask_filename = os.path.join(save_dir, 'obj_segmask.npy')
         state_filename = os.path.join(save_dir, 'state.pkl')
-        camera_intr = CameraIntrinsics.load(camera_intr_filename)
-        color = ColorImage.open(color_image_filename, frame=camera_intr.frame)
-        depth = DepthImage.open(depth_image_filename, frame=camera_intr.frame)
+        camera_intr = Intrinsics.load(camera_intr_filename)
+        color = ColorImage.load(color_image_filename, frame=camera_intr.frame)
+        depth = DepthImage.load(depth_image_filename, frame=camera_intr.frame)
         segmask = None
         if os.path.exists(segmask_filename):
-            segmask = BinaryImage.open(segmask_filename, frame=camera_intr.frame)
+            segmask = BinaryImage.load(segmask_filename, frame=camera_intr.frame)
         obj_segmask = None
         if os.path.exists(obj_segmask_filename):
-            obj_segmask = SegmentationImage.open(obj_segmask_filename, frame=camera_intr.frame)
+            obj_segmask = SegmentationImage.load(obj_segmask_filename, frame=camera_intr.frame)
         fully_observed = None    
         if os.path.exists(state_filename):
             fully_observed = pkl.load(open(state_filename, 'rb'))
-        return RgbdImageState(RgbdImage.from_color_and_depth(color, depth),
+        return RgbdImageState(RGBDImage.from_color_and_depth(color, depth),
                               camera_intr,
                               segmask=segmask,
                               obj_segmask=obj_segmask,
@@ -165,7 +165,7 @@ class GraspAction(object):
         q_value = pkl.load(open(q_value_filename, 'rb'))
         image = None
         if os.path.exists(image_filename):
-            image = DepthImage.open(image_filename)
+            image = DepthImage.load(image_filename)
         return GraspAction(grasp, q_value, image)
         
 class Policy(object):
@@ -221,7 +221,7 @@ class GraspingPolicy(Policy):
             log_file = os.path.join(self._logging_dir, 'policy.log')
 
         # setup logger
-        self._logger = Logger.get_logger(self.__class__.__name__, log_file=log_file, global_log_file=True)
+        self._logger = logging.getLogger(self.__class__.__name__)
     
         # init grasp sampler
         if init_sampler:
@@ -363,8 +363,8 @@ class UniformRandomGraspingPolicy(GraspingPolicy):
         
         # perturb grasp
         if self._grasp_center_std > 0.0:
-            grasp_center_rv = ss.multivariate_normal(grasp.center.data, cov=self._grasp_center_std**2)
-            grasp.center.data = grasp_center_rv.rvs(size=1)[0]
+            grasp_center_rv = ss.multivariate_normal(grasp.center, cov=self._grasp_center_std**2)
+            grasp.center = grasp_center_rv.rvs(size=1)[0]
         
         # form tensors
         return GraspAction(grasp, 0.0, state.rgbd_im.depth)
@@ -679,7 +679,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             grasps = []
             for j in range(gqcnn_recep_w_half - 1, im_w - gqcnn_recep_w_half, stride): 
                 if self.config['sampling']['type'] == 'suction': #TODO: @Vishal find a better way to find policy type
-                    grasps.append(SuctionPoint2D(Point(np.array([j, i])), axis=-normal_cloud_im[i, j], depth=state.rgbd_im.depth[i, j], camera_intr=state.camera_intr))
+                    grasps.append(SuctionPoint2D(np.array([j, i]), axis=-normal_cloud_im[i, j], depth=state.rgbd_im.depth[i, j], camera_intr=state.camera_intr))
                 else:
                     raise NotImplementedError('Parallel Jaw Grasp Affordance Maps Not Supported!')
             q_vals.extend(self._grasp_quality_fn(state, grasps)) 
@@ -687,7 +687,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
         # mask out predictions not in the segmask(we don't really care about them)
         pred_map = np.array(q_vals).reshape((im_h - gqcnn_recep_h_half * 2) // stride + 1, (im_w - gqcnn_recep_w_half * 2) // stride + 1)
-        tf_segmask = state.segmask.crop(im_h - gqcnn_recep_h_half * 2, im_w - gqcnn_recep_w_half * 2).resize(1.0 / stride, interp='nearest')._data.squeeze() #TODO: @Vishal don't access the raw data like this!
+        tf_segmask = state.segmask.crop(im_h - gqcnn_recep_h_half * 2, im_w - gqcnn_recep_w_half * 2).rescale(1.0 / stride, interp='nearest')._data.squeeze() #TODO: @Vishal don't access the raw data like this!
         if tf_segmask.shape != pred_map.shape:
             new_tf_segmask = np.zeros_like(pred_map)
             smaller_i = min(pred_map.shape[0], tf_segmask.shape[0])
@@ -705,14 +705,14 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
 
         # plot
         vis.figure()
-        tf_depth_im = state.rgbd_im.depth.crop(im_h - gqcnn_recep_h_half * 2, im_w - gqcnn_recep_w_half * 2).resize(1.0 / stride, interp='nearest')
+        tf_depth_im = state.rgbd_im.depth.crop(im_h - gqcnn_recep_h_half * 2, im_w - gqcnn_recep_w_half * 2).rescale(1.0 / stride, interp='nearest')
         vis.imshow(tf_depth_im)
         plt.imshow(affordance_map, cmap=plt.cm.RdYlGn, alpha=0.3) 
         if grasps is not None:
             grasps = copy.deepcopy(grasps)
             for grasp, q in zip(grasps, q_values):
-                grasp.center.data[0] -= gqcnn_recep_w_half
-                grasp.center.data[1] -= gqcnn_recep_h_half
+                grasp.center[0] -= gqcnn_recep_w_half
+                grasp.center[1] -= gqcnn_recep_h_half
                 vis.grasp(grasp, scale=scale,
                                    show_center=False,
                                    show_axis=True,
@@ -939,9 +939,9 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                     bounds_start = time()
                     # check in bounds
                     if state.segmask is None or \
-                        (grasp.center.y >= 0 and grasp.center.y < state.segmask.height and \
-                         grasp.center.x >= 0 and grasp.center.x < state.segmask.width and \
-                         np.any(state.segmask[int(grasp.center.y), int(grasp.center.x)] != 0) and \
+                        (grasp.center[1] >= 0 and grasp.center[1] < state.segmask.height and \
+                         grasp.center[0] >= 0 and grasp.center[0] < state.segmask.width and \
+                         np.any(state.segmask[int(grasp.center[1]), int(grasp.center[0])] != 0) and \
                          grasp.approach_angle < self._max_approach_angle) and \
                          (self._grasp_constraint_fn is None or self._grasp_constraint_fn(grasp)):
 
@@ -1225,8 +1225,8 @@ class EpsilonGreedyQFunctionRobustGraspingPolicy(QFunctionRobustGraspingPolicy):
         # visualize planned grasp
         if self.config['vis']['grasp_plan']:
             scale_factor = float(self.gqcnn.im_width) / float(self._crop_width)
-            scaled_camera_intr = camera_intr.resize(scale_factor)
-            vis_grasp = Grasp2D(Point(image.center), 0.0, depth,
+            scaled_camera_intr = camera_intr.rescale(scale_factor)
+            vis_grasp = Grasp2D(image.center, 0.0, depth,
                                 width=self._gripper_width,
                                 camera_intr=scaled_camera_intr)
             vis.figure()

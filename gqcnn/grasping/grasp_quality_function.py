@@ -25,6 +25,7 @@ Author: Jason Liu and Jeff Mahler
 """
 from abc import ABCMeta, abstractmethod
 from time import time
+import logging
 
 import scipy.ndimage.filters as snf
 import cv2
@@ -32,8 +33,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import autolab_core.utils as utils
-from autolab_core import Point, PointCloud, RigidTransform, Logger
-from perception import RgbdImage, CameraIntrinsics, PointCloudImage, ColorImage, BinaryImage, DepthImage, GrayscaleImage
+from ambicore import DepthImage, Transform
 from gqcnn import get_gqcnn_model, get_fc_gqcnn_model
 from gqcnn.grasping import Grasp2D, SuctionPoint2D
 from gqcnn.utils import GripperMode
@@ -47,7 +47,7 @@ class GraspQualityFunction(object):
 
     def __init__(self):
         # set up logger
-        self._logger = Logger.get_logger(self.__class__.__name__)
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     def __call__(self, state, actions, params=None):
         """ Evaluates grasp quality for a set of actions given a state. """
@@ -160,7 +160,7 @@ class ComForceClosureParallelJawQualityFunction(ParallelJawQualityFunction):
             friction_cone_angle = antipodality_q[i]
             force_closure = ParallelJawQualityFunction.force_closure(self, action)
             if force_closure or friction_cone_angle < antipodality_thresh:
-                grasp_center = np.array([action.center.y, action.center.x])
+                grasp_center = np.array([action.center[1], action.center[0]])
 
                 if state.obj_segmask is not None:
                     grasp_obj_id = state.obj_segmask[grasp_center[0],
@@ -193,8 +193,8 @@ class SuctionQualityFunction(GraspQualityFunction):
         """Retrieve all points on the object in a box of size self._window_size. """
         # read indices
         im_shape = point_cloud_image.shape
-        i_start = int(max(action.center.y-self._window_size/2, 0))
-        j_start = int(max(action.center.x-self._window_size/2, 0))
+        i_start = int(max(action.center[1]-self._window_size/2, 0))
+        j_start = int(max(action.center[0]-self._window_size/2, 0))
         i_end = int(min(i_start+self._window_size, im_shape[0]))
         j_end = int(min(j_start+self._window_size, im_shape[1]))
         step = int(1 / self._sample_rate)
@@ -272,8 +272,8 @@ class BestFitPlanaritySuctionQualityFunction(SuctionQualityFunction):
             w = self._best_fit_plane(A, b) # vector w w/ a bias term represents a best-fit plane.
 
             if params is not None and params['vis']['plane']:
-                from visualization import Visualizer2D as vis2d
-                from visualization import Visualizer3D as vis3d
+                from ambicore import Visualizer2D as vis2d
+                from ambicore import Visualizer3D as vis3d
                 mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
                 p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
@@ -283,20 +283,20 @@ class BestFitPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 tx = tx / np.linalg.norm(tx)
                 ty = np.cross(n, tx)
                 R = np.array([tx, ty, n]).T
-                T_table_world = RigidTransform(rotation=R,
+                T_table_world = Transform(rotation=R,
                                                translation=p0,
                                                from_frame='patch',
                                                to_frame='world')
                 
                 vis3d.figure()
                 vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
+                # vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
                 vis3d.table(T_table_world, dim=0.01)
                 vis3d.show()
                 
                 vis2d.figure()
                 vis2d.imshow(state.rgbd_im.depth)
-                vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
+                vis2d.scatter(action.center[0], action.center[1], s=50, c='b')
                 vis2d.show()
 
             quality = np.exp(-self._sum_of_squared_residuals(w, A, b)) # evaluate how well best-fit plane describles all points in window.            
@@ -313,8 +313,8 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
 
     def _action_to_plane(self, point_cloud_image, action):
         """Convert a plane from point-normal form to general form. """
-        x = int(action.center.x)
-        y = int(action.center.y)
+        x = int(action.center[0])
+        y = int(action.center[1])
         p_0 = point_cloud_image[y, x]
         n = -action.axis
         w = np.array([-n[0]/n[2], -n[1]/n[2], np.dot(n,p_0)/n[2]])
@@ -352,8 +352,8 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
             w = self._action_to_plane(point_cloud_image, action) # vector w w/ a bias term represents a best-fit plane.
 
             if params is not None and params['vis']['plane']:
-                from visualization import Visualizer2D as vis2d
-                from visualization import Visualizer3D as vis3d
+                from ambicore import Visualizer2D as vis2d
+                from ambicore import Visualizer3D as vis3d
                 mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
                 p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
@@ -365,16 +365,16 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 R = np.array([tx, ty, n]).T
 
                 c = state.camera_intr.deproject_pixel(action.depth, action.center)
-                d = Point(c.data - 0.01*action.axis, frame=c.frame)
+                d = c - 0.01*action.axis
 
-                T_table_world = RigidTransform(rotation=R,
+                T_table_world = Transform(rotation=R,
                                                translation=p0,
                                                from_frame='patch',
                                                to_frame='world')
                 
                 vis3d.figure()
                 vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
+                # vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
                 vis3d.points(c, scale=0.005, color=(1,1,0))
                 vis3d.points(d, scale=0.005, color=(1,1,0))
                 vis3d.table(T_table_world, dim=0.01)
@@ -382,7 +382,7 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 
                 vis2d.figure()
                 vis2d.imshow(state.rgbd_im.depth)
-                vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
+                vis2d.scatter(action.center[0], action.center[1], s=50, c='b')
                 vis2d.show()
 
             quality = np.exp(-self._sum_of_squared_residuals(w, A, b)) # evaluate how well best-fit plane describles all points in window.            
@@ -400,8 +400,8 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
 
     def _action_to_plane(self, point_cloud_image, action):
         """Convert a plane from point-normal form to general form. """
-        x = int(action.center.x)
-        y = int(action.center.y)
+        x = int(action.center[0])
+        y = int(action.center[1])
         p_0 = point_cloud_image[y, x]
         n = -action.axis
         w = np.array([-n[0]/n[2], -n[1]/n[2], np.dot(n,p_0)/n[2]])
@@ -416,8 +416,8 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
 
         # read indices
         im_shape = point_cloud_image.shape
-        i_start = int(max(action.center.y-self._window_size/2, 0))
-        j_start = int(max(action.center.x-self._window_size/2, 0))
+        i_start = int(max(action.center[1]-self._window_size/2, 0))
+        j_start = int(max(action.center[0]-self._window_size/2, 0))
         i_end = int(min(i_start+self._window_size, im_shape[0]))
         j_end = int(min(j_start+self._window_size, im_shape[1]))
         step = int(1 / self._sample_rate)
@@ -427,8 +427,8 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
         stacked_points = points.reshape(points.shape[0]*points.shape[1], -1)
         
         # compute the center point
-        contact_point = point_cloud_image[int(action.center.y),
-                                          int(action.center.x)]
+        contact_point = point_cloud_image[int(action.center[1]),
+                                          int(action.center[0])]
 
         # project onto approach plane
         residuals = stacked_points - contact_point
@@ -476,8 +476,8 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
             sse = np.max(self._residuals(w, A, b))
 
             if params is not None and params['vis']['plane']:
-                from visualization import Visualizer2D as vis2d
-                from visualization import Visualizer3D as vis3d
+                from ambicore import Visualizer2D as vis2d
+                from ambicore import Visualizer3D as vis3d
                 mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
                 n = -action.axis
@@ -488,16 +488,16 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 R = np.array([tx, ty, n]).T
 
                 c = state.camera_intr.deproject_pixel(action.depth, action.center)
-                d = Point(c.data - 0.01*action.axis, frame=c.frame)
+                d = c - 0.01*action.axis
 
-                T_table_world = RigidTransform(rotation=R,
+                T_table_world = Transform(rotation=R,
                                                translation=p0,
                                                from_frame='patch',
                                                to_frame='world')
                 
                 vis3d.figure()
                 vis3d.points(point_cloud_image.to_point_cloud(), scale=0.001, subsample=5, random=True, color=(0,0,1))
-                vis3d.points(PointCloud(points.T), scale=0.0015, color=(1,0,0))
+                # vis3d.points(PointCloud(points.T), scale=0.0015, color=(1,0,0))
                 vis3d.points(c, scale=0.002, color=(1,1,0))
                 vis3d.points(d, scale=0.002, color=(1,1,0))
                 vis3d.table(T_table_world, dim=0.01)
@@ -505,7 +505,7 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 
                 vis2d.figure()
                 vis2d.imshow(state.rgbd_im.depth)
-                vis2d.scatter(action.center.x, action.center.y, s=50, c='b')
+                vis2d.scatter(action.center[0], action.center[1], s=50, c='b')
                 vis2d.show()
 
             quality = np.exp(-sse) # evaluate how well best-fit plane describles all points in window.            
@@ -558,7 +558,7 @@ class ComApproachPlanaritySuctionQualityFunction(ApproachPlanaritySuctionQuality
         for k, action in enumerate(actions):
             q = max(state.rgbd_im.height, state.rgbd_im.width)
             if np.abs(sse[k]) < self._planarity_thresh:
-                grasp_center = np.array([action.center.y, action.center.x])
+                grasp_center = np.array([action.center[1], action.center[0]])
                 q = np.linalg.norm(grasp_center - object_com)
 
             qualities.append(np.exp(-q))
@@ -615,7 +615,7 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
         for k, action in enumerate(actions):
             q = max_q
             if sse_q[k] > planarity_thresh or sse_q[k] > self._planarity_abs_thresh:
-                grasp_center = np.array([action.center.y, action.center.x])
+                grasp_center = np.array([action.center[1], action.center[0]])
 
                 if state.obj_segmask is not None:
                     grasp_obj_id = state.obj_segmask[grasp_center[0],
@@ -703,8 +703,8 @@ class DiscCurvatureSuctionQualityFunction(GaussianCurvatureSuctionQualityFunctio
         """Retrieve all points on the object in a disc of size self._window_size. """
         # read indices
         im_shape = point_cloud_image.shape
-        i_start = int(max(action.center.y-self._window_size/2, 0))
-        j_start = int(max(action.center.x-self._window_size/2, 0))
+        i_start = int(max(action.center[1]-self._window_size/2, 0))
+        j_start = int(max(action.center[0]-self._window_size/2, 0))
         i_end = int(min(i_start+self._window_size, im_shape[0]))
         j_end = int(min(j_start+self._window_size, im_shape[1]))
         step = int(1 / self._sample_rate)
@@ -714,8 +714,8 @@ class DiscCurvatureSuctionQualityFunction(GaussianCurvatureSuctionQualityFunctio
         stacked_points = points.reshape(points.shape[0]*points.shape[1], -1)
         
         # check the distance from the center point
-        contact_point = point_cloud_image[int(action.center.y),
-                                          int(action.center.x)]
+        contact_point = point_cloud_image[int(action.center[1]),
+                                          int(action.center[0])]
         dists = np.linalg.norm(stacked_points - contact_point, axis=1)
         stacked_points = stacked_points[dists <= self._radius]
 
@@ -767,7 +767,7 @@ class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction
         for k, action in enumerate(actions):
             q = max_q
             if curvature_q[k] > curvature_q_thresh:
-                grasp_center = np.array([action.center.y, action.center.x])
+                grasp_center = np.array([action.center[1], action.center[0]])
                 q = np.linalg.norm(grasp_center - object_com)
 
             q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
@@ -850,10 +850,10 @@ class GQCnnQualityFunction(GraspQualityFunction):
         image_tensor = np.zeros([num_grasps, gqcnn_im_height, gqcnn_im_width, gqcnn_num_channels])
         pose_tensor = np.zeros([num_grasps, gqcnn_pose_dim])
         scale = float(gqcnn_im_height) / self._crop_height
-        depth_im_scaled = depth_im.resize(scale)
+        depth_im_scaled = depth_im.rescale(scale)
         for i, grasp in enumerate(grasps):
-            translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
-                                            depth_im.center[1] - grasp.center.data[0]])
+            translation = scale * np.array([depth_im.center[0] - grasp.center[1],
+                                            depth_im.center[1] - grasp.center[0]])
             im_tf = depth_im_scaled
             im_tf = depth_im_scaled.transform(translation, grasp.angle)
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
@@ -905,7 +905,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
             d = utils.sqrt_ceil(k)
 
             # display grasp transformed images
-            from visualization import Visualizer2D as vis2d
+            from ambicore import Visualizer2D as vis2d
             vis2d.figure(size=(FIGSIZE,FIGSIZE))
             for i, image_tf in enumerate(image_tensor[:k,...]):
                 depth = pose_tensor[i][0]
@@ -1069,10 +1069,10 @@ class NoMagicQualityFunction(GraspQualityFunction):
                                  gqcnn_im_width, gqcnn_num_channels])
         pose_tensor = np.zeros([num_grasps, gqcnn_pose_dim])
         scale = float(gqcnn_im_height) / self._crop_height
-        depth_im_scaled = depth_im.resize(scale)
+        depth_im_scaled = depth_im.rescale(scale)
         for i, grasp in enumerate(grasps):
-            translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
-                                            depth_im.center[1] - grasp.center.data[0]])
+            translation = scale * np.array([depth_im.center[0] - grasp.center[1],
+                                            depth_im.center[1] - grasp.center[0]])
             im_tf = depth_im_scaled
             im_tf = depth_im_scaled.transform(translation, grasp.angle)
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
@@ -1119,7 +1119,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
             d = utils.sqrt_ceil(k)
 
             # display grasp transformed images
-            from visualization import Visualizer2D as vis2d
+            from ambicore import Visualizer2D as vis2d
             vis2d.figure(size=(FIGSIZE,FIGSIZE))
             for i, image_tf in enumerate(image_tensor[:k,...]):
                 depth = pose_tensor[i][0]

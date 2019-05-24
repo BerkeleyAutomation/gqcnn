@@ -27,11 +27,11 @@ from setuptools import setup, find_packages
 
 requirements = [
     'autolab-core',
-    'autolab-perception',
-    'visualization',
+#    'autolab-perception',
+#    'visualization',
     'numpy',
     'scipy',
-    'matplotlib<=2.2.0',
+    'matplotlib',
     'opencv-python',
     'tensorflow-gpu',
     'scikit-image',

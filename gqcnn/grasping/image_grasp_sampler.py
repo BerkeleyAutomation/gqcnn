@@ -28,6 +28,7 @@ import copy
 import os
 import random
 from time import sleep, time
+import logging
 
 import scipy.spatial.distance as ssd
 import scipy.ndimage.filters as snf
@@ -36,9 +37,8 @@ import sklearn.mixture
 import numpy as np
 import matplotlib.pyplot as plt
 
-from autolab_core import Point, RigidTransform, Logger
-from perception import BinaryImage, ColorImage, DepthImage, RgbdImage, GdImage
-from visualization import Visualizer2D as vis
+from ambicore import DepthImage, RGBDImage, GDImage
+from ambicore import Transform, Visualizer2D as vis
 
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 from gqcnn.utils import NoAntipodalPairsFoundException
@@ -69,7 +69,7 @@ class ImageGraspSampler(object):
 
     Attributes
     ----------
-    config : :obj:`autolab_core.YamlConfig`
+    config : :obj:`autolab_core[1]amlConfig`
         a dictionary-like object containing the parameters of the sampler
     """
     __metaclass__ = ABCMeta
@@ -79,7 +79,7 @@ class ImageGraspSampler(object):
         self._config = config
 
         # setup logger
-        self._logger = Logger.get_logger(self.__class__.__name__)
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     def sample(self, rgbd_im, camera_intr, num_samples,
                segmask=None, seed=None, visualize=False,
@@ -89,7 +89,7 @@ class ImageGraspSampler(object):
         
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
+        rgbd_im : :obj:`perception.RGBDImage`
             RGB-D image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
@@ -134,7 +134,7 @@ class ImageGraspSampler(object):
 
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
+        rgbd_im : :obj:`perception.RGBDImage`
             RGB-D image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
@@ -267,7 +267,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        image : :obj:`perception.RgbdImage` or 'perception.DepthImage' or 'perception.GdImage'
+        image : :obj:`perception.RGBDImage` or 'perception.DepthImage' or 'perception.GDImage'
             RGB-D or D image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
@@ -285,12 +285,12 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         :obj:`list` of :obj:`Grasp2D`
             list of 2D grasp candidates
         """
-        if isinstance(image, RgbdImage) or isinstance(image, GdImage):
+        if isinstance(image, RGBDImage) or isinstance(image, GDImage):
             depth_im = image.depth
         elif isinstance(image, DepthImage):
             depth_im = image
         else:
-            raise ValueError("image type must be one of [RgbdImage, DepthImage, GdImage]")
+            raise ValueError("image type must be one of [RGBDImage, DepthImage, GDImage]")
 
         # sample antipodal pairs in image space
         grasps = self._sample_antipodal_grasps(depth_im, camera_intr, num_samples,
@@ -330,7 +330,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         depth_im = depth_im.apply(snf.gaussian_filter,
                                   sigma=self._depth_grad_gaussian_sigma)
         scale_factor = self._rescale_factor
-        depth_im_downsampled = depth_im.resize(scale_factor)
+        depth_im_downsampled = depth_im.rescale(scale_factor)
         depth_im_threshed = depth_im_downsampled.threshold_gradients(self._depth_grad_thresh)
         edge_pixels = (1.0 / scale_factor) * depth_im_threshed.zero_pixels()
         edge_pixels = edge_pixels.astype(np.int16)
@@ -403,7 +403,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             
         # form set of valid candidate point pairs
         pruning_start = time()
-        max_grasp_width_px = Grasp2D(Point(np.zeros(2)), 0.0, min_depth,
+        max_grasp_width_px = Grasp2D(np.zeros(2), 0.0, min_depth,
                                      width = self._gripper_width,
                                      camera_intr=camera_intr).width_px
         normal_ip = edge_normals.dot(edge_normals.T)
@@ -466,7 +466,7 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             grasp_theta = np.pi / 2
             if grasp_axis[1] != 0:
                 grasp_theta = np.arctan2(grasp_axis[0], grasp_axis[1])
-            grasp_center_pt = Point(np.array([grasp_center[1], grasp_center[0]]))
+            grasp_center_pt = np.array([grasp_center[1], grasp_center[0]])
 
             # compute grasp points in 3D
             x1 = point_cloud_im[p1[0], p1[1]]
@@ -581,7 +581,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        image : :obj:`perception.RgbdImage` or 'perception.DepthImage'
+        image : :obj:`perception.RGBDImage` or 'perception.DepthImage'
             RGB-D or D image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
@@ -597,12 +597,12 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         :obj:`list` of :obj:`Grasp2D`
             list of 2D grasp candidates
         """
-        if isinstance(image, RgbdImage) or isinstance(image, GdImage):
+        if isinstance(image, RGBDImage) or isinstance(image, GDImage):
             depth_im = image.depth
         elif isinstance(image, DepthImage):
             depth_im = image
         else:
-            raise ValueError("image type must be one of [RgbdImage, DepthImage, GdImage]")
+            raise ValueError("image type must be one of [RGBDImage, DepthImage, GDImage]")
 
         # sample antipodal pairs in image space
         grasps = self._sample_suction_points(depth_im, camera_intr, num_samples,
@@ -675,9 +675,9 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
             # sample a point uniformly at random 
             ind = indices[k]
             center_px = np.array([nonzero_px[ind,1], nonzero_px[ind,0]])
-            center = Point(center_px, frame=camera_intr.frame)
-            axis = -normal_cloud_im[center.y, center.x]
-            depth = point_cloud_im[center.y, center.x][2]
+            center = center_px, frame=camera_intr.frame
+            axis = -normal_cloud_im[center[1], center[0]]
+            depth = point_cloud_im[center[1], center[0]][2]
             
             # update number of tries
             k += 1
@@ -707,7 +707,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
                     if visualize:
                         vis.figure()
                         vis.imshow(depth_im)
-                        vis.scatter(center.x, center.y)
+                        vis.scatter(center[0], center[1])
                         vis.show()
 
                     suction_points.append(candidate)
@@ -775,7 +775,7 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        image : :obj:`perception.RgbdImage` or 'perception.DepthImage'
+        image : :obj:`perception.RGBDImage` or 'perception.DepthImage'
             RGB-D or D image to sample from
         camera_intr : :obj:`perception.CameraIntrinsics`
             intrinsics of the camera that captured the images
@@ -793,12 +793,12 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
         :obj:`list` of :obj:`Grasp2D`
             list of 2D grasp candidates
         """
-        if isinstance(image, RgbdImage) or isinstance(image, GdImage):
+        if isinstance(image, RGBDImage) or isinstance(image, GDImage):
             depth_im = image.depth
         elif isinstance(image, DepthImage):
             depth_im = image
         else:
-            raise ValueError("image type must be one of [RgbdImage, DepthImage, GdImage]")
+            raise ValueError("image type must be one of [RGBDImage, DepthImage, GDImage]")
 
         # sample antipodal pairs in image space
         grasps = self._sample_suction_points(depth_im, camera_intr, num_samples,
@@ -875,9 +875,9 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
             # sample a point uniformly at random 
             ind = indices[k % num_nonzero_px]
             center_px = np.array([nonzero_px[ind,1], nonzero_px[ind,0]])
-            center = Point(center_px, frame=camera_intr.frame)
-            axis = -normal_cloud_im[center.y, center.x]
-            depth = point_cloud_im[center.y, center.x][2]
+            center = center_px
+            axis = -normal_cloud_im[center[1], center[0]]
+            depth = point_cloud_im[center[1], center[0]][2]
             orientation = 2 * np.pi * np.random.rand()
 
             # update number of tries
@@ -896,9 +896,9 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
             z_axis = np.cross(x_axis, y_axis)
             R = np.array([x_axis, y_axis, z_axis]).T
             R_orig = np.copy(R)
-            R = R.dot(RigidTransform.x_axis_rotation(orientation))
-            t = point_cloud_im[center.y, center.x]
-            pose = RigidTransform(rotation=R,
+            R = R.dot(Transform.x_axis_rotation(orientation).R)
+            t = point_cloud_im[center[1], center[0]]
+            pose = Transform(rotation=R,
                                   translation=t,
                                   from_frame='grasp',
                                   to_frame=camera_intr.frame)
@@ -924,7 +924,7 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
                     if visualize:
                         vis.figure()
                         vis.imshow(depth_im)
-                        vis.scatter(center.x, center.y)
+                        vis.scatter(center[0], center[1])
                         vis.show()
 
                     suction_points.append(candidate)

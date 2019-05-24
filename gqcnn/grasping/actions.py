@@ -5,8 +5,6 @@ Author: Jeff Mahler
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
-from autolab_core import Point, RigidTransform
-
 from gqcnn.grasping import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 
 class Action(object):
@@ -87,9 +85,7 @@ class ParallelJawGrasp3D(GraspAction3D):
 
         # compute grasp center in image space
         t_grasp_camera = T_grasp_camera.translation
-        p_grasp_camera = Point(t_grasp_camera,
-                               frame=camera_intr.frame)
-        u_grasp_camera = camera_intr.project(p_grasp_camera)
+        u_grasp_camera = camera_intr.project(t_grasp_camera)
         d_grasp_camera = t_grasp_camera[2]
         return Grasp2D(u_grasp_camera,
                        rot_grasp_camera,
@@ -113,8 +109,7 @@ class SuctionGrasp3D(GraspAction3D):
 
         # compute grasp center in image space
         t_grasp_camera = T_grasp_camera.translation
-        p_grasp_camera = Point(t_grasp_camera, frame=camera_intr.frame)
-        u_grasp_camera = camera_intr.project(p_grasp_camera)
+        u_grasp_camera = camera_intr.project(t_grasp_camera)
         d_grasp_camera = t_grasp_camera[2]
         return SuctionPoint2D(u_grasp_camera,
                               x_axis_camera,
