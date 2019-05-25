@@ -9,6 +9,7 @@ ARG work_dir=/root/Workspace
 # Install apt-get deps
 RUN apt-get update && apt-get install -y \
         build-essential \ 
+        python3.7 \ 
         python-tk \ 
         python-dev \ 
         python-opengl \ 

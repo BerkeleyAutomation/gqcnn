@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
-Permission to use, copy, modify, and distribute this software and its documentation for educational,
-research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
-hereby granted, provided that the above copyright notice, this paragraph and the following two
-paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
-Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
-7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+Copyright ©2017. The Regents of the University of California (Regents).
+All Rights Reserved. Permission to use, copy, modify, and distribute this
+software and its documentation for educational, research, and not-for-profit
+purposes, without fee and without a signed licensing agreement, is hereby
+granted, provided that the above copyright notice, this paragraph and the
+following two paragraphs appear in all copies, modifications, and
+distributions. Contact The Office of Technology Licensing, UC Berkeley, 2150
+Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201,
+otl@berkeley.edu,
+http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
 
 IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
 INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
@@ -18,42 +21,38 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
-"""
-"""
-Class for analyzing a GQCNN model for grasp quality prediction.
 
+Class for analyzing a GQCNN model for grasp quality prediction.
 Author: Jeff Mahler
 """
-import cPickle as pkl
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import copy
 import json
+import logging
 import os
+import pickle as pkl
 import random
 import sys
 import time
-import logging
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.misc as sm
 
-import autolab_core.utils as utils
 from autolab_core import BinaryClassificationResult, Point, TensorDataset, Logger
 from autolab_core.constants import *
+import autolab_core.utils as utils
 from perception import DepthImage
 from visualization import Visualizer2D as vis2d
 
-from gqcnn import get_gqcnn_model
-from gqcnn.grasping import Grasp2D, SuctionPoint2D
-from gqcnn.utils import GripperMode, ImageMode, GeneralConstants, read_pose_data
+from ..model import get_gqcnn_model
+from ..grasping import Grasp2D, SuctionPoint2D
+from ..utils import GripperMode, ImageMode, GeneralConstants, read_pose_data, GQCNNFilenames
 
-PCT_POS_VAL_FILENAME = 'pct_pos_val.npy'
-TRAIN_LOSS_FILENAME = 'train_losses.npy'
-TRAIN_ERRORS_FILENAME = 'train_errors.npy'
-VAL_ERRORS_FILENAME = 'val_errors.npy'
-TRAIN_ITERS_FILENAME = 'train_eval_iters.npy'
-VAL_ITERS_FILENAME = 'val_eval_iters.npy'
 WINDOW = 100
 MAX_LOSS = 5.0
 
@@ -606,12 +605,12 @@ class GQCNNAnalyzer(object):
 
         # losses
         try:
-            train_errors_filename = os.path.join(model_dir, TRAIN_ERRORS_FILENAME)
-            val_errors_filename = os.path.join(model_dir, VAL_ERRORS_FILENAME)
-            train_iters_filename = os.path.join(model_dir, TRAIN_ITERS_FILENAME)
-            val_iters_filename = os.path.join(model_dir, VAL_ITERS_FILENAME)
-            pct_pos_val_filename = os.path.join(model_dir, PCT_POS_VAL_FILENAME)
-            train_losses_filename = os.path.join(model_dir, TRAIN_LOSS_FILENAME)
+            train_errors_filename = os.path.join(model_dir, GQCNNFilenames.TRAIN_ERRORS)
+            val_errors_filename = os.path.join(model_dir, GQCNNFilenames.VAL_ERRORS)
+            train_iters_filename = os.path.join(model_dir, GQCNNFilenames.TRAIN_ITERS)
+            val_iters_filename = os.path.join(model_dir, GQCNNFilenames.VAL_ITERS)
+            pct_pos_val_filename = os.path.join(model_dir, GQCNNFilenames.PCT_POS_VAL)
+            train_losses_filename = os.path.join(model_dir, GQCNNFilenames.TRAIN_LOSS)
 
             raw_train_errors = np.load(train_errors_filename)
             val_errors = np.load(val_errors_filename)
