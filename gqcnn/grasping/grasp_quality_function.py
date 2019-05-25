@@ -881,7 +881,6 @@ class GQCnnQualityFunction(GraspQualityFunction):
             self._gqcnn.close_session()
         except:
             pass
-        del self
 
     @property
     def gqcnn(self):
@@ -1174,7 +1173,6 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
             self._fcgqcnn.close_session()
         except:
             pass
-        del self
 
     @property
     def gqcnn(self):

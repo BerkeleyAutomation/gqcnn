@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Copyright ©2017. The Regents of the University of California (Regents). All Rights Reserved.
-Permission to use, copy, modify, and distribute this software and its documentation for educational,
-research, and not-for-profit purposes, without fee and without a signed licensing agreement, is
-hereby granted, provided that the above copyright notice, this paragraph and the following two
-paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology
-Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-
-7201, otl@berkeley.edu, http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+Copyright ©2017. The Regents of the University of California (Regents).
+All Rights Reserved. Permission to use, copy, modify, and distribute this
+software and its documentation for educational, research, and not-for-profit
+purposes, without fee and without a signed licensing agreement, is hereby
+granted, provided that the above copyright notice, this paragraph and the
+following two paragraphs appear in all copies, modifications, and
+distributions. Contact The Office of Technology Licensing, UC Berkeley, 2150
+Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201,
+otl@berkeley.edu,
+http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
 
 IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
 INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
@@ -18,44 +21,45 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
-"""
-"""
+
 Displays robust grasps planned using a GQ-CNN-based policy on a set of saved RGB-D images.
 The default configuration is cfg/examples/policy.yaml.
-
-Author
-------
-Jeff Mahler
+Author: Jeff Mahler
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import argparse
 import os
 import time
 
+import numpy as np
 import pcl
 import skimage
-import numpy as np
 
 from autolab_core import PointCloud, RigidTransform, YamlConfig, Logger
 from perception import BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage, SegmentationImage
 from visualization import Visualizer2D as vis
+
 from gqcnn import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState
 
 CLUSTER_TOL = 0.0015
 MIN_CLUSTER_SIZE = 100
 MAX_CLUSTER_SIZE = 1000000
 
-# set up logger
-logger = Logger.get_logger('tools/policy_with_image_proc.py')
+# Set up logger.
+logger = Logger.get_logger("tools/policy_with_image_proc.py")
 
-if __name__ == '__main__':
-    # parse args
-    parser = argparse.ArgumentParser(description='Run a grasping policy on an example image')
-    parser.add_argument('--depth_image', type=str, default=None, help='path to a test depth image stored as a .npy file')
-    parser.add_argument('--segmask', type=str, default=None, help='path to an optional segmask to use')
-    parser.add_argument('--camera_intrinsics', type=str, default=None, help='path to the camera intrinsics')
-    parser.add_argument('--camera_pose', type=str, default=None, help='path to the camera pose')
-    parser.add_argument('--model_dir', type=str, default=None, help='path to a trained model to run')
-    parser.add_argument('--config_filename', type=str, default=None, help='path to configuration file to use')
+if __name__ == "__main__":
+    # Parse args.
+    parser = argparse.ArgumentParser(description="Run a grasping policy on an example image")
+    parser.add_argument("--depth_image", type=str, default=None, help="path to a test depth image stored as a .npy file")
+    parser.add_argument("--segmask", type=str, default=None, help="path to an optional segmask to use")
+    parser.add_argument("--camera_intrinsics", type=str, default=None, help="path to the camera intrinsics")
+    parser.add_argument("--camera_pose", type=str, default=None, help="path to the camera pose")
+    parser.add_argument("--model_dir", type=str, default=None, help="path to a trained model to run")
+    parser.add_argument("--config_filename", type=str, default=None, help="path to configuration file to use")
     args = parser.parse_args()
     depth_im_filename = args.depth_image
     segmask_filename = args.segmask
@@ -66,46 +70,46 @@ if __name__ == '__main__':
 
     if depth_im_filename is None:
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                         '..',
-                                         'data/examples/single_object/depth_0.npy')
+                                         "..",
+                                         "data/examples/single_object/depth_0.npy")
     if camera_intr_filename is None:
         camera_intr_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            '..',
-                                            'data/calib/primesense.intr')    
+                                            "..",
+                                            "data/calib/primesense.intr")    
     if camera_pose_filename is None:
         camera_pose_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            '..',
-                                            'data/calib/primesense.tf')    
+                                            "..",
+                                            "data/calib/primesense.tf")    
     if config_filename is None:
         config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       '..',
-                                       'cfg/examples/replication/dex-net_2.0.yaml')
+                                       "..",
+                                       "cfg/examples/replication/dex-net_2.0.yaml")
     
-    # read config
+    # Read config.
     config = YamlConfig(config_filename)
-    inpaint_rescale_factor = config['inpaint_rescale_factor']
-    policy_config = config['policy']
+    inpaint_rescale_factor = config["inpaint_rescale_factor"]
+    policy_config = config["policy"]
 
-    # make relative paths absolute
+    # Make relative paths absolute.
     if model_dir is not None:
-        policy_config['metric']['gqcnn_model'] = model_dir
-    if 'gqcnn_model' in policy_config['metric'].keys() and not os.path.isabs(policy_config['metric']['gqcnn_model']):
-        policy_config['metric']['gqcnn_model'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                              '..',
-                                                              policy_config['metric']['gqcnn_model'])
+        policy_config["metric"]["gqcnn_model"] = model_dir
+    if "gqcnn_model" in policy_config["metric"] and not os.path.isabs(policy_config["metric"]["gqcnn_model"]):
+        policy_config["metric"]["gqcnn_model"] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                              "..",
+                                                              policy_config["metric"]["gqcnn_model"])
 
-    # setup sensor
+    # Setup sensor.
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
     T_camera_world = RigidTransform.load(camera_pose_filename)
     
-    # read images
+    # Read images.
     depth_data = np.load(depth_im_filename)
     depth_data = depth_data.astype(np.float32) / 1000.0
     depth_im = DepthImage(depth_data, frame=camera_intr.frame)
     color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
                           frame=camera_intr.frame)
     
-    # optionally read a segmask
+    # Optionally read a segmask.
     mask = np.zeros(
         (camera_intr.height, camera_intr.width, 1), dtype=np.uint8)
     c = np.array([165, 460, 500, 135])
@@ -121,13 +125,13 @@ if __name__ == '__main__':
     else:
         segmask = segmask.mask_binary(valid_px_mask)
 
-    # create new cloud
+    # Create new cloud.
     point_cloud = camera_intr.deproject(depth_im)
     point_cloud.remove_zero_points()
     pcl_cloud = pcl.PointCloud(point_cloud.data.T.astype(np.float32))
     tree = pcl_cloud.make_kdtree()
 
-    # find large clusters (likely to be real objects instead of noise)
+    # Find large clusters (likely to be real objects instead of noise).
     ec = pcl_cloud.make_EuclideanClusterExtraction()
     ec.set_ClusterTolerance(CLUSTER_TOL)
     ec.set_MinClusterSize(MIN_CLUSTER_SIZE)
@@ -138,7 +142,7 @@ if __name__ == '__main__':
 
     obj_segmask_data = np.zeros(depth_im.shape)
                         
-    # read out all points in large clusters
+    # Read out all points in large clusters.
     cur_i = 0
     for j, indices in enumerate(cluster_indices):
         num_points = len(indices)
@@ -155,10 +159,10 @@ if __name__ == '__main__':
     obj_segmask = SegmentationImage(obj_segmask_data.astype(np.uint8))
     obj_segmask = obj_segmask.mask_binary(segmask)
 
-    # inpaint
+    # Inpaint.
     depth_im = depth_im.inpaint(rescale_factor=inpaint_rescale_factor)
         
-    if 'input_images' in policy_config['vis'].keys() and policy_config['vis']['input_images']:
+    if "input_images" in policy_config["vis"] and policy_config["vis"]["input_images"]:
         vis.figure(size=(10,10))
         num_plot = 3
         vis.subplot(1,num_plot,1)
@@ -177,34 +181,34 @@ if __name__ == '__main__':
         vis3d.pose(T_camera_world.inverse())
         vis3d.show()
         
-    # create state
+    # Create state.
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
     state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
 
-    # init policy
-    policy_type = 'cem'
-    if 'type' in policy_config.keys():
-        policy_type = policy_config['type']
-    if policy_type == 'ranking':
+    # Init policy.
+    policy_type = "cem"
+    if "type" in policy_config:
+        policy_type = policy_config["type"]
+    if policy_type == "ranking":
         policy = RobustGraspingPolicy(policy_config)
     else:
         policy = CrossEntropyRobustGraspingPolicy(policy_config)
     policy_start = time.time()
     action = policy(state)
-    logger.info('Planning took %.3f sec' %(time.time() - policy_start))
+    logger.info("Planning took %.3f sec" %(time.time() - policy_start))
 
-    # vis final grasp
-    if policy_config['vis']['final_grasp']:
+    # Vis final grasp.
+    if policy_config["vis"]["final_grasp"]:
         vis.figure(size=(10,10))
         vis.imshow(rgbd_im.depth,
-                   vmin=policy_config['vis']['vmin'],
-                   vmax=policy_config['vis']['vmax'])
+                   vmin=policy_config["vis"]["vmin"],
+                   vmax=policy_config["vis"]["vmax"])
         vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
-        vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
+        vis.title("Planned grasp on depth (Q=%.3f)" %(action.q_value))
         vis.show()
 
-    # get grasp pose
+    # Get grasp pose.
     T_grasp_camera = action.grasp.pose(grasp_approach_dir=-T_camera_world.inverse().z_axis)
     grasp_pose_msg = T_grasp_camera.pose_msg
     
-    # TODO: control to reach the grasp pose
+    # TODO: Control to reach the grasp pose.

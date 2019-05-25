@@ -1,4 +1,5 @@
-# build the CPU and GPU docker images
+#!/bin/bash
+# Build the CPU and GPU docker images.
 
 git archive --format=tar -o docker/gqcnn.tar --prefix=gqcnn/ master
 docker build --no-cache -t gqcnn/gpu -f docker/gpu/Dockerfile .

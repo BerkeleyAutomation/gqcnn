@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-# DOWNLOAD MODELS (if they don't exist already)
+# DOWNLOAD MODELS (if they don't exist already).
 mkdir -p models
 cd models
 
@@ -20,9 +20,9 @@ fi
 
 cd ..
 
-# DOWNLOAD DATASETS (if they don't already exist)
+# DOWNLOAD DATASETS (if they don't already exist).
 
-# PARALLEL JAW
+# PARALLEL JAW.
 mkdir -p data/training
 cd data/training
 
@@ -34,7 +34,7 @@ else
     echo "Found existing example PJ dataset..."
 fi
 
-# SUCTION
+# SUCTION.
 if [ ! -d "example_suction" ]; then
     wget -O example_training_dataset_suction.zip https://berkeley.box.com/shared/static/fc9zb2cbql5rz6qtp11f6m7s0hyt1dwf.zip
     unzip example_training_dataset_suction.zip
@@ -44,4 +44,3 @@ else
 fi
 
 cd ../..
-

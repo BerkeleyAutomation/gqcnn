@@ -178,7 +178,6 @@ class GQCNNTrainerTF(object):
         gradients, variables = zip(*optimizer.compute_gradients(loss, var_list=var_list))
 
         # Clip gradients to prevent exploding gradient problem.
-
         gradients, global_grad_norm = tf.clip_by_global_norm(gradients, self.max_global_grad_norm)
 
         # Generate op to apply gradients.
@@ -1076,12 +1075,6 @@ class GQCNNTrainerTF(object):
         # Close Tensorflow session.
         self.gqcnn.close_session()
             
-        # Free memory.
-        for layer_weights in self.weights.values():
-            del layer_weights
-        del self.saver
-        del self.sess
-      
     def _flush_prefetch_queue(self):
         """Flush prefetch queue."""
         self.logger.info("Flushing prefetch queue...")
@@ -1257,10 +1250,6 @@ class GQCNNTrainerTF(object):
                 if self._angular_bins > 0:
                     train_pred_mask[start_i:end_i] = train_pred_mask_arr.copy()
 
-                del train_images_arr
-                del train_poses_arr
-                del train_label_arr
-		
                 # Update start index.
                 start_i = end_i
                 num_queued += num_loaded
@@ -1276,11 +1265,6 @@ class GQCNNTrainerTF(object):
                     time.sleep(GeneralConstants.QUEUE_SLEEP)
                 queue_stop = time.time()
                 self.logger.debug("Queue batch took {} sec".format(round(queue_stop - queue_start, 3)))
-            del train_images
-            del train_poses
-            del train_labels
-            if self._angular_bins > 0:
-                del train_pred_mask
 
     def _distort(self, image_arr, pose_arr):
         """Adds noise to a batch of images."""
@@ -1403,10 +1387,6 @@ class GQCNNTrainerTF(object):
             all_predictions.extend(predictions[:,1].tolist())
             all_labels.extend(labels.tolist())
                             
-            # Clean up.
-            del images
-            del poses
-
         # Get learning result.
         result = None
         if self.training_mode == TrainingMode.CLASSIFICATION:

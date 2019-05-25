@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 wget -O data/training/dexnet_2.zip https://berkeley.box.com/shared/static/15oid8m9q6n9cvr8og4vm37bwghjjslp.zip
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 wget -O data/training/dexnet_4_pj_aa https://berkeley.box.com/shared/static/ybqo02q6471odc2k80pltjwj24dh1gkz.0_pj_aa
 wget -O data/training/dexnet_4_pj_ab https://berkeley.box.com/shared/static/3id22ohgprdiv02ne031dgue0oe1r264.0_pj_ab

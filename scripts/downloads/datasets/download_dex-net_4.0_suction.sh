@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 wget -O data/training/dexnet_4_suction_aa https://berkeley.box.com/shared/static/ev8wc4xf6m1zf61wrud18qbr2y4f7wyn.0_suction_aa
 wget -O data/training/dexnet_4_suction_ab https://berkeley.box.com/shared/static/1dbkz11fnspxk8bg379lqo0931i4cmxx.0_suction_ab
