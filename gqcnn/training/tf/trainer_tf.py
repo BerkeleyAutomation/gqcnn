@@ -43,7 +43,6 @@ import subprocess
 import sys
 import threading
 import time
-import Queue
 
 import cv2
 import numpy as np
@@ -59,7 +58,12 @@ import autolab_core.utils as utils
 from ...utils import (ImageMode, TrainingMode, GripperMode,
                       InputDepthMode, GeneralConstants, TrainStatsLogger,
                       pose_dim, read_pose_data, weight_name_to_layer_name,
-                      GQCNNTrainingStatus, GQCNNFilenames)
+                      is_py2, GQCNNTrainingStatus, GQCNNFilenames)
+
+if is_py2():
+    import Queue
+else:
+    import queue as Queue
 
 class GQCNNTrainerTF(object):
     """Trains a GQ-CNN with Tensorflow backend."""
@@ -432,8 +436,8 @@ class GQCNNTrainerTF(object):
 
                 # Save the model.
                 if step % self.save_frequency == 0 and step > 0:
-                    self.saver.save(self.sess, os.path.join(self.model_dir, "model_{}.ckpt".format(step)))
-                    self.saver.save(self.sess, os.path.join(self.model_dir, "model.ckpt"))
+                    self.saver.save(self.sess, os.path.join(self.model_dir, GQCNNFilenames.INTER_MODEL.format(step)))
+                    self.saver.save(self.sess, os.path.join(self.model_dir, GQCNNFilenames.FINAL_MODEL))
 
                 # Launch tensorboard only after the first iteration.
                 if not self.tensorboard_has_launched:
@@ -455,7 +459,7 @@ class GQCNNTrainerTF(object):
 
             # Log & save everything!
             self.train_stats_logger.log()
-            self.saver.save(self.sess, os.path.join(self.model_dir, "model.ckpt"))
+            self.saver.save(self.sess, os.path.join(self.model_dir, GQCNNFilenames.FINAL_MODEL))
 
         except Exception as e:
             self._cleanup()
@@ -809,7 +813,7 @@ class GQCNNTrainerTF(object):
             self.cfg["base_model_dir"] = self.base_model_dir            
 
         # Save config.
-        out_config_filename = os.path.join(self.model_dir, "config.json")
+        out_config_filename = os.path.join(self.model_dir, GQCNNFilenames.SAVED_CFG)
         tempOrderedDict = collections.OrderedDict()
         for key in self.cfg:
             tempOrderedDict[key] = self.cfg[key]
@@ -824,7 +828,7 @@ class GQCNNTrainerTF(object):
         shutil.copyfile(this_filename, out_train_filename)
 
         # Save architecture.
-        out_architecture_filename = os.path.join(self.model_dir, "architecture.json")
+        out_architecture_filename = os.path.join(self.model_dir, GQCNNFilenames.SAVED_ARCH)
         json.dump(self.cfg["gqcnn"]["architecture"],
                   open(out_architecture_filename, "w"),
                   indent=GeneralConstants.JSON_INDENT)

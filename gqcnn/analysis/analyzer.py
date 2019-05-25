@@ -22,7 +22,7 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
-Class for analyzing a GQCNN model for grasp quality prediction.
+Class for analyzing a GQ-CNN model for grasp quality prediction.
 Author: Jeff Mahler
 """
 from __future__ import absolute_import
@@ -53,82 +53,84 @@ from ..model import get_gqcnn_model
 from ..grasping import Grasp2D, SuctionPoint2D
 from ..utils import GripperMode, ImageMode, GeneralConstants, read_pose_data, GQCNNFilenames
 
-WINDOW = 100
+WINDOW = 100 # For loss.  
 MAX_LOSS = 5.0
 
 class GQCNNAnalyzer(object):
-    """ Analyzes a trained GQ-CNN model. """
+    """Analyzes a trained GQ-CNN model."""
 
-    def __init__(self, config, verbose=True, plot_backend='pdf'):
+    def __init__(self, config, verbose=True, plot_backend="pdf"):
         """
         Parameters
         ----------
         config : dict
-            dictionary of analysis configuration parameters
+            Dictionary of analysis configuration parameters.
         verbose : bool
-            whether or not to log analysis output to stdout
+            Whether or not to log analysis output to stdout.
         plot_backend : str
-            matplotlib plotting backend to use, default is non-interactive 'pdf' backend
+            Matplotlib plotting backend to use, default is non-interactive
+            "pdf" backend.
         """
         self.cfg = config
         self.verbose = verbose
 
-        plt.switch_backend(plot_backend) # by default we want to use a non-interactive backend(ex. pdf) because the GQCNNAnalyzer anyways only saves plots to disk, and interactive backends sometimes cause issues with localhost when run remotely in screen 
+        plt.switch_backend(plot_backend) # By default we want to use a non-interactive backend (ex. "pdf)" because the `GQCNNAnalyzer` anyways only saves plots to disk, and interactive backends sometimes cause issues with `localhost` when run remotely through the Linux `screen` program.
         self._parse_config()
 
     def _parse_config(self):
-        """ Read params from the config file """
-        # plotting params
-        self.log_rate = self.cfg['log_rate']
-        self.font_size = self.cfg['font_size']
-        self.line_width = self.cfg['line_width']
-        self.dpi = self.cfg['dpi']
-        self.num_bins = self.cfg['num_bins']
-        self.num_vis = self.cfg['num_vis']
+        """Read params from the config file."""
+        # Plotting params.
+        self.log_rate = self.cfg["log_rate"]
+        self.font_size = self.cfg["font_size"]
+        self.line_width = self.cfg["line_width"]
+        self.dpi = self.cfg["dpi"]
+        self.num_bins = self.cfg["num_bins"]
+        self.num_vis = self.cfg["num_vis"]
         
     def analyze(self, model_dir,
                 output_dir,
                 dataset_config=None):
-        """ Run analysis.
+        """Run analysis.
 
         Parameters
         ----------
         model_dir : str
-            path to the GQ-CNN model to analyze
+            Path to the GQ-CNN model to analyze.
         output_dir : str
-            path to save the analysis
+            Path to save the analysis.
         dataset_config : dict
-            dictionary to configure dataset used for training evaluation if different from one used during training
+            Dictionary to configure dataset used for training evaluation if
+            different from one used during training.
 
         Returns
         -------
         :obj:`autolab_core.BinaryClassificationResult`
-            result of analysis on training data
+            Result of analysis on training data.
         :obj:`autolab_core.BinaryClassificationResult`
-            result of analysis on validation data
+            Result of analysis on validation data.
         """
-        # determine model output dir
-        model_name = ''
+        # Determine model output dir.
+        model_name = ""
         model_root = model_dir
-        while model_name == '' and model_root != '':
+        while model_name == "" and model_root != "":
             model_root, model_name = os.path.split(model_root)
 
         model_output_dir = os.path.join(output_dir, model_name)
         if not os.path.exists(model_output_dir):
             os.mkdir(model_output_dir)
 
-        # set up logger
-        self.logger = Logger.get_logger(self.__class__.__name__, log_file=os.path.join(model_output_dir, 'analysis.log'), silence=(not self.verbose), global_log_file=self.verbose)
+        # Set up logger.
+        self.logger = Logger.get_logger(self.__class__.__name__, log_file=os.path.join(model_output_dir, "analysis.log"), silence=(not self.verbose), global_log_file=self.verbose)
 
-        self.logger.info('Analyzing model %s' %(model_name))
-        self.logger.info('Saving output to %s' %(output_dir))
+        self.logger.info("Analyzing model %s" %(model_name))
+        self.logger.info("Saving output to %s" %(output_dir))
             
-        # run predictions
+        # Run predictions.
         train_result, val_result = self._run_prediction_single_model(model_dir,
                                                                      model_output_dir,
                                                                      dataset_config)
 
-        # finally plot curves
+        # Finally plot curves.
         init_train_error, final_train_error, init_train_loss, final_train_loss, init_val_error, final_val_error, norm_final_val_error = self._plot(model_dir,
                                                               model_output_dir,
                                                               train_result,
@@ -137,7 +139,7 @@ class GQCNNAnalyzer(object):
         return train_result, val_result, init_train_error, final_train_error, init_train_loss, final_train_loss, init_val_error, final_val_error, norm_final_val_error 
 
     def _plot_grasp(self, datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=None):
-        """ Plots a single grasp represented as a datapoint. """
+        """Plots a single grasp represented as a datapoint."""
         image = DepthImage(datapoint[image_field_name][:,:,0])
         depth = datapoint[pose_field_name][2]
         width = 0
@@ -164,19 +166,19 @@ class GQCNNAnalyzer(object):
         vis2d.imshow(image)
         for i, grasp in enumerate(grasps[:-1]):
             vis2d.grasp(grasp, width=width, color=plt.cm.RdYlGn(angular_preds[i * 2 + 1]))
-        vis2d.grasp(grasps[-1], width=width, color='b')
+        vis2d.grasp(grasps[-1], width=width, color="b")
         
     def _run_prediction_single_model(self, model_dir,
                                      model_output_dir,
                                      dataset_config):
-        """ Analyze the performance of a single model. """
-        # read in model config
-        model_config_filename = os.path.join(model_dir, 'config.json')
+        """Analyze the performance of a single model."""
+        # Read in model config.
+        model_config_filename = os.path.join(model_dir, GQCNNFilenames.SAVED_CFG)
         with open(model_config_filename) as data_file:
             model_config = json.load(data_file)
 
-        # load model
-        self.logger.info('Loading model %s' %(model_dir))
+        # Load model.
+        self.logger.info("Loading model %s" %(model_dir))
         log_file = None
         for handler in self.logger.handlers:
             if isinstance(handler, logging.FileHandler):
@@ -186,28 +188,28 @@ class GQCNNAnalyzer(object):
         gripper_mode = gqcnn.gripper_mode
         angular_bins = gqcnn.angular_bins
         
-        # read params from the config
+        # Read params from the config.
         if dataset_config is None:
-            dataset_dir = model_config['dataset_dir']
-            split_name = model_config['split_name']
-            image_field_name = model_config['image_field_name']
-            pose_field_name = model_config['pose_field_name']
-            metric_name = model_config['target_metric_name']
-            metric_thresh = model_config['metric_thresh']
+            dataset_dir = model_config["dataset_dir"]
+            split_name = model_config["split_name"]
+            image_field_name = model_config["image_field_name"]
+            pose_field_name = model_config["pose_field_name"]
+            metric_name = model_config["target_metric_name"]
+            metric_thresh = model_config["metric_thresh"]
         else:
-            dataset_dir = dataset_config['dataset_dir']
-            split_name = dataset_config['split_name']
-            image_field_name = dataset_config['image_field_name']
-            pose_field_name = dataset_config['pose_field_name']
-            metric_name = dataset_config['target_metric_name']
-            metric_thresh = dataset_config['metric_thresh']
-            gripper_mode = dataset_config['gripper_mode']
+            dataset_dir = dataset_config["dataset_dir"]
+            split_name = dataset_config["split_name"]
+            image_field_name = dataset_config["image_field_name"]
+            pose_field_name = dataset_config["pose_field_name"]
+            metric_name = dataset_config["target_metric_name"]
+            metric_thresh = dataset_config["metric_thresh"]
+            gripper_mode = dataset_config["gripper_mode"]
             
-        self.logger.info('Loading dataset %s' %(dataset_dir))
+        self.logger.info("Loading dataset %s" %(dataset_dir))
         dataset = TensorDataset.open(dataset_dir)
         train_indices, val_indices, _ = dataset.split(split_name)
         
-        # visualize conv filters
+        # Visualize conv filters.
         conv1_filters = gqcnn.filters
         num_filt = conv1_filters.shape[3]
         d = utils.sqrt_ceil(num_filt)
@@ -216,20 +218,20 @@ class GQCNNAnalyzer(object):
             filt = conv1_filters[:,:,0,k]
             vis2d.subplot(d,d,k+1)
             vis2d.imshow(DepthImage(filt))
-            figname = os.path.join(model_output_dir, 'conv1_filters.pdf')
+            figname = os.path.join(model_output_dir, "conv1_filters.pdf")
         vis2d.savefig(figname, dpi=self.dpi)
         
-        # aggregate training and validation true labels and predicted probabilities
+        # Aggregate training and validation true labels and predicted probabilities.
         all_predictions = []
         if angular_bins > 0:
             all_predictions_raw = []
         all_labels = []
         for i in range(dataset.num_tensors):
-            # log progress
+            # Log progress.
             if i % self.log_rate == 0:
-                self.logger.info('Predicting tensor %d of %d' %(i+1, dataset.num_tensors))
+                self.logger.info("Predicting tensor %d of %d" %(i+1, dataset.num_tensors))
 
-            # read in data
+            # Read in data.
             image_arr = dataset.tensor(image_field_name, i).arr
             pose_arr = read_pose_data(dataset.tensor(pose_field_name, i).arr,
                                       gripper_mode)
@@ -237,17 +239,18 @@ class GQCNNAnalyzer(object):
             label_arr = 1 * (metric_arr > metric_thresh)
             label_arr = label_arr.astype(np.uint8)
             if angular_bins > 0:
-                # form mask to extract predictions from ground-truth angular bins
+                # Form mask to extract predictions from ground-truth angular bins,
                 raw_poses = dataset.tensor(pose_field_name, i).arr
                 angles = raw_poses[:, 3]
                 neg_ind = np.where(angles < 0)
-                angles = np.abs(angles) % GeneralConstants.PI
+                angles = np.abs(angles) % GeneralConstants.PI # TODO(vsatish): These should use the max angle instead.
                 angles[neg_ind] *= -1
                 g_90 = np.where(angles > (GeneralConstants.PI / 2))
                 l_neg_90 = np.where(angles < (-1 * (GeneralConstants.PI / 2)))
                 angles[g_90] -= GeneralConstants.PI
                 angles[l_neg_90] += GeneralConstants.PI
-                angles *= -1 # hack to fix reverse angle convention
+                angles *= -1 # Hack to fix reverse angle convention.
+                             # TODO(vsatish): Fix this along with the others.
                 angles += (GeneralConstants.PI / 2)
                 pred_mask = np.zeros((raw_poses.shape[0], angular_bins*2), dtype=bool)
                 bin_width = GeneralConstants.PI / angular_bins
@@ -255,22 +258,22 @@ class GQCNNAnalyzer(object):
                     pred_mask[i, int((angles[i] // bin_width)*2)] = True
                     pred_mask[i, int((angles[i] // bin_width)*2 + 1)] = True
 
-            # predict with GQ-CNN
+            # Predict with GQ-CNN.
             predictions = gqcnn.predict(image_arr, pose_arr)
             if angular_bins > 0:
                 raw_predictions = np.array(predictions)
                 predictions = predictions[pred_mask].reshape((-1, 2))
             
-            # aggregate
+            # Aggregate.
             all_predictions.extend(predictions[:,1].tolist())
             if angular_bins > 0:
                 all_predictions_raw.extend(raw_predictions.tolist())
             all_labels.extend(label_arr.tolist())
             
-        # close session
+        # Close session.
         gqcnn.close_session()            
 
-        # create arrays
+        # Create arrays.
         all_predictions = np.array(all_predictions)
         all_labels = np.array(all_labels)
         train_predictions = all_predictions[train_indices]
@@ -282,32 +285,32 @@ class GQCNNAnalyzer(object):
             train_predictions_raw = all_predictions_raw[train_indices]
             val_predictions_raw = all_predictions_raw[val_indices]        
 
-        # aggregate results
+        # Aggregate results.
         train_result = BinaryClassificationResult(train_predictions, train_labels)
         val_result = BinaryClassificationResult(val_predictions, val_labels)
-        train_result.save(os.path.join(model_output_dir, 'train_result.cres'))
-        val_result.save(os.path.join(model_output_dir, 'val_result.cres'))
+        train_result.save(os.path.join(model_output_dir, "train_result.cres"))
+        val_result.save(os.path.join(model_output_dir, "val_result.cres"))
 
-        # get stats, plot curves
-        self.logger.info('Model %s training error rate: %.3f' %(model_dir, train_result.error_rate))
-        self.logger.info('Model %s validation error rate: %.3f' %(model_dir, val_result.error_rate))
+        # Get stats, plot curves.
+        self.logger.info("Model %s training error rate: %.3f" %(model_dir, train_result.error_rate))
+        self.logger.info("Model %s validation error rate: %.3f" %(model_dir, val_result.error_rate))
 
-        self.logger.info('Model %s training loss: %.3f' %(model_dir, train_result.cross_entropy_loss))
-        self.logger.info('Model %s validation loss: %.3f' %(model_dir, val_result.cross_entropy_loss))
+        self.logger.info("Model %s training loss: %.3f" %(model_dir, train_result.cross_entropy_loss))
+        self.logger.info("Model %s validation loss: %.3f" %(model_dir, val_result.cross_entropy_loss))
 
-        # save images
+        # Save images.
         vis2d.figure()
-        example_dir = os.path.join(model_output_dir, 'examples')
+        example_dir = os.path.join(model_output_dir, "examples")
         if not os.path.exists(example_dir):
             os.mkdir(example_dir)
 
-        # train
-        self.logger.info('Saving training examples')
-        train_example_dir = os.path.join(example_dir, 'train')
+        # Train.
+        self.logger.info("Saving training examples")
+        train_example_dir = os.path.join(example_dir, "train")
         if not os.path.exists(train_example_dir):
             os.mkdir(train_example_dir)
             
-        # train TP
+        # Train TP.
         true_positive_indices = train_result.true_positive_indices
         np.random.shuffle(true_positive_indices)
         true_positive_indices = true_positive_indices[:self.num_vis]
@@ -320,13 +323,13 @@ class GQCNNAnalyzer(object):
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=train_predictions_raw[j])
             else:
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
-            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+            vis2d.title("Datapoint %d: Pred: %.3f Label: %.3f" %(k,
                                                                  train_result.pred_probs[j],
                                                                  train_result.labels[j]),
                         fontsize=self.font_size)
-            vis2d.savefig(os.path.join(train_example_dir, 'true_positive_%03d.png' %(i)))
+            vis2d.savefig(os.path.join(train_example_dir, "true_positive_%03d.png" %(i)))
 
-        # train FP
+        # Train FP.
         false_positive_indices = train_result.false_positive_indices
         np.random.shuffle(false_positive_indices)
         false_positive_indices = false_positive_indices[:self.num_vis]
@@ -339,13 +342,13 @@ class GQCNNAnalyzer(object):
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=train_predictions_raw[j])
             else: 
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
-            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+            vis2d.title("Datapoint %d: Pred: %.3f Label: %.3f" %(k,
                                                                  train_result.pred_probs[j],
                                                                  train_result.labels[j]),
                         fontsize=self.font_size)
-            vis2d.savefig(os.path.join(train_example_dir, 'false_positive_%03d.png' %(i)))
+            vis2d.savefig(os.path.join(train_example_dir, "false_positive_%03d.png" %(i)))
 
-        # train TN
+        # Train TN.
         true_negative_indices = train_result.true_negative_indices
         np.random.shuffle(true_negative_indices)
         true_negative_indices = true_negative_indices[:self.num_vis]
@@ -358,13 +361,13 @@ class GQCNNAnalyzer(object):
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=train_predictions_raw[j])
             else: 
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
-            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+            vis2d.title("Datapoint %d: Pred: %.3f Label: %.3f" %(k,
                                                                  train_result.pred_probs[j],
                                                                  train_result.labels[j]),
                         fontsize=self.font_size)
-            vis2d.savefig(os.path.join(train_example_dir, 'true_negative_%03d.png' %(i)))
+            vis2d.savefig(os.path.join(train_example_dir, "true_negative_%03d.png" %(i)))
 
-        # train TP
+        # Train TP.
         false_negative_indices = train_result.false_negative_indices
         np.random.shuffle(false_negative_indices)
         false_negative_indices = false_negative_indices[:self.num_vis]
@@ -377,19 +380,19 @@ class GQCNNAnalyzer(object):
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=train_predictions_raw[j])
             else: 
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
-            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+            vis2d.title("Datapoint %d: Pred: %.3f Label: %.3f" %(k,
                                                                  train_result.pred_probs[j],
                                                                  train_result.labels[j]),
                         fontsize=self.font_size)
-            vis2d.savefig(os.path.join(train_example_dir, 'false_negative_%03d.png' %(i)))
+            vis2d.savefig(os.path.join(train_example_dir, "false_negative_%03d.png" %(i)))
 
-        # val
-        self.logger.info('Saving validation examples')
-        val_example_dir = os.path.join(example_dir, 'val')
+        # Val.
+        self.logger.info("Saving validation examples")
+        val_example_dir = os.path.join(example_dir, "val")
         if not os.path.exists(val_example_dir):
             os.mkdir(val_example_dir)
 
-        # val TP
+        # Val TP.
         true_positive_indices = val_result.true_positive_indices
         np.random.shuffle(true_positive_indices)
         true_positive_indices = true_positive_indices[:self.num_vis]
@@ -402,13 +405,13 @@ class GQCNNAnalyzer(object):
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=val_predictions_raw[j])
             else: 
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
-            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+            vis2d.title("Datapoint %d: Pred: %.3f Label: %.3f" %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),
                         fontsize=self.font_size)
-            vis2d.savefig(os.path.join(val_example_dir, 'true_positive_%03d.png' %(i)))
+            vis2d.savefig(os.path.join(val_example_dir, "true_positive_%03d.png" %(i)))
 
-        # val FP
+        # Val FP.
         false_positive_indices = val_result.false_positive_indices
         np.random.shuffle(false_positive_indices)
         false_positive_indices = false_positive_indices[:self.num_vis]
@@ -421,13 +424,13 @@ class GQCNNAnalyzer(object):
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=val_predictions_raw[j])
             else: 
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
-            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+            vis2d.title("Datapoint %d: Pred: %.3f Label: %.3f" %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),
                         fontsize=self.font_size)
-            vis2d.savefig(os.path.join(val_example_dir, 'false_positive_%03d.png' %(i)))
+            vis2d.savefig(os.path.join(val_example_dir, "false_positive_%03d.png" %(i)))
 
-        # val TN
+        # Val TN.
         true_negative_indices = val_result.true_negative_indices
         np.random.shuffle(true_negative_indices)
         true_negative_indices = true_negative_indices[:self.num_vis]
@@ -440,13 +443,13 @@ class GQCNNAnalyzer(object):
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=val_predictions_raw[j])
             else: 
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
-            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+            vis2d.title("Datapoint %d: Pred: %.3f Label: %.3f" %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),
                         fontsize=self.font_size)
-            vis2d.savefig(os.path.join(val_example_dir, 'true_negative_%03d.png' %(i)))
+            vis2d.savefig(os.path.join(val_example_dir, "true_negative_%03d.png" %(i)))
 
-        # val TP
+        # Val TP.
         false_negative_indices = val_result.false_negative_indices
         np.random.shuffle(false_negative_indices)
         false_negative_indices = false_negative_indices[:self.num_vis]
@@ -459,65 +462,65 @@ class GQCNNAnalyzer(object):
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode, angular_preds=val_predictions_raw[j])
             else: 
                 self._plot_grasp(datapoint, image_field_name, pose_field_name, gripper_mode)
-            vis2d.title('Datapoint %d: Pred: %.3f Label: %.3f' %(k,
+            vis2d.title("Datapoint %d: Pred: %.3f Label: %.3f" %(k,
                                                                  val_result.pred_probs[j],
                                                                  val_result.labels[j]),
                         fontsize=self.font_size)
-            vis2d.savefig(os.path.join(val_example_dir, 'false_negative_%03d.png' %(i)))
+            vis2d.savefig(os.path.join(val_example_dir, "false_negative_%03d.png" %(i)))
             
-        # save summary stats
+        # Save summary stats.
         train_summary_stats = {
-            'error_rate': train_result.error_rate,
-            'ap_score': train_result.ap_score,
-            'auc_score': train_result.auc_score,
-            'loss': train_result.cross_entropy_loss
+            "error_rate": train_result.error_rate,
+            "ap_score": train_result.ap_score,
+            "auc_score": train_result.auc_score,
+            "loss": train_result.cross_entropy_loss
         }
-        train_stats_filename = os.path.join(model_output_dir, 'train_stats.json')
-        json.dump(train_summary_stats, open(train_stats_filename, 'w'),
+        train_stats_filename = os.path.join(model_output_dir, "train_stats.json")
+        json.dump(train_summary_stats, open(train_stats_filename, "w"),
                   indent=JSON_INDENT,
                   sort_keys=True)
 
         val_summary_stats = {
-            'error_rate': val_result.error_rate,
-            'ap_score': val_result.ap_score,
-            'auc_score': val_result.auc_score,
-            'loss': val_result.cross_entropy_loss            
+            "error_rate": val_result.error_rate,
+            "ap_score": val_result.ap_score,
+            "auc_score": val_result.auc_score,
+            "loss": val_result.cross_entropy_loss            
         }
-        val_stats_filename = os.path.join(model_output_dir, 'val_stats.json')
-        json.dump(val_summary_stats, open(val_stats_filename, 'w'),
+        val_stats_filename = os.path.join(model_output_dir, "val_stats.json")
+        json.dump(val_summary_stats, open(val_stats_filename, "w"),
                   indent=JSON_INDENT,
                   sort_keys=True)        
         
         return train_result, val_result
 
     def _plot(self, model_dir, model_output_dir, train_result, val_result):
-        """ Plot analysis curves """
-        self.logger.info('Plotting')
+        """Plot analysis curves."""
+        self.logger.info("Plotting")
 
         _, model_name = os.path.split(model_output_dir)
         
-        # set params
-        colors = ['g', 'b', 'c', 'y', 'm', 'r']
-        styles = ['-', '--', '-.', ':', '-'] 
+        # Set params.
+        colors = ["g", "b", "c", "y", "m", "r"]
+        styles = ["-", "--", "-.", ":", "-"] 
         num_colors = len(colors)
         num_styles = len(styles)
 
-        # PR, ROC
+        # PR, ROC.
         vis2d.clf()
         train_result.precision_recall_curve(plot=True,
                                             line_width=self.line_width,
                                             color=colors[0],
                                             style=styles[0],
-                                            label='TRAIN')
+                                            label="TRAIN")
         val_result.precision_recall_curve(plot=True,
                                           line_width=self.line_width,
                                           color=colors[1],
                                           style=styles[1],
-                                          label='VAL')
-        vis2d.title('Precision Recall Curves', fontsize=self.font_size)
+                                          label="VAL")
+        vis2d.title("Precision Recall Curves", fontsize=self.font_size)
         handles, labels = vis2d.gca().get_legend_handles_labels()
-        vis2d.legend(handles, labels, loc='best')
-        figname = os.path.join(model_output_dir, 'precision_recall.png')
+        vis2d.legend(handles, labels, loc="best")
+        figname = os.path.join(model_output_dir, "precision_recall.png")
         vis2d.savefig(figname, dpi=self.dpi)
 
         vis2d.clf()
@@ -525,22 +528,22 @@ class GQCNNAnalyzer(object):
                                line_width=self.line_width,
                                color=colors[0],
                                style=styles[0],
-                               label='TRAIN')
+                               label="TRAIN")
         val_result.roc_curve(plot=True,
                              line_width=self.line_width,
                              color=colors[1],
                              style=styles[1],
-                             label='VAL')
-        vis2d.title('Reciever Operating Characteristic', fontsize=self.font_size)
+                             label="VAL")
+        vis2d.title("Reciever Operating Characteristic", fontsize=self.font_size)
         handles, labels = vis2d.gca().get_legend_handles_labels()
-        vis2d.legend(handles, labels, loc='best')
-        figname = os.path.join(model_output_dir, 'roc.png')
+        vis2d.legend(handles, labels, loc="best")
+        figname = os.path.join(model_output_dir, "roc.png")
         vis2d.savefig(figname, dpi=self.dpi)
         
-        # plot histogram of prediction errors
+        # Plot histogram of prediction errors.
         num_bins = min(self.num_bins, train_result.num_datapoints)
                 
-        # train positives
+        # Train positives.
         pos_ind = np.where(train_result.labels == 1)[0]
         diffs = np.abs(train_result.labels[pos_ind] - train_result.pred_probs[pos_ind])
         vis2d.figure()
@@ -549,13 +552,13 @@ class GQCNNAnalyzer(object):
                         bounds=(0,1),
                         normalized=False,
                         plot=True)
-        vis2d.title('Error on Positive Training Examples', fontsize=self.font_size)
-        vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
-        vis2d.ylabel('Count', fontsize=self.font_size)
-        figname = os.path.join(model_output_dir, 'pos_train_errors_histogram.png')
+        vis2d.title("Error on Positive Training Examples", fontsize=self.font_size)
+        vis2d.xlabel("Abs Prediction Error", fontsize=self.font_size)
+        vis2d.ylabel("Count", fontsize=self.font_size)
+        figname = os.path.join(model_output_dir, "pos_train_errors_histogram.png")
         vis2d.savefig(figname, dpi=self.dpi)
 
-        # train negatives
+        # Train negatives.
         neg_ind = np.where(train_result.labels == 0)[0]
         diffs = np.abs(train_result.labels[neg_ind] - train_result.pred_probs[neg_ind])
         vis2d.figure()
@@ -564,16 +567,16 @@ class GQCNNAnalyzer(object):
                         bounds=(0,1),
                         normalized=False,
                         plot=True)
-        vis2d.title('Error on Negative Training Examples', fontsize=self.font_size)
-        vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
-        vis2d.ylabel('Count', fontsize=self.font_size)
-        figname = os.path.join(model_output_dir, 'neg_train_errors_histogram.png')
+        vis2d.title("Error on Negative Training Examples", fontsize=self.font_size)
+        vis2d.xlabel("Abs Prediction Error", fontsize=self.font_size)
+        vis2d.ylabel("Count", fontsize=self.font_size)
+        figname = os.path.join(model_output_dir, "neg_train_errors_histogram.png")
         vis2d.savefig(figname, dpi=self.dpi)
 
-        # histogram of validation errors
+        # Histogram of validation errors.
         num_bins = min(self.num_bins, val_result.num_datapoints)
 
-        # val positives
+        # Val positives.
         pos_ind = np.where(val_result.labels == 1)[0]
         diffs = np.abs(val_result.labels[pos_ind] - val_result.pred_probs[pos_ind])
         vis2d.figure()
@@ -582,13 +585,13 @@ class GQCNNAnalyzer(object):
                         bounds=(0,1),
                         normalized=False,
                         plot=True)
-        vis2d.title('Error on Positive Validation Examples', fontsize=self.font_size)
-        vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
-        vis2d.ylabel('Count', fontsize=self.font_size)
-        figname = os.path.join(model_output_dir, 'pos_val_errors_histogram.png')
+        vis2d.title("Error on Positive Validation Examples", fontsize=self.font_size)
+        vis2d.xlabel("Abs Prediction Error", fontsize=self.font_size)
+        vis2d.ylabel("Count", fontsize=self.font_size)
+        figname = os.path.join(model_output_dir, "pos_val_errors_histogram.png")
         vis2d.savefig(figname, dpi=self.dpi)
 
-        # val negatives
+        # Val negatives.
         neg_ind = np.where(val_result.labels == 0)[0]
         diffs = np.abs(val_result.labels[neg_ind] - val_result.pred_probs[neg_ind])
         vis2d.figure()
@@ -597,13 +600,13 @@ class GQCNNAnalyzer(object):
                         bounds=(0,1),
                         normalized=False,
                         plot=True)
-        vis2d.title('Error on Negative Validation Examples', fontsize=self.font_size)
-        vis2d.xlabel('Abs Prediction Error', fontsize=self.font_size)
-        vis2d.ylabel('Count', fontsize=self.font_size)
-        figname = os.path.join(model_output_dir, 'neg_val_errors_histogram.png')
+        vis2d.title("Error on Negative Validation Examples", fontsize=self.font_size)
+        vis2d.xlabel("Abs Prediction Error", fontsize=self.font_size)
+        vis2d.ylabel("Count", fontsize=self.font_size)
+        figname = os.path.join(model_output_dir, "neg_val_errors_histogram.png")
         vis2d.savefig(figname, dpi=self.dpi)
 
-        # losses
+        # Losses.
         try:
             train_errors_filename = os.path.join(model_dir, GQCNNFilenames.TRAIN_ERRORS)
             val_errors_filename = os.path.join(model_dir, GQCNNFilenames.VAL_ERRORS)
@@ -624,7 +627,7 @@ class GQCNNAnalyzer(object):
             val_errors = np.r_[pct_pos_val, val_errors]
             val_iters = np.r_[0, val_iters]
     
-            # window the training error
+            # Window the training error.
             i = 0
             train_errors = []
             train_losses = []
@@ -646,49 +649,49 @@ class GQCNNAnalyzer(object):
                 norm_final_val_error = val_result.error_rate / pct_pos_val        
     
             vis2d.clf()
-            vis2d.plot(train_iters, train_errors, linewidth=self.line_width, color='b')
-            vis2d.plot(val_iters, val_errors, linewidth=self.line_width, color='g')
+            vis2d.plot(train_iters, train_errors, linewidth=self.line_width, color="b")
+            vis2d.plot(val_iters, val_errors, linewidth=self.line_width, color="g")
             vis2d.ylim(0, 100)
-            vis2d.legend(('TRAIN (Minibatch)', 'VAL'), fontsize=self.font_size, loc='best')
-            vis2d.xlabel('Iteration', fontsize=self.font_size)
-            vis2d.ylabel('Error Rate', fontsize=self.font_size)
-            vis2d.title('Error Rate vs Training Iteration', fontsize=self.font_size)
-            figname = os.path.join(model_output_dir, 'training_error_rates.png')
+            vis2d.legend(("TRAIN (Minibatch)", "VAL"), fontsize=self.font_size, loc="best")
+            vis2d.xlabel("Iteration", fontsize=self.font_size)
+            vis2d.ylabel("Error Rate", fontsize=self.font_size)
+            vis2d.title("Error Rate vs Training Iteration", fontsize=self.font_size)
+            figname = os.path.join(model_output_dir, "training_error_rates.png")
             vis2d.savefig(figname, dpi=self.dpi)
             
             vis2d.clf()
-            vis2d.plot(train_iters, norm_train_errors, linewidth=4, color='b')
-            vis2d.plot(val_iters, norm_val_errors, linewidth=4, color='g')
+            vis2d.plot(train_iters, norm_train_errors, linewidth=4, color="b")
+            vis2d.plot(val_iters, norm_val_errors, linewidth=4, color="g")
             vis2d.ylim(0, 2.0)
-            vis2d.legend(('TRAIN (Minibatch)', 'VAL'), fontsize=self.font_size, loc='best')
-            vis2d.xlabel('Iteration', fontsize=self.font_size)
-            vis2d.ylabel('Normalized Error Rate', fontsize=self.font_size)
-            vis2d.title('Normalized Error Rate vs Training Iteration', fontsize=self.font_size)
-            figname = os.path.join(model_output_dir, 'training_norm_error_rates.png')
+            vis2d.legend(("TRAIN (Minibatch)", "VAL"), fontsize=self.font_size, loc="best")
+            vis2d.xlabel("Iteration", fontsize=self.font_size)
+            vis2d.ylabel("Normalized Error Rate", fontsize=self.font_size)
+            vis2d.title("Normalized Error Rate vs Training Iteration", fontsize=self.font_size)
+            figname = os.path.join(model_output_dir, "training_norm_error_rates.png")
             vis2d.savefig(figname, dpi=self.dpi)
 
-            train_losses[train_losses > MAX_LOSS] = MAX_LOSS # CAP LOSSES
+            train_losses[train_losses > MAX_LOSS] = MAX_LOSS # CAP LOSSES.
             vis2d.clf()
-            vis2d.plot(train_iters, train_losses, linewidth=self.line_width, color='b')
+            vis2d.plot(train_iters, train_losses, linewidth=self.line_width, color="b")
             vis2d.ylim(0, 2.0)
-            vis2d.xlabel('Iteration', fontsize=self.font_size)
-            vis2d.ylabel('Loss', fontsize=self.font_size)
-            vis2d.title('Training Loss vs Iteration', fontsize=self.font_size)
-            figname = os.path.join(model_output_dir, 'training_losses.png')
+            vis2d.xlabel("Iteration", fontsize=self.font_size)
+            vis2d.ylabel("Loss", fontsize=self.font_size)
+            vis2d.title("Training Loss vs Iteration", fontsize=self.font_size)
+            figname = os.path.join(model_output_dir, "training_losses.png")
             vis2d.savefig(figname, dpi=self.dpi)
             
-            # log
-            self.logger.info('TRAIN')
-            self.logger.info('Original error: %.3f' %(train_errors[0]))
-            self.logger.info('Final error: %.3f' %(train_result.error_rate))
-            self.logger.info('Orig loss: %.3f' %(train_losses[0]))
-            self.logger.info('Final loss: %.3f' %(train_losses[-1]))
+            # Log.
+            self.logger.info("TRAIN")
+            self.logger.info("Original error: %.3f" %(train_errors[0]))
+            self.logger.info("Final error: %.3f" %(train_result.error_rate))
+            self.logger.info("Orig loss: %.3f" %(train_losses[0]))
+            self.logger.info("Final loss: %.3f" %(train_losses[-1]))
             
-            self.logger.info('VAL')
-            self.logger.info('Original error: %.3f' %(pct_pos_val))
-            self.logger.info('Final error: %.3f' %(val_result.error_rate))
-            self.logger.info('Normalized error: %.3f' %(norm_final_val_error))
+            self.logger.info("VAL")
+            self.logger.info("Original error: %.3f" %(pct_pos_val))
+            self.logger.info("Final error: %.3f" %(val_result.error_rate))
+            self.logger.info("Normalized error: %.3f" %(norm_final_val_error))
 
             return train_errors[0], train_result.error_rate, train_losses[0], train_losses[-1], pct_pos_val, val_result.error_rate, norm_final_val_error
         except Exception as e:
-            self.logger.error('Failed to plot training curves!\n' + str(e))
+            self.logger.error("Failed to plot training curves!\n" + str(e))

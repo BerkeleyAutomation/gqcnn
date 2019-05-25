@@ -43,8 +43,8 @@ class GeneralConstants(object):
     NUM_PREFETCH_Q_WORKERS = 3
     QUEUE_SLEEP = 0.001
     PI = math.pi
-    FIGSIZE = 16 # For display.
-    
+    FIGSIZE = 16 # For visualization.
+ 
 # Enum for image modalities.
 class ImageMode(object):
     BINARY = "binary"
@@ -96,9 +96,17 @@ class GQCNNFilenames(object):
     VAL_LOSSES = "val_losses.npy"
     VAL_ERRORS = "val_errors.npy"
 
+    LEG_MEAN = "mean.npy"
+    LEG_STD = "std.npy"
     IM_MEAN = "im_mean.npy"
     IM_STD = "im_std.npy"
     IM_DEPTH_SUB_MEAN = "im_depth_sub_mean.npy"
     IM_DEPTH_SUB_STD = "im_depth_sub_std.npy"
     POSE_MEAN = "pose_mean.npy"
     POSE_STD = "pose_std.npy"
+
+    FINAL_MODEL = "model.ckpt"
+    INTER_MODEL = "model_{}.ckpt"
+
+    SAVED_ARCH = "architecture.json"
+    SAVED_CFG = "config.json"

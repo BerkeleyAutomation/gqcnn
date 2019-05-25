@@ -42,9 +42,9 @@ import tensorflow as tf
 import tensorflow.contrib.framework as tcf
 
 from autolab_core import Logger
-from gqcnn.utils import (reduce_shape, read_pose_data, pose_dim, 
-                         weight_name_to_layer_name, GripperMode, 
-                         TrainingMode, InputDepthMode)
+from ...utils import (reduce_shape, read_pose_data, pose_dim, 
+                      weight_name_to_layer_name, GripperMode, 
+                      TrainingMode, InputDepthMode, GQCNNFilenames)
 
 class GQCNNWeights(object):
     """Helper struct for storing network weights."""
@@ -92,7 +92,7 @@ class GQCNNTF(object):
         :obj:`GQCNNTF`
             initialized GQ-CNN 
         """
-        config_file = os.path.join(model_dir, "config.json")
+        config_file = os.path.join(model_dir, GQCNNFilenames.SAVED_CFG)
         with open(config_file) as data_file:    
             train_config = json.load(data_file, object_pairs_hook=OrderedDict)
 
@@ -183,7 +183,7 @@ class GQCNNTF(object):
                 
         # Initialize weights and Tensorflow network.
         gqcnn = GQCNNTF(gqcnn_config, verbose=verbose, log_file=log_file)
-        gqcnn.init_weights_file(os.path.join(model_dir, "model.ckpt"))
+        gqcnn.init_weights_file(os.path.join(model_dir, GQCNNFilenames.FINAL_MODEL))
         gqcnn.init_mean_and_std(model_dir)
         training_mode = train_config["training_mode"]
         if training_mode == TrainingMode.CLASSIFICATION:
@@ -207,14 +207,14 @@ class GQCNNTF(object):
         # Load in means and stds. 
         if self._input_depth_mode == InputDepthMode.POSE_STREAM:
             try:
-                self._im_mean = np.load(os.path.join(model_dir, "im_mean.npy"))
-                self._im_std = np.load(os.path.join(model_dir, "im_std.npy"))
+                self._im_mean = np.load(os.path.join(model_dir, GQCNNFilenames.IM_MEAN))
+                self._im_std = np.load(os.path.join(model_dir, GQCNNFilenames.IM_STD))
             except:
                 # Support for legacy file naming convention.
-                self._im_mean = np.load(os.path.join(model_dir, "mean.npy"))
-                self._im_std = np.load(os.path.join(model_dir, "std.npy"))
-            self._pose_mean = np.load(os.path.join(model_dir, "pose_mean.npy"))
-            self._pose_std = np.load(os.path.join(model_dir, "pose_std.npy"))
+                self._im_mean = np.load(os.path.join(model_dir, GQCNNFilenames.LEG_MEAN))
+                self._im_std = np.load(os.path.join(model_dir, GQCNNFilenames.LEG_STD))
+            self._pose_mean = np.load(os.path.join(model_dir, GQCNNFilenames.POSE_MEAN))
+            self._pose_std = np.load(os.path.join(model_dir, GQCNNFilenames.POSE_STD))
 
             # Read the certain parts of the pose mean/std that we desire.
             if len(self._pose_mean.shape) > 0 and self._pose_mean.shape[0] != self._pose_dim:
@@ -226,11 +226,11 @@ class GQCNNTF(object):
                     self._pose_mean = read_pose_data(self._pose_mean, self._gripper_mode)
                     self._pose_std = read_pose_data(self._pose_std, self._gripper_mode) 
         elif self._input_depth_mode == InputDepthMode.SUB:
-            self._im_depth_sub_mean = np.load(os.path.join(model_dir, "im_depth_sub_mean.npy")) 
-            self._im_depth_sub_std = np.load(os.path.join(model_dir, "im_depth_sub_std.npy"))
+            self._im_depth_sub_mean = np.load(os.path.join(model_dir, GQCNNFilenames.IM_DEPTH_SUB_MEAN)) 
+            self._im_depth_sub_std = np.load(os.path.join(model_dir, GQCNNFilenames.IM_DEPTH_SUB_STD))
         elif self._input_depth_mode == InputDepthMode.IM_ONLY:
-	        self._im_mean = np.load(os.path.join(model_dir, GQCNNFilenames."im_mean.npy"))
-	        self._im_std = np.load(os.path.join(model_dir, "im_std.npy"))
+	        self._im_mean = np.load(os.path.join(model_dir, GQCNNFilenames.IM_MEAN))
+	        self._im_std = np.load(os.path.join(model_dir, GQCNNFilenames.IM_STD))
         else:
             raise ValueError("Unsupported input depth mode: {}".format(self._input_depth_mode))
  
@@ -251,8 +251,8 @@ class GQCNNTF(object):
         output_layer = base_model_config["output_layer"]
         
         # Read model.
-        ckpt_file = os.path.join(model_dir, "model.ckpt")
-        config_file = os.path.join(model_dir, "architecture.json")
+        ckpt_file = os.path.join(model_dir, GQCNNFilenames.FINAL_MODEL)
+        config_file = os.path.join(model_dir, GQCNNFilenames.SAVED_ARCH)
         base_arch = json.load(open(config_file, "r"), object_pairs_hook=OrderedDict)
 
         # Read base layer names.

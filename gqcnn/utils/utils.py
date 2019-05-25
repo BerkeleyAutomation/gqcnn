@@ -31,6 +31,7 @@ from __future__ import print_function
 
 from functools import reduce
 import os
+import sys
 
 import numpy as np
 
@@ -39,6 +40,9 @@ from .enums import GripperMode
 
 # Set up logger.
 logger = Logger.get_logger("gqcnn/utils/utils.py")
+
+def is_py2():
+    return sys.version[0] == "2" 
 
 def set_cuda_visible_devices(gpu_list):
     """Sets CUDA_VISIBLE_DEVICES environment variable to only show certain
@@ -133,7 +137,7 @@ def read_pose_data(pose_arr, gripper_mode):
         else:
             return pose_arr[:,2:4]
     else:
-        raise ValueError("Gripper mode %s not supported." %(gripper_mode))
+        raise ValueError("Gripper mode \"{}\" not supported.".format(gripper_mode))
 
 def reduce_shape(shape):
     """Get shape of a layer for flattening."""

@@ -33,6 +33,7 @@ from abc import abstractmethod, ABCMeta
 import math
 import os
 
+from future.utils import with_metaclass
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -46,7 +47,7 @@ from ...utils import NoValidGraspsException
 from .enums import SamplingMethod
 from .policy import GraspingPolicy, GraspAction
 
-class FullyConvolutionalGraspingPolicy(with_metaclass(GraspingPolicy)):
+class FullyConvolutionalGraspingPolicy(with_metaclass(ABCMeta, GraspingPolicy)):
     """Abstract grasp sampling policy class using Fully-Convolutional GQ-CNN
     network.
     """
@@ -312,14 +313,14 @@ class FullyConvolutionalGraspingPolicyParallelJaw(FullyConvolutionalGraspingPoli
     def _get_actions(self, preds, ind, images, depths, camera_intr, num_actions):
         """Generate the actions to be returned."""
         actions = []
-        ang_bin_width = math.pi / preds.shape[-1]
+        ang_bin_width = GeneralConstants.PI / preds.shape[-1] # TODO(vsatish): These should use the max angle instead.
         for i in range(num_actions):
             im_idx = ind[i, 0]
             h_idx = ind[i, 1]
             w_idx = ind[i, 2]
             ang_idx = ind[i, 3]
             center = Point(np.asarray([w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2, h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2]))
-            ang = math.pi / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
+            ang = GeneralConstants.PI / 2 - (ang_idx * ang_bin_width + ang_bin_width / 2)
             depth = depths[im_idx, 0]
             grasp = Grasp2D(center, ang, depth, width=self._gripper_width, camera_intr=camera_intr)
             grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, ang_idx], DepthImage(images[im_idx]))

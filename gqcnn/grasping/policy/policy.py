@@ -48,7 +48,7 @@ from perception import (BinaryImage, ColorImage, DepthImage,
                         RgbdImage, SegmentationImage, CameraIntrinsics)
 from visualization import Visualizer2D as vis
 
-from .constraint_fn import GraspConstraintFnFactory
+from ..constraint_fn import GraspConstraintFnFactory
 from ..grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 from ..grasp_quality_function import (GraspQualityFunctionFactory,
                                       GQCnnQualityFunction)
@@ -220,7 +220,7 @@ class Policy(with_metaclass(ABCMeta, object)):
         """Returns an action for a given state."""
         pass
 
-class GraspingPolicy(Policy):
+class GraspingPolicy(with_metaclass(ABCMeta, Policy)):
     """Policy for robust grasping with Grasp Quality Convolutional Neural
     Networks (GQ-CNN).
     """

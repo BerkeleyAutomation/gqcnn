@@ -37,7 +37,7 @@ import sys
 import tensorflow as tf
 
 from .network_tf import GQCNNTF
-from ...utils import TrainingMode, InputDepthMode
+from ...utils import TrainingMode, InputDepthMode, GQCNNFilenames
 
 class FCGQCNNTF(GQCNNTF):
     """FC-GQ-CNN network implemented in Tensorflow.
@@ -88,7 +88,7 @@ class FCGQCNNTF(GQCNNTF):
         :obj:`FCGQCNNTF`
             initialized FC-GQ-CNN 
         """
-        config_file = os.path.join(model_dir, "config.json")
+        config_file = os.path.join(model_dir, GQCNNFilenames.SAVED_CFG)
         with open(config_file) as data_file:    
             train_config = json.load(data_file, object_pairs_hook=OrderedDict)
 
@@ -96,7 +96,7 @@ class FCGQCNNTF(GQCNNTF):
         
         # Initialize weights and Tensorflow network.
         fcgqcnn = FCGQCNNTF(gqcnn_config, fc_config, log_file=log_file)
-        fcgqcnn.init_weights_file(os.path.join(model_dir, "model.ckpt"))
+        fcgqcnn.init_weights_file(os.path.join(model_dir, GQCNNFilenames.FINAL_MODEL))
         fcgqcnn.init_mean_and_std(model_dir)
         training_mode = train_config["training_mode"]
         if training_mode == TrainingMode.CLASSIFICATION:

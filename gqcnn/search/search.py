@@ -35,7 +35,6 @@ import math
 import multiprocessing
 import operator
 import os
-from Queue import Queue
 import sys
 import time
 
@@ -47,7 +46,12 @@ from .enums import TrialConstants, SearchConstants
 
 from autolab_core import Logger
 
-from ..utils import GQCNNTrainingStatus
+from ..utils import is_py2, GQCNNTrainingStatus
+
+if is_py2():
+    from Queue import Queue
+else:
+    from queue import Queue
 
 class GQCNNSearch(object):
     def __init__(self, analysis_config, train_configs, datasets, split_names, base_models=[], output_dir=None, search_name=None, monitor_cpu=True, monitor_gpu=True, cpu_cores=[], gpu_devices=[]):

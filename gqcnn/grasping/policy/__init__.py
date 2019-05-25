@@ -26,10 +26,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from fc_policy import (FullyConvolutionalGraspingPolicyParallelJaw,
-                       FullyConvolutionalGraspingPolicySuction)
-from policy import (RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy,
-                    PriorityCompositeGraspingPolicy, RgbdImageState,
-                    GraspAction, UniformRandomGraspingPolicy)
+from .fc_policy import (FullyConvolutionalGraspingPolicyParallelJaw,
+                        FullyConvolutionalGraspingPolicySuction)
+from .policy import (RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy,
+                     PriorityCompositeGraspingPolicy, RgbdImageState,
+                     GraspAction, UniformRandomGraspingPolicy)
 
 __all__ = ["FullyConvolutionalGraspingPolicyParallelJaw", "FullyConvolutionalGraspingPolicySuction", "RobustGraspingPolicy", "CrossEntropyRobustGraspingPolicy", "UniformRandomGraspingPolicy", "RgbdImageState", "GraspAction"] 

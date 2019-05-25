@@ -92,7 +92,7 @@ def parse_master_train_config(train_config):
         num_params = []
         for field in fields:
             num_params.append(len(get_nested_key(train_config, field)))
-        assert max(num_params) == min(num_params), "All fields in anchor tag "{}" do not have the same # of parameters to search over!".format(anchor_tag)
+        assert max(num_params) == min(num_params), "All fields in anchor tag \"{}\" do not have the same # of parameters to search over!".format(anchor_tag)
 
     # If there is nothing to search over just return the given config.
     if len(hyperparam_search_fields) == 0 and len(hyperparam_anchored_search_fields) == 0:
