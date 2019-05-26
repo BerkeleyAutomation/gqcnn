@@ -27,19 +27,25 @@ from __future__ import division
 from __future__ import print_function
 
 from .grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
-from .grasp_quality_function import (GraspQualityFunctionFactory, 
+from .grasp_quality_function import (GraspQualityFunctionFactory,
                                      GQCnnQualityFunction)
 from .image_grasp_sampler import (ImageGraspSamplerFactory,
                                   AntipodalDepthImageGraspSampler)
-from .constraint_fn import (GraspConstraintFnFactory,
-                            DiscreteApproachGraspConstraintFn)
+from .constraint_fn import GraspConstraintFnFactory
 from .policy import (RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy,
                      FullyConvolutionalGraspingPolicyParallelJaw,
                      FullyConvolutionalGraspingPolicySuction,
-                     UniformRandomGraspingPolicy,
-                     PriorityCompositeGraspingPolicy,
-                     RgbdImageState, GraspAction)
+                     UniformRandomGraspingPolicy, RgbdImageState, GraspAction)
 from .actions import (NoAction, ParallelJawGrasp3D, SuctionGrasp3D,
                       MultiSuctionGrasp3D)
 
-__all__ = ["Grasp2D", "SuctionPoint2D", "MultiSuctionPoint2D", "GraspQualityFunctionFactory", "GQCnnQualityFunction", "ImageGraspSamplerFactory", "AntipodalDepthImageGraspSampler", "RobustGraspingPolicy", "CrossEntropyRobustGraspingPolicy", "FullyConvolutionalGraspingPolicyParallelJaw", "FullyConvolutionalGraspingPolicySuction", "UniformRandomGraspingPolicy", "RgbdImageState", "GraspAction", "GraspConstraintFnFactory", "NoAction", "ParallelJawGrasp3D", "SuctionGrasp3D", "MultiSuctionGrasp3D"]
+__all__ = [
+    "Grasp2D", "SuctionPoint2D", "MultiSuctionPoint2D",
+    "GraspQualityFunctionFactory", "GQCnnQualityFunction",
+    "ImageGraspSamplerFactory", "AntipodalDepthImageGraspSampler",
+    "RobustGraspingPolicy", "CrossEntropyRobustGraspingPolicy",
+    "FullyConvolutionalGraspingPolicyParallelJaw",
+    "FullyConvolutionalGraspingPolicySuction", "UniformRandomGraspingPolicy",
+    "RgbdImageState", "GraspAction", "GraspConstraintFnFactory", "NoAction",
+    "ParallelJawGrasp3D", "SuctionGrasp3D", "MultiSuctionGrasp3D"
+]

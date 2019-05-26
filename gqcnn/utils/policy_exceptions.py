@@ -22,22 +22,29 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
-Exceptions that can be thrown by sub-classes of GraspingPolicy.
-Author: Vishal Satish
+Exceptions that can be thrown by sub-classes of `GraspingPolicy`.
+
+Author
+------
+Vishal Satish
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+
 class NoValidGraspsException(Exception):
     """Exception for when antipodal point pairs can be found in the depth
-       image but none are valid grasps that can be executed."""
-    def __init__(self, in_collision=True, not_confident=False, *args, **kwargs):
+    image but none are valid grasps that can be executed."""
+
+    def __init__(self, in_collision=True, not_confident=False, *args,
+                 **kwargs):
         self.in_collision = in_collision
         self.not_confident = not_confident
         Exception.__init__(self, *args, **kwargs)
 
+
 class NoAntipodalPairsFoundException(Exception):
     """Exception for when no antipodal point pairs can be found in the depth
-       image."""
+    image."""
     pass

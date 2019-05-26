@@ -23,7 +23,10 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 Constants/enums.
-Author: Vishal Satish
+
+Author
+------
+Vishal Satish
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -33,18 +36,19 @@ import math
 
 import tensorflow as tf
 
+
 # Other constants.
 class GeneralConstants(object):
     SEED = 3472134
-    SEED_SAMPLE_MAX = 2**32 - 1 # Max range for seed (at least for `np.random.seed`).
+    SEED_SAMPLE_MAX = 2**32 - 1  # Max range for `np.random.seed`.
     timeout_option = tf.RunOptions(timeout_in_ms=1000000)
-    JSON_INDENT = 2
     MAX_PREFETCH_Q_SIZE = 250
     NUM_PREFETCH_Q_WORKERS = 3
     QUEUE_SLEEP = 0.001
     PI = math.pi
-    FIGSIZE = 16 # For visualization.
- 
+    FIGSIZE = 16  # For visualization.
+
+
 # Enum for image modalities.
 class ImageMode(object):
     BINARY = "binary"
@@ -55,11 +59,13 @@ class ImageMode(object):
     DEPTH_TF = "depth_tf"
     DEPTH_TF_TABLE = "depth_tf_table"
     TF_DEPTH_IMS = "tf_depth_ims"
-    
+
+
 # Enum for training modes.
 class TrainingMode(object):
     CLASSIFICATION = "classification"
-    REGRESSION = "regression" # Has not been shown to work, for experimentation only!
+    REGRESSION = "regression"  # Has not been tested, for experimentation only!
+
 
 # Enum for input pose data formats.
 class GripperMode(object):
@@ -69,17 +75,20 @@ class GripperMode(object):
     LEGACY_PARALLEL_JAW = "legacy_parallel_jaw"
     LEGACY_SUCTION = "legacy_suction"
 
+
 # Enum for input depth mode.
 class InputDepthMode(object):
     POSE_STREAM = "pose_stream"
     SUB = "im_depth_sub"
     IM_ONLY = "im_only"
 
+
 # Enum for training status.
 class GQCNNTrainingStatus(object):
     NOT_STARTED = "not_started"
     SETTING_UP = "setting_up"
     TRAINING = "training"
+
 
 # Enum for filenames.
 class GQCNNFilenames(object):

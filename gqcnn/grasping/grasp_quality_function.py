@@ -24,7 +24,10 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 Grasp quality functions: suction quality function and parallel jaw grasping
 quality fuction.
-Authors: Jason Liu and Jeff Mahler
+
+Authors
+-------
+Jason Liu & Jeff Mahler
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -37,16 +40,15 @@ import cv2
 from future.utils import with_metaclass
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.ndimage.filters as snf
 
 import autolab_core.utils as utils
 from autolab_core import Point, PointCloud, RigidTransform, Logger
-from perception import (RgbdImage, CameraIntrinsics, PointCloudImage,
-                        ColorImage, BinaryImage, DepthImage, GrayscaleImage)
+from perception import DepthImage
 
 from ..model import get_gqcnn_model, get_fc_gqcnn_model
-from .grasp import Grasp2D, SuctionPoint2D
+from .grasp import SuctionPoint2D
 from ..utils import GeneralConstants, GripperMode
+
 
 class GraspQualityFunction(with_metaclass(ABCMeta, object)):
     """Abstract grasp quality class."""
@@ -74,13 +76,16 @@ class GraspQualityFunction(with_metaclass(ABCMeta, object)):
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Vector containing the real-valued grasp quality
+        :obj:`numpy.ndarray`
+            Vector containing the real-valued grasp quality
             for each candidate.
         """
         pass
 
+
 class ZeroGraspQualityFunction(object):
     """Null function."""
+
     def quality(self, state, actions, params=None):
         """Returns zero for all grasps.
 
@@ -95,47 +100,58 @@ class ZeroGraspQualityFunction(object):
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Vector containing the real-valued grasp quality
+        :obj:`numpy.ndarray`
+            Vector containing the real-valued grasp quality
             for each candidate.
         """
         return 0.0
 
+
 class ParallelJawQualityFunction(GraspQualityFunction):
     """Abstract wrapper class for parallel jaw quality functions (only image
-       based metrics for now)."""
+    based metrics for now)."""
+
     def __init__(self, config):
         GraspQualityFunction.__init__(self)
 
         # Read parameters.
         self._friction_coef = config["friction_coef"]
         self._max_friction_cone_angle = np.arctan(self._friction_coef)
-        
+
     def friction_cone_angle(self, action):
         """Compute the angle between the axis and the boundaries of the
-           friction cone."""
+        friction cone."""
         if action.contact_points is None or action.contact_normals is None:
-            raise ValueError("Cannot compute friction cone angle without precomputed contact points and normals")
-        dot_prod1 = min(max(action.contact_normals[0].dot(-action.axis), -1.0), 1.0)
+            invalid_friction_ang_msg = ("Cannot compute friction cone angle"
+                                        " without precomputed contact points"
+                                        " and normals.")
+            raise ValueError(invalid_friction_ang_msg)
+        dot_prod1 = min(max(action.contact_normals[0].dot(-action.axis), -1.0),
+                        1.0)
         angle1 = np.arccos(dot_prod1)
-        dot_prod2 = min(max(action.contact_normals[1].dot(action.axis), -1.0), 1.0)
+        dot_prod2 = min(max(action.contact_normals[1].dot(action.axis), -1.0),
+                        1.0)
         angle2 = np.arccos(dot_prod2)
         return max(angle1, angle2)
-        
+
     def force_closure(self, action):
         """Determine if the grasp is in force closure."""
-        return (self.friction_cone_angle(action) < self._max_friction_cone_angle)
+        return (self.friction_cone_angle(action) <
+                self._max_friction_cone_angle)
+
 
 class ComForceClosureParallelJawQualityFunction(ParallelJawQualityFunction):
     """Measures the distance to the estimated center of mass for antipodal
-       parallel-jaw grasps."""
+    parallel-jaw grasps."""
+
     def __init__(self, config):
         """Create a best-fit planarity suction metric."""
         self._antipodality_pctile = config["antipodality_pctile"]
         ParallelJawQualityFunction.__init__(self, config)
 
-    def quality(self, state, actions, params=None): 
+    def quality(self, state, actions, params=None):
         """Given a parallel-jaw grasp, compute the distance to the center of
-           mass of the grasped object.
+        mass of the grasped object.
 
         Parameters
         ----------
@@ -146,29 +162,35 @@ class ComForceClosureParallelJawQualityFunction(ParallelJawQualityFunction):
             A suction grasp in image space that encapsulates center, approach
             direction, depth, camera_intr.
         params: dict
-            Stores params used in computing quality. 
+            Stores params used in computing quality.
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp.
         """
         # Compute antipodality.
-        antipodality_q = [ParallelJawQualityFunction.friction_cone_angle(self, action) for action in actions]
-        
+        antipodality_q = [
+            ParallelJawQualityFunction.friction_cone_angle(self, action)
+            for action in actions
+        ]
+
         # Compute object centroid.
         object_com = state.rgbd_im.center
         if state.segmask is not None:
             nonzero_px = state.segmask.nonzero_pixels()
             object_com = np.mean(nonzero_px, axis=0)
-        
+
         # Compute negative SSE from the best fit plane for each grasp.
-        antipodality_thresh = abs(np.percentile(antipodality_q, 100-self._antipodality_pctile))
+        antipodality_thresh = abs(
+            np.percentile(antipodality_q, 100 - self._antipodality_pctile))
         qualities = []
         max_q = max(state.rgbd_im.height, state.rgbd_im.width)
         for i, action in enumerate(actions):
             q = max_q
             friction_cone_angle = antipodality_q[i]
-            force_closure = ParallelJawQualityFunction.force_closure(self, action)
+            force_closure = ParallelJawQualityFunction.force_closure(
+                self, action)
             if force_closure or friction_cone_angle < antipodality_thresh:
                 grasp_center = np.array([action.center.y, action.center.x])
 
@@ -177,21 +199,23 @@ class ComForceClosureParallelJawQualityFunction(ParallelJawQualityFunction):
                                                      grasp_center[1]]
                     obj_mask = state.obj_segmask.segment_mask(grasp_obj_id)
                     nonzero_px = obj_mask.nonzero_pixels()
-                    object_com = np.mean(nonzero_px, axis=0)            
+                    object_com = np.mean(nonzero_px, axis=0)
 
                 q = np.linalg.norm(grasp_center - object_com)
 
                 if state.obj_segmask is not None and grasp_obj_id == 0:
                     q = max_q
-                    
-            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
+
+            q = (np.exp(-q / max_q) - np.exp(-1)) / (1 - np.exp(-1))
             qualities.append(q)
 
         return np.array(qualities)
-            
+
+
 class SuctionQualityFunction(GraspQualityFunction):
     """Abstract wrapper class for suction quality functions (only image based
-       metrics for now)."""
+    metrics for now)."""
+
     def __init__(self, config):
         GraspQualityFunction.__init(self)
 
@@ -201,18 +225,19 @@ class SuctionQualityFunction(GraspQualityFunction):
 
     def _points_in_window(self, point_cloud_image, action, segmask=None):
         """Retrieve all points on the object in a box of size
-           `self._window_size`."""
+        `self._window_size`."""
         # Read indices.
         im_shape = point_cloud_image.shape
-        i_start = int(max(action.center.y-self._window_size//2, 0)) # TODO: Confirm div.
-        j_start = int(max(action.center.x-self._window_size//2, 0))
-        i_end = int(min(i_start+self._window_size, im_shape[0]))
-        j_end = int(min(j_start+self._window_size, im_shape[1]))
+        i_start = int(max(action.center.y - self._window_size // 2,
+                          0))  # TODO: Confirm div.
+        j_start = int(max(action.center.x - self._window_size // 2, 0))
+        i_end = int(min(i_start + self._window_size, im_shape[0]))
+        j_end = int(min(j_start + self._window_size, im_shape[1]))
         step = int(1 / self._sample_rate)
 
         # Read 3D points in the window.
         points = point_cloud_image[i_start:i_end:step, j_start:j_end:step]
-        stacked_points = points.reshape(points.shape[0]*points.shape[1], -1)
+        stacked_points = points.reshape(points.shape[0] * points.shape[1], -1)
 
         # Form the matrices for plane-fitting.
         return stacked_points
@@ -228,7 +253,7 @@ class SuctionQualityFunction(GraspQualityFunction):
     def _best_fit_plane(self, A, b):
         """Find a best-fit plane of points."""
         try:
-            w, _, _, _ = np.linalg.lstsq(A, b) 
+            w, _, _, _ = np.linalg.lstsq(A, b)
         except np.linalg.LinAlgError:
             self._logger.warning("Could not find a best-fit plane!")
             raise
@@ -238,97 +263,16 @@ class SuctionQualityFunction(GraspQualityFunction):
         """Returns the sum of squared residuals from the plane."""
         return (1.0 / A.shape[0]) * np.square(np.linalg.norm(np.dot(A, w) - z))
 
+
 class BestFitPlanaritySuctionQualityFunction(SuctionQualityFunction):
     """A best-fit planarity suction metric."""
 
     def __init__(self, config):
         SuctionQualityFunction.__init__(self, config)
 
-    def quality(self, state, actions, params=None): 
+    def quality(self, state, actions, params=None):
         """Given a suction point, compute a score based on a best-fit 3D plane
-           of the neighboring points.
-
-        Parameters
-        ----------
-        state : :obj:`RgbdImageState`
-            An RgbdImageState instance that encapsulates rgbd_im, camera_intr,
-            segmask, full_observed.
-        action: :obj:`SuctionPoint2D`
-            A suction grasp in image space that encapsulates center, approach
-            direction, depth, camera_intr.
-        params: dict
-            Stores params used in computing suction quality. 
-
-        Returns
-        -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
-        """
-        qualities = []
-
-        # Deproject points.
-        point_cloud_image = state.camera_intr.deproject_to_image(state.rgbd_im.depth)
-
-        # Compute negative SSE from the best fit plane for each grasp.
-        for i, action in enumerate(actions):
-            if not isinstance(action, SuctionPoint2D):
-                raise ValueError("This function can only be used to evaluate suction quality")
-            
-            points = self._points_in_window(point_cloud_image, action, segmask=state.segmask) # x,y in matrix A and z is vector z.
-            A, b = self._points_to_matrices(points)
-            w = self._best_fit_plane(A, b) # vector w w/ a bias term represents a best-fit plane.
-
-            if params is not None and params["vis"]["plane"]:
-                from visualization import Visualizer2D as vis2d
-                from visualization import Visualizer3D as vis3d
-                mid_i = A.shape[0] // 2
-                pred_z = A.dot(w)
-                p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
-                n = np.array([w[0], w[1], -1])
-                n = n / np.linalg.norm(n)
-                tx = np.array([n[1], -n[0], 0])
-                tx = tx / np.linalg.norm(tx)
-                ty = np.cross(n, tx)
-                R = np.array([tx, ty, n]).T
-                T_table_world = RigidTransform(rotation=R,
-                                               translation=p0,
-                                               from_frame="patch",
-                                               to_frame="world")
-                
-                vis3d.figure()
-                vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
-                vis3d.table(T_table_world, dim=0.01)
-                vis3d.show()
-                
-                vis2d.figure()
-                vis2d.imshow(state.rgbd_im.depth)
-                vis2d.scatter(action.center.x, action.center.y, s=50, c="b")
-                vis2d.show()
-
-            quality = np.exp(-self._sum_of_squared_residuals(w, A, b)) # Evaluate how well best-fit plane describles all points in window.            
-            qualities.append(quality)
-
-        return np.array(qualities)
-
-class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
-    """A approach planarity suction metric."""
-
-    def __init__(self, config):
-        """Create approach planarity suction metric."""
-        SuctionQualityFunction.__init__(self, config)
-
-    def _action_to_plane(self, point_cloud_image, action):
-        """Convert a plane from point-normal form to general form."""
-        x = int(action.center.x)
-        y = int(action.center.y)
-        p_0 = point_cloud_image[y, x]
-        n = -action.axis
-        w = np.array([-n[0]/n[2], -n[1]/n[2], np.dot(n,p_0)/n[2]]) # TODO: Confirm divs.
-        return w
-
-    def quality(self, state, actions, params=None): 
-        """Given a suction point, compute a score based on a best-fit 3D plane
-           of the neighboring points.
+        of the neighboring points.
 
         Parameters
         ----------
@@ -343,28 +287,135 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp.
         """
         qualities = []
 
         # Deproject points.
-        point_cloud_image = state.camera_intr.deproject_to_image(state.rgbd_im.depth)
+        point_cloud_image = state.camera_intr.deproject_to_image(
+            state.rgbd_im.depth)
 
         # Compute negative SSE from the best fit plane for each grasp.
         for i, action in enumerate(actions):
             if not isinstance(action, SuctionPoint2D):
-                raise ValueError("This function can only be used to evaluate suction quality")
-            
-            points = self._points_in_window(point_cloud_image, action, segmask=state.segmask) # x,y in matrix A and z is vector z.
+                not_suction_msg = ("This function can only be used to evaluate"
+                                   " suction quality.")
+                raise ValueError(not_suction_msg)
+
+            # x,y in matrix A and z is vector z.
+            points = self._points_in_window(point_cloud_image,
+                                            action,
+                                            segmask=state.segmask)
             A, b = self._points_to_matrices(points)
-            w = self._action_to_plane(point_cloud_image, action) # vector w w/ a bias term represents a best-fit plane.
+            # vector w w/ a bias term represents a best-fit plane.
+            w = self._best_fit_plane(A, b)
 
             if params is not None and params["vis"]["plane"]:
                 from visualization import Visualizer2D as vis2d
                 from visualization import Visualizer3D as vis3d
                 mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
-                p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
+                p0 = np.array([A[mid_i, 0], A[mid_i, 1], pred_z[mid_i]])
+                n = np.array([w[0], w[1], -1])
+                n = n / np.linalg.norm(n)
+                tx = np.array([n[1], -n[0], 0])
+                tx = tx / np.linalg.norm(tx)
+                ty = np.cross(n, tx)
+                R = np.array([tx, ty, n]).T
+                T_table_world = RigidTransform(rotation=R,
+                                               translation=p0,
+                                               from_frame="patch",
+                                               to_frame="world")
+
+                vis3d.figure()
+                vis3d.points(point_cloud_image.to_point_cloud(),
+                             scale=0.0025,
+                             subsample=10,
+                             random=True,
+                             color=(0, 0, 1))
+                vis3d.points(PointCloud(points.T),
+                             scale=0.0025,
+                             color=(1, 0, 0))
+                vis3d.table(T_table_world, dim=0.01)
+                vis3d.show()
+
+                vis2d.figure()
+                vis2d.imshow(state.rgbd_im.depth)
+                vis2d.scatter(action.center.x, action.center.y, s=50, c="b")
+                vis2d.show()
+
+            # Evaluate how well best-fit plane describles all points in window.
+            quality = np.exp(-self._sum_of_squared_residuals(w, A, b))
+            qualities.append(quality)
+
+        return np.array(qualities)
+
+
+class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
+    """A approach planarity suction metric."""
+
+    def __init__(self, config):
+        """Create approach planarity suction metric."""
+        SuctionQualityFunction.__init__(self, config)
+
+    def _action_to_plane(self, point_cloud_image, action):
+        """Convert a plane from point-normal form to general form."""
+        x = int(action.center.x)
+        y = int(action.center.y)
+        p_0 = point_cloud_image[y, x]
+        n = -action.axis
+        # TODO: Confirm divs.
+        w = np.array([-n[0] / n[2], -n[1] / n[2], np.dot(n, p_0) / n[2]])
+        return w
+
+    def quality(self, state, actions, params=None):
+        """Given a suction point, compute a score based on a best-fit 3D plane
+        of the neighboring points.
+
+        Parameters
+        ----------
+        state : :obj:`RgbdImageState`
+            An RgbdImageState instance that encapsulates rgbd_im, camera_intr,
+            segmask, full_observed.
+        action: :obj:`SuctionPoint2D`
+            A suction grasp in image space that encapsulates center, approach
+            direction, depth, camera_intr.
+        params: dict
+            Stores params used in computing suction quality.
+
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp.
+        """
+        qualities = []
+
+        # Deproject points.
+        point_cloud_image = state.camera_intr.deproject_to_image(
+            state.rgbd_im.depth)
+
+        # Compute negative SSE from the best fit plane for each grasp.
+        for i, action in enumerate(actions):
+            if not isinstance(action, SuctionPoint2D):
+                not_suction_msg = ("This function can only be used to evaluate"
+                                   " suction quality.")
+                raise ValueError(not_suction_msg)
+
+            # x,y in matrix A and z is vector z.
+            points = self._points_in_window(point_cloud_image,
+                                            action,
+                                            segmask=state.segmask)
+            A, b = self._points_to_matrices(points)
+            # vector w w/ a bias term represents a best-fit plane.
+            w = self._action_to_plane(point_cloud_image, action)
+
+            if params is not None and params["vis"]["plane"]:
+                from visualization import Visualizer2D as vis2d
+                from visualization import Visualizer3D as vis3d
+                mid_i = A.shape[0] // 2
+                pred_z = A.dot(w)
+                p0 = np.array([A[mid_i, 0], A[mid_i, 1], pred_z[mid_i]])
                 n = np.array([w[0], w[1], -1])
                 n = n / np.linalg.norm(n)
                 tx = np.array([n[1], -n[0], 0])
@@ -372,31 +423,40 @@ class ApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 ty = np.cross(n, tx)
                 R = np.array([tx, ty, n]).T
 
-                c = state.camera_intr.deproject_pixel(action.depth, action.center)
-                d = Point(c.data - 0.01*action.axis, frame=c.frame)
+                c = state.camera_intr.deproject_pixel(action.depth,
+                                                      action.center)
+                d = Point(c.data - 0.01 * action.axis, frame=c.frame)
 
                 T_table_world = RigidTransform(rotation=R,
                                                translation=p0,
                                                from_frame="patch",
                                                to_frame="world")
-                
+
                 vis3d.figure()
-                vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
-                vis3d.points(c, scale=0.005, color=(1,1,0))
-                vis3d.points(d, scale=0.005, color=(1,1,0))
+                vis3d.points(point_cloud_image.to_point_cloud(),
+                             scale=0.0025,
+                             subsample=10,
+                             random=True,
+                             color=(0, 0, 1))
+                vis3d.points(PointCloud(points.T),
+                             scale=0.0025,
+                             color=(1, 0, 0))
+                vis3d.points(c, scale=0.005, color=(1, 1, 0))
+                vis3d.points(d, scale=0.005, color=(1, 1, 0))
                 vis3d.table(T_table_world, dim=0.01)
                 vis3d.show()
-                
+
                 vis2d.figure()
                 vis2d.imshow(state.rgbd_im.depth)
                 vis2d.scatter(action.center.x, action.center.y, s=50, c="b")
                 vis2d.show()
 
-            quality = np.exp(-self._sum_of_squared_residuals(w, A, b)) # Evaluate how well best-fit plane describles all points in window.            
+            # Evaluate how well best-fit plane describles all points in window.
+            quality = np.exp(-self._sum_of_squared_residuals(w, A, b))
             qualities.append(quality)
 
         return np.array(qualities)
+
 
 class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
     """A approach planarity suction metric using a disc-shaped window."""
@@ -412,29 +472,30 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
         y = int(action.center.y)
         p_0 = point_cloud_image[y, x]
         n = -action.axis
-        w = np.array([-n[0]/n[2], -n[1]/n[2], np.dot(n,p_0)/n[2]]) # TODO: Confirm divs.
+        # TODO: Confirm divs.
+        w = np.array([-n[0] / n[2], -n[1] / n[2], np.dot(n, p_0) / n[2]])
         return w
 
     def _points_in_window(self, point_cloud_image, action, segmask=None):
         """Retrieve all points on the object in a disc of size
-           `self._window_size`."""
+        `self._window_size`."""
         # Compute plane.
         n = -action.axis
-        U, _, _ = np.linalg.svd(n.reshape((3,1)))
-        tangents = U[:,1:]        
+        U, _, _ = np.linalg.svd(n.reshape((3, 1)))
+        tangents = U[:, 1:]
 
         # Read indices.
         im_shape = point_cloud_image.shape
-        i_start = int(max(action.center.y-self._window_size//2, 0))
-        j_start = int(max(action.center.x-self._window_size//2, 0))
-        i_end = int(min(i_start+self._window_size, im_shape[0]))
-        j_end = int(min(j_start+self._window_size, im_shape[1]))
+        i_start = int(max(action.center.y - self._window_size // 2, 0))
+        j_start = int(max(action.center.x - self._window_size // 2, 0))
+        i_end = int(min(i_start + self._window_size, im_shape[0]))
+        j_end = int(min(j_start + self._window_size, im_shape[1]))
         step = int(1 / self._sample_rate)
 
         # Read 3D points in the window.
         points = point_cloud_image[i_start:i_end:step, j_start:j_end:step]
-        stacked_points = points.reshape(points.shape[0]*points.shape[1], -1)
-        
+        stacked_points = points.reshape(points.shape[0] * points.shape[1], -1)
+
         # Compute the center point.
         contact_point = point_cloud_image[int(action.center.y),
                                           int(action.center.x)]
@@ -451,9 +512,9 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
         # Form the matrices for plane-fitting.
         return stacked_points
 
-    def quality(self, state, actions, params=None): 
+    def quality(self, state, actions, params=None):
         """Given a suction point, compute a score based on a best-fit 3D plane
-           of the neighboring points.
+        of the neighboring points.
 
         Parameters
         ----------
@@ -468,21 +529,29 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp.
         """
         qualities = []
 
         # Deproject points.
-        point_cloud_image = state.camera_intr.deproject_to_image(state.rgbd_im.depth)
+        point_cloud_image = state.camera_intr.deproject_to_image(
+            state.rgbd_im.depth)
 
         # Compute negative SSE from the best fit plane for each grasp.
         for i, action in enumerate(actions):
             if not isinstance(action, SuctionPoint2D):
-                raise ValueError("This function can only be used to evaluate suction quality")
-            
-            points = self._points_in_window(point_cloud_image, action, segmask=state.segmask) # x,y in matrix A and z is vector z.
+                not_suction_msg = ("This function can only be used to evaluate"
+                                   " suction quality.")
+                raise ValueError(not_suction_msg)
+
+            # x,y in matrix A and z is vector z.
+            points = self._points_in_window(point_cloud_image,
+                                            action,
+                                            segmask=state.segmask)
             A, b = self._points_to_matrices(points)
-            w = self._action_to_plane(point_cloud_image, action) # vector w w/ a bias term represents a best-fit plane.
+            # vector w w/ a bias term represents a best-fit plane.
+            w = self._action_to_plane(point_cloud_image, action)
             sse = self._sum_of_squared_residuals(w, A, b)
 
             if params is not None and params["vis"]["plane"]:
@@ -490,7 +559,7 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 from visualization import Visualizer3D as vis3d
                 mid_i = A.shape[0] // 2
                 pred_z = A.dot(w)
-                p0 = np.array([A[mid_i,0], A[mid_i,1], pred_z[mid_i]])
+                p0 = np.array([A[mid_i, 0], A[mid_i, 1], pred_z[mid_i]])
                 n = np.array([w[0], w[1], -1])
                 n = n / np.linalg.norm(n)
                 tx = np.array([n[1], -n[0], 0])
@@ -498,35 +567,45 @@ class DiscApproachPlanaritySuctionQualityFunction(SuctionQualityFunction):
                 ty = np.cross(n, tx)
                 R = np.array([tx, ty, n]).T
 
-                c = state.camera_intr.deproject_pixel(action.depth, action.center)
-                d = Point(c.data - 0.01*action.axis, frame=c.frame)
+                c = state.camera_intr.deproject_pixel(action.depth,
+                                                      action.center)
+                d = Point(c.data - 0.01 * action.axis, frame=c.frame)
 
                 T_table_world = RigidTransform(rotation=R,
                                                translation=p0,
                                                from_frame="patch",
                                                to_frame="world")
-                
+
                 vis3d.figure()
-                vis3d.points(point_cloud_image.to_point_cloud(), scale=0.0025, subsample=10, random=True, color=(0,0,1))
-                vis3d.points(PointCloud(points.T), scale=0.0025, color=(1,0,0))
-                vis3d.points(c, scale=0.005, color=(1,1,0))
-                vis3d.points(d, scale=0.005, color=(1,1,0))
+                vis3d.points(point_cloud_image.to_point_cloud(),
+                             scale=0.0025,
+                             subsample=10,
+                             random=True,
+                             color=(0, 0, 1))
+                vis3d.points(PointCloud(points.T),
+                             scale=0.0025,
+                             color=(1, 0, 0))
+                vis3d.points(c, scale=0.005, color=(1, 1, 0))
+                vis3d.points(d, scale=0.005, color=(1, 1, 0))
                 vis3d.table(T_table_world, dim=0.01)
                 vis3d.show()
-                
+
                 vis2d.figure()
                 vis2d.imshow(state.rgbd_im.depth)
                 vis2d.scatter(action.center.x, action.center.y, s=50, c="b")
                 vis2d.show()
 
-            quality = np.exp(-sse) # Evaluate how well best-fit plane describles all points in window.            
+            # Evaluate how well best-fit plane describles all points in window.
+            quality = np.exp(-sse)
             qualities.append(quality)
 
         return np.array(qualities)
 
-class ComApproachPlanaritySuctionQualityFunction(ApproachPlanaritySuctionQualityFunction):
+
+class ComApproachPlanaritySuctionQualityFunction(
+        ApproachPlanaritySuctionQualityFunction):
     """A approach planarity suction metric that ranks sufficiently planar
-       points by their distance to the object COM."""
+    points by their distance to the object COM."""
 
     def __init__(self, config):
         """Create approach planarity suction metric."""
@@ -534,9 +613,9 @@ class ComApproachPlanaritySuctionQualityFunction(ApproachPlanaritySuctionQuality
 
         ApproachPlanaritySuctionQualityFunction.__init__(self, config)
 
-    def quality(self, state, actions, params=None): 
+    def quality(self, state, actions, params=None):
         """Given a suction point, compute a score based on a best-fit 3D plane
-           of the neighboring points.
+        of the neighboring points.
 
         Parameters
         ----------
@@ -551,14 +630,21 @@ class ComApproachPlanaritySuctionQualityFunction(ApproachPlanaritySuctionQuality
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp.
         """
         # Compute planarity.
-        sse = ApproachPlanaritySuctionQualityFunction.quality(self, state, actions, params=params)
+        sse = ApproachPlanaritySuctionQualityFunction.quality(self,
+                                                              state,
+                                                              actions,
+                                                              params=params)
 
         if params["vis"]["hist"]:
             plt.figure()
-            utils.histogram(sse, 100, (np.min(sse), np.max(sse)), normalized=False, plot=True)
+            utils.histogram(sse,
+                            100, (np.min(sse), np.max(sse)),
+                            normalized=False,
+                            plot=True)
             plt.show()
 
         # Compute object centroid.
@@ -579,22 +665,27 @@ class ComApproachPlanaritySuctionQualityFunction(ApproachPlanaritySuctionQuality
 
         return np.array(qualities)
 
-class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctionQualityFunction):
+
+class ComDiscApproachPlanaritySuctionQualityFunction(
+        DiscApproachPlanaritySuctionQualityFunction):
     """A approach planarity suction metric that ranks sufficiently planar
-       points by their distance to the object COM."""
+    points by their distance to the object COM."""
+
+    # NOTE: THERE WAS A SLIGHTLY DIFFERENT DUPLICATE ABOVE.
 
     def __init__(self, config):
         """Create approach planarity suction metric."""
         self._planarity_pctile = config["planarity_pctile"]
         self._planarity_abs_thresh = 0
         if "planarity_abs_thresh" in config:
-            self._planarity_abs_thresh = np.exp(-config["planarity_abs_thresh"])
+            self._planarity_abs_thresh = np.exp(
+                -config["planarity_abs_thresh"])
 
         DiscApproachPlanaritySuctionQualityFunction.__init__(self, config)
 
-    def quality(self, state, actions, params=None): 
+    def quality(self, state, actions, params=None):
         """Given a suction point, compute a score based on a best-fit 3D plane
-           of the neighboring points.
+        of the neighboring points.
 
         Parameters
         ----------
@@ -609,14 +700,19 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp.
         """
         # Compute planarity.
-        sse_q = DiscApproachPlanaritySuctionQualityFunction.quality(self, state, actions, params=params)
+        sse_q = DiscApproachPlanaritySuctionQualityFunction.quality(
+            self, state, actions, params=params)
 
         if params["vis"]["hist"]:
             plt.figure()
-            utils.histogram(sse_q, 100, (np.min(sse_q), np.max(sse_q)), normalized=False, plot=True)
+            utils.histogram(sse_q,
+                            100, (np.min(sse_q), np.max(sse_q)),
+                            normalized=False,
+                            plot=True)
             plt.show()
 
         # Compute object centroid.
@@ -626,73 +722,14 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
             object_com = np.mean(nonzero_px, axis=0)
 
         # Threshold.
-        planarity_thresh = abs(np.percentile(sse_q, 100-self._planarity_pctile))
+        planarity_thresh = abs(
+            np.percentile(sse_q, 100 - self._planarity_pctile))
         qualities = []
         max_q = max(state.rgbd_im.height, state.rgbd_im.width)
         for k, action in enumerate(actions):
             q = max_q
-            if sse_q[k] > planarity_thresh or sse_q[k] > self._planarity_abs_thresh:
-                grasp_center = np.array([action.center.y, action.center.x])
-                q = np.linalg.norm(grasp_center - object_com)
-
-            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
-            qualities.append(q)
-
-        return np.array(qualities)
-
-class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctionQualityFunction):
-    """A approach planarity suction metric that ranks sufficiently planar
-       points by their distance to the object COM."""
-
-    def __init__(self, config):
-        """Create approach planarity suction metric."""
-        self._planarity_pctile = config["planarity_pctile"]
-        self._planarity_abs_thresh = 0
-        if "planarity_abs_thresh" in config:
-            self._planarity_abs_thresh = np.exp(-config["planarity_abs_thresh"])
-
-        DiscApproachPlanaritySuctionQualityFunction.__init__(self, config)
-
-    def quality(self, state, actions, params=None): 
-        """Given a suction point, compute a score based on a best-fit 3D plane
-           of the neighboring points.
-
-        Parameters
-        ----------
-        state : :obj:`RgbdImageState`
-            An RgbdImageState instance that encapsulates rgbd_im, camera_intr,
-            segmask, full_observed.
-        action: :obj:`SuctionPoint2D`
-            A suction grasp in image space that encapsulates center, approach
-            direction, depth, camera_intr.
-        params: dict
-            Stores params used in computing suction quality.
-
-        Returns
-        -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
-        """
-        # Compute planarity.
-        sse_q = DiscApproachPlanaritySuctionQualityFunction.quality(self, state, actions, params=params)
-
-        if params["vis"]["hist"]:
-            plt.figure()
-            utils.histogram(sse_q, 100, (np.min(sse_q), np.max(sse_q)), normalized=False, plot=True)
-            plt.show()
-
-        # Compute object centroid.
-        object_com = state.rgbd_im.center
-        if state.segmask is not None:
-            nonzero_px = state.segmask.nonzero_pixels()
-            object_com = np.mean(nonzero_px, axis=0)
-
-        # Threshold.
-        planarity_thresh = abs(np.percentile(sse_q, 100-self._planarity_pctile))
-        qualities = []
-        max_q = max(state.rgbd_im.height, state.rgbd_im.width)
-        for k, action in enumerate(actions):
-            q = max_q
-            if sse_q[k] > planarity_thresh or sse_q[k] > self._planarity_abs_thresh:
+            if sse_q[k] > planarity_thresh or sse_q[
+                    k] > self._planarity_abs_thresh:
                 grasp_center = np.array([action.center.y, action.center.x])
 
                 if state.obj_segmask is not None:
@@ -700,15 +737,16 @@ class ComDiscApproachPlanaritySuctionQualityFunction(DiscApproachPlanaritySuctio
                                                      grasp_center[1]]
                     obj_mask = state.obj_segmask.segment_mask(grasp_obj_id)
                     nonzero_px = obj_mask.nonzero_pixels()
-                    object_com = np.mean(nonzero_px, axis=0)            
+                    object_com = np.mean(nonzero_px, axis=0)
 
                 q = np.linalg.norm(grasp_center - object_com)
 
-            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
+            q = (np.exp(-q / max_q) - np.exp(-1)) / (1 - np.exp(-1))
             qualities.append(q)
 
         return np.array(qualities)
-    
+
+
 class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
     """A approach planarity suction metric."""
 
@@ -718,17 +756,17 @@ class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
 
     def _points_to_matrices(self, points):
         """Convert a set of 3D points to an A and b matrix for regression."""
-        x = points[:,0]
-        y = points[:,1]
-        A = np.c_[x, y, x*x, x*y, y*y]
+        x = points[:, 0]
+        y = points[:, 1]
+        A = np.c_[x, y, x * x, x * y, y * y]
         ones = np.ones([A.shape[0], 1])
         A = np.c_[A, ones]
         b = points[:, 2]
         return A, b
 
-    def quality(self, state, actions, params=None): 
+    def quality(self, state, actions, params=None):
         """Given a suction point, compute a score based on a best-fit 3D plane
-           of the neighboring points.
+        of the neighboring points.
 
         Parameters
         ----------
@@ -743,22 +781,30 @@ class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp.
         """
         qualities = []
 
         # Deproject points.
-        point_cloud_image = state.camera_intr.deproject_to_image(state.rgbd_im.depth)
+        point_cloud_image = state.camera_intr.deproject_to_image(
+            state.rgbd_im.depth)
 
         # Compute negative SSE from the best fit plane for each grasp.
         for i, action in enumerate(actions):
             if not isinstance(action, SuctionPoint2D):
-                raise ValueError("This function can only be used to evaluate suction quality")
-            
-            points = self._points_in_window(point_cloud_image, action, segmask=state.segmask) # x,y in matrix A and z is vector z.
+                not_suction_msg = ("This function can only be used to evaluate"
+                                   " suction quality.")
+                raise ValueError(not_suction_msg)
+
+            # x,y in matrix A and z is vector z.
+            points = self._points_in_window(point_cloud_image,
+                                            action,
+                                            segmask=state.segmask)
             A, b = self._points_to_matrices(points)
-            w = self._best_fit_plane(A, b) # vector w w/ a bias term represents a best-fit plane.
-            
+            # vector w w/ a bias term represents a best-fit plane.
+            w = self._best_fit_plane(A, b)
+
             # Compute curvature.
             fx = w[0]
             fy = w[1]
@@ -773,7 +819,9 @@ class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
 
         return np.array(qualities)
 
-class DiscCurvatureSuctionQualityFunction(GaussianCurvatureSuctionQualityFunction):
+
+class DiscCurvatureSuctionQualityFunction(
+        GaussianCurvatureSuctionQualityFunction):
     def __init__(self, config):
         """Create approach planarity suction metric."""
         self._radius = config["radius"]
@@ -781,20 +829,19 @@ class DiscCurvatureSuctionQualityFunction(GaussianCurvatureSuctionQualityFunctio
 
     def _points_in_window(self, point_cloud_image, action, segmask=None):
         """Retrieve all points on the object in a disc of size
-           `self._window_size`.
-        """
+        `self._window_size`."""
         # Read indices.
         im_shape = point_cloud_image.shape
-        i_start = int(max(action.center.y-self._window_size//2, 0))
-        j_start = int(max(action.center.x-self._window_size//2, 0))
-        i_end = int(min(i_start+self._window_size, im_shape[0]))
-        j_end = int(min(j_start+self._window_size, im_shape[1]))
+        i_start = int(max(action.center.y - self._window_size // 2, 0))
+        j_start = int(max(action.center.x - self._window_size // 2, 0))
+        i_end = int(min(i_start + self._window_size, im_shape[0]))
+        j_end = int(min(j_start + self._window_size, im_shape[1]))
         step = int(1 / self._sample_rate)
 
         # Read 3D points in the window.
         points = point_cloud_image[i_start:i_end:step, j_start:j_end:step]
-        stacked_points = points.reshape(points.shape[0]*points.shape[1], -1)
-        
+        stacked_points = points.reshape(points.shape[0] * points.shape[1], -1)
+
         # Check the distance from the center point.
         contact_point = point_cloud_image[int(action.center.y),
                                           int(action.center.x)]
@@ -804,16 +851,18 @@ class DiscCurvatureSuctionQualityFunction(GaussianCurvatureSuctionQualityFunctio
         # Form the matrices for plane-fitting.
         return stacked_points
 
-class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction):
+
+class ComDiscCurvatureSuctionQualityFunction(
+        DiscCurvatureSuctionQualityFunction):
     def __init__(self, config):
         """Create approach planarity suction metric."""
         self._curvature_pctile = config["curvature_pctile"]
 
         DiscCurvatureSuctionQualityFunction.__init__(self, config)
 
-    def quality(self, state, actions, params=None): 
+    def quality(self, state, actions, params=None):
         """Given a suction point, compute a score based on the Gaussian
-           curvature.
+        curvature.
 
         Parameters
         ----------
@@ -828,14 +877,20 @@ class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction
 
         Returns
         -------
-        :obj:`numpy.ndarray`: Array of the quality for each grasp.
+        :obj:`numpy.ndarray`
+            Array of the quality for each grasp.
         """
         # Compute planarity.
-        curvature_q = DiscCurvatureSuctionQualityFunction.quality(self, state, actions, params=params)
+        curvature_q = DiscCurvatureSuctionQualityFunction.quality(
+            self, state, actions, params=params)
 
         if params["vis"]["hist"]:
             plt.figure()
-            utils.histogram(curvature, 100, (np.min(curvature), np.max(curvature)), normalized=False, plot=True)
+            # NOTE: This used to be an undefined `curvature`.
+            utils.histogram(curvature_q,
+                            100, (np.min(curvature_q), np.max(curvature_q)),
+                            normalized=False,
+                            plot=True)
             plt.show()
 
         # Compute object centroid.
@@ -845,7 +900,8 @@ class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction
             object_com = np.mean(nonzero_px, axis=0)
 
         # Threshold.
-        curvature_q_thresh = abs(np.percentile(curvature_q, 100-self._curvature_pctile))
+        curvature_q_thresh = abs(
+            np.percentile(curvature_q, 100 - self._curvature_pctile))
         qualities = []
         max_q = max(state.rgbd_im.height, state.rgbd_im.width)
         for k, action in enumerate(actions):
@@ -854,10 +910,11 @@ class ComDiscCurvatureSuctionQualityFunction(DiscCurvatureSuctionQualityFunction
                 grasp_center = np.array([action.center.y, action.center.x])
                 q = np.linalg.norm(grasp_center - object_com)
 
-            q = (np.exp(-q/max_q) - np.exp(-1)) / (1 - np.exp(-1))
+            q = (np.exp(-q / max_q) - np.exp(-1)) / (1 - np.exp(-1))
             qualities.append(q)
 
         return np.array(qualities)
+
 
 class GQCnnQualityFunction(GraspQualityFunction):
     def __init__(self, config):
@@ -869,7 +926,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
         self._gqcnn_model_dir = config["gqcnn_model"]
         self._crop_height = config["crop_height"]
         self._crop_width = config["crop_width"]
- 
+
         # Init GQ-CNN
         self._gqcnn = get_gqcnn_model().load(self._gqcnn_model_dir)
 
@@ -879,7 +936,8 @@ class GQCnnQualityFunction(GraspQualityFunction):
     def __del__(self):
         try:
             self._gqcnn.close_session()
-        except:
+        except Exception:
+            # TODO(vsatish): Except specific exception.
             pass
 
     @property
@@ -933,34 +991,41 @@ class GQCnnQualityFunction(GraspQualityFunction):
 
         # Allocate tensors.
         tensor_start = time()
-        image_tensor = np.zeros([num_grasps, gqcnn_im_height, gqcnn_im_width, gqcnn_num_channels])
+        image_tensor = np.zeros(
+            [num_grasps, gqcnn_im_height, gqcnn_im_width, gqcnn_num_channels])
         pose_tensor = np.zeros([num_grasps, gqcnn_pose_dim])
         scale = gqcnn_im_height / self._crop_height
         depth_im_scaled = depth_im.resize(scale)
         for i, grasp in enumerate(grasps):
-            translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
-                                            depth_im.center[1] - grasp.center.data[0]])
+            translation = scale * np.array([
+                depth_im.center[0] - grasp.center.data[1],
+                depth_im.center[1] - grasp.center.data[0]
+            ])
             im_tf = depth_im_scaled
             im_tf = depth_im_scaled.transform(translation, grasp.angle)
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
-            image_tensor[i,...] = im_tf.raw_data
-            
+            image_tensor[i, ...] = im_tf.raw_data
+
             if gripper_mode == GripperMode.PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
             elif gripper_mode == GripperMode.SUCTION:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
+                pose_tensor[i, ...] = np.array(
+                    [grasp.depth, grasp.approach_angle])
             elif gripper_mode == GripperMode.MULTI_SUCTION:
                 pose_tensor[i] = grasp.depth
             elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
             elif gripper_mode == GripperMode.LEGACY_SUCTION:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
+                pose_tensor[i, ...] = np.array(
+                    [grasp.depth, grasp.approach_angle])
             else:
-                raise ValueError("Gripper mode %s not supported" %(gripper_mode))
-        self._logger.debug("Tensor conversion took %.3f sec" %(time()-tensor_start))
+                raise ValueError("Gripper mode %s not supported" %
+                                 (gripper_mode))
+        self._logger.debug("Tensor conversion took %.3f sec" %
+                           (time() - tensor_start))
         return image_tensor, pose_tensor
 
-    def quality(self, state, actions, params): 
+    def quality(self, state, actions, params):
         """Evaluate the quality of a set of actions according to a GQ-CNN.
 
         Parameters
@@ -974,13 +1039,15 @@ class GQCnnQualityFunction(GraspQualityFunction):
 
         Returns
         -------
-        :obj:`list` of float: Real-valued grasp quality predictions for each
+        :obj:`list` of float
+            Real-valued grasp quality predictions for each
             action, between 0 and 1.
         """
         # Form tensors.
         tensor_start = time()
         image_tensor, pose_tensor = self.grasps_to_tensors(actions, state)
-        self._logger.info("Image transformation took %.3f sec" %(time() - tensor_start))
+        self._logger.info("Image transformation took %.3f sec" %
+                          (time() - tensor_start))
         if params is not None and params["vis"]["tf_images"]:
             # Read vis params.
             k = params["vis"]["k"]
@@ -988,34 +1055,33 @@ class GQCnnQualityFunction(GraspQualityFunction):
 
             # Display grasp transformed images.
             from visualization import Visualizer2D as vis2d
-            vis2d.figure(size=(GeneralConstants.FIGSIZE,GeneralConstants.FIGSIZE))
-            for i, image_tf in enumerate(image_tensor[:k,...]):
+            vis2d.figure(size=(GeneralConstants.FIGSIZE,
+                               GeneralConstants.FIGSIZE))
+            for i, image_tf in enumerate(image_tensor[:k, ...]):
                 depth = pose_tensor[i][0]
-                vis2d.subplot(d,d,i+1)
+                vis2d.subplot(d, d, i + 1)
                 vis2d.imshow(DepthImage(image_tf))
-                vis2d.title("Image %d: d=%.3f" %(i, depth))
+                vis2d.title("Image %d: d=%.3f" % (i, depth))
             vis2d.show()
 
         # Predict grasps.
         predict_start = time()
         output_arr = self.gqcnn.predict(image_tensor, pose_tensor)
-        q_values = output_arr[:,-1]
-        self._logger.info("Inference took %.3f sec" %(time() - predict_start))
+        q_values = output_arr[:, -1]
+        self._logger.info("Inference took %.3f sec" % (time() - predict_start))
         return q_values.tolist()
+
 
 class NoMagicQualityFunction(GraspQualityFunction):
     def __init__(self, config):
         """Create a quality that uses `nomagic_net` as a quality function."""
-        import json
-        import os
-
         from nomagic_submission import ConvNetModel
         from tensorpack import SaverRestore
         from tensorpack.predict import OfflinePredictor
         from tensorpack.predict.config import PredictConfig
-      
+
         GraspQualityFunction.__init(self)
-        
+
         # Store parameters.
         self._model_path = config["gqcnn_model"]
         self._batch_size = config["batch_size"]
@@ -1031,12 +1097,12 @@ class NoMagicQualityFunction(GraspQualityFunction):
 
         # Init config.
         model = ConvNetModel()
-        self._config = PredictConfig(
-            model=model,
-            session_init=SaverRestore(self._model_path),
-            output_names=["prob"])
+        self._config = PredictConfig(model=model,
+                                     session_init=SaverRestore(
+                                         self._model_path),
+                                     output_names=["prob"])
         self._predictor = OfflinePredictor(self._config)
-        
+
     @property
     def gqcnn(self):
         """Returns the GQ-CNN."""
@@ -1060,8 +1126,10 @@ class NoMagicQualityFunction(GraspQualityFunction):
 
         Returns
         -------
-        :obj:`numpy.ndarray`: 4D numpy tensor of image to be predicted.
-        :obj:`numpy.ndarray`: 2D numpy tensor of depth values.
+        :obj:`numpy.ndarray`
+            4D numpy tensor of image to be predicted.
+        :obj:`numpy.ndarray`
+            2D numpy tensor of depth values.
         """
         # Parse params.
         gqcnn_im_height = self._im_height
@@ -1074,36 +1142,45 @@ class NoMagicQualityFunction(GraspQualityFunction):
 
         # Allocate tensors.
         tensor_start = time()
-        image_tensor = np.zeros([num_grasps, gqcnn_im_height,
-                                 gqcnn_im_width, gqcnn_num_channels])
+        image_tensor = np.zeros(
+            [num_grasps, gqcnn_im_height, gqcnn_im_width, gqcnn_num_channels])
         pose_tensor = np.zeros([num_grasps, gqcnn_pose_dim])
         scale = gqcnn_im_height / self._crop_height
         depth_im_scaled = depth_im.resize(scale)
         for i, grasp in enumerate(grasps):
-            translation = scale * np.array([depth_im.center[0] - grasp.center.data[1],
-                                            depth_im.center[1] - grasp.center.data[0]])
+            translation = scale * np.array([
+                depth_im.center[0] - grasp.center.data[1],
+                depth_im.center[1] - grasp.center.data[0]
+            ])
             im_tf = depth_im_scaled
             im_tf = depth_im_scaled.transform(translation, grasp.angle)
             im_tf = im_tf.crop(gqcnn_im_height, gqcnn_im_width)
 
-            im_encoded = cv2.imencode(".png", np.uint8(im_tf.raw_data*255))[1].tostring()
-            im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8), 0) / 255.0
-            image_tensor[i,:,:,0] = ((im_decoded - self._data_mean) / self._data_std)
-            
+            im_encoded = cv2.imencode(".png", np.uint8(im_tf.raw_data *
+                                                       255))[1].tostring()
+            im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8),
+                                      0) / 255.0
+            image_tensor[i, :, :, 0] = ((im_decoded - self._data_mean) /
+                                        self._data_std)
+
             if gripper_mode == GripperMode.PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
             elif gripper_mode == GripperMode.SUCTION:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
+                pose_tensor[i, ...] = np.array(
+                    [grasp.depth, grasp.approach_angle])
             elif gripper_mode == GripperMode.LEGACY_PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
             elif gripper_mode == GripperMode.LEGACY_SUCTION:
-                pose_tensor[i,...] = np.array([grasp.depth, grasp.approach_angle])
+                pose_tensor[i, ...] = np.array(
+                    [grasp.depth, grasp.approach_angle])
             else:
-                raise ValueError("Gripper mode %s not supported" %(gripper_mode))
-        self._logger.debug("Tensor conversion took %.3f sec" %(time()-tensor_start))
+                raise ValueError("Gripper mode %s not supported" %
+                                 (gripper_mode))
+        self._logger.debug("Tensor conversion took %.3f sec" %
+                           (time() - tensor_start))
         return image_tensor, pose_tensor
 
-    def quality(self, state, actions, params): 
+    def quality(self, state, actions, params):
         """Evaluate the quality of a set of actions according to a GQ-CNN.
 
         Parameters
@@ -1117,7 +1194,9 @@ class NoMagicQualityFunction(GraspQualityFunction):
 
         Returns
         -------
-        :obj:`list` of float: Real-valued grasp quality predictions for each action, between 0 and 1.
+        :obj:`list` of float
+            Real-valued grasp quality predictions for each action, between 0
+            and 1.
         """
         # Form tensors.
         image_tensor, pose_tensor = self.grasps_to_tensors(actions, state)
@@ -1128,12 +1207,13 @@ class NoMagicQualityFunction(GraspQualityFunction):
 
             # Display grasp transformed images.
             from visualization import Visualizer2D as vis2d
-            vis2d.figure(size=(GeneralConstants.FIGSIZE,GeneralConstants.FIGSIZE))
-            for i, image_tf in enumerate(image_tensor[:k,...]):
+            vis2d.figure(size=(GeneralConstants.FIGSIZE,
+                               GeneralConstants.FIGSIZE))
+            for i, image_tf in enumerate(image_tensor[:k, ...]):
                 depth = pose_tensor[i][0]
-                vis2d.subplot(d,d,i+1)
+                vis2d.subplot(d, d, i + 1)
                 vis2d.imshow(DepthImage(image_tf))
-                vis2d.title("Image %d: d=%.3f" %(i, depth))
+                vis2d.title("Image %d: d=%.3f" % (i, depth))
             vis2d.show()
 
         # Predict grasps.
@@ -1144,12 +1224,16 @@ class NoMagicQualityFunction(GraspQualityFunction):
         cur_i = 0
         end_i = cur_i + min(self._batch_size, num_actions - cur_i)
         while cur_i < num_actions:
-            output_arr[cur_i:end_i,:] = self.gqcnn(image_tensor[cur_i:end_i,:,:,0], pose_tensor[cur_i:end_i,0], null_arr)[0]
+            output_arr[cur_i:end_i, :] = self.gqcnn(
+                image_tensor[cur_i:end_i, :, :, 0],
+                pose_tensor[cur_i:end_i, 0], null_arr)[0]
             cur_i = end_i
             end_i = cur_i + min(self._batch_size, num_actions - cur_i)
-        q_values = output_arr[:,-1]
-        self._logger.debug("Prediction took %.3f sec" %(time()-predict_start))
+        q_values = output_arr[:, -1]
+        self._logger.debug("Prediction took %.3f sec" %
+                           (time() - predict_start))
         return q_values.tolist()
+
 
 class FCGQCnnQualityFunction(GraspQualityFunction):
     def __init__(self, config):
@@ -1163,7 +1247,8 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         self._fully_conv_config = config["fully_conv_gqcnn_config"]
 
         # Init fcgqcnn.
-        self._fcgqcnn = get_fc_gqcnn_model(backend=self._backend).load(self._model_dir, self._fully_conv_config)
+        self._fcgqcnn = get_fc_gqcnn_model(backend=self._backend).load(
+            self._model_dir, self._fully_conv_config)
 
         # Open Tensorflow session for fcgqcnn.
         self._fcgqcnn.open_session()
@@ -1171,7 +1256,8 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
     def __del__(self):
         try:
             self._fcgqcnn.close_session()
-        except:
+        except Exception:
+            # TODO(vsatish): Except specific exception.
             pass
 
     @property
@@ -1184,11 +1270,13 @@ class FCGQCnnQualityFunction(GraspQualityFunction):
         """Returns the FC-GQCNN quality function parameters."""
         return self._config
 
-    def quality(self, images, depths, params=None): 
+    def quality(self, images, depths, params=None):
         return self._fcgqcnn.predict(images, depths)
+
 
 class GraspQualityFunctionFactory(object):
     """Factory for grasp quality functions."""
+
     @staticmethod
     def quality_function(metric_type, config):
         if metric_type == "zero":
@@ -1218,4 +1306,5 @@ class GraspQualityFunctionFactory(object):
         elif metric_type == "fcgqcnn":
             return FCGQCnnQualityFunction(config)
         else:
-            raise ValueError("Grasp function type %s not supported!" %(metric_type))
+            raise ValueError("Grasp function type %s not supported!" %
+                             (metric_type))

@@ -32,7 +32,7 @@ Required Parameters
 -------------------
 model_dir : str
     Command line argument, the path to the model whose errors are to plotted.
-    All plots and other metrics will be saved to this directory. 
+    All plots and other metrics will be saved to this directory.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -52,7 +52,8 @@ logger = Logger.get_logger("tools/plot_training_losses.py")
 
 if __name__ == "__main__":
     result_dir = sys.argv[1]
-    train_errors_filename = os.path.join(result_dir, GQCNNFilenames.TRAIN_ERRORS)
+    train_errors_filename = os.path.join(result_dir,
+                                         GQCNNFilenames.TRAIN_ERRORS)
     val_errors_filename = os.path.join(result_dir, GQCNNFilenames.VAL_ERRORS)
     train_iters_filename = os.path.join(result_dir, GQCNNFilenames.TRAIN_ITERS)
     val_iters_filename = os.path.join(result_dir, GQCNNFilenames.VAL_ITERS)
@@ -71,37 +72,39 @@ if __name__ == "__main__":
     val_losses = None
     try:
         val_losses = np.load(val_losses_filename)
-    except:
+    except FileNotFoundError:
         pass
-        
+
     val_errors = np.r_[pct_pos_val, val_errors]
     val_iters = np.r_[0, val_iters]
-    
+
     # Window the training error.
     i = 0
     train_errors = []
     train_losses = []
     train_iters = []
     while i < raw_train_errors.shape[0]:
-        train_errors.append(np.mean(raw_train_errors[i:i+WINDOW]))
-        train_losses.append(np.mean(raw_train_losses[i:i+WINDOW]))
+        train_errors.append(
+            np.mean(raw_train_errors[i:i + GeneralConstants.WINDOW]))
+        train_losses.append(
+            np.mean(raw_train_losses[i:i + GeneralConstants.WINDOW]))
         train_iters.append(i)
-        i += WINDOW
+        i += GeneralConstants.WINDOW
     train_errors = np.array(train_errors)
     train_losses = np.array(train_losses)
     train_iters = np.array(train_iters)
 
     if val_losses is not None:
         val_losses = np.r_[train_losses[0], val_losses]
-    
+
     init_val_error = val_errors[0]
     norm_train_errors = train_errors / init_val_error
     norm_val_errors = val_errors / init_val_error
     norm_final_val_error = val_errors[-1] / val_errors[0]
     if pct_pos_val > 0:
-        norm_final_val_error = val_errors[-1] / pct_pos_val        
+        norm_final_val_error = val_errors[-1] / pct_pos_val
 
-    logger.info("TRAIN")    
+    logger.info("TRAIN")
     logger.info("Original Error {}".format(train_errors[0]))
     logger.info("Final Error {}".format(train_errors[-1]))
     logger.info("Orig loss {}".format(train_losses[0]))
@@ -122,7 +125,7 @@ if __name__ == "__main__":
     plt.legend(("Training (Minibatch)", "Validation"), fontsize=15, loc="best")
     plt.xlabel("Iteration", fontsize=15)
     plt.ylabel("Error Rate", fontsize=15)
- 
+
     plt.figure()
     plt.plot(train_iters, norm_train_errors, linewidth=4, color="b")
     plt.plot(val_iters, norm_val_errors, linewidth=4, color="g")
@@ -146,8 +149,8 @@ if __name__ == "__main__":
         plt.xlabel("Iteration", fontsize=15)
         plt.ylabel("Validation Loss", fontsize=15)
     plt.show()
-    
-    plt.figure(figsize=(8,6))
+
+    plt.figure(figsize=(8, 6))
     plt.plot(train_iters, train_errors, linewidth=4, color="b")
     plt.plot(val_iters, val_errors, linewidth=4, color="g")
     plt.ylim(0, 100)
@@ -156,7 +159,7 @@ if __name__ == "__main__":
     plt.ylabel("Error Rate", fontsize=15)
     plt.savefig(os.path.join(result_dir, "training_curve.jpg"))
 
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(8, 6))
     plt.plot(train_iters, norm_train_errors, linewidth=4, color="b")
     plt.plot(val_iters, norm_val_errors, linewidth=4, color="g")
     plt.ylim(0, 2.0)

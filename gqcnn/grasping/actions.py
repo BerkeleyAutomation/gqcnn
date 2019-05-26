@@ -23,7 +23,10 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 Action classes for representing 3D grasp actions.
-Author: Jeff Mahler
+
+Author
+------
+Jeff Mahler
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -34,9 +37,10 @@ from abc import ABCMeta, abstractmethod
 from future.utils import with_metaclass
 import numpy as np
 
-from autolab_core import Point, RigidTransform
+from autolab_core import Point
 
 from .grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
+
 
 class Action(with_metaclass(ABCMeta, object)):
     """Abstract action class.
@@ -44,15 +48,14 @@ class Action(with_metaclass(ABCMeta, object)):
     Attributes
     ----------
     q_value : float
-        q_value of the grasp
+        Grasp quality.
     id : int
-        integer identifier for the action
+        Integer identifier for the action.
     metadata : dict
-        key-value dict of extra data about the action
+        Key-value dict of extra data about the action.
     """
-    def __init__(self, q_value=0.0,
-                 id=-1,
-                 metadata={}):
+
+    def __init__(self, q_value=0.0, id=-1, metadata={}):
         self._q_value = q_value
         self._id = id
         self._metadata = metadata
@@ -64,34 +67,34 @@ class Action(with_metaclass(ABCMeta, object)):
     @property
     def id(self):
         return self._id
-    
+
     @property
     def metadata(self):
         return self._metadata
 
+
 class NoAction(Action):
     """Proxy for taking no action when none can be found."""
     pass
-    
+
+
 class GraspAction3D(with_metaclass(ABCMeta, Action)):
     """Abstract grasp class with grasp specified as an end-effector pose.
 
     Attributes
     ----------
     T_grasp_world : :obj:`RigidTransform`
-        pose of the grasp w.r.t. world coordinate frame
+        Pose of the grasp w.r.t. world coordinate frame.
     """
-    def __init__(self, T_grasp_world,
-                 q_value=0.0,
-                 id=-1,
-                 metadata={}):
+
+    def __init__(self, T_grasp_world, q_value=0.0, id=-1, metadata={}):
         self.T_grasp_world = T_grasp_world
         Action.__init__(self, q_value, id, metadata)
 
     @abstractmethod
-    def project(self, camera_intr,
-                T_camera_world):
+    def project(self, camera_intr, T_camera_world):
         pass
+
 
 class ParallelJawGrasp3D(GraspAction3D):
     """Grasping with a parallel-jaw gripper.
@@ -99,11 +102,10 @@ class ParallelJawGrasp3D(GraspAction3D):
     Attributes
     ----------
     T_grasp_world : :obj:`RigidTransform`
-        pose of the grasp wrt world coordinate frame
-    """        
-    def project(self, camera_intr,
-                T_camera_world,
-                gripper_width=0.05):
+        Pose of the grasp wrt world coordinate frame.
+    """
+
+    def project(self, camera_intr, T_camera_world, gripper_width=0.05):
         # Compute pose of grasp in camera frame.
         T_grasp_camera = T_camera_world.inverse() * self.T_grasp_world
         y_axis_camera = T_grasp_camera.y_axis[:2]
@@ -121,8 +123,7 @@ class ParallelJawGrasp3D(GraspAction3D):
 
         # Compute grasp center in image space.
         t_grasp_camera = T_grasp_camera.translation
-        p_grasp_camera = Point(t_grasp_camera,
-                               frame=camera_intr.frame)
+        p_grasp_camera = Point(t_grasp_camera, frame=camera_intr.frame)
         u_grasp_camera = camera_intr.project(p_grasp_camera)
         d_grasp_camera = t_grasp_camera[2]
         return Grasp2D(u_grasp_camera,
@@ -130,17 +131,18 @@ class ParallelJawGrasp3D(GraspAction3D):
                        d_grasp_camera,
                        width=gripper_width,
                        camera_intr=camera_intr)
-    
+
+
 class SuctionGrasp3D(GraspAction3D):
     """Grasping with a suction-based gripper.
 
     Attributes
     ----------
     T_grasp_world : :obj:`RigidTransform`
-        pose of the grasp wrt world coordinate frame
+        Pose of the grasp wrt world coordinate frame.
     """
-    def project(self, camera_intr,
-                T_camera_world):
+
+    def project(self, camera_intr, T_camera_world):
         # Compute pose of grasp in camera frame.
         T_grasp_camera = T_camera_world.inverse() * self.T_grasp_world
         x_axis_camera = T_grasp_camera.x_axis
@@ -155,17 +157,17 @@ class SuctionGrasp3D(GraspAction3D):
                               d_grasp_camera,
                               camera_intr=camera_intr)
 
+
 class MultiSuctionGrasp3D(GraspAction3D):
     """Grasping with a multi-cup suction-based gripper.
 
     Attributes
     ----------
     T_grasp_world : :obj:`RigidTransform`
-        pose of the grasp wrt world coordinate frame
+        Pose of the grasp wrt world coordinate frame.
     """
-    def project(self, camera_intr,
-                T_camera_world):
+
+    def project(self, camera_intr, T_camera_world):
         # Compute pose of grasp in camera frame.
         T_grasp_camera = T_camera_world.inverse() * self.T_grasp_world
-        return MultiSuctionPoint2D(T_grasp_camera,
-                                   camera_intr=camera_intr)    
+        return MultiSuctionPoint2D(T_grasp_camera, camera_intr=camera_intr)

@@ -19,9 +19,13 @@ import sphinx_rtd_theme
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__name__)), '../../'))
-sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__name__)), '../../examples'))
-sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__name__)), '../../tools'))
+sys.path.insert(
+    0, os.path.join(os.path.abspath(os.path.dirname(__name__)), '../../'))
+sys.path.insert(
+    0,
+    os.path.join(os.path.abspath(os.path.dirname(__name__)), '../../examples'))
+sys.path.insert(
+    0, os.path.join(os.path.abspath(os.path.dirname(__name__)), '../../tools'))
 
 # -- General configuration ------------------------------------------------
 
@@ -31,9 +35,7 @@ sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__name__)), '../
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
-    'sphinx.ext.autodoc', 'sphinxcontrib.napoleon'
-]
+extensions = ['sphinx.ext.autodoc', 'sphinxcontrib.napoleon']
 autoclass_content = 'class'
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'show-inheritance']
@@ -111,7 +113,6 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
-
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -215,17 +216,17 @@ htmlhelp_basename = 'GQCNNdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -256,19 +257,14 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_domain_indices = True
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'GQCNN', u'GQCNN Documentation',
-     [author], 1)
-]
+man_pages = [(master_doc, 'GQCNN', u'GQCNN Documentation', [author], 1)]
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
-
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -276,9 +272,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'GQCNN', u'GQCNN Documentation',
-     author, 'GQCNN', 'One line description of project.',
-     'Miscellaneous'),
+    (master_doc, 'GQCNN', u'GQCNN Documentation', author, 'GQCNN',
+     'One line description of project.', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.

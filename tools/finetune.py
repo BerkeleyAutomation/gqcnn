@@ -34,7 +34,6 @@ from __future__ import print_function
 
 import argparse
 import os
-import sys
 import time
 
 from autolab_core import YamlConfig, Logger
@@ -47,28 +46,55 @@ logger = Logger.get_logger("tools/finetune.py")
 
 if __name__ == "__main__":
     # Parse args.
-    parser = argparse.ArgumentParser(description="Fine-Tune a pre-trained Grasp Quality Convolutional Neural Network with TensorFlow")
-    parser.add_argument("dataset_dir", type=str, default=None,
-                        help="path to the dataset to use for training and validation")
-    parser.add_argument("base_model_name", type=str, default=None,
+    parser = argparse.ArgumentParser(description=(
+        "Fine-Tune a pre-trained Grasp Quality Convolutional Neural Network"
+        " with TensorFlow"))
+    parser.add_argument(
+        "dataset_dir",
+        type=str,
+        default=None,
+        help="path to the dataset to use for training and validation")
+    parser.add_argument("base_model_name",
+                        type=str,
+                        default=None,
                         help="name of the pre-trained model to fine-tune")
-    parser.add_argument("--split_name", type=str, default="image_wise",
+    parser.add_argument("--split_name",
+                        type=str,
+                        default="image_wise",
                         help="name of the split to train on")
-    parser.add_argument("--output_dir", type=str, default=None,
+    parser.add_argument("--output_dir",
+                        type=str,
+                        default=None,
                         help="path to store the model")
-    parser.add_argument("--tensorboard_port", type=int, default=None,
+    parser.add_argument("--tensorboard_port",
+                        type=int,
+                        default=None,
                         help="port to launch tensorboard on")
-    parser.add_argument("--seed", type=int, default=None,
+    parser.add_argument("--seed",
+                        type=int,
+                        default=None,
                         help="random seed for training")
-    parser.add_argument("--config_filename", type=str, default=None,
+    parser.add_argument("--config_filename",
+                        type=str,
+                        default=None,
                         help="path to the configuration file to use")
-    parser.add_argument("--model_dir", type=str, default=None,
+    parser.add_argument("--model_dir",
+                        type=str,
+                        default=None,
                         help="path to the pre-trained model to fine-tune")
-    parser.add_argument("--name", type=str, default=None,
+    parser.add_argument("--name",
+                        type=str,
+                        default=None,
                         help="name for the trained model")
-    parser.add_argument("--save_datetime", type=bool, default=False,
-                        help="whether or not to save a model with the date and time of training")
-    parser.add_argument("--backend", type=str, default="tf", 
+    parser.add_argument(
+        "--save_datetime",
+        type=bool,
+        default=False,
+        help=("whether or not to save a model with the date and time of"
+              " training"))
+    parser.add_argument("--backend",
+                        type=str,
+                        default="tf",
                         help="the deep learning framework to use")
     args = parser.parse_args()
     dataset_dir = args.dataset_dir
@@ -82,23 +108,23 @@ if __name__ == "__main__":
     name = args.name
     save_datetime = args.save_datetime
     backend = args.backend
-    
+
     # Set default output dir.
     if output_dir is None:
         output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                   "../models")
-    
+
     # Set default config filename.
     if config_filename is None:
-        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       "..",
-                                       "cfg/finetune.yaml")
+        config_filename = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "..",
+            "cfg/finetune.yaml")
 
     # Set default model dir.
     if model_dir is None:
         model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                  "../models")
-        
+
     # Turn relative paths absolute.
     if not os.path.isabs(dataset_dir):
         dataset_dir = os.path.join(os.getcwd(), dataset_dir)
@@ -111,10 +137,10 @@ if __name__ == "__main__":
 
     # Create full path to the pre-trained model.
     model_dir = os.path.join(model_dir, base_model_name)
-        
+
     # Create output dir if necessary.
     utils.mkdir_safe(output_dir)
-        
+
     # Open train config.
     train_config = YamlConfig(config_filename)
     if seed is not None:
@@ -145,4 +171,5 @@ if __name__ == "__main__":
                                          train_config,
                                          name=name)
     trainer.finetune(model_dir)
-    logger.info("Total Fine-tuning Time: " + str(utils.get_elapsed_time(time.time() - start_time))) 
+    logger.info("Total Fine-tuning Time: " +
+                str(utils.get_elapsed_time(time.time() - start_time)))

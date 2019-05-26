@@ -23,7 +23,10 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 Setup of `gqcnn` Python codebase.
-Author: Vishal Satish, Jeff Mahler
+
+Author
+------
+Vishal Satish & Jeff Mahler
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -41,22 +44,32 @@ TF_MIN_VERSION = "1.10.0"
 TF_MAX_VERSION = "1.13.1"
 
 # Set up logger.
-logging.basicConfig() # Configure the root logger.
+logging.basicConfig()  # Configure the root logger.
 logger = logging.getLogger("setup.py")
 logger.setLevel(logging.INFO)
 
+
 def get_tf_dep():
-    # Check whether or not the Nvidia driver and GPUs are available and add the corresponding Tensorflow dependency.
+    # Check whether or not the Nvidia driver and GPUs are available and add the
+    # corresponding Tensorflow dependency.
     tf_dep = "tensorflow>={},<={}".format(TF_MIN_VERSION, TF_MAX_VERSION)
     try:
-        gpus = subprocess.check_output(["nvidia-smi", "--query-gpu=gpu_name", "--format=csv"]).decode().strip().split("\n")[1:]
+        gpus = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=gpu_name",
+             "--format=csv"]).decode().strip().split("\n")[1:]
         if len(gpus) > 0:
-            tf_dep = "tensorflow-gpu>={},<={}".format(TF_MIN_VERSION, TF_MAX_VERSION)
+            tf_dep = "tensorflow-gpu>={},<={}".format(TF_MIN_VERSION,
+                                                      TF_MAX_VERSION)
         else:
-            logger.warning("Found Nvidia device driver but no devices...installing Tensorflow for CPU.")
+            no_device_msg = ("Found Nvidia device driver but no"
+                             " devices...installing Tensorflow for CPU.")
+            logger.warning(no_device_msg)
     except OSError:
-        logger.warning("Could not find Nvidia device driver...installing Tensorflow for CPU.")
+        no_driver_msg = ("Could not find Nvidia device driver...installing"
+                         " Tensorflow for CPU.")
+        logger.warning(no_driver_msg)
     return tf_dep
+
 
 # TODO(vsatish): Use inheritance here.
 class DevelopCmd(develop):
@@ -78,13 +91,21 @@ class DevelopCmd(develop):
         # Install Tensorflow dependency.
         if not self.docker:
             tf_dep = get_tf_dep()
-            subprocess.Popen([sys.executable, "-m", "pip", "install", tf_dep]).wait()
+            subprocess.Popen([sys.executable, "-m", "pip", "install",
+                              tf_dep]).wait()
         else:
-            # If we"re using Docker, this will already have been installed explicitly through the correct `{cpu/gpu}_requirements.txt`; there is no way to check for CUDA/GPUs at Docker build time because there is no easy way to set the Nvidia runtime.
-            logger.warning("Omitting Tensorflow dependency because of Docker installation.") # TODO(vsatish): Figure out why this isn"t printed.
+            # If we're using Docker, this will already have been installed
+            # explicitly through the correct `{cpu/gpu}_requirements.txt`;
+            # there is no way to check for CUDA/GPUs at Docker build time
+            # because there is no easy way to set the Nvidia runtime.
+            # TODO(vsatish): Figure out why this isn't printed.
+            skip_tf_msg = ("Omitting Tensorflow dependency because of Docker"
+                           " installation.")
+            logger.warning(skip_tf_msg)
 
         # Run installation.
         develop.run(self)
+
 
 class InstallCmd(install, object):
     user_options_custom = [
@@ -105,55 +126,55 @@ class InstallCmd(install, object):
         # Install Tensorflow dependency.
         if not self.docker:
             tf_dep = get_tf_dep()
-            subprocess.Popen([sys.executable, "-m", "pip", "install", tf_dep]).wait()
+            subprocess.Popen([sys.executable, "-m", "pip", "install",
+                              tf_dep]).wait()
         else:
-            # If we"re using Docker, this will already have been installed explicitly through the correct `{cpu/gpu}_requirements.txt`; there is no way to check for CUDA/GPUs at Docker build time because there is no easy way to set the Nvidia runtime.
-            logger.warning("Omitting Tensorflow dependency because of Docker installation.") #TODO (vsatish): Figure out why this isn"t printed.
+            # If we're using Docker, this will already have been installed
+            # explicitly through the correct `{cpu/gpu}_requirements.txt`;
+            # there is no way to check for CUDA/GPUs at Docker build time
+            # because there is no easy way to set the Nvidia runtime.
+            # TODO (vsatish): Figure out why this isn't printed.
+            skip_tf_msg = ("Omitting Tensorflow dependency because of Docker"
+                           " installation.")
+            logger.warning(skip_tf_msg)
 
         # Run installation.
         install.run(self)
 
+
 requirements = [
-    "autolab-core",
-    "autolab-perception",
-    "visualization",
-    "numpy",
-    "scipy",
-    "matplotlib",
-    "opencv-python",
-    "scikit-image",
-    "scikit-learn",
-    "psutil",
+    "autolab-core", "autolab-perception", "visualization", "numpy", "scipy",
+    "matplotlib", "opencv-python", "scikit-image", "scikit-learn", "psutil",
     "gputil"
 ]
 
-exec(open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "gqcnn/version.py")).read())
+exec(
+    open(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                     "gqcnn/version.py")).read())
 
-setup(name="gqcnn", 
-      version=__version__, 
-      description="Project code for running Grasp Quality Convolutional Neural Networks", 
-      author="Vishal Satish", 
-      author_email="vsatish@berkeley.edu", 
-      license = "Berkeley Copyright",
-      url = "https://github.com/BerkeleyAutomation/gqcnn",
-      keywords = "robotics grasping vision deep learning",
-      classifiers = [
-          "Development Status :: 4 - Beta",
-          "Programming Language :: Python :: 2.7",
-          "Programming Language :: Python :: 3",
-          "Natural Language :: English",
-          "Topic :: Scientific/Engineering"
-      ],      
-      packages=find_packages(), 
-      install_requires = requirements,
-      extras_require = { "docs" : [
-          "sphinx",
-          "sphinxcontrib-napoleon",
-          "sphinx_rtd_theme"
-      ],
-      },
-      cmdclass={
+setup(
+    name="gqcnn",
+    version=__version__,  # noqa F821
+    description=("Project code for running Grasp Quality Convolutional"
+                 " Neural Networks"),
+    author="Vishal Satish",
+    author_email="vsatish@berkeley.edu",
+    license="Berkeley Copyright",
+    url="https://github.com/BerkeleyAutomation/gqcnn",
+    keywords="robotics grasping vision deep learning",
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3", "Natural Language :: English",
+        "Topic :: Scientific/Engineering"
+    ],
+    packages=find_packages(),
+    install_requires=requirements,
+    extras_require={
+        "docs": ["sphinx", "sphinxcontrib-napoleon", "sphinx_rtd_theme"],
+    },
+    cmdclass={
         "install": InstallCmd,
         "develop": DevelopCmd
-      }
-)
+    })

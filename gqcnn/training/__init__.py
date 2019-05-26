@@ -30,11 +30,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .tf import *
+from .tf import GQCNNTrainerTF
+
 
 def get_gqcnn_trainer(backend="tf"):
-    """ 
-    Get the GQ-CNN Trainer for the provided backend.
+    """Get the GQ-CNN Trainer for the provided backend.
 
     Note
     ----
@@ -43,12 +43,12 @@ def get_gqcnn_trainer(backend="tf"):
     Parameters
     ----------
     backend : str
-        the backend to use, currently only 'tf' is supported
+        The backend to use, currently only "tf" is supported.
 
     Returns
     -------
     :obj:`gqcnn.training.tf.GQCNNTrainerTF`
-        GQ-CNN Trainer with TensorFlow backend
+        GQ-CNN Trainer with TensorFlow backend.
     """
     # Return desired `GQCNNTrainer` instance based on backend.
     if backend == "tf":

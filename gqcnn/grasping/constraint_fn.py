@@ -23,7 +23,10 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 Constraint functions for grasp sampling.
-Author: Jeff Mahler
+
+Author
+------
+Jeff Mahler
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -34,70 +37,72 @@ from abc import ABCMeta, abstractmethod
 from future.utils import with_metaclass
 import numpy as np
 
+
 class GraspConstraintFn(with_metaclass(ABCMeta, object)):
     """Abstract constraint functions for grasp sampling."""
 
     def __init__(self, config):
         # Set params.
         self._config = config
-    
+
     def __call__(self, grasp):
         """Evaluates whether or not a grasp is valid.
 
         Parameters
         ----------
         grasp : :obj:`Grasp2D`
-            grasp to evaluate
+            Grasp to evaluate.
 
         Returns
         -------
         bool
-            True if the grasp satisfies constraints, False otherwise
+            True if the grasp satisfies constraints, False otherwise.
         """
         return self.satisfies_constraints(grasp)
 
-    @abstractmethod    
+    @abstractmethod
     def satisfies_constraints(self, grasp):
         """Evaluates whether or not a grasp is valid.
 
         Parameters
         ----------
         grasp : :obj:`Grasp2D`
-            grasp to evaluate
+            Grasp to evaluate.
 
         Returns
         -------
         bool
-            True if the grasp satisfies constraints, False otherwise
+            True if the grasp satisfies constraints, False otherwise.
         """
         pass
 
+
 class DiscreteApproachGraspConstraintFn(GraspConstraintFn):
     """Constrains the grasp approach direction into a discrete set of
-       angles from the world z direction.
-    """
+    angles from the world z direction."""
+
     def __init__(self, config):
         # Init superclass.
         GraspConstraintFn.__init__(self, config)
-        
+
         self._max_approach_angle = self._config["max_approach_angle"]
         self._angular_tolerance = self._config["angular_tolerance"]
         self._angular_step = self._config["angular_step"]
         self._T_camera_world = self._config["camera_pose"]
-        
+
     def satisfies_constraints(self, grasp):
         """Evaluates whether or not a grasp is valid by evaluating the
-           angle between the approach axis and the world z direction.
+        angle between the approach axis and the world z direction.
 
         Parameters
         ----------
         grasp : :obj:`Grasp2D`
-            grasp to evaluate
+            Grasp to evaluate.
 
         Returns
         -------
         bool
-            True if the grasp satisfies constraints, False otherwise
+            True if the grasp satisfies constraints, False otherwise.
         """
         # Find grasp angle in world coordinates.
         axis_world = self._T_camera_world.rotation.dot(grasp.approach_axis)
@@ -111,10 +116,10 @@ class DiscreteApproachGraspConstraintFn(GraspConstraintFn):
                                          step=self._angular_step)
         diff = np.abs(available_angles - angle)
         angle_index = np.argmin(diff)
-        closest_angle = available_angles[angle_index]
         if diff[angle_index] < self._angular_tolerance:
             return True
         return False
+
 
 class GraspConstraintFnFactory(object):
     @staticmethod
@@ -124,4 +129,6 @@ class GraspConstraintFnFactory(object):
         elif fn_type == "discrete_approach_angle":
             return DiscreteApproachGraspConstraintFn(config)
         else:
-            raise ValueError("Grasp constraint function type {} not supported!".format(fn_type))
+            raise ValueError(
+                "Grasp constraint function type {} not supported!".format(
+                    fn_type))

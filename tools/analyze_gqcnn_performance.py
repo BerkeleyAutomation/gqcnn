@@ -26,7 +26,7 @@ Analyzes a GQ-CNN model.
 
 Author
 ------
-Vishal Satish and Jeff Mahler
+Vishal Satish & Jeff Mahler
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -34,8 +34,6 @@ from __future__ import print_function
 
 import argparse
 import os
-import sys
-import time
 
 from autolab_core import YamlConfig, Logger
 from gqcnn import GQCNNAnalyzer
@@ -45,12 +43,30 @@ logger = Logger.get_logger("tools/analyze_gqcnn_performance.py")
 
 if __name__ == "__main__":
     # Parse args.
-    parser = argparse.ArgumentParser(description="Analyze a Grasp Quality Convolutional Neural Network with TensorFlow")
-    parser.add_argument("model_name", type=str, default=None, help="name of model to analyze")
-    parser.add_argument("--output_dir", type=str, default=None, help="path to save the analysis")
-    parser.add_argument("--dataset_config_filename", type=str, default=None, help="path to a configuration file for testing on a custom dataset")
-    parser.add_argument("--config_filename", type=str, default=None, help="path to the configuration file to use")
-    parser.add_argument("--model_dir", type=str, default=None, help="path to the model")
+    parser = argparse.ArgumentParser(
+        description=("Analyze a Grasp Quality Convolutional Neural Network"
+                     " with TensorFlow"))
+    parser.add_argument("model_name",
+                        type=str,
+                        default=None,
+                        help="name of model to analyze")
+    parser.add_argument("--output_dir",
+                        type=str,
+                        default=None,
+                        help="path to save the analysis")
+    parser.add_argument(
+        "--dataset_config_filename",
+        type=str,
+        default=None,
+        help="path to a configuration file for testing on a custom dataset")
+    parser.add_argument("--config_filename",
+                        type=str,
+                        default=None,
+                        help="path to the configuration file to use")
+    parser.add_argument("--model_dir",
+                        type=str,
+                        default=None,
+                        help="path to the model")
     args = parser.parse_args()
     model_name = args.model_name
     output_dir = args.output_dir
@@ -63,11 +79,12 @@ if __name__ == "__main__":
         model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                  "../models")
     model_dir = os.path.join(model_dir, model_name)
-        
+
     # If `model_dir` contains many models, analyze all of them.
     model_dir = [model_dir]
     if "config.json" not in os.listdir(model_dir[0]):
-        logger.warning("Found multiple models in model_dir, analyzing all of them...")
+        logger.warning(
+            "Found multiple models in model_dir, analyzing all of them...")
         models = os.listdir(model_dir[0])
         model_dir = [os.path.join(model_dir[0], model) for model in models]
 
@@ -76,29 +93,30 @@ if __name__ == "__main__":
         output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                   "../analysis")
     if config_filename is None:
-        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       "..",
-                                       "cfg/tools/analyze_gqcnn_performance.yaml")
+        config_filename = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "..",
+            "cfg/tools/analyze_gqcnn_performance.yaml")
 
     # Turn relative paths absolute.
     if not os.path.isabs(output_dir):
         output_dir = os.path.join(os.getcwd(), output_dir)
     if not os.path.isabs(config_filename):
         config_filename = os.path.join(os.getcwd(), config_filename)
-    if dataset_config_filename is not None and not os.path.isabs(dataset_config_filename):
+    if dataset_config_filename is not None and not os.path.isabs(
+            dataset_config_filename):
         config_filename = os.path.join(os.getcwd(), dataset_config_filename)
 
     # Make the output dir.
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-        
+
     # Read config.
     config = YamlConfig(config_filename)
 
     dataset_config = None
     if dataset_config_filename is not None:
         dataset_config = YamlConfig(dataset_config_filename)
-    
+
     # Run the analyzer.
     analyzer = GQCNNAnalyzer(config, plot_backend="pdf")
     for model in model_dir:

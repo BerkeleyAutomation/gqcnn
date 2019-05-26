@@ -29,13 +29,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .tf import *
+from .tf import GQCNNTF, FCGQCNNTF
 
 from autolab_core import Logger
- 
+
+
 def get_gqcnn_model(backend="tf", verbose=True):
-    """
-    Get the GQ-CNN model for the provided backend.
+    """Get the GQ-CNN model for the provided backend.
 
     Note:
         Currently only TensorFlow is supported.
@@ -43,14 +43,14 @@ def get_gqcnn_model(backend="tf", verbose=True):
     Parameters
     ----------
     backend : str
-        the backend to use, currently only "tf" is supported
+        The backend to use, currently only "tf" is supported.
     verbose : bool
-        whether or not to log initialization output to stdout
+        Whether or not to log initialization output to `stdout`.
 
     Returns
     -------
     :obj:`gqcnn.model.tf.GQCNNTF`
-        GQ-CNN model with TensorFlow backend
+        GQ-CNN model with TensorFlow backend.
     """
 
     # Set up logger.
@@ -63,9 +63,9 @@ def get_gqcnn_model(backend="tf", verbose=True):
     else:
         raise ValueError("Invalid backend: {}".format(backend))
 
+
 def get_fc_gqcnn_model(backend="tf", verbose=True):
-    """
-    Get the FC-GQ-CNN model for the provided backend. 
+    """Get the FC-GQ-CNN model for the provided backend.
 
     Note:
         Currently only TensorFlow is supported.
@@ -73,14 +73,14 @@ def get_fc_gqcnn_model(backend="tf", verbose=True):
     Parameters
     ----------
     backend : str
-        the backend to use, currently only "tf" is supported
+        The backend to use, currently only "tf" is supported.
     verbose : bool
-        whether or not to log initialization output to stdout
+        Whether or not to log initialization output to `stdout`.
 
     Returns
     -------
     :obj:`gqcnn.model.tf.FCGQCNNTF`
-        FC-GQ-CNN model with TensorFlow backend
+        FC-GQ-CNN model with TensorFlow backend.
     """
 
     # Set up logger.

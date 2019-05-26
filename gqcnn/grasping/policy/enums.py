@@ -23,11 +23,15 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 Enums for GQ-CNN policies.
-Author: Vishal Satish
+
+Author
+------
+Vishal Satish
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+
 
 class SamplingMethod(object):
     TOP_K = "top_k"

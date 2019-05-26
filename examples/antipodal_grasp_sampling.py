@@ -25,18 +25,17 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 Demonstrates image-based antipodal grasp candidate sampling, which is used in
 the Cross Entropy Method (CEM)-based GQ-CNN grasping policy. Samples images
 from a BerkeleyAutomation/perception `RgbdSensor`.
-Author: Jeff Mahler
+
+Author
+------
+Jeff Mahler
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
 import argparse
 import os
-import sys
-
-import numpy as np
 
 from autolab_core import RigidTransform, YamlConfig, Logger
 from perception import RgbdImage, RgbdSensorFactory
@@ -49,8 +48,12 @@ logger = Logger.get_logger("examples/antipodal_grasp_sampling.py")
 
 if __name__ == "__main__":
     # Parse args.
-    parser = argparse.ArgumentParser(description="Sample antipodal grasps on a depth image from an RgbdSensor")
-    parser.add_argument("--config_filename", type=str, default="cfg/examples/antipodal_grasp_sampling.yaml", help="path to configuration file to use")
+    parser = argparse.ArgumentParser(description=(
+        "Sample antipodal grasps on a depth image from an RgbdSensor"))
+    parser.add_argument("--config_filename",
+                        type=str,
+                        default="cfg/examples/antipodal_grasp_sampling.yaml",
+                        help="path to configuration file to use")
     args = parser.parse_args()
     config_filename = args.config_filename
 
@@ -65,8 +68,9 @@ if __name__ == "__main__":
     sample_config = config["sampling"]
 
     # Read camera calib.
-    tf_filename = "%s_to_world.tf" %(sensor_frame)
-    T_camera_world = RigidTransform.load(os.path.join(config["calib_dir"], sensor_frame, tf_filename))
+    tf_filename = "%s_to_world.tf" % (sensor_frame)
+    T_camera_world = RigidTransform.load(
+        os.path.join(config["calib_dir"], sensor_frame, tf_filename))
 
     # Setup sensor.
     sensor = RgbdSensorFactory.sensor(sensor_type, config["sensor"])
@@ -80,9 +84,14 @@ if __name__ == "__main__":
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
 
     # Sample grasps.
-    grasp_sampler = AntipodalDepthImageGraspSampler(sample_config, gripper_width)
-    grasps = grasp_sampler.sample(rgbd_im, camera_intr, num_grasp_samples, segmask=None,
-                                  seed=100, visualize=visualize_sampling)
+    grasp_sampler = AntipodalDepthImageGraspSampler(sample_config,
+                                                    gripper_width)
+    grasps = grasp_sampler.sample(rgbd_im,
+                                  camera_intr,
+                                  num_grasp_samples,
+                                  segmask=None,
+                                  seed=100,
+                                  visualize=visualize_sampling)
 
     # Visualize.
     vis.figure()

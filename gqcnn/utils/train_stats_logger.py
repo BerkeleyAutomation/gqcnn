@@ -23,7 +23,10 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 Handles logging of various training statistics.
-Author: Vishal Satish
+
+Author
+------
+Vishal Satish
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -35,6 +38,7 @@ import numpy as np
 
 from .enums import GQCNNFilenames
 
+
 class TrainStatsLogger(object):
     """Logger for training statistics."""
 
@@ -43,7 +47,7 @@ class TrainStatsLogger(object):
         Parameters
         ----------
         experiment_dir : str
-            the experiment directory to save statistics to
+            The experiment directory to save statistics to.
         """
         self.experiment_dir = experiment_dir
         self.train_eval_iters = []
@@ -59,50 +63,28 @@ class TrainStatsLogger(object):
 
     def log(self):
         """Flush all of the statistics to the given experiment directory."""
+        np.save(os.path.join(self.experiment_dir, GQCNNFilenames.TRAIN_ITERS),
+                self.train_eval_iters)
+        np.save(os.path.join(self.experiment_dir, GQCNNFilenames.TRAIN_LOSSES),
+                self.train_losses)
+        np.save(os.path.join(self.experiment_dir, GQCNNFilenames.TRAIN_ERRORS),
+                self.train_errors)
         np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.TRAIN_ITERS),
-            self.train_eval_iters)
-        np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.TRAIN_LOSSES),
-            self.train_losses)
-        np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.TRAIN_ERRORS),
-            self.train_errors)
-        np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.TOTAL_TRAIN_ERRORS),
+            os.path.join(self.experiment_dir,
+                         GQCNNFilenames.TOTAL_TRAIN_ERRORS),
             self.total_train_errors)
         np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.TOTAL_TRAIN_LOSSES),
+            os.path.join(self.experiment_dir,
+                         GQCNNFilenames.TOTAL_TRAIN_LOSSES),
             self.total_train_losses)
+        np.save(os.path.join(self.experiment_dir, GQCNNFilenames.VAL_ITERS),
+                self.val_eval_iters)
+        np.save(os.path.join(self.experiment_dir, GQCNNFilenames.VAL_LOSSES),
+                self.val_losses)
+        np.save(os.path.join(self.experiment_dir, GQCNNFilenames.VAL_ERRORS),
+                self.val_errors)
         np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.VAL_ITERS),
-            self.val_eval_iters)
-        np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.VAL_LOSSES),
-            self.val_losses)
-        np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.VAL_ERRORS),
-            self.val_errors)
-        np.save(
-            os.path.join(
-                self.experiment_dir,
-                GQCNNFilenames.LEARNING_RATES),
+            os.path.join(self.experiment_dir, GQCNNFilenames.LEARNING_RATES),
             self.learning_rates)
 
     def update(self, **stats):
@@ -115,7 +97,7 @@ class TrainStatsLogger(object):
         Parameters
         ----------
         stats : dict
-                dict of statistics to be updated
+                Dict of statistics to be updated.
         """
         for stat, val in stats.items():
             if stat == "train_eval_iter":

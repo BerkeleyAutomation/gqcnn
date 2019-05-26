@@ -3,7 +3,7 @@
 # Script for YAPF formatting. Adapted from https://github.com/ray-project/ray/blob/master/ci/travis/format.sh.
 
 YAPF_FLAGS=(
-    '--style' "$ROOT/.style.yapf"
+    '--style' ".style.yapf"
     '--recursive'
     '--parallel'
 )
@@ -15,12 +15,12 @@ format() {
     yapf --in-place "${YAPF_FLAGS[@]}" -- "$@"
 }
 
-# Format all files, and print the diff to stdout for travis.
+# Format all files, and print the diff to `stdout` for Travis.
 format_all() {
-    yapf --diff "${YAPF_FLAGS[@]}" "${YAPF_EXCLUDES[@]}" test python
+    yapf --diff "${YAPF_FLAGS[@]}" "${YAPF_EXCLUDES[@]}"
 }
 
-# This flag formats individual files. --files *must* be the first command line
+# This flag formats individual files. `--files` *must* be the first command line
 # arg to use this option.
 if [[ "$1" == '--files' ]]; then
     format "${@:2}"
@@ -28,3 +28,4 @@ if [[ "$1" == '--files' ]]; then
     # entire Python directory is formatted.
 elif [[ "$1" == '--all' ]]; then
     format_all
+fi

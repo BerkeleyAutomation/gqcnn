@@ -23,17 +23,27 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 Enums for hyper-parameter search.
-Author: Vishal Satish
+
+Author
+------
+Vishal Satish
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+
 class TrialConstants(object):
-    TRIAL_CPU_LOAD = 300 # Decrease this to get more aggressize CPU utilization.
-    TRIAL_GPU_LOAD = 33 # Decrease this to get more aggressize GPU utilization.
-    TRIAL_GPU_MEM = 2000 # This really depends on model size(TRIAL_GPU_LOAD does too,but it's not a hard limit per se). Ideally we would initialize models one by one and monitor the space left, but because model initialization comes after some metric calculation, we set this to be some upper bound based on the largest model and do batch initalizations from there.
+    TRIAL_CPU_LOAD = 300  # Decrease to get more aggressize CPU utilization.
+    TRIAL_GPU_LOAD = 33  # Decrease to get more aggressize GPU utilization.
+    # This really depends on model size (`TRIAL_GPU_LOAD` does too, but it's
+    # not a hard limit per se). Ideally we would initialize models one-by-one
+    # and monitor the space left, but because model initialization comes after
+    # some metric calculation, we set this to be some upper bound based on the
+    # largest model and do batch initalizations from there.
+    TRIAL_GPU_MEM = 2000
+
 
 class SearchConstants(object):
-    SEARCH_THREAD_SLEEP = 2 
+    SEARCH_THREAD_SLEEP = 2
     MIN_TIME_BETWEEN_SCHEDULE_ATTEMPTS = 20
