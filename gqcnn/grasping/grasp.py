@@ -479,9 +479,9 @@ class MultiSuctionPoint2D(object):
         self._pose = pose
 
         # TODO(vsatish): Confirm that this is really not needed.
-#        frame = "image"
-#        if camera_intr is not None:
-#            frame = camera_intr.frame
+        #        frame = "image"
+        #        if camera_intr is not None:
+        #            frame = camera_intr.frame
 
         # If `camera_intr` is `None` use default primesense camera intrinsics.
         if not camera_intr:

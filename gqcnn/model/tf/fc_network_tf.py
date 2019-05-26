@@ -80,7 +80,7 @@ class FCGQCNNTF(GQCNNTF):
                                    " padding for conv layers. Found layer: {}"
                                    " with padding: {}")
                 assert layer_config["pad"] == "VALID", invalid_pad_msg.format(
-                        layer_name, layer_config["pad"])
+                    layer_name, layer_config["pad"])
 
     @staticmethod
     def load(model_dir, fc_config, log_file=None):

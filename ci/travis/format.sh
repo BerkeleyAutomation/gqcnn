@@ -17,7 +17,7 @@ format() {
 
 # Format all files, and print the diff to `stdout` for Travis.
 format_all() {
-    yapf --diff "${YAPF_FLAGS[@]}" "${YAPF_EXCLUDES[@]}"
+    yapf --diff "${YAPF_FLAGS[@]}" "${YAPF_EXCLUDES[@]}" .
 }
 
 # This flag formats individual files. `--files` *must* be the first command line

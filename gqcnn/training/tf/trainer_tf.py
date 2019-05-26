@@ -790,9 +790,8 @@ class GQCNNTrainerTF(object):
                 num_summed = 0
                 for k, i in enumerate(random_file_indices):
                     if k % self.preproc_log_frequency == 0:
-                        self.logger.info(
-                            "Adding file {} of {}..."
-                            .format(k + 1, random_file_indices.shape[0]))
+                        self.logger.info("Adding file {} of {}...".format(
+                            k + 1, random_file_indices.shape[0]))
                     im_data = self.dataset.tensor(self.im_field_name, i).arr
                     depth_data = read_pose_data(
                         self.dataset.tensor(self.pose_field_name, i).arr,
@@ -812,9 +811,8 @@ class GQCNNTrainerTF(object):
                 self.logger.info("Computing (image - depth) std.")
                 for k, i in enumerate(random_file_indices):
                     if k % self.preproc_log_frequency == 0:
-                        self.logger.info(
-                            "Adding file {} of {}..."
-                            .format(k + 1, random_file_indices.shape[0]))
+                        self.logger.info("Adding file {} of {}...".format(
+                            k + 1, random_file_indices.shape[0]))
                     im_data = self.dataset.tensor(self.im_field_name, i).arr
                     depth_data = read_pose_data(
                         self.dataset.tensor(self.pose_field_name, i).arr,
@@ -857,9 +855,8 @@ class GQCNNTrainerTF(object):
                 num_summed = 0
                 for k, i in enumerate(random_file_indices):
                     if k % self.preproc_log_frequency == 0:
-                        self.logger.info(
-                            "Adding file {} of {}..."
-                            .format(k + 1, random_file_indices.shape[0]))
+                        self.logger.info("Adding file {} of {}...".format(
+                            k + 1, random_file_indices.shape[0]))
                     im_data = self.dataset.tensor(self.im_field_name, i).arr
                     train_indices = self.train_index_map[i]
                     if train_indices.shape[0] > 0:
@@ -872,9 +869,8 @@ class GQCNNTrainerTF(object):
                 self.logger.info("Computing image std.")
                 for k, i in enumerate(random_file_indices):
                     if k % self.preproc_log_frequency == 0:
-                        self.logger.info(
-                            "Adding file {} of {}..."
-                            .format(k + 1, random_file_indices.shape[0]))
+                        self.logger.info("Adding file {} of {}...".format(
+                            k + 1, random_file_indices.shape[0]))
                     im_data = self.dataset.tensor(self.im_field_name, i).arr
                     train_indices = self.train_index_map[i]
                     if train_indices.shape[0] > 0:
@@ -907,9 +903,8 @@ class GQCNNTrainerTF(object):
             # Read metrics.
             for k, i in enumerate(random_file_indices):
                 if k % self.preproc_log_frequency == 0:
-                    self.logger.info(
-                        "Adding file {} of {}...".format(
-                            k + 1, random_file_indices.shape[0]))
+                    self.logger.info("Adding file {} of {}...".format(
+                        k + 1, random_file_indices.shape[0]))
                 metric_data = self.dataset.tensor(self.label_field_name, i).arr
                 train_indices = self.train_index_map[i]
                 val_indices = self.val_index_map[i]
@@ -1042,9 +1037,7 @@ class GQCNNTrainerTF(object):
         for key in self.cfg:
             tempOrderedDict[key] = self.cfg[key]
         with open(out_config_filename, "w") as outfile:
-            json.dump(tempOrderedDict,
-                      outfile,
-                      indent=JSON_INDENT)
+            json.dump(tempOrderedDict, outfile, indent=JSON_INDENT)
 
         # Save training script.
         this_filename = sys.argv[0]
@@ -1190,8 +1183,8 @@ class GQCNNTrainerTF(object):
         # Read split.
         if not self.dataset.has_split(self.split_name):
             self.logger.info(
-                "Dataset split: {} not found. Creating new split..."
-                .format(self.split_name))
+                "Dataset split: {} not found. Creating new split...".format(
+                    self.split_name))
             self.dataset.make_split(self.split_name, train_pct=self.train_pct)
         else:
             self.logger.info("Training split: {} found in dataset.".format(

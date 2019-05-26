@@ -1416,11 +1416,9 @@ class GQCNNTF(object):
                 self._input_depth_mode == InputDepthMode.IM_ONLY:
             extraneous_stream_msg = ("When using input depth mode \"{}\", only"
                                      " im stream is allowed!")
-            assert not (
-                "pose_stream" in self._architecture
-                or "merge_stream" in self._architecture
-            ), extraneous_stream_msg.format(
-                self._input_depth_mode)
+            assert not ("pose_stream" in self._architecture
+                        or "merge_stream" in self._architecture
+                        ), extraneous_stream_msg.format(self._input_depth_mode)
             with tf.name_scope("im_stream"):
                 return self._build_im_stream(input_im_node,
                                              input_pose_node,
