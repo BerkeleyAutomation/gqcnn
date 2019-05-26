@@ -18,12 +18,26 @@ matrix:
       python: 3.7
       dist: xenial
 
+    - name: "Linter"
+      python: 3.7
+      dist: xenial
+      before_install: []
+      install: []
+      script:
+        - pip install yapf==0.27.0  # Must use specific version.
+        - pip install flake8 flake8-comprehensions flake8-quotes==2.0.0
+        - ./ci/travis/format.sh --all  # Should exit with 0 for no diffs.
+        - flake8 --inline-quotes '"' --no-avoid-escape --exclude=docs/source/conf.py --ignore=C408,E121,E123,E126,E226,E24,E704,W503,W504,W605
+
 before_install:
   - sudo apt-get update
-  - sudo apt-get install python-opengl
+  - sudo apt-get install python-opengl  # For GLU.
 
 install: 
   - pip install .
 
 script:
-  - python --version && python -c "import gqcnn"
+  - python -c "import gqcnn"
+
+notifications:
+  email: false
