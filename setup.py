@@ -166,7 +166,10 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3", "Natural Language :: English",
+        "Programming Language :: Python :: 3.5", 
+        "Programming Language :: Python :: 3.6", 
+        "Programming Language :: Python :: 3.7", 
+        "Natural Language :: English",
         "Topic :: Scientific/Engineering"
     ],
     packages=find_packages(),
