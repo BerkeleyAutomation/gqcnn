@@ -5,8 +5,8 @@ numpy
 opencv-python
 scipy
 matplotlib
-tensorflow-gpu>=1.10.0,<=1.13.1
+tensorflow-gpu<=1.13.1
 scikit-learn
-scikit-image
+scikit-image<=0.14.2
 gputil
 psutil

@@ -40,7 +40,6 @@ from setuptools.command.install import install
 import subprocess
 import sys
 
-TF_MIN_VERSION = "1.10.0"
 TF_MAX_VERSION = "1.13.1"
 
 # Set up logger.
@@ -52,13 +51,13 @@ logger.setLevel(logging.INFO)
 def get_tf_dep():
     # Check whether or not the Nvidia driver and GPUs are available and add the
     # corresponding Tensorflow dependency.
-    tf_dep = "tensorflow>={},<={}".format(TF_MIN_VERSION, TF_MAX_VERSION)
+    tf_dep = "tensorflow<={}".format(TF_MIN_VERSION, TF_MAX_VERSION)
     try:
         gpus = subprocess.check_output(
             ["nvidia-smi", "--query-gpu=gpu_name",
              "--format=csv"]).decode().strip().split("\n")[1:]
         if len(gpus) > 0:
-            tf_dep = "tensorflow-gpu>={},<={}".format(TF_MIN_VERSION,
+            tf_dep = "tensorflow-gpu<={}".format(TF_MIN_VERSION,
                                                       TF_MAX_VERSION)
         else:
             no_device_msg = ("Found Nvidia device driver but no"
@@ -144,7 +143,7 @@ class InstallCmd(install, object):
 
 requirements = [
     "autolab-core", "autolab-perception", "visualization", "numpy", "scipy",
-    "matplotlib", "opencv-python", "scikit-image", "scikit-learn", "psutil",
+    "matplotlib", "opencv-python", "scikit-image<=0.14.2", "scikit-learn", "psutil",
     "gputil"
 ]
 
