@@ -303,7 +303,7 @@ class FullyConvolutionalGraspingPolicy(with_metaclass(ABCMeta,
 
         # Filter grasps.
         if self._filter_grasps:
-            actions.sort(reverse=True, key=lambda action: action.q_value)
+            actions = sorted(actions, reverse=True, key=lambda action: action.q_value)
             actions = [self._filter(actions)]
 
         # Visualize.

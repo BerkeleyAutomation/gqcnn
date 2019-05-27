@@ -565,7 +565,7 @@ class RobustGraspingPolicy(GraspingPolicy):
         # Sort grasps.
         num_grasps = len(grasps)
         grasps_and_predictions = zip(np.arange(num_grasps), q_value)
-        grasps_and_predictions.sort(key=lambda x: x[1], reverse=True)
+        grasps_and_predictions = sorted(grasps_and_predictions, key=lambda x: x[1], reverse=True)
 
         # Return top grasps.
         if self._filters is None:
@@ -1059,7 +1059,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                         save_fname="cem_iter_{}.png".format(j),
                         save_path=state_output_dir)
                 display_grasps_and_q_values = zip(grasps, q_values)
-                display_grasps_and_q_values.sort(key=lambda x: x[1])
+                display_grasps_and_q_values = sorted(display_grasps_and_q_values, key=lambda x: x[1])
                 vis.figure(size=(GeneralConstants.FIGSIZE,
                                  GeneralConstants.FIGSIZE))
                 vis.imshow(rgbd_im.depth,
@@ -1241,7 +1241,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                     save_fname="final_sampled_grasps.png".format(j),
                     save_path=state_output_dir)
             display_grasps_and_q_values = zip(grasps, q_values)
-            display_grasps_and_q_values.sort(key=lambda x: x[1])
+            display_grasps_and_q_values = sorted(display_grasps_and_q_values, key=lambda x: x[1])
             vis.figure(size=(GeneralConstants.FIGSIZE,
                              GeneralConstants.FIGSIZE))
             vis.imshow(rgbd_im.depth,
@@ -1633,7 +1633,7 @@ class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
             raise NoValidGraspsException()
 
         # Rank based on q value.
-        actions.sort(key=lambda x: x.q_value, reverse=True)
+        actions = sorted(actions, key=lambda x: x.q_value, reverse=True)
         return actions[0]
 
     def action_set(self, state, policy_subset=None, min_q_value=-1.0):
