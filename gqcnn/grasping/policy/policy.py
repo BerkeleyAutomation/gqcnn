@@ -795,7 +795,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if num_grasps == 0:
             raise NoValidGraspsException("Zero grasps")
         grasps_and_predictions = zip(np.arange(num_grasps), q_values)
-        grasps_and_predictions.sort(key=lambda x: x[1], reverse=True)
+        grasps_and_predictions = sorted(grasps_and_predictions, key=lambda x: x[1], reverse=True)
 
         # Return top grasps.
         if self._filters is None:
@@ -1039,7 +1039,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             # Sort grasps.
             resample_start = time()
             q_values_and_indices = zip(q_values, np.arange(num_grasps))
-            q_values_and_indices.sort(key=lambda x: x[0], reverse=True)
+            q_values_and_indices = sorted(q_values_and_indices, key=lambda x: x[0], reverse=True)
 
             if self.config["vis"]["grasp_candidates"]:
                 # Display each grasp on the original image, colored by
