@@ -1147,7 +1147,7 @@ class GQCNNTF(object):
 
         return fc, out_size
 
-    # TODO(vsatish): This really doesn"t need to it"s own layer type...it does
+    # TODO(vsatish): This really doesn't need to it's own layer type...it does
     # the same thing as `_build_fc_layer`.
     def _build_pc_layer(self, input_node, fan_in, out_size, name):
         self._logger.info(
