@@ -142,7 +142,7 @@ class InstallCmd(install, object):
 
 requirements = [
     "autolab-core", "autolab-perception", "visualization", "numpy", "scipy",
-    "matplotlib", "opencv-python", "scikit-image<=0.14.2", "scikit-learn", "psutil",
+    "matplotlib<=2.2.0", "opencv-python", "scikit-image<=0.14.2", "scikit-learn", "psutil",
     "gputil"
 ]
 
