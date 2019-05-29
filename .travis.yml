@@ -55,11 +55,19 @@ before_install:
   - sudo apt-get install python-opengl  # For GLU.
   - sudo apt-get install freeglut3-dev  # For GL.
 
-install: 
-  - pip install .
+#install: 
+#  - pip install .
+
+#script:
+#  - python -c "import gqcnn"
+
+install:
+  - pip install PyOpenGL
+  - pip install pyglet
 
 script:
-  - python -c "import gqcnn"
+  - python -c "import OpenGL"
+  - python -c "import pyglet"
 
 notifications:
   email: false
