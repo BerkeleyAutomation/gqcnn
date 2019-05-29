@@ -322,7 +322,7 @@ class SuctionPoint2D(object):
         center_px = v[:2]
 
         grasp_axis = np.array([0,0,-1])
-        if v.shape > 2 and axis is None:
+        if v.shape[0] > 2 and axis is None:
             grasp_axis = v[2:5]
             grasp_axis = grasp_axis / np.linalg.norm(grasp_axis)
         elif axis is not None:
