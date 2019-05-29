@@ -53,6 +53,7 @@ matrix:
 before_install:
   - sudo apt-get update
   - sudo apt-get install python-opengl  # For GLU.
+  - sudo apt-get install freeglut-dev  # For GL.
 
 install: 
   - pip install .
