@@ -565,7 +565,9 @@ class RobustGraspingPolicy(GraspingPolicy):
         # Sort grasps.
         num_grasps = len(grasps)
         grasps_and_predictions = zip(np.arange(num_grasps), q_value)
-        grasps_and_predictions = sorted(grasps_and_predictions, key=lambda x: x[1], reverse=True)
+        grasps_and_predictions = sorted(grasps_and_predictions,
+                                        key=lambda x: x[1],
+                                        reverse=True)
 
         # Return top grasps.
         if self._filters is None:
@@ -795,7 +797,9 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
         if num_grasps == 0:
             raise NoValidGraspsException("Zero grasps")
         grasps_and_predictions = zip(np.arange(num_grasps), q_values)
-        grasps_and_predictions = sorted(grasps_and_predictions, key=lambda x: x[1], reverse=True)
+        grasps_and_predictions = sorted(grasps_and_predictions,
+                                        key=lambda x: x[1],
+                                        reverse=True)
 
         # Return top grasps.
         if self._filters is None:
@@ -1039,7 +1043,9 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             # Sort grasps.
             resample_start = time()
             q_values_and_indices = zip(q_values, np.arange(num_grasps))
-            q_values_and_indices = sorted(q_values_and_indices, key=lambda x: x[0], reverse=True)
+            q_values_and_indices = sorted(q_values_and_indices,
+                                          key=lambda x: x[0],
+                                          reverse=True)
 
             if self.config["vis"]["grasp_candidates"]:
                 # Display each grasp on the original image, colored by
@@ -1059,7 +1065,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                         save_fname="cem_iter_{}.png".format(j),
                         save_path=state_output_dir)
                 display_grasps_and_q_values = zip(grasps, q_values)
-                display_grasps_and_q_values = sorted(display_grasps_and_q_values, key=lambda x: x[1])
+                display_grasps_and_q_values = sorted(
+                    display_grasps_and_q_values, key=lambda x: x[1])
                 vis.figure(size=(GeneralConstants.FIGSIZE,
                                  GeneralConstants.FIGSIZE))
                 vis.imshow(rgbd_im.depth,
@@ -1241,7 +1248,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                     save_fname="final_sampled_grasps.png".format(j),
                     save_path=state_output_dir)
             display_grasps_and_q_values = zip(grasps, q_values)
-            display_grasps_and_q_values = sorted(display_grasps_and_q_values, key=lambda x: x[1])
+            display_grasps_and_q_values = sorted(display_grasps_and_q_values,
+                                                 key=lambda x: x[1])
             vis.figure(size=(GeneralConstants.FIGSIZE,
                              GeneralConstants.FIGSIZE))
             vis.imshow(rgbd_im.depth,

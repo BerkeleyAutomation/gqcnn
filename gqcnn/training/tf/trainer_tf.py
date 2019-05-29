@@ -463,15 +463,20 @@ class GQCNNTrainerTF(object):
                     start_time = time.time()
                     self.logger.info("Step {} (epoch {}), {} s".format(
                         step,
-                        str(round(step * self.train_batch_size / self.num_train,
-                              3)),
-                        str(round(1000 * elapsed_time / self.eval_frequency, 2))))
+                        str(
+                            round(
+                                step * self.train_batch_size / self.num_train,
+                                3)),
+                        str(round(1000 * elapsed_time / self.eval_frequency,
+                                  2))))
                     self.logger.info(
                         "Minibatch loss: {}, learning rate: {}".format(
                             str(round(l, 3)), str(round(lr, 6))))
                     if self.progress_dict is not None:
-                        self.progress_dict["epoch"] = str(round(
-                            step * self.train_batch_size / self.num_train, 2))
+                        self.progress_dict["epoch"] = str(
+                            round(
+                                step * self.train_batch_size / self.num_train,
+                                2))
 
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
