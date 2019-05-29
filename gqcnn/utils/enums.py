@@ -93,6 +93,7 @@ class GQCNNTrainingStatus(object):
 # Enum for filenames.
 class GQCNNFilenames(object):
     PCT_POS_VAL = "pct_pos_val.npy"
+    PCT_POS_TRAIN = "pct_pos_train.npy"
     LEARNING_RATES = "learning_rates.npy"
 
     TRAIN_ITERS = "train_eval_iters.npy"

@@ -311,20 +311,20 @@ class GQCNNTF(object):
         if use_legacy:
             layer_iter = iter(base_arch)
             while not found_base_layer:
-                layer_name = layer_iter.next()
+                layer_name = next(layer_iter)
                 self._base_layer_names.append(layer_name)
                 if layer_name == output_layer:
                     found_base_layer = True
         else:
             stream_iter = iter(base_arch)
             while not found_base_layer:
-                stream_name = stream_iter.next()
+                stream_name = next(stream_iter)
                 stream_arch = base_arch[stream_name]
                 layer_iter = iter(stream_arch)
                 stop = False
                 while not found_base_layer and not stop:
                     try:
-                        layer_name = layer_iter.next()
+                        layer_name = next(layer_iter)
                         self._base_layer_names.append(layer_name)
                         if layer_name == output_layer:
                             found_base_layer = True

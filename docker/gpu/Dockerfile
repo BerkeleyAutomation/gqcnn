@@ -3,10 +3,10 @@ FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04
 MAINTAINER Vishal Satish <vsatish@berkeley.edu>
 
 # Args
-# work_dir must be an absolute path
+# `work_dir` must be an absolute path.
 ARG work_dir=/root/Workspace 
 
-# Install apt-get deps
+# Install `apt-get` deps.
 RUN apt-get update && apt-get install -y \
         build-essential \ 
         python3.7 \ 
@@ -21,18 +21,18 @@ RUN apt-get update && apt-get install -y \
         wget \
         unzip
   
-# Install pip (`apt-get install python-pip` causes trouble w/ networkx)
+# Install pip (`apt-get install python-pip` causes trouble w/ networkx).
 RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
 	python get-pip.py && \
 	rm get-pip.py
 
-# Make working directory
+# Make working directory.
 WORKDIR ${work_dir}
 
-# Copy the library 
+# Copy the library.
 ADD docker/gqcnn.tar .
 
-# This is because `python setup.py develop` skips install_requires (I think) and also because we want to explicitly use the GPU requirements
+# This is because `python setup.py develop` skips install_requires (I think) and also because we want to explicitly use the GPU requirements.
 RUN pip install -r gqcnn/requirements/gpu_requirements.txt
 
 # Install the library in editable mode because it's more versatile (in case we want to develop or if users want to modify things)

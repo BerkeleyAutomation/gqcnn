@@ -712,7 +712,7 @@ class GQCNNAnalyzer(object):
             pct_pos_val_filename = os.path.join(model_dir,
                                                 GQCNNFilenames.PCT_POS_VAL)
             train_losses_filename = os.path.join(model_dir,
-                                                 GQCNNFilenames.TRAIN_LOSS)
+                                                 GQCNNFilenames.TRAIN_LOSSES)
 
             raw_train_errors = np.load(train_errors_filename)
             val_errors = np.load(val_errors_filename)

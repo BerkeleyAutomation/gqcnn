@@ -424,7 +424,7 @@ class GQCNNTrainerTF(object):
                             options=GeneralConstants.timeout_option)
                 step_stop = time.time()
                 self.logger.info("Step took {} sec.".format(
-                    round(step_stop - step_start, 3)))
+                    str(round(step_stop - step_start, 3))))
 
                 if self.training_mode == TrainingMode.REGRESSION:
                     self.logger.info("Max " + str(np.max(predictions)))
@@ -463,15 +463,15 @@ class GQCNNTrainerTF(object):
                     start_time = time.time()
                     self.logger.info("Step {} (epoch {}), {} s".format(
                         step,
-                        round(step * self.train_batch_size / self.num_train,
-                              3),
-                        round(1000 * elapsed_time / self.eval_frequency, 2)))
+                        str(round(step * self.train_batch_size / self.num_train,
+                              3)),
+                        str(round(1000 * elapsed_time / self.eval_frequency, 2))))
                     self.logger.info(
                         "Minibatch loss: {}, learning rate: {}".format(
-                            round(l, 3), round(lr, 6)))
+                            str(round(l, 3)), str(round(lr, 6))))
                     if self.progress_dict is not None:
-                        self.progress_dict["epoch"] = round(
-                            step * self.train_batch_size / self.num_train, 2)
+                        self.progress_dict["epoch"] = str(round(
+                            step * self.train_batch_size / self.num_train, 2))
 
                     train_error = l
                     if self.training_mode == TrainingMode.CLASSIFICATION:
@@ -483,7 +483,7 @@ class GQCNNTrainerTF(object):
                         train_error = classification_result.error_rate
 
                     self.logger.info("Minibatch error: {}".format(
-                        round(train_error, 3)))
+                        str(round(train_error, 3))))
 
                     self.summary_writer.add_summary(
                         self.sess.run(
@@ -510,7 +510,7 @@ class GQCNNTrainerTF(object):
                         train_result = self._error_rate_in_batches(
                             validation_set=False)
                         self.logger.info("Training error: {}".format(
-                            round(train_result.error_rate, 3)))
+                            str(round(train_result.error_rate, 3))))
 
                         # Update the `TrainStatsLogger` and save.
                         self.train_stats_logger.update(
@@ -534,9 +534,9 @@ class GQCNNTrainerTF(object):
                                     error_rate
                                 }), step)
                         self.logger.info("Validation error: {}".format(
-                            round(val_result.error_rate, 3)))
+                            str(round(val_result.error_rate, 3))))
                         self.logger.info("Validation loss: {}".format(
-                            round(val_result.cross_entropy_loss, 3)))
+                            str(round(val_result.cross_entropy_loss, 3))))
                     sys.stdout.flush()
 
                     # Update the `TrainStatsLogger`.
@@ -580,9 +580,9 @@ class GQCNNTrainerTF(object):
             # Get final errors and flush the stdout pipeline.
             final_val_result = self._error_rate_in_batches()
             self.logger.info("Final validation error: {}".format(
-                round(final_val_result.error_rate, 3)))
+                str(round(final_val_result.error_rate, 3))))
             self.logger.info("Final validation loss: {}".format(
-                round(final_val_result.cross_entropy_loss, 3)))
+                str(round(final_val_result.cross_entropy_loss, 3))))
             if self.cfg["eval_total_train_error"]:
                 final_train_result = self._error_rate_in_batches(
                     validation_set=False)
@@ -1424,7 +1424,7 @@ class GQCNNTrainerTF(object):
                                                      file_num)
                 read_stop = time.time()
                 self.logger.debug("Reading data took {} sec".format(
-                    round(read_stop - read_start, 3)))
+                    str(round(read_stop - read_start, 3))))
                 self.logger.debug("File num: {}".format(file_num))
 
                 # Get batch indices uniformly at random.
@@ -1552,7 +1552,7 @@ class GQCNNTrainerTF(object):
                     time.sleep(GeneralConstants.QUEUE_SLEEP)
                 queue_stop = time.time()
                 self.logger.debug("Queue batch took {} sec".format(
-                    round(queue_stop - queue_start, 3)))
+                    str(round(queue_stop - queue_start, 3))))
 
     def _distort(self, image_arr, pose_arr):
         """Adds noise to a batch of images."""
