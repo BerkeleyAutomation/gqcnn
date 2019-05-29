@@ -147,8 +147,8 @@ requirements = [
 ]
 
 if sys.version[0] == "2":
-    # The Python 2 meshrender installation is broken, and we don't know
-    # when it will be fixed.
+    # The Python 2 installation for the latest version of meshrender
+    # is broken, and we don't know when it will be fixed.
     requirements.append("meshrender==0.0.9")
 
 exec(
