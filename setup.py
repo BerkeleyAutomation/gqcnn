@@ -141,10 +141,15 @@ class InstallCmd(install, object):
 
 
 requirements = [
-    "autolab-core", "autolab-perception", "meshrender==0.0.9", "visualization", "numpy", "scipy",
+    "autolab-core", "autolab-perception", "visualization", "numpy", "scipy",
     "matplotlib<=2.2.0", "opencv-python", "scikit-image<=0.14.2", "scikit-learn", "psutil",
     "gputil"
 ]
+
+if sys.version[0] == "2":
+    # The Python 2 meshrender installation is broken, and we don't know
+    # when it will be fixed.
+    requirements.append("meshrender==0.0.9")
 
 exec(
     open(
