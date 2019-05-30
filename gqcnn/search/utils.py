@@ -101,7 +101,7 @@ def parse_master_train_config(train_config):
         num_params = []
         for field in fields:
             num_params.append(len(get_nested_key(train_config, field)))
-        invalid_anchor_tag_msg = ("All fields in anchor tag \"{}\" do not have"
+        invalid_anchor_tag_msg = ("All fields in anchor tag '{}' do not have"
                                   " the same # of parameters to search over!")
         assert max(num_params) == min(
             num_params), invalid_anchor_tag_msg.format(anchor_tag)

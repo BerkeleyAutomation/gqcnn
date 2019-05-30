@@ -103,7 +103,7 @@ if __name__ == "__main__":
     if len(split_names) < len(datasets):
         if len(split_names) == 1:
             logger.warning(
-                "Using split \"{}\" for all datasets/configs...".format(
+                "Using split '{}' for all datasets/configs...".format(
                     split_names[0]))
             split_names *= len(datasets)
         else:

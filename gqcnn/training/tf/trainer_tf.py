@@ -195,7 +195,7 @@ class GQCNNTrainerTF(object):
         elif self.cfg["optimizer"] == "rmsprop":
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
         else:
-            raise ValueError("Optimizer \"{}\" not supported".format(
+            raise ValueError("Optimizer '{}' not supported".format(
                 self.cfg["optimizer"]))
 
         # Compute gradients.
@@ -1095,7 +1095,7 @@ class GQCNNTrainerTF(object):
         self.training_mode = self.cfg["training_mode"]
         if self.training_mode != TrainingMode.CLASSIFICATION:
             raise ValueError(
-                "Training mode \"{}\" not currently supported!".format(
+                "Training mode '{}' not currently supported!".format(
                     self.training_mode))
 
         # Tensorboad.
@@ -1252,7 +1252,7 @@ class GQCNNTrainerTF(object):
                 train_label_dtype = tf.float32
                 self.numpy_dtype = np.float32
         else:
-            raise ValueError("Training mode \"{}\" not supported".format(
+            raise ValueError("Training mode '{}' not supported".format(
                 self.training_mode))
 
         # Set up placeholders.

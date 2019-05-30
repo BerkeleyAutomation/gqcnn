@@ -101,7 +101,7 @@ def pose_dim(gripper_mode):
         return 2
     else:
         raise ValueError(
-            "Gripper mode \"{}\" not supported.".format(gripper_mode))
+            "Gripper mode '{}' not supported.".format(gripper_mode))
 
 
 def read_pose_data(pose_arr, gripper_mode):
@@ -147,7 +147,7 @@ def read_pose_data(pose_arr, gripper_mode):
             return pose_arr[:, 2:4]
     else:
         raise ValueError(
-            "Gripper mode \"{}\" not supported.".format(gripper_mode))
+            "Gripper mode '{}' not supported.".format(gripper_mode))
 
 
 def reduce_shape(shape):

@@ -1394,7 +1394,7 @@ class GQCNNTF(object):
         self._logger.info("Building Network...")
         if self._input_depth_mode == InputDepthMode.POSE_STREAM:
             missing_stream_msg = ("When using input depth mode"
-                                  " \"pose_stream\", both pose stream and"
+                                  " 'pose_stream', both pose stream and"
                                   " merge stream must be present!")
             assert "pose_stream" in self._architecture and \
                 "merge_stream" in self._architecture, missing_stream_msg
@@ -1414,7 +1414,7 @@ class GQCNNTF(object):
                     self._architecture["merge_stream"])[0]
         elif self._input_depth_mode == InputDepthMode.SUB or \
                 self._input_depth_mode == InputDepthMode.IM_ONLY:
-            extraneous_stream_msg = ("When using input depth mode \"{}\", only"
+            extraneous_stream_msg = ("When using input depth mode '{}', only"
                                      " im stream is allowed!")
             assert not ("pose_stream" in self._architecture
                         or "merge_stream" in self._architecture

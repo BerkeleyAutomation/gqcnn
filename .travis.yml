@@ -48,7 +48,7 @@ matrix:
         - pip install yapf==0.27.0  # Must use specific version.
         - pip install flake8 flake8-comprehensions flake8-quotes==2.0.0
         - ./ci/travis/format.sh --all  # Should exit with 0 for no diffs.
-        - flake8 --inline-quotes '"' --no-avoid-escape --exclude=docs/source/conf.py --ignore=C408,E121,E123,E126,E226,E24,E704,W503,W504,W605
+        - flake8
 
 before_install:
   - sudo apt-get update

@@ -1,0 +1,5 @@
+[flake8]
+ignore = C408, E121, E123, E126, E226, E24, E704, W503, W504, W605
+exclude = docs/source/conf.py
+inline-quotes = "
+no-avoid-escape = 1
