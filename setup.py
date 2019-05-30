@@ -24,6 +24,15 @@ Setup of gqcnn python codebase
 Author: Vishal Satish
 """
 from setuptools import setup, find_packages
+import subprocess
+
+# Check if CUDA is installed.
+tensorflow_dep = 'tensorflow-gpu'
+try:
+    subprocess.check_call(['nvcc', '--version'])
+except Exception as e:
+    print('Could not find nvcc, using tensorflow (non-gpu)')
+    tensorflow_dep = 'tensorflow'
 
 requirements = [
 #    'autolab-core',
@@ -33,7 +42,7 @@ requirements = [
     'scipy',
     'matplotlib',
     'opencv-python',
-    'tensorflow-gpu',
+    tensorflow_dep,
     'scikit-image',
     'scikit-learn',
     'psutil',
