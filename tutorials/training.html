@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Training &mdash; GQCNN 1.0.0 documentation</title>
+  <title>Training &mdash; GQCNN 1.1.0 documentation</title>
   
 
   
@@ -17,32 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -56,7 +58,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.1
               </div>
             
           
@@ -189,10 +191,10 @@
 </div>
 <p>The args are:</p>
 <ol class="arabic simple">
-<li><strong>training_dataset_path</strong>: Path to the training dataset.</li>
-<li><strong>pretrained_network_name</strong>: Name of pre-trained GQ-CNN.</li>
-<li><strong>config_filename</strong>: Name of the config file to use.</li>
-<li><strong>model_name</strong>: Name for the model.</li>
+<li><p><strong>training_dataset_path</strong>: Path to the training dataset.</p></li>
+<li><p><strong>pretrained_network_name</strong>: Name of pre-trained GQ-CNN.</p></li>
+<li><p><strong>config_filename</strong>: Name of the config file to use.</p></li>
+<li><p><strong>model_name</strong>: Name for the model.</p></li>
 </ol>
 <p>To train a GQ-CNN for a <strong>parallel jaw</strong> gripper on a sample dataset, run the fine-tuning script:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python tools/finetune.py data/training/example_pj/ GQCNN-4.0-PJ --config_filename cfg/finetune_example_pj.yaml --name gqcnn_example_pj
@@ -239,26 +241,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

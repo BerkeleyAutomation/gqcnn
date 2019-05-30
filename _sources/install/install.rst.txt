@@ -4,7 +4,7 @@ Prerequisites
 Python
 """"""
 
-The `gqcnn` package has only been tested with `Python 2.7`.
+The `gqcnn` package has only been tested with `Python 2.7`, `Python 3.5`, `Python 3.6`, and `Python 3.7`.
 
 Ubuntu
 """"""

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Replicating Results &mdash; GQCNN 1.0.0 documentation</title>
+  <title>Replicating Results &mdash; GQCNN 1.1.0 documentation</title>
   
 
   
@@ -17,34 +17,36 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Dex-Net 2.0" href="../benchmarks/benchmarks.html" />
     <link rel="prev" title="Overview" href="../tutorials/tutorial.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -58,7 +60,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.1
               </div>
             
           
@@ -205,16 +207,15 @@
 <p>Numerous publications in the larger <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/">Dex-Net</a> project utilize GQ-CNNs, particularly <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_3">Dex-Net 3.0</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a>, and <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>. One of the goals of the <cite>gqcnn</cite> library is to provide the necessary code and instructions for replicating the results of these papers. Thus, we have provided a number of replication scripts under the <cite>scripts/</cite> directory.</p>
 <p>There are two ways to replicate results:</p>
 <ol class="arabic simple">
-<li><strong>Use a pre-trained model:</strong> Download a pre-trained GQ-CNN model and run an example policy.</li>
-<li><strong>Train from scratch:</strong> Download the raw dataset, train a GQ-CNN model, and run an example policy using the model you just trained.</li>
+<li><p><strong>Use a pre-trained model:</strong> Download a pre-trained GQ-CNN model and run an example policy.</p></li>
+<li><p><strong>Train from scratch:</strong> Download the raw dataset, train a GQ-CNN model, and run an example policy using the model you just trained.</p></li>
 </ol>
 <p><strong>We highly encourage method 1.</strong> Note that method 2 is computationally expensive as training takes roughly 24 hours on a Nvidia Titan Xp GPU. Furthermore, the raw datasets are fairly large in size.</p>
-<dl class="docutils">
-<dt>Please keep in mind that GQ-CNN models are sensitive to the following parameters used during dataset generation:</dt>
-<dd><ol class="first last arabic simple">
-<li>The robot gripper</li>
-<li>The depth camera</li>
-<li>The distance between the camera and workspace.</li>
+<dl class="simple">
+<dt>Please keep in mind that GQ-CNN models are sensitive to the following parameters used during dataset generation:</dt><dd><ol class="arabic simple">
+<li><p>The robot gripper</p></li>
+<li><p>The depth camera</p></li>
+<li><p>The distance between the camera and workspace.</p></li>
 </ol>
 </dd>
 </dl>
@@ -385,7 +386,7 @@
         <a href="../benchmarks/benchmarks.html" class="btn btn-neutral float-right" title="Dex-Net 2.0" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../tutorials/tutorial.html" class="btn btn-neutral" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../tutorials/tutorial.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -411,26 +412,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
