@@ -1,6 +1,28 @@
-#!/bin/sh
+#!/bin/bash
 
-# DOWNLOAD MODELS (if they don't exist already)
+# Copyright ©2017. The Regents of the University of California (Regents).
+# All Rights Reserved. Permission to use, copy, modify, and distribute this
+# software and its documentation for educational, research, and not-for-profit
+# purposes, without fee and without a signed licensing agreement, is hereby
+# granted, provided that the above copyright notice, this paragraph and the
+# following two paragraphs appear in all copies, modifications, and
+# distributions. Contact The Office of Technology Licensing, UC Berkeley, 2150
+# Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201,
+# otl@berkeley.edu,
+# http://ipira.berkeley.edu/industry-info for commercial licensing opportunities.
+
+# IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL,
+# INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF
+# THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF REGENTS HAS BEEN
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
+# HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
+# MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+
+# DOWNLOAD MODELS (if they don't exist already).
 mkdir -p models
 cd models
 
@@ -20,9 +42,9 @@ fi
 
 cd ..
 
-# DOWNLOAD DATASETS (if they don't already exist)
+# DOWNLOAD DATASETS (if they don't already exist).
 
-# PARALLEL JAW
+# PARALLEL JAW.
 mkdir -p data/training
 cd data/training
 
@@ -34,7 +56,7 @@ else
     echo "Found existing example PJ dataset..."
 fi
 
-# SUCTION
+# SUCTION.
 if [ ! -d "example_suction" ]; then
     wget -O example_training_dataset_suction.zip https://berkeley.box.com/shared/static/fc9zb2cbql5rz6qtp11f6m7s0hyt1dwf.zip
     unzip example_training_dataset_suction.zip
@@ -44,4 +66,3 @@ else
 fi
 
 cd ../..
-

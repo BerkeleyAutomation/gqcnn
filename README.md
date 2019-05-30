@@ -1,8 +1,10 @@
 # Berkeley AUTOLAB's GQCNN Package
 <p>
+    <a><img alt="Build Status" src="https://travis-ci.org/BerkeleyAutomation/gqcnn.svg?branch=master"></a>
     <a href="https://github.com/BerkeleyAutomation/gqcnn/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/BerkeleyAutomation/gqcnn.svg?style=flat"></a>
     <a href="https://github.com/BerkeleyAutomation/gqcnn/blob/master/LICENSE"><img alt="Software License" src="https://img.shields.io/badge/license-REGENTS-brightgreen.svg"></a>
-    <a><img alt="Python Version" src="https://img.shields.io/badge/python-2.7-yellow.svg"></a>
+    <a><img alt="Python 2 Version" src="https://img.shields.io/badge/python-2.7-yellow.svg"></a>
+    <a><img alt="Python 2 Version" src="https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-yellowgreen.svg"></a>
 </p>
 
 ## Package Overview
