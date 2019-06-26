@@ -117,6 +117,7 @@ class GQCNNTrainerTF(object):
         :obj:`tensorflow Tensor`
             loss
         """
+        import ipdb; ipdb.set_trace()
         if self.cfg['loss'] == 'l2':
             return (1.0 / self.train_batch_size) * tf.nn.l2_loss(tf.subtract(tf.nn.sigmoid(self.train_net_output), self.train_labels_node))
         elif self.cfg['loss'] == 'sparse':
@@ -309,6 +310,7 @@ class GQCNNTrainerTF(object):
 
         # begin optimization loop
         try:
+            import ipdb; ipdb.set_trace()
             self.prefetch_q_workers = []
             for i in range(self.num_prefetch_q_workers):
                 p = mp.Process(target=self._load_and_enqueue)

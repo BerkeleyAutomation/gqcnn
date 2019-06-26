@@ -60,13 +60,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
     #depth_im_filename = args.depth_image
     print("starting")
-    for iter in xrange(23,60):
+    for iter in xrange(17):
         depth_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
             '..',
-            'data/hsr/d_img_angle_13_num_' + str(iter).zfill(3) + '.npy')
+            'data/examples/mobile/depth_' + str(iter) + '.npy')
         rgb_im_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
             '..',
-            'data/hsr/c_img_angle_13_num_' + str(iter).zfill(3) + '.png')
+            'data/examples/mobile/rgb_' + str(iter) + '.png')
         segmask_filename = args.segmask
         camera_intr_filename = args.camera_intr
         model_dir = args.model_dir
@@ -101,7 +101,7 @@ if __name__ == '__main__':
                 config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                '..',
                                                'cfg/examples/policy.yaml')
-       
+
         # read config
         config = YamlConfig(config_filename)
         inpaint_rescale_factor = config['inpaint_rescale_factor']
@@ -188,6 +188,7 @@ if __name__ == '__main__':
 
         # query policy
         policy_start = time.time()
+        import ipdb; ipdb.set_trace()
         action = policy(state)
         logger.info('Planning took %.3f sec' %(time.time() - policy_start))
 
@@ -206,5 +207,5 @@ if __name__ == '__main__':
             vis.imshow(rgbd_im.color)
             vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
             vis.title('Planned grasp at depth {0:.3f}m with Q={1:.3f}'.format(action.grasp.depth, action.q_value))
-            vis.savefig('/home/benno/Github/gqcnn/data/hsr/grasps/c_img_angle_13_num_' + str(iter).zfill(3) + '.png')
+            vis.savefig(os.getcwd()+ '/data/examples/mobile/result_depth_' + str(iter) + '.png')
             vis.show()
