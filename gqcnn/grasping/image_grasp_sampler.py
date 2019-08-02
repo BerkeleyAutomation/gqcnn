@@ -842,6 +842,10 @@ class HSRAntipodalDepthImageGraspSampler(ImageGraspSampler):
             # compute depths
             depth = (depth_im.data[p3[0],p3[1]] + depth_im.data[p4[0],p4[1]]) / 2
             pixel_dist = p1 - p2
+            # print k
+            # if k == 12:
+            #     import ipdb; ipdb.set_trace()
+            pixel_dist = pixel_dist.astype(np.int64)
             width = math.sqrt(np.dot(pixel_dist, pixel_dist)) * 0.0018 / depth
 
             k += 1
