@@ -40,7 +40,9 @@ policy:
   # metrics
   metric:
     type: gqcnn
-    gqcnn_model: /path/to/your/GQ-Image-Wise
+#    gqcnn_model: models/GQCNN-4.0-HSR-PJ-far-angle-scratch
+    gqcnn_model: models/GQCNN-4.0-PJ
+    #gqcnn_model: /path/to/your/GQ-Image-Wise
     
     crop_height: 96
     crop_width: 96
