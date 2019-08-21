@@ -102,7 +102,7 @@ class FCGQCNNTF(GQCNNTF):
         return packed
 
     def _build_fully_conv_layer(self, input_node, filter_dim, fc_name, final_fc_layer=False):
-        self._logger.info('Converting fc layer {} to fully convolutional...'.format(fc_name))
+        self._logger.debug('Converting fc layer {} to fully convolutional...'.format(fc_name))
         
         # create new set of weights by reshaping fully connected layer weights
         fcW = self._weights.weights['{}_weights'.format(fc_name)]
@@ -131,7 +131,7 @@ class FCGQCNNTF(GQCNNTF):
         return convh
 
     def _build_fully_conv_merge_layer(self, input_node_im, input_node_pose, filter_dim, fc_name):
-        self._logger.info('Converting fc merge layer {} to fully convolutional...'.format(fc_name))
+        self._logger.debug('Converting fc merge layer {} to fully convolutional...'.format(fc_name))
 
         # create new set of weights for image stream by reshaping fully-connected layer weights
         fcW_im = self._weights.weights['{}_input_1_weights'.format(fc_name)]
@@ -163,7 +163,7 @@ class FCGQCNNTF(GQCNNTF):
         return convh
 
     def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, layers, only_stream=False):
-        self._logger.info('Building Image Stream...')
+        self._logger.debug('Building Image Stream...')
 
         output_node = input_node
         prev_layer = "start" # dummy placeholder
@@ -196,7 +196,7 @@ class FCGQCNNTF(GQCNNTF):
         return output_node, -1
 
     def _build_merge_stream(self, input_stream_1, input_stream_2, fan_in_1, fan_in_2, drop_rate, layers):
-        self._logger.info('Building Merge Stream...')
+        self._logger.debug('Building Merge Stream...')
         
         # first check if first layer is a merge layer
         if layers[list(layers.keys())[0]]['type'] != 'fc_merge':

@@ -491,7 +491,7 @@ class GQCNNTF(object):
         if self._sess is not None:
             self._logger.warning('Found already initialized TF Session...')
             return self._sess
-        self._logger.info('Initializing TF Session...')
+        self._logger.debug('Initializing TF Session...')
         with self._graph.as_default():
             init = tf.global_variables_initializer()
             self.tf_config = tf.ConfigProto()
@@ -506,7 +506,7 @@ class GQCNNTF(object):
         if self._sess is None:
             self._logger.warning('No TF Session to close...')
             return
-        self._logger.info('Closing TF Session...')
+        self._logger.debug('Closing TF Session...')
         with self._graph.as_default():
             self._sess.close()
             self._sess = None
@@ -740,18 +740,18 @@ class GQCNNTF(object):
         """Adds softmax to output of network."""
         with tf.name_scope('softmax'):
             if num_outputs  > 0:
-                self._logger.info('Building Pair-wise Softmax Layer...')
+                self._logger.debug('Building Pair-wise Softmax Layer...')
                 binwise_split_output = tf.split(self._output_tensor, num_outputs, axis=-1)
                 binwise_split_output_soft = [tf.nn.softmax(s, name='output_%03d'%(i)) for i, s in enumerate(binwise_split_output)]
                 self._output_tensor = tf.concat(binwise_split_output_soft, -1, name='output')
             else:
-                self._logger.info('Building Softmax Layer...')
+                self._logger.debug('Building Softmax Layer...')
                 self._output_tensor = tf.nn.softmax(self._output_tensor, name='output')
 
     def add_sigmoid_to_output(self):
         """Adds sigmoid to output of network."""
         with tf.name_scope('sigmoid'):
-            self._logger.info('Building Sigmoid Layer...')
+            self._logger.debug('Building Sigmoid Layer...')
             self._output_tensor = tf.nn.sigmoid(self._output_tensor)
 
     def update_batch_size(self, batch_size):
@@ -780,7 +780,7 @@ class GQCNNTF(object):
         start_time = time.time()
 
         if verbose:
-            self._logger.info('Predicting...')
+            self._logger.debug('Predicting...')
 
         # setup for prediction
         num_batches = math.ceil(image_arr.shape[0] / self._batch_size)
@@ -799,7 +799,7 @@ class GQCNNTF(object):
             batch_idx = 0
             while i < num_images:
                 if verbose:
-                    self._logger.info('Predicting batch {} of {}...'.format(batch_idx, num_batches))
+                    self._logger.debug('Predicting batch {} of {}...'.format(batch_idx, num_batches))
                 batch_idx += 1
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
@@ -862,7 +862,7 @@ class GQCNNTF(object):
         # get total prediction time
         pred_time = time.time() - start_time
         if verbose:
-            self._logger.info('Prediction took {} seconds.'.format(pred_time))
+            self._logger.debug('Prediction took {} seconds.'.format(pred_time))
 
         return output_arr
 
@@ -899,7 +899,7 @@ class GQCNNTF(object):
         start_time = time.time()
 
         if verbose:
-            self._logger.info('Featurizing...')
+            self._logger.debug('Featurizing...')
 
         if feature_layer not in self._feature_tensors.keys():
             raise ValueError('Feature layer: {} not recognized.'.format(feature_layer))
@@ -920,7 +920,7 @@ class GQCNNTF(object):
             i = 0
             while i < num_images:
                 if verbose:
-                    self._logger.info('Featurizing {} of {}...'.format(i, num_images))
+                    self._logger.debug('Featurizing {} of {}...'.format(i, num_images))
                 dim = min(self._batch_size, num_images - i)
                 cur_ind = i
                 end_ind = cur_ind + dim
@@ -945,7 +945,7 @@ class GQCNNTF(object):
                 i = end_ind
 
         if verbose:
-            self._logger.info('Featurization took {} seconds'.format(time.time() - start_time))
+            self._logger.debug('Featurization took {} seconds'.format(time.time() - start_time))
 
         # truncate extraneous values off of end of output_arr
         output_arr = output_arr[:num_images] #TODO: @Jeff, this isn't needed, right?
@@ -955,18 +955,18 @@ class GQCNNTF(object):
         return tf.maximum(alpha * x, x)
     
     def _build_conv_layer(self, input_node, input_height, input_width, input_channels, filter_h, filter_w, num_filt, pool_stride_h, pool_stride_w, pool_size, name, norm=False, pad='SAME'):
-        self._logger.info('Building convolutional layer: {}...'.format(name))       
+        self._logger.debug('Building convolutional layer: {}...'.format(name))       
         with tf.name_scope(name):
             # initialize weights
             if '{}_weights'.format(name) in self._weights.weights.keys():
                 convW = self._weights.weights['{}_weights'.format(name)]
                 convb = self._weights.weights['{}_bias'.format(name)] 
             elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
-                self._logger.info('Using old format for layer {}.'.format(name))
+                self._logger.debug('Using old format for layer {}.'.format(name))
                 convW = self._weights.weights['{}W'.format(name)]
                 convb = self._weights.weights['{}b'.format(name)] 
             else:
-                self._logger.info('Reinitializing layer {}.'.format(name))
+                self._logger.debug('Reinitializing layer {}.'.format(name))
                 convW_shape = [filter_h, filter_w, input_channels, num_filt]
 
                 fan_in = filter_h * filter_w * input_channels
@@ -1012,18 +1012,18 @@ class GQCNNTF(object):
             return pool, out_height, out_width, out_channels
 
     def _build_fc_layer(self, input_node, fan_in, out_size, name, input_is_multi, drop_rate, final_fc_layer=False):
-        self._logger.info('Building fully connected layer: {}...'.format(name))
+        self._logger.debug('Building fully connected layer: {}...'.format(name))
         
         # initialize weights
         if '{}_weights'.format(name) in self._weights.weights.keys():
             fcW = self._weights.weights['{}_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
         elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
-            self._logger.info('Using old format for layer {}.'.format(name))
+            self._logger.debug('Using old format for layer {}.'.format(name))
             fcW = self._weights.weights['{}W'.format(name)]
             fcb = self._weights.weights['{}b'.format(name)] 
         else:
-            self._logger.info('Reinitializing layer {}.'.format(name))
+            self._logger.debug('Reinitializing layer {}.'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             fcW = tf.Variable(tf.truncated_normal([fan_in, out_size], stddev=std, dtype=GeneralConstants.TF_DTYPE),
                               name='{}_weights'.format(name),
@@ -1059,18 +1059,18 @@ class GQCNNTF(object):
 
     #TODO: This really doesn't need to it's own layer type...it does the same thing as _build_fc_layer()
     def _build_pc_layer(self, input_node, fan_in, out_size, name):
-        self._logger.info('Building Fully Connected Pose Layer: {}...'.format(name))
+        self._logger.debug('Building Fully Connected Pose Layer: {}...'.format(name))
         
         # initialize weights
         if '{}_weights'.format(name) in self._weights.weights.keys():
             pcW = self._weights.weights['{}_weights'.format(name)]
             pcb = self._weights.weights['{}_bias'.format(name)] 
         elif '{}W'.format(name) in self._weights.weights.keys(): # legacy support
-            self._logger.info('Using old format for layer {}'.format(name))
+            self._logger.debug('Using old format for layer {}'.format(name))
             pcW = self._weights.weights['{}W'.format(name)]
             pcb = self._weights.weights['{}b'.format(name)] 
         else:
-            self._logger.info('Reinitializing layer {}'.format(name))
+            self._logger.debug('Reinitializing layer {}'.format(name))
             std = np.sqrt(2.0 / (fan_in))
             pcW = tf.Variable(tf.truncated_normal([fan_in, out_size],
                                                stddev=std, dtype=GeneralConstants.TF_DTYPE),
@@ -1094,7 +1094,7 @@ class GQCNNTF(object):
         return pc, out_size
 
     def _build_fc_merge(self, input_fc_node_1, input_fc_node_2, fan_in_1, fan_in_2, out_size, drop_rate, name):
-        self._logger.info('Building Merge Layer: {}...'.format(name))
+        self._logger.debug('Building Merge Layer: {}...'.format(name))
         
         # initialize weights
         if '{}_input_1_weights'.format(name) in self._weights.weights.keys():
@@ -1102,12 +1102,12 @@ class GQCNNTF(object):
             input2W = self._weights.weights['{}_input_2_weights'.format(name)]
             fcb = self._weights.weights['{}_bias'.format(name)] 
         elif '{}W_im'.format(name) in self._weights.weights.keys(): # legacy support
-            self._logger.info('Using old format for layer {}.'.format(name))
+            self._logger.debug('Using old format for layer {}.'.format(name))
             input1W = self._weights.weights['{}W_im'.format(name)]
             input2W = self._weights.weights['{}W_pose'.format(name)]
             fcb = self._weights.weights['{}b'.format(name)] 
         else:
-            self._logger.info('Reinitializing layer {}.'.format(name))
+            self._logger.debug('Reinitializing layer {}.'.format(name))
             std = np.sqrt(2.0 / (fan_in_1 + fan_in_2))
             input1W = tf.Variable(tf.truncated_normal([fan_in_1, out_size], stddev=std, dtype=GeneralConstants.TF_DTYPE),
                                   name='{}_input_1_weights'.format(name),
@@ -1135,7 +1135,7 @@ class GQCNNTF(object):
         return fc, out_size
 
     def _build_im_stream(self, input_node, input_pose_node, input_height, input_width, input_channels, drop_rate, layers, only_stream=False):
-        self._logger.info('Building Image Stream...')
+        self._logger.debug('Building Image Stream...')
 
         output_node = input_node
         prev_layer = "start" # dummy placeholder
@@ -1168,7 +1168,7 @@ class GQCNNTF(object):
         return output_node, fan_in
 
     def _build_pose_stream(self, input_node, fan_in, layers):
-        self._logger.info('Building Pose Stream...')
+        self._logger.debug('Building Pose Stream...')
         output_node = input_node
         prev_layer = "start" # dummy placeholder
         for layer_name, layer_config in layers.items():
@@ -1190,7 +1190,7 @@ class GQCNNTF(object):
         return output_node, fan_in
 
     def _build_merge_stream(self, input_stream_1, input_stream_2, fan_in_1, fan_in_2, drop_rate, layers):
-        self._logger.info('Building Merge Stream...')
+        self._logger.debug('Building Merge Stream...')
         
         # first check if first layer is a merge layer
         if layers[list(layers.keys())[0]]['type'] != 'fc_merge':
@@ -1239,7 +1239,7 @@ class GQCNNTF(object):
         :obj:`tf.Tensor`
             tensor output of network
         """
-        self._logger.info('Building Network...')
+        self._logger.debug('Building Network...')
         if self._input_depth_mode == InputDepthMode.POSE_STREAM:
             assert 'pose_stream' in self._architecture.keys() and 'merge_stream' in self._architecture.keys(), 'When using input depth mode "pose_stream", both pose stream and merge stream must be present!'
             with tf.name_scope('im_stream'):
