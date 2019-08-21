@@ -232,7 +232,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         pred_start = time.time()
         preds = self._grasp_quality_fn.quality(images, depths)
         pred_stop = time.time()
-        self._logger.info('Prediction took %.3f sec' %(pred_stop-pred_start))
+        self._logger.debug('Prediction took %.3f sec' %(pred_stop-pred_start))
 
         # get success probablility predictions only (this is needed because the output of the net is pairs of (p_failure, p_success))
         preds_success_only = preds[:, :, :, 1::2]
@@ -250,7 +250,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         actions_start = time.time()
         actions = self._get_actions(preds_success_only, sampled_ind, images, depths, camera_intr, num_actions_to_sample)
         actions_stop = time.time()
-        self._logger.info('Action postprocessing took %.3f sec' %(actions_stop-actions_start))
+        self._logger.debug('Action postprocessing took %.3f sec' %(actions_stop-actions_start))
         
         # filter grasps
         if self._filter_grasps:
