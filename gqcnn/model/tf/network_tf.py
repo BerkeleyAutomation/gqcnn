@@ -242,7 +242,7 @@ class GQCNNTF(object):
                     os.path.join(model_dir, GQCNNFilenames.IM_MEAN))
                 self._im_std = np.load(
                     os.path.join(model_dir, GQCNNFilenames.IM_STD))
-            except FileNotFoundError:
+            except IOError:
                 # Support for legacy file naming convention.
                 self._im_mean = np.load(
                     os.path.join(model_dir, GQCNNFilenames.LEG_MEAN))
