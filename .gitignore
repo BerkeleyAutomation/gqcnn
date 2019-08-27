@@ -90,3 +90,6 @@ ENV/
 *~
 .#*
 #*
+
+# Model files
+models/
