@@ -26,7 +26,7 @@ matrix:
     - name: "Python 2.7 on Xenial Linux"
       python: 2.7
       dist: xenial
-      
+
     - name: "Python 3.5 on Xenial Linux"
       python: 3.5
       dist: xenial
@@ -52,9 +52,18 @@ matrix:
 
 before_install:
   - sudo apt-get update
+  - sudo apt-get install -y curl g++ make
   - sudo apt-get install -y python-opengl  # For GLU.
+  - pushd ~
+  - curl -L http://download.osgeo.org/libspatialindex/spatialindex-src-1.8.5.tar.gz | tar xz
+  - cd spatialindex-src-1.8.5
+  - ./configure
+  - make
+  - sudo make install
+  - sudo ldconfig
+  - popd
 
-install: 
+install:
   - pip install .
 
 script:
