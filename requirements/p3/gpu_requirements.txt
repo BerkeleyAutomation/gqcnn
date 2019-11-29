@@ -10,3 +10,4 @@ scikit-learn
 scikit-image<=0.14.2
 gputil
 psutil
+rtree==0.8.3
