@@ -54,13 +54,14 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install -y curl g++ make
   - sudo apt-get install -y python-opengl  # For GLU.
+  - pushd ~
   - curl -L http://download.osgeo.org/libspatialindex/spatialindex-src-1.8.5.tar.gz | tar xz
   - cd spatialindex-src-1.8.5
   - ./configure
   - make
   - sudo make install
   - sudo ldconfig
-  - cd ..
+  - popd
 
 install:
   - pip install .
