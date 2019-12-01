@@ -62,6 +62,8 @@ before_install:
   - sudo make install
   - sudo ldconfig
   - popd
+  - pip install -U setuptools  # Required for easy_install to find right
+                               # skimage version for Python 3.5.
 
 install:
   - pip install .
