@@ -8,21 +8,30 @@ ARG work_dir=/root/Workspace
 
 # Install `apt-get` deps.
 RUN apt-get update && apt-get install -y \
-        build-essential \ 
-        python3 \ 
-        python-dev \ 
-        python3-dev \ 
-        python-tk \ 
-        python3-tk \ 
-        python-opengl \ 
-        curl \ 
-        libsm6 \ 
-        libxext6 \ 
+        build-essential \
+        python3 \
+        python-dev \
+        python3-dev \
+        python-tk \
+        python3-tk \
+        python-opengl \
+        curl \
+        libsm6 \
+        libxext6 \
         libglib2.0-0 \
         libxrender1 \
         wget \
         unzip
-  
+
+# Install libspatialindex (required for latest rtree).
+RUN curl -L http://download.osgeo.org/libspatialindex/spatialindex-src-1.8.5.tar.gz | tar xz && \
+    cd spatialindex-src-1.8.5 && \
+    ./configure && \
+    make && \
+    make install && \
+    ldconfig && \
+    cd ..
+
 # Install pip (`apt-get install python-pip` causes trouble w/ networkx).
 RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
 	python get-pip.py && \
@@ -30,6 +39,9 @@ RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
 RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
 	python3 get-pip.py && \
 	rm get-pip.py
+
+# Required for easy_install to find right skimage version for Python 3.5.
+RUN pip3 install -U setuptools
 
 # Make working directory.
 WORKDIR ${work_dir}
