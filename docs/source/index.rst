@@ -113,6 +113,12 @@ If you use the code, datasets, or models in a publication, please cite the appro
 
 .. toctree::
    :maxdepth: 2
+   :caption: Enabling OpenVINO™
+
+   openvino/openvino.rst
+
+.. toctree::
+   :maxdepth: 2
    :caption: Benchmarks
 
    benchmarks/benchmarks.rst
