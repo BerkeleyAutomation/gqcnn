@@ -58,6 +58,8 @@ policy:
   metric:
     type: gqcnn
     gqcnn_model: models/GQCNN-3.0
+    # openvino: OFF|CPU|GPU|MYRIAD
+    openvino: OFF
 
     crop_height: 96
     crop_width: 96
