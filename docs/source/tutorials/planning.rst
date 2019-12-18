@@ -135,4 +135,8 @@ To evaluate the pre-trained `FC-GQ-CNN`_ **suction** network on sample images of
 With ROS
 ^^^^^^^^
 
-Review the section on using the normal ROS policy first, which can be found :ref:`here <ros-policy>`. Then, add the additional arg **fully_conv:=True** when launching the grasp planning service and provide the corresponding network (**FC-GQCNN-4.0-PJ** for **parallel jaw** and **FC-GQCNN-4.0-SUCTION** for **suction**). If you wish to test on inputs other than those provided in `data/examples/clutter/phoxi/fcgqcnn`, you will need to edit the input height and width configuration in the appropriate `cfg/examples/<fc_gqcnn_pj.yaml or fc_gqcnn_suction.yaml>` under `["policy"]["metric"]["fully_conv_gqcnn_config"]`.
+Review the section on using the normal ROS policy first, which can be found :ref:`here <ros-policy>`.
+
+Add the additional arg **fully_conv:=True** when launching the grasp planning service and provide the corresponding network (**FC-GQCNN-4.0-PJ** for **parallel jaw** and **FC-GQCNN-4.0-SUCTION** for **suction**).
+
+If you wish to test on inputs other than those provided in `data/examples/clutter/phoxi/fcgqcnn/`, you will need to edit the input height and width configuration in the appropriate `cfg/examples/<fc_gqcnn_pj.yaml or fc_gqcnn_suction.yaml>` under `["policy"]["metric"]["fully_conv_gqcnn_config"]`.
