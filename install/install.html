@@ -17,36 +17,34 @@
   
 
   
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
+  
+  
     
 
   
+
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Overview" href="../tutorials/tutorial.html" />
     <link rel="prev" title="What are GQ-CNNs?" href="../info/info.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
+
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+        <div class="wy-side-nav-search">
           
 
           
@@ -225,14 +223,14 @@ If you have intentions of using GQ-CNNs for grasp planning on a physical robot, 
 <div class="section" id="clone-the-repository">
 <h2>1. Clone the repository<a class="headerlink" href="#clone-the-repository" title="Permalink to this headline">¶</a></h2>
 <p>Clone or download the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">project</a> from Github.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/BerkeleyAutomation/gqcnn.git
+<div class="highlight-default"><div class="highlight"><pre>$ git clone https://github.com/BerkeleyAutomation/gqcnn.git
 </pre></div>
 </div>
 </div>
 <div class="section" id="run-pip-installation">
 <h2>2. Run pip installation<a class="headerlink" href="#run-pip-installation" title="Permalink to this headline">¶</a></h2>
 <p>Change directories into the <cite>gqcnn</cite> repository and run the pip installation.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install .
+<div class="highlight-default"><div class="highlight"><pre>$ pip install .
 </pre></div>
 </div>
 <p>This will install <cite>gqcnn</cite> in your current virtual environment.</p>
@@ -244,7 +242,7 @@ If you have intentions of using GQ-CNNs for grasp planning on a physical robot, 
 <div class="section" id="id1">
 <h2>1. Clone the repository<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>Clone or download the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">project</a> from Github.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd &lt;PATH_TO_YOUR_CATKIN_WORKSPACE&gt;/src
+<div class="highlight-default"><div class="highlight"><pre>$ cd &lt;PATH_TO_YOUR_CATKIN_WORKSPACE&gt;/src
 $ git clone https://github.com/BerkeleyAutomation/gqcnn.git
 </pre></div>
 </div>
@@ -252,7 +250,7 @@ $ git clone https://github.com/BerkeleyAutomation/gqcnn.git
 <div class="section" id="build-the-catkin-package">
 <h2>2. Build the catkin package<a class="headerlink" href="#build-the-catkin-package" title="Permalink to this headline">¶</a></h2>
 <p>Build the catkin package.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd &lt;PATH_TO_YOUR_CATKIN_WORKSPACE&gt;
+<div class="highlight-default"><div class="highlight"><pre>$ cd &lt;PATH_TO_YOUR_CATKIN_WORKSPACE&gt;
 $ catkin_make
 </pre></div>
 </div>
@@ -265,14 +263,14 @@ $ catkin_make
 <div class="section" id="id2">
 <h2>1. Clone the repository<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
 <p>Clone or download the <a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">project</a> from Github.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/BerkeleyAutomation/gqcnn.git
+<div class="highlight-default"><div class="highlight"><pre>$ git clone https://github.com/BerkeleyAutomation/gqcnn.git
 </pre></div>
 </div>
 </div>
 <div class="section" id="build-docker-images">
 <h2>2. Build Docker images<a class="headerlink" href="#build-docker-images" title="Permalink to this headline">¶</a></h2>
 <p>Change directories into the <cite>gqcnn</cite> repository and run the build script.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/docker/build-docker.sh
+<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/docker/build-docker.sh
 </pre></div>
 </div>
 <p>This will build the images <cite>gqcnn/cpu</cite> and <cite>gqcnn/gpu</cite>.</p>
@@ -280,16 +278,16 @@ $ catkin_make
 <div class="section" id="run-docker-image">
 <h2>3. Run Docker image<a class="headerlink" href="#run-docker-image" title="Permalink to this headline">¶</a></h2>
 <p>To run <cite>gqcnn/cpu</cite>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker run --rm -it gqcnn/cpu
+<div class="highlight-default"><div class="highlight"><pre>$ docker run --rm -it gqcnn/cpu
 </pre></div>
 </div>
 <p>To run <cite>gqcnn/gpu</cite>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ nvidia-docker run --rm -it gqcnn/gpu
+<div class="highlight-default"><div class="highlight"><pre>$ nvidia-docker run --rm -it gqcnn/gpu
 </pre></div>
 </div>
 <p>Note the use of <cite>nvidia-docker</cite> in the latter to enable the Nvidia runtime.</p>
 <p>You will then see an interactive shell like this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ root@a96488604093:~/Workspace/gqcnn#
+<div class="highlight-default"><div class="highlight"><pre>$ root@a96488604093:~/Workspace/gqcnn#
 </pre></div>
 </div>
 <p>Now you can proceed to run the examples and tutorial!</p>
@@ -307,7 +305,7 @@ $ catkin_make
         <a href="../tutorials/tutorial.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../info/info.html" class="btn btn-neutral float-left" title="What are GQ-CNNs?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../info/info.html" class="btn btn-neutral" title="What are GQ-CNNs?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -333,16 +331,35 @@ $ catkin_make
   
 
 
+  
+
+    
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'../',
+              VERSION:'1.1.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

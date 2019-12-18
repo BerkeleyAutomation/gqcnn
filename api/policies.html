@@ -17,36 +17,34 @@
   
 
   
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
+  
+  
     
 
   
+
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="License" href="../license/license.html" />
     <link rel="prev" title="Analysis" href="analysis.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
+
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+        <div class="wy-side-nav-search">
           
 
           
@@ -210,7 +208,7 @@
   <div class="section" id="policies">
 <h1>Policies<a class="headerlink" href="#policies" title="Permalink to this headline">¶</a></h1>
 <p>All GQ-CNN grasping policies are child classes of the base <a class="reference internal" href="#graspingpolicy"><span class="std std-ref">GraspingPolicy</span></a> class that implements <cite>__call__()</cite>, which operates on <a class="reference internal" href="#rgbdimagestate"><span class="std std-ref">RgbdImageStates</span></a> and returns a <a class="reference internal" href="#graspaction"><span class="std std-ref">GraspAction</span></a>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ from gqcnn import RgbdImageState, CrossEntropyRobustGraspingPolicy
+<div class="highlight-default"><div class="highlight"><pre>$ from gqcnn import RgbdImageState, CrossEntropyRobustGraspingPolicy
 $
 $ im = RgbdImageState.load(&lt;saved rgbd image dir&gt;)
 $ my_policy = CrossEntropyRobustGraspingPolicy(&lt;policy initializer args&gt;)
@@ -226,7 +224,7 @@ $ my_grasp_action = my_policy(im)
 <dl class="class">
 <dt id="gqcnn.CrossEntropyRobustGraspingPolicy">
 <em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">CrossEntropyRobustGraspingPolicy</code><span class="sig-paren">(</span><em>config</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.CrossEntropyRobustGraspingPolicy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="gqcnn.grasping.policy.policy.GraspingPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">gqcnn.grasping.policy.policy.GraspingPolicy</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="gqcnn.grasping.policy.policy.GraspingPolicy"><code class="xref py py-class docutils literal"><span class="pre">gqcnn.grasping.policy.policy.GraspingPolicy</span></code></a></p>
 <p>Optimizes a set of grasp candidates in image space using the
 cross entropy method.</p>
 <p>Cross entropy method (CEM):
@@ -239,33 +237,42 @@ cross entropy method.</p>
 <dl class="method">
 <dt id="gqcnn.CrossEntropyRobustGraspingPolicy.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>config</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.CrossEntropyRobustGraspingPolicy.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</p></li>
-<li><p><strong>filters</strong> (<em>dict</em>) – Python dictionary of functions to apply to filter invalid grasps.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>config</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</li>
+<li><strong>filters</strong> (<em>dict</em>) – Python dictionary of functions to apply to filter invalid grasps.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Notes</p>
 <p>Required configuration dictionary parameters are specified in Other
 Parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Other Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>num_seed_samples</strong> (<em>int</em>) – Number of candidate to sample in the initial set.</p></li>
-<li><p><strong>num_gmm_samples</strong> (<em>int</em>) – Number of candidates to sample on each resampling from the GMMs.</p></li>
-<li><p><strong>num_iters</strong> (<em>int</em>) – Number of sample-and-refit iterations of CEM.</p></li>
-<li><p><strong>gmm_refit_p</strong> (<em>float</em>) – Top p-% of grasps used for refitting.</p></li>
-<li><p><strong>gmm_component_frac</strong> (<em>float</em>) – Percentage of the elite set size used to determine number of GMM
-components.</p></li>
-<li><p><strong>gmm_reg_covar</strong> (<em>float</em>) – Regularization parameters for GMM covariance matrix, enforces
-diversity of fitted distributions.</p></li>
-<li><p><strong>deterministic</strong> (<em>bool, optional</em>) – Whether to set the random seed to enforce deterministic behavior.</p></li>
-<li><p><strong>gripper_width</strong> (<em>float, optional</em>) – Width of the gripper in meters.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Other Parameters:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first last simple">
+<li><strong>num_seed_samples</strong> (<em>int</em>) – Number of candidate to sample in the initial set.</li>
+<li><strong>num_gmm_samples</strong> (<em>int</em>) – Number of candidates to sample on each resampling from the GMMs.</li>
+<li><strong>num_iters</strong> (<em>int</em>) – Number of sample-and-refit iterations of CEM.</li>
+<li><strong>gmm_refit_p</strong> (<em>float</em>) – Top p-% of grasps used for refitting.</li>
+<li><strong>gmm_component_frac</strong> (<em>float</em>) – Percentage of the elite set size used to determine number of GMM
+components.</li>
+<li><strong>gmm_reg_covar</strong> (<em>float</em>) – Regularization parameters for GMM covariance matrix, enforces
+diversity of fitted distributions.</li>
+<li><strong>deterministic</strong> (<em>bool, optional</em>) – Whether to set the random seed to enforce deterministic behavior.</li>
+<li><strong>gripper_width</strong> (<em>float, optional</em>) – Width of the gripper in meters.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -273,21 +280,25 @@ diversity of fitted distributions.</p></li>
 <code class="descname">select</code><span class="sig-paren">(</span><em>grasps</em>, <em>q_values</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.CrossEntropyRobustGraspingPolicy.select" title="Permalink to this definition">¶</a></dt>
 <dd><p>Selects the grasp with the highest probability of success.</p>
 <p>Can override for alternate policies (e.g. epsilon greedy).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>grasps</strong> (<em>list</em>) – Python list of <code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code> grasps to select from.</p></li>
-<li><p><strong>q_values</strong> (<em>list</em>) – Python list of associated q-values.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>grasps</strong> (<em>list</em>) – Python list of <code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or
+<code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code> grasps to select from.</li>
+<li><strong>q_values</strong> (<em>list</em>) – Python list of associated q-values.</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Grasp with highest probability of success.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code></p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Grasp with highest probability of success.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or <code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -295,17 +306,18 @@ diversity of fitted distributions.</p></li>
 <code class="descname">action_set</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.CrossEntropyRobustGraspingPolicy.action_set" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plan a set of grasps with the highest probability of success on
 the given RGB-D image.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>state</strong> (<a class="reference internal" href="#gqcnn.RgbdImageState" title="gqcnn.RgbdImageState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RgbdImageState</span></code></a>) – Image to plan grasps on.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Grasps to execute.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>python list of <code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code>  # noqa E501</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>state</strong> (<a class="reference internal" href="#gqcnn.RgbdImageState" title="gqcnn.RgbdImageState"><code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code></a>) – Image to plan grasps on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Grasps to execute.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">python list of <code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or <code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code>  # noqa E501</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -317,19 +329,23 @@ the given RGB-D image.</p>
 <dl class="class">
 <dt id="gqcnn.FullyConvolutionalGraspingPolicyParallelJaw">
 <em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">FullyConvolutionalGraspingPolicyParallelJaw</code><span class="sig-paren">(</span><em>cfg</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.FullyConvolutionalGraspingPolicyParallelJaw" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy" title="gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy" title="gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy"><code class="xref py py-class docutils literal"><span class="pre">gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy</span></code></a></p>
 <p>Parallel jaw grasp sampling policy using the FC-GQ-CNN.</p>
 <dl class="method">
 <dt id="gqcnn.FullyConvolutionalGraspingPolicyParallelJaw.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>cfg</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.FullyConvolutionalGraspingPolicyParallelJaw.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>cfg</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</p></li>
-<li><p><strong>filters</strong> (<em>dict</em>) – Python dictionary of functions to apply to filter invalid grasps.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cfg</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</li>
+<li><strong>filters</strong> (<em>dict</em>) – Python dictionary of functions to apply to filter invalid grasps.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -341,7 +357,7 @@ the given RGB-D image.</p>
 <dl class="class">
 <dt id="gqcnn.FullyConvolutionalGraspingPolicySuction">
 <em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">FullyConvolutionalGraspingPolicySuction</code><span class="sig-paren">(</span><em>cfg</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.FullyConvolutionalGraspingPolicySuction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy" title="gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy" title="gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy"><code class="xref py py-class docutils literal"><span class="pre">gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy</span></code></a></p>
 <p>Suction grasp sampling policy using the FC-GQ-CNN.</p>
 </dd></dl>
 
@@ -355,44 +371,54 @@ the given RGB-D image.</p>
 <dl class="class">
 <dt id="gqcnn.RgbdImageState">
 <em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">RgbdImageState</code><span class="sig-paren">(</span><em>rgbd_im</em>, <em>camera_intr</em>, <em>segmask=None</em>, <em>obj_segmask=None</em>, <em>fully_observed=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.RgbdImageState" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>State to encapsulate RGB-D images.</p>
 <dl class="method">
 <dt id="gqcnn.RgbdImageState.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>rgbd_im</em>, <em>camera_intr</em>, <em>segmask=None</em>, <em>obj_segmask=None</em>, <em>fully_observed=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.RgbdImageState.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>rgbd_im</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.RgbdImage</span></code>) – An RGB-D image to plan grasps on.</p></li>
-<li><p><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.CameraIntrinsics</span></code>) – Intrinsics of the RGB-D camera.</p></li>
-<li><p><strong>segmask</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.BinaryImage</span></code>) – Segmentation mask for the image.</p></li>
-<li><p><strong>obj_segmask</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.SegmentationImage</span></code>) – Segmentation mask for the different objects in the image.</p></li>
-<li><p><strong>full_observed</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code>) – Representation of the fully observed state.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rgbd_im</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.RgbdImage</span></code>) – An RGB-D image to plan grasps on.</li>
+<li><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code>) – Intrinsics of the RGB-D camera.</li>
+<li><strong>segmask</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.BinaryImage</span></code>) – Segmentation mask for the image.</li>
+<li><strong>obj_segmask</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.SegmentationImage</span></code>) – Segmentation mask for the different objects in the image.</li>
+<li><strong>full_observed</strong> (<code class="xref py py-obj docutils literal"><span class="pre">object</span></code>) – Representation of the fully observed state.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="gqcnn.RgbdImageState.save">
 <code class="descname">save</code><span class="sig-paren">(</span><em>save_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.RgbdImageState.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save to a directory.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>save_dir</strong> (<em>str</em>) – The directory to save to.</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>save_dir</strong> (<em>str</em>) – The directory to save to.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="staticmethod">
 <dt id="gqcnn.RgbdImageState.load">
 <em class="property">static </em><code class="descname">load</code><span class="sig-paren">(</span><em>save_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.RgbdImageState.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load an <code class="xref py py-obj docutils literal notranslate"><span class="pre">RGBDImageState</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>save_dir</strong> (<em>str</em>) – The directory to load from.</p>
-</dd>
-</dl>
+<dd><p>Load an <code class="xref py py-obj docutils literal"><span class="pre">RGBDImageState</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>save_dir</strong> (<em>str</em>) – The directory to load from.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -404,49 +430,57 @@ the given RGB-D image.</p>
 <dl class="class">
 <dt id="gqcnn.grasping.policy.policy.GraspAction">
 <em class="property">class </em><code class="descclassname">gqcnn.grasping.policy.policy.</code><code class="descname">GraspAction</code><span class="sig-paren">(</span><em>grasp</em>, <em>q_value</em>, <em>image=None</em>, <em>policy_name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspAction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Action to encapsulate grasps.</p>
 <dl class="method">
 <dt id="gqcnn.grasping.policy.policy.GraspAction.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>grasp</em>, <em>q_value</em>, <em>image=None</em>, <em>policy_name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspAction.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>grasp</strong> (:obj`Grasp2D` or <code class="xref py py-obj docutils literal notranslate"><span class="pre">SuctionPoint2D</span></code>) – 2D grasp to wrap.</p></li>
-<li><p><strong>q_value</strong> (<em>float</em>) – Grasp quality.</p></li>
-<li><p><strong>image</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.DepthImage</span></code>) – Depth image corresponding to grasp.</p></li>
-<li><p><strong>policy_name</strong> (<em>str</em>) – Policy name.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>grasp</strong> (:obj`Grasp2D` or <code class="xref py py-obj docutils literal"><span class="pre">SuctionPoint2D</span></code>) – 2D grasp to wrap.</li>
+<li><strong>q_value</strong> (<em>float</em>) – Grasp quality.</li>
+<li><strong>image</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.DepthImage</span></code>) – Depth image corresponding to grasp.</li>
+<li><strong>policy_name</strong> (<em>str</em>) – Policy name.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="gqcnn.grasping.policy.policy.GraspAction.save">
 <code class="descname">save</code><span class="sig-paren">(</span><em>save_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspAction.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save grasp action.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>save_dir</strong> (<em>str</em>) – Directory to save the grasp action to.</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>save_dir</strong> (<em>str</em>) – Directory to save the grasp action to.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="staticmethod">
 <dt id="gqcnn.grasping.policy.policy.GraspAction.load">
 <em class="property">static </em><code class="descname">load</code><span class="sig-paren">(</span><em>save_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspAction.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a saved grasp action.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>save_dir</strong> (<em>str</em>) – Directory of the saved grasp action.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Loaded grasp action.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspAction" title="gqcnn.grasping.policy.policy.GraspAction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GraspAction</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>save_dir</strong> (<em>str</em>) – Directory of the saved grasp action.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Loaded grasp action.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspAction" title="gqcnn.grasping.policy.policy.GraspAction"><code class="xref py py-obj docutils literal"><span class="pre">GraspAction</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -458,83 +492,104 @@ the given RGB-D image.</p>
 <dl class="class">
 <dt id="gqcnn.grasping.grasp.Grasp2D">
 <em class="property">class </em><code class="descclassname">gqcnn.grasping.grasp.</code><code class="descname">Grasp2D</code><span class="sig-paren">(</span><em>center</em>, <em>angle=0.0</em>, <em>depth=1.0</em>, <em>width=0.0</em>, <em>camera_intr=None</em>, <em>contact_points=None</em>, <em>contact_normals=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Parallel-jaw grasp in image space.</p>
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.Grasp2D.center">
 <code class="descname">center</code><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.center" title="Permalink to this definition">¶</a></dt>
 <dd><p>Point in image space.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">autolab_core.Point</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.Point</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.Grasp2D.angle">
 <code class="descname">angle</code><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.angle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Grasp axis angle with the camera x-axis.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.Grasp2D.depth">
 <code class="descname">depth</code><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.depth" title="Permalink to this definition">¶</a></dt>
 <dd><p>Depth of the grasp center in 3D space.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.Grasp2D.width">
 <code class="descname">width</code><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.width" title="Permalink to this definition">¶</a></dt>
 <dd><p>Distance between the jaws in meters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.Grasp2D.camera_intr">
 <code class="descname">camera_intr</code><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.camera_intr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Frame of reference for camera that the grasp corresponds to.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.CameraIntrinsics</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.Grasp2D.contact_points">
 <code class="descname">contact_points</code><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.contact_points" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pair of contact points in image space.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>list of <code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">list of <code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.Grasp2D.contact_normals">
 <code class="descname">contact_normals</code><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.contact_normals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pair of contact normals in image space.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>list of <code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">list of <code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -580,15 +635,19 @@ image space.</p>
 <em class="property">static </em><code class="descname">from_feature_vec</code><span class="sig-paren">(</span><em>v</em>, <em>width=0.0</em>, <em>camera_intr=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.from_feature_vec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a <cite>Grasp2D</cite> instance from a feature vector and additional
 parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>v</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Feature vector, see <cite>Grasp2D.feature_vec</cite>.</p></li>
-<li><p><strong>width</strong> (<em>float</em>) – Grasp opening width, in meters.</p></li>
-<li><p><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.CameraIntrinsics</span></code>) – Frame of reference for camera that the grasp corresponds to.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) – Feature vector, see <cite>Grasp2D.feature_vec</cite>.</li>
+<li><strong>width</strong> (<em>float</em>) – Grasp opening width, in meters.</li>
+<li><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code>) – Frame of reference for camera that the grasp corresponds to.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -597,18 +656,19 @@ parameters.</p>
 <dd><p>Computes the 3D pose of the grasp relative to the camera.</p>
 <p>If an approach direction is not specified then the camera
 optical axis is used.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>grasp_approach_dir</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Approach direction for the grasp in camera basis (e.g. opposite to
-table normal).</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The transformation from the grasp to the camera frame of reference.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">autolab_core.RigidTransform</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>grasp_approach_dir</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) – Approach direction for the grasp in camera basis (e.g. opposite to
+table normal).</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The transformation from the grasp to the camera frame of reference.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.RigidTransform</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="staticmethod">
@@ -616,21 +676,25 @@ table normal).</p>
 <em class="property">static </em><code class="descname">image_dist</code><span class="sig-paren">(</span><em>g1</em>, <em>g2</em>, <em>alpha=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.grasp.Grasp2D.image_dist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the distance between grasps in image space.</p>
 <p>Uses Euclidean distance with alpha weighting of angles</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>g1</strong> (<a class="reference internal" href="#gqcnn.grasping.grasp.Grasp2D" title="gqcnn.grasping.grasp.Grasp2D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Grasp2D</span></code></a>) – First grasp.</p></li>
-<li><p><strong>g2</strong> (<a class="reference internal" href="#gqcnn.grasping.grasp.Grasp2D" title="gqcnn.grasping.grasp.Grasp2D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Grasp2D</span></code></a>) – Second grasp.</p></li>
-<li><p><strong>alpha</strong> (<em>float</em>) – Weight of angle distance (rad to meters).</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>g1</strong> (<a class="reference internal" href="#gqcnn.grasping.grasp.Grasp2D" title="gqcnn.grasping.grasp.Grasp2D"><code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code></a>) – First grasp.</li>
+<li><strong>g2</strong> (<a class="reference internal" href="#gqcnn.grasping.grasp.Grasp2D" title="gqcnn.grasping.grasp.Grasp2D"><code class="xref py py-obj docutils literal"><span class="pre">Grasp2D</span></code></a>) – Second grasp.</li>
+<li><strong>alpha</strong> (<em>float</em>) – Weight of angle distance (rad to meters).</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Distance between grasps.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Distance between grasps.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -642,50 +706,62 @@ table normal).</p>
 <dl class="class">
 <dt id="gqcnn.grasping.grasp.SuctionPoint2D">
 <em class="property">class </em><code class="descclassname">gqcnn.grasping.grasp.</code><code class="descname">SuctionPoint2D</code><span class="sig-paren">(</span><em>center</em>, <em>axis=None</em>, <em>depth=1.0</em>, <em>camera_intr=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Suction grasp in image space.</p>
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.SuctionPoint2D.center">
 <code class="descname">center</code><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D.center" title="Permalink to this definition">¶</a></dt>
 <dd><p>Point in image space.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">autolab_core.Point</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.Point</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.SuctionPoint2D.axis">
 <code class="descname">axis</code><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D.axis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dormalized 3-vector representing the direction of the suction tip.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.SuctionPoint2D.depth">
 <code class="descname">depth</code><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D.depth" title="Permalink to this definition">¶</a></dt>
 <dd><p>Depth of the suction point in 3D space.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.grasp.SuctionPoint2D.camera_intr">
 <code class="descname">camera_intr</code><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D.camera_intr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Frame of reference for camera that the suction point corresponds to.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.CameraIntrinsics</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -711,8 +787,8 @@ table normal).</p>
 <code class="descname">feature_vec</code><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D.feature_vec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the feature vector for the suction point.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><cite>v = [center, axis, depth]</cite></p>
+<p class="first admonition-title">Note</p>
+<p class="last"><cite>v = [center, axis, depth]</cite></p>
 </div>
 </dd></dl>
 
@@ -721,30 +797,36 @@ table normal).</p>
 <em class="property">static </em><code class="descname">from_feature_vec</code><span class="sig-paren">(</span><em>v</em>, <em>camera_intr=None</em>, <em>depth=None</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D.from_feature_vec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a <cite>SuctionPoint2D</cite> instance from a feature vector and
 additional parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>v</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Feature vector, see <cite>Grasp2D.feature_vec</cite>.</p></li>
-<li><p><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">perception.CameraIntrinsics</span></code>) – Frame of reference for camera that the grasp corresponds to.</p></li>
-<li><p><strong>depth</strong> (<em>float</em>) – Hard-set the depth for the suction grasp.</p></li>
-<li><p><strong>axis</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Normalized 3-vector specifying the approach direction.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) – Feature vector, see <cite>Grasp2D.feature_vec</cite>.</li>
+<li><strong>camera_intr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">perception.CameraIntrinsics</span></code>) – Frame of reference for camera that the grasp corresponds to.</li>
+<li><strong>depth</strong> (<em>float</em>) – Hard-set the depth for the suction grasp.</li>
+<li><strong>axis</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>) – Normalized 3-vector specifying the approach direction.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="gqcnn.grasping.grasp.SuctionPoint2D.pose">
 <code class="descname">pose</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D.pose" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the 3D pose of the grasp relative to the camera.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The transformation from the grasp to the camera frame of reference.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">autolab_core.RigidTransform</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The transformation from the grasp to the camera frame of reference.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.RigidTransform</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="staticmethod">
@@ -752,21 +834,25 @@ additional parameters.</p>
 <em class="property">static </em><code class="descname">image_dist</code><span class="sig-paren">(</span><em>g1</em>, <em>g2</em>, <em>alpha=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.grasp.SuctionPoint2D.image_dist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the distance between grasps in image space.</p>
 <p>Uses Euclidean distance with alpha weighting of angles.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>g1</strong> (<a class="reference internal" href="#gqcnn.grasping.grasp.SuctionPoint2D" title="gqcnn.grasping.grasp.SuctionPoint2D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SuctionPoint2D</span></code></a>) – First suction point.</p></li>
-<li><p><strong>g2</strong> (<a class="reference internal" href="#gqcnn.grasping.grasp.SuctionPoint2D" title="gqcnn.grasping.grasp.SuctionPoint2D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SuctionPoint2D</span></code></a>) – Second suction point.</p></li>
-<li><p><strong>alpha</strong> (<em>float</em>) – Weight of angle distance (rad to meters).</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>g1</strong> (<a class="reference internal" href="#gqcnn.grasping.grasp.SuctionPoint2D" title="gqcnn.grasping.grasp.SuctionPoint2D"><code class="xref py py-obj docutils literal"><span class="pre">SuctionPoint2D</span></code></a>) – First suction point.</li>
+<li><strong>g2</strong> (<a class="reference internal" href="#gqcnn.grasping.grasp.SuctionPoint2D" title="gqcnn.grasping.grasp.SuctionPoint2D"><code class="xref py py-obj docutils literal"><span class="pre">SuctionPoint2D</span></code></a>) – Second suction point.</li>
+<li><strong>alpha</strong> (<em>float</em>) – Weight of angle distance (rad to meters).</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Distance between grasps.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Distance between grasps.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -780,7 +866,7 @@ additional parameters.</p>
 <dl class="class">
 <dt id="gqcnn.grasping.policy.policy.Policy">
 <em class="property">class </em><code class="descclassname">gqcnn.grasping.policy.policy.</code><code class="descname">Policy</code><a class="headerlink" href="#gqcnn.grasping.policy.policy.Policy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Abstract policy class.</p>
 <dl class="method">
 <dt id="gqcnn.grasping.policy.policy.Policy.__call__">
@@ -802,143 +888,170 @@ additional parameters.</p>
 <dl class="class">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy">
 <em class="property">class </em><code class="descclassname">gqcnn.grasping.policy.policy.</code><code class="descname">GraspingPolicy</code><span class="sig-paren">(</span><em>config</em>, <em>init_sampler=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.Policy" title="gqcnn.grasping.policy.policy.Policy"><code class="xref py py-class docutils literal notranslate"><span class="pre">gqcnn.grasping.policy.policy.Policy</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.Policy" title="gqcnn.grasping.policy.policy.Policy"><code class="xref py py-class docutils literal"><span class="pre">gqcnn.grasping.policy.policy.Policy</span></code></a></p>
 <p>Policy for robust grasping with Grasp Quality Convolutional Neural
 Networks (GQ-CNN).</p>
 <dl class="method">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>config</em>, <em>init_sampler=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<em>dict</em>) – Python dictionary of parameters for the policy.</p></li>
-<li><p><strong>init_sampler</strong> (<em>bool</em>) – Whether or not to initialize the grasp sampler.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>config</strong> (<em>dict</em>) – Python dictionary of parameters for the policy.</li>
+<li><strong>init_sampler</strong> (<em>bool</em>) – Whether or not to initialize the grasp sampler.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Notes</p>
 <p>Required configuration parameters are specified in Other Parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Other Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>sampling</strong> (<em>dict</em>) – Dictionary of parameters for grasp sampling, see
-<cite>gqcnn/grasping/image_grasp_sampler.py</cite>.</p></li>
-<li><p><strong>gqcnn_model</strong> (<em>str</em>) – String path to a trained GQ-CNN model.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Other Parameters:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first last simple">
+<li><strong>sampling</strong> (<em>dict</em>) – Dictionary of parameters for grasp sampling, see
+<cite>gqcnn/grasping/image_grasp_sampler.py</cite>.</li>
+<li><strong>gqcnn_model</strong> (<em>str</em>) – String path to a trained GQ-CNN model.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.config">
 <code class="descname">config</code><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the policy configuration parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Python dictionary of the policy configuration parameters.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>dict</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Python dictionary of the policy configuration parameters.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.grasp_sampler">
 <code class="descname">grasp_sampler</code><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_sampler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the grasp sampler.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The grasp sampler.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.image_grasp_sampler.ImageGraspSampler</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The grasp sampler.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.image_grasp_sampler.ImageGraspSampler</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.grasp_quality_fn">
 <code class="descname">grasp_quality_fn</code><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_quality_fn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the grasp quality function.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The grasp quality function.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.grasp_quality_function.GraspQualityFunction</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The grasp quality function.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.grasp_quality_function.GraspQualityFunction</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.grasp_constraint_fn">
 <code class="descname">grasp_constraint_fn</code><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_constraint_fn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the grasp constraint function.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The grasp contraint function.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.constraint_fn.GraspConstraintFn</span></code></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The grasp contraint function.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.constraint_fn.GraspConstraintFn</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.gqcnn">
 <code class="descname">gqcnn</code><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.gqcnn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the GQ-CNN.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The GQ-CNN model.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="gqcnn.html#gqcnn.model.tf.GQCNNTF" title="gqcnn.model.tf.GQCNNTF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.model.tf.GQCNNTF</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The GQ-CNN model.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="gqcnn.html#gqcnn.model.tf.GQCNNTF" title="gqcnn.model.tf.GQCNNTF"><code class="xref py py-obj docutils literal"><span class="pre">gqcnn.model.tf.GQCNNTF</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.set_constraint_fn">
 <code class="descname">set_constraint_fn</code><span class="sig-paren">(</span><em>constraint_fn</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.set_constraint_fn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the grasp constraint function.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>constraint_fn</strong> (<em>:obj`gqcnn.grasping.constraint_fn.GraspConstraintFn`</em>) – The grasp contraint function.</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>constraint_fn</strong> (<em>:obj`gqcnn.grasping.constraint_fn.GraspConstraintFn`</em>) – The grasp contraint function.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.action">
 <code class="descname">action</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.action" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an action for a given state.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>state</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">RgbdImageState</span></code>) – The RGB-D image state to plan grasps on.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The planned grasp action.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspAction" title="gqcnn.grasping.policy.policy.GraspAction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GraspAction</span></code></a></p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>state</strong> (<code class="xref py py-obj docutils literal"><span class="pre">RgbdImageState</span></code>) – The RGB-D image state to plan grasps on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The planned grasp action.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspAction" title="gqcnn.grasping.policy.policy.GraspAction"><code class="xref py py-obj docutils literal"><span class="pre">GraspAction</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="gqcnn.grasping.policy.policy.GraspingPolicy.show">
 <code class="descname">show</code><span class="sig-paren">(</span><em>filename=None</em>, <em>dpi=100</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.policy.GraspingPolicy.show" title="Permalink to this definition">¶</a></dt>
 <dd><p>Show a figure.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>filename</strong> (<em>str</em>) – File to save figure to.</p></li>
-<li><p><strong>dpi</strong> (<em>int</em>) – Dpi of figure.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>str</em>) – File to save figure to.</li>
+<li><strong>dpi</strong> (<em>int</em>) – Dpi of figure.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -949,40 +1062,48 @@ Networks (GQ-CNN).</p>
 <dl class="class">
 <dt id="gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy">
 <em class="property">class </em><code class="descclassname">gqcnn.grasping.policy.fc_policy.</code><code class="descname">FullyConvolutionalGraspingPolicy</code><span class="sig-paren">(</span><em>cfg</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="gqcnn.grasping.policy.policy.GraspingPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">gqcnn.grasping.policy.policy.GraspingPolicy</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="gqcnn.grasping.policy.policy.GraspingPolicy"><code class="xref py py-class docutils literal"><span class="pre">gqcnn.grasping.policy.policy.GraspingPolicy</span></code></a></p>
 <p>Abstract grasp sampling policy class using Fully-Convolutional GQ-CNN
 network.</p>
 <dl class="method">
 <dt id="gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>cfg</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>cfg</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</p></li>
-<li><p><strong>filters</strong> (<em>dict</em>) – Python dictionary of kinematic filters to apply.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cfg</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</li>
+<li><strong>filters</strong> (<em>dict</em>) – Python dictionary of kinematic filters to apply.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy.action_set">
 <code class="descname">action_set</code><span class="sig-paren">(</span><em>state</em>, <em>num_actions</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy.action_set" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plan a set of actions.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>state</strong> (<a class="reference internal" href="#gqcnn.RgbdImageState" title="gqcnn.RgbdImageState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.RgbdImageState</span></code></a>) – The RGBD image state.</p></li>
-<li><p><strong>num_actions</strong> (<em>int</em>) – The number of actions to plan.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>state</strong> (<a class="reference internal" href="#gqcnn.RgbdImageState" title="gqcnn.RgbdImageState"><code class="xref py py-obj docutils literal"><span class="pre">gqcnn.RgbdImageState</span></code></a>) – The RGBD image state.</li>
+<li><strong>num_actions</strong> (<em>int</em>) – The number of actions to plan.</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The planned grasps.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>list of <code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.GraspAction</span></code></p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The planned grasps.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of <code class="xref py py-obj docutils literal"><span class="pre">gqcnn.GraspAction</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -993,33 +1114,42 @@ network.</p>
 <dl class="class">
 <dt id="gqcnn.RobustGraspingPolicy">
 <em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">RobustGraspingPolicy</code><span class="sig-paren">(</span><em>config</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.RobustGraspingPolicy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="gqcnn.grasping.policy.policy.GraspingPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">gqcnn.grasping.policy.policy.GraspingPolicy</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="gqcnn.grasping.policy.policy.GraspingPolicy"><code class="xref py py-class docutils literal"><span class="pre">gqcnn.grasping.policy.policy.GraspingPolicy</span></code></a></p>
 <p>Samples a set of grasp candidates in image space,
 ranks the grasps by the predicted probability of success from a GQ-CNN
 and returns the grasp with the highest probability of success.</p>
 <dl class="method">
 <dt id="gqcnn.RobustGraspingPolicy.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>config</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.RobustGraspingPolicy.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</p></li>
-<li><p><strong>filters</strong> (<em>dict</em>) – Python dictionary of functions to apply to filter invalid grasps.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>config</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</li>
+<li><strong>filters</strong> (<em>dict</em>) – Python dictionary of functions to apply to filter invalid grasps.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Notes</p>
 <p>Required configuration dictionary parameters are specified in
 Other Parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Other Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>num_grasp_samples</strong> (<em>int</em>) – Number of grasps to sample.</p></li>
-<li><p><strong>gripper_width</strong> (<em>float, optional</em>) – Width of the gripper in meters.</p></li>
-<li><p><strong>logging_dir</strong> (<em>str, optional</em>) – Directory in which to save the sampled grasps and input images.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Other Parameters:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first last simple">
+<li><strong>num_grasp_samples</strong> (<em>int</em>) – Number of grasps to sample.</li>
+<li><strong>gripper_width</strong> (<em>float, optional</em>) – Width of the gripper in meters.</li>
+<li><strong>logging_dir</strong> (<em>str, optional</em>) – Directory in which to save the sampled grasps and input images.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -1027,21 +1157,25 @@ Other Parameters.</p>
 <code class="descname">select</code><span class="sig-paren">(</span><em>grasps</em>, <em>q_value</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.RobustGraspingPolicy.select" title="Permalink to this definition">¶</a></dt>
 <dd><p>Selects the grasp with the highest probability of success.</p>
 <p>Can override for alternate policies (e.g. epsilon greedy).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>grasps</strong> (<em>list</em>) – Python list of <code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code> grasps to select from.</p></li>
-<li><p><strong>q_values</strong> (<em>list</em>) – Python list of associated q-values.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>grasps</strong> (<em>list</em>) – Python list of <code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or
+<code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code> grasps to select from.</li>
+<li><strong>q_values</strong> (<em>list</em>) – Python list of associated q-values.</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Grasp with highest probability of success .</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code></p>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Grasp with highest probability of success .</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.Grasp2D</span></code> or <code class="xref py py-obj docutils literal"><span class="pre">gqcnn.grasping.SuctionPoint2D</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -1052,19 +1186,23 @@ Other Parameters.</p>
 <dl class="class">
 <dt id="gqcnn.UniformRandomGraspingPolicy">
 <em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">UniformRandomGraspingPolicy</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.UniformRandomGraspingPolicy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="gqcnn.grasping.policy.policy.GraspingPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">gqcnn.grasping.policy.policy.GraspingPolicy</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gqcnn.grasping.policy.policy.GraspingPolicy" title="gqcnn.grasping.policy.policy.GraspingPolicy"><code class="xref py py-class docutils literal"><span class="pre">gqcnn.grasping.policy.policy.GraspingPolicy</span></code></a></p>
 <p>Returns a grasp uniformly at random.</p>
 <dl class="method">
 <dt id="gqcnn.UniformRandomGraspingPolicy.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.UniformRandomGraspingPolicy.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</p></li>
-<li><p><strong>filters</strong> (<em>dict</em>) – Python dictionary of functions to apply to filter invalid grasps.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>config</strong> (<em>dict</em>) – Python dictionary of policy configuration parameters.</li>
+<li><strong>filters</strong> (<em>dict</em>) – Python dictionary of functions to apply to filter invalid grasps.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -1084,7 +1222,7 @@ Other Parameters.</p>
         <a href="../license/license.html" class="btn btn-neutral float-right" title="License" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="analysis.html" class="btn btn-neutral float-left" title="Analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="analysis.html" class="btn btn-neutral" title="Analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1110,16 +1248,35 @@ Other Parameters.</p>
   
 
 
+  
+
+    
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'../',
+              VERSION:'1.1.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

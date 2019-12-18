@@ -17,36 +17,34 @@
   
 
   
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
+  
+  
     
 
   
+
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Policies" href="policies.html" />
     <link rel="prev" title="Training" href="training.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
+
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+        <div class="wy-side-nav-search">
           
 
           
@@ -195,44 +193,52 @@
 <dl class="class">
 <dt id="gqcnn.GQCNNAnalyzer">
 <em class="property">class </em><code class="descclassname">gqcnn.</code><code class="descname">GQCNNAnalyzer</code><span class="sig-paren">(</span><em>config</em>, <em>verbose=True</em>, <em>plot_backend='pdf'</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNNAnalyzer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Analyzes a trained GQ-CNN model.</p>
 <dl class="method">
 <dt id="gqcnn.GQCNNAnalyzer.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>config</em>, <em>verbose=True</em>, <em>plot_backend='pdf'</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNNAnalyzer.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<em>dict</em>) – Dictionary of analysis configuration parameters.</p></li>
-<li><p><strong>verbose</strong> (<em>bool</em>) – Whether or not to log analysis output to stdout.</p></li>
-<li><p><strong>plot_backend</strong> (<em>str</em>) – Matplotlib plotting backend to use, default is non-interactive
-“pdf” backend.</p></li>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>config</strong> (<em>dict</em>) – Dictionary of analysis configuration parameters.</li>
+<li><strong>verbose</strong> (<em>bool</em>) – Whether or not to log analysis output to stdout.</li>
+<li><strong>plot_backend</strong> (<em>str</em>) – Matplotlib plotting backend to use, default is non-interactive
+“pdf” backend.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="gqcnn.GQCNNAnalyzer.analyze">
 <code class="descname">analyze</code><span class="sig-paren">(</span><em>model_dir</em>, <em>output_dir</em>, <em>dataset_config=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gqcnn.GQCNNAnalyzer.analyze" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run analysis.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model_dir</strong> (<em>str</em>) – Path to the GQ-CNN model to analyze.</p></li>
-<li><p><strong>output_dir</strong> (<em>str</em>) – Path to save the analysis.</p></li>
-<li><p><strong>dataset_config</strong> (<em>dict</em>) – Dictionary to configure dataset used for training evaluation if
-different from one used during training.</p></li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model_dir</strong> (<em>str</em>) – Path to the GQ-CNN model to analyze.</li>
+<li><strong>output_dir</strong> (<em>str</em>) – Path to save the analysis.</li>
+<li><strong>dataset_config</strong> (<em>dict</em>) – Dictionary to configure dataset used for training evaluation if
+different from one used during training.</li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">autolab_core.BinaryClassificationResult</span></code> – Result of analysis on training data.</p></li>
-<li><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">autolab_core.BinaryClassificationResult</span></code> – Result of analysis on validation data.</p></li>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.BinaryClassificationResult</span></code> – Result of analysis on training data.</li>
+<li><code class="xref py py-obj docutils literal"><span class="pre">autolab_core.BinaryClassificationResult</span></code> – Result of analysis on validation data.</li>
 </ul>
 </p>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -251,7 +257,7 @@ different from one used during training.</p></li>
         <a href="policies.html" class="btn btn-neutral float-right" title="Policies" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="training.html" class="btn btn-neutral float-left" title="Training" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="training.html" class="btn btn-neutral" title="Training" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -277,16 +283,35 @@ different from one used during training.</p></li>
   
 
 
+  
+
+    
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'../',
+              VERSION:'1.1.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

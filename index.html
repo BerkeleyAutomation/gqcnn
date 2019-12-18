@@ -17,35 +17,33 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
 
+  
+  
     
 
   
+
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="What are GQ-CNNs?" href="info/info.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
+
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+        <div class="wy-side-nav-search">
           
 
           
@@ -189,50 +187,53 @@
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>gqcnn</cite> package is a Python API for training and deploying <a class="reference external" href="info/info.html">Grasp Quality Convolutional Neural Networks (GQ-CNNs)</a> for grasp planning using training datasets from the <a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dexterity Network (Dex-Net)</a>, developed by the <a class="reference external" href="http://autolab.berkeley.edu/">Berkeley AUTOLAB</a> and introduced in the <a class="reference external" href="https://github.com/BerkeleyAutomation/dex-net/raw/gh-pages/docs/dexnet_rss2017_final.pdf">Dex-Net 2.0 paper</a>.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
+<p class="first admonition-title">Note</p>
 <p>We’re excited to announce <strong>version 1.0</strong>, which brings the GQ-CNN package up to date with recent research in <a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dex-Net</a>.
 Version 1.0 introduces support for:</p>
-<ol class="arabic simple">
-<li><p><strong>Dex-Net 4.0:</strong> Composite policies that decide whether to use a suction cup or parallel-jaw gripper.</p></li>
-<li><p><strong>Fully Convolutional GQ-CNNs:</strong> Fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.</p></li>
+<ol class="last arabic simple">
+<li><strong>Dex-Net 4.0:</strong> Composite policies that decide whether to use a suction cup or parallel-jaw gripper.</li>
+<li><strong>Fully Convolutional GQ-CNNs:</strong> Fully convolutional architectures that efficiently evaluate millions of grasps faster than prior GQ-CNNs.</li>
 </ol>
 </div>
 </div>
 <div class="section" id="links">
 <h2>Links<a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">Source Code</a></p></li>
-<li><p><a class="reference external" href="http://bit.ly/2rIM7Jk">Datasets</a></p></li>
-<li><p><a class="reference external" href="http://bit.ly/2tAFMko">Pretrained Models</a></p></li>
-<li><p><a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dex-Net Website</a></p></li>
-<li><p><a class="reference external" href="http://autolab.berkeley.edu">UC Berkeley AUTOLAB</a></p></li>
+<li><a class="reference external" href="https://github.com/BerkeleyAutomation/gqcnn">Source Code</a></li>
+<li><a class="reference external" href="http://bit.ly/2rIM7Jk">Datasets</a></li>
+<li><a class="reference external" href="http://bit.ly/2tAFMko">Pretrained Models</a></li>
+<li><a class="reference external" href="https://berkeleyautomation.github.io/dex-net">Dex-Net Website</a></li>
+<li><a class="reference external" href="http://autolab.berkeley.edu">UC Berkeley AUTOLAB</a></li>
 </ul>
 <a class="reference internal image-reference" href="_images/gqcnn.png"><img alt="_images/gqcnn.png" src="_images/gqcnn.png" style="width: 100%;" /></a>
 </div>
 <div class="section" id="project-goals">
 <h2>Project Goals<a class="headerlink" href="#project-goals" title="Permalink to this headline">¶</a></h2>
 <p>The goals of this project are to facilitate:</p>
-<ol class="arabic simple">
-<li><dl class="simple">
-<dt><strong>Replicability</strong> of GQ-CNN training and deployment from:</dt><dd><ol class="arabic simple">
-<li><p>The latest <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> results.</p></li>
-<li><p>Older results such as <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a> and <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_3">Dex-Net 3.0</a>.</p></li>
-<li><p>Experimental results such as <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>.</p></li>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt><strong>Replicability</strong> of GQ-CNN training and deployment from:</dt>
+<dd><ol class="first last arabic simple">
+<li>The latest <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> results.</li>
+<li>Older results such as <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a> and <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_3">Dex-Net 3.0</a>.</li>
+<li>Experimental results such as <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>.</li>
 </ol>
 </dd>
 </dl>
 </li>
-<li><p><strong>Research extensions</strong> on novel GQ-CNN architectures that have higher performance on <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> training datasets.</p></li>
+<li><p class="first"><strong>Research extensions</strong> on novel GQ-CNN architectures that have higher performance on <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> training datasets.</p>
+</li>
 </ol>
 <p>Our longer-term goal is to encourage development of robust GQ-CNNs that can be used to plan grasps on different hardware setups with different robots and cameras.</p>
 </div>
 <div class="section" id="disclaimer">
 <h2>Disclaimer<a class="headerlink" href="#disclaimer" title="Permalink to this headline">¶</a></h2>
-<dl class="simple">
-<dt>GQ-CNN models are sensitive to the following parameters used during dataset generation:</dt><dd><ol class="arabic simple">
-<li><p>The robot gripper</p></li>
-<li><p>The depth camera</p></li>
-<li><p>The distance between the camera and workspace.</p></li>
+<dl class="docutils">
+<dt>GQ-CNN models are sensitive to the following parameters used during dataset generation:</dt>
+<dd><ol class="first last arabic simple">
+<li>The robot gripper</li>
+<li>The depth camera</li>
+<li>The distance between the camera and workspace.</li>
 </ol>
 </dd>
 </dl>
@@ -247,11 +248,11 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
 <h2>Academic Use<a class="headerlink" href="#academic-use" title="Permalink to this headline">¶</a></h2>
 <p>If you use the code, datasets, or models in a publication, please cite the appropriate paper:</p>
 <ol class="arabic simple">
-<li><p><strong>Dex-Net 2.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_rss2017.bib">(bibtex)</a></p></li>
-<li><p><strong>Dex-Net 2.1</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_corl2017.bib">(bibtex)</a></p></li>
-<li><p><strong>Dex-Net 3.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_icra2018.bib">(bibtex)</a></p></li>
-<li><p><strong>Dex-Net 4.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_sciencerobotics2019.bib">(bibtex)</a></p></li>
-<li><p><strong>FC-GQ-CNN</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/fcgqcnn/gh-pages/docs/fcgqcnn_ral2019.bib">(bibtex)</a></p></li>
+<li><strong>Dex-Net 2.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_rss2017.bib">(bibtex)</a></li>
+<li><strong>Dex-Net 2.1</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_corl2017.bib">(bibtex)</a></li>
+<li><strong>Dex-Net 3.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_icra2018.bib">(bibtex)</a></li>
+<li><strong>Dex-Net 4.0</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/dex-net/gh-pages/docs/dexnet_sciencerobotics2019.bib">(bibtex)</a></li>
+<li><strong>FC-GQ-CNN</strong> <a class="reference external" href="https://raw.githubusercontent.com/BerkeleyAutomation/fcgqcnn/gh-pages/docs/fcgqcnn_ral2019.bib">(bibtex)</a></li>
 </ol>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Background</span></p>
@@ -361,9 +362,9 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
 </ul>
 </div>
 
@@ -402,16 +403,35 @@ For other questions or concerns, please contact Jeff Mahler (<a class="reference
   
 
 
+  
+
+    
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'./',
+              VERSION:'1.1.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

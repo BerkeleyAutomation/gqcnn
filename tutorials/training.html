@@ -17,34 +17,32 @@
   
 
   
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
+  
+  
     
 
   
+
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
+
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+        <div class="wy-side-nav-search">
           
 
           
@@ -186,22 +184,22 @@
 <h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
 <p>The <cite>gqcnn</cite> package can be used to train a <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> GQ-CNN model on a custom offline <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/">Dex-Net</a> dataset. Because training from scratch can be time-consuming, the most efficient way to train a new network is to fine-tune the weights of a pre-trained <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> GQ-CNN model, which has already been trained on millions of images.</p>
 <p>To fine-tune a GQ-CNN run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python tools/finetune.py &lt;training_dataset_path&gt; &lt;pretrained_network_name&gt; --config_filename &lt;config_filename&gt; --name &lt;model_name&gt;
+<div class="highlight-default"><div class="highlight"><pre>$ python tools/finetune.py &lt;training_dataset_path&gt; &lt;pretrained_network_name&gt; --config_filename &lt;config_filename&gt; --name &lt;model_name&gt;
 </pre></div>
 </div>
 <p>The args are:</p>
 <ol class="arabic simple">
-<li><p><strong>training_dataset_path</strong>: Path to the training dataset.</p></li>
-<li><p><strong>pretrained_network_name</strong>: Name of pre-trained GQ-CNN.</p></li>
-<li><p><strong>config_filename</strong>: Name of the config file to use.</p></li>
-<li><p><strong>model_name</strong>: Name for the model.</p></li>
+<li><strong>training_dataset_path</strong>: Path to the training dataset.</li>
+<li><strong>pretrained_network_name</strong>: Name of pre-trained GQ-CNN.</li>
+<li><strong>config_filename</strong>: Name of the config file to use.</li>
+<li><strong>model_name</strong>: Name for the model.</li>
 </ol>
 <p>To train a GQ-CNN for a <strong>parallel jaw</strong> gripper on a sample dataset, run the fine-tuning script:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python tools/finetune.py data/training/example_pj/ GQCNN-4.0-PJ --config_filename cfg/finetune_example_pj.yaml --name gqcnn_example_pj
+<div class="highlight-default"><div class="highlight"><pre>$ python tools/finetune.py data/training/example_pj/ GQCNN-4.0-PJ --config_filename cfg/finetune_example_pj.yaml --name gqcnn_example_pj
 </pre></div>
 </div>
 <p>To train a GQ-CNN for a <strong>suction</strong> gripper run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python tools/finetune.py data/training/example_suction/ GQCNN-4.0-SUCTION --config_filename cfg/finetune_example_suction.yaml --name gqcnn_example_suction
+<div class="highlight-default"><div class="highlight"><pre>$ python tools/finetune.py data/training/example_suction/ GQCNN-4.0-SUCTION --config_filename cfg/finetune_example_suction.yaml --name gqcnn_example_suction
 </pre></div>
 </div>
 <div class="section" id="visualizing-training">
@@ -241,16 +239,35 @@
   
 
 
+  
+
+    
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'../',
+              VERSION:'1.1.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

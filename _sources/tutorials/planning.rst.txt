@@ -69,6 +69,7 @@ To evaluate the pre-trained `Dex-Net 4.0`_ **suction** network on sample images 
 
     $ python examples/policy.py GQCNN-4.0-SUCTION --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
+.. _ros-policy:
 
 ROS Policy
 ----------
@@ -78,7 +79,8 @@ First start the grasp planning service: ::
 
 The args are:
 
-#. **model_name**: Name of the GQ-CNN model to use.
+#. **model_name**: Name of the GQ-CNN model to use. Default is **GQCNN-4.0-PJ**.
+#. **model_dir**: Path to the directory where the GQ-CNN models are located. Default is **models/**. If you are using the provided **download_models.sh** script, you shouldn't have to modify this.
 
 To start the grasp planning service with the pre-trained `Dex-Net 4.0`_ **parallel jaw** network run: ::
 
@@ -130,4 +132,11 @@ To evaluate the pre-trained `FC-GQ-CNN`_ **suction** network on sample images of
 
     $ python examples/policy.py FC-GQCNN-4.0-SUCTION --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 
-    
+With ROS
+^^^^^^^^
+
+Review the section on using the normal ROS policy first, which can be found :ref:`here <ros-policy>`.
+
+Add the additional arg **fully_conv:=True** when launching the grasp planning service and provide the corresponding network (**FC-GQCNN-4.0-PJ** for **parallel jaw** and **FC-GQCNN-4.0-SUCTION** for **suction**).
+
+If you wish to test on inputs other than those provided in `data/examples/clutter/phoxi/fcgqcnn/`, you will need to edit the input height and width configuration in the appropriate `cfg/examples/<fc_gqcnn_pj.yaml or fc_gqcnn_suction.yaml>` under `["policy"]["metric"]["fully_conv_gqcnn_config"]`.
