@@ -38,8 +38,8 @@ policy:
     gqcnn_model: /path/to/your/FC-GQ-Image-Wise-Suction
     gqcnn_backend: tf
     fully_conv_gqcnn_config:
-      im_height: 480
-      im_width: 640
+      im_height: 386
+      im_width: 516
 
   # visualization
   policy_vis:

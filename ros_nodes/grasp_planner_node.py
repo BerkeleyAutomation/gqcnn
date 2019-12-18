@@ -27,7 +27,7 @@ ROS Server for planning GQ-CNN grasps.
 
 Author
 -----
-Vishal Satish
+Vishal Satish & Jeff Mahler
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -46,8 +46,11 @@ from autolab_core import YamlConfig
 from perception import (CameraIntrinsics, ColorImage, DepthImage, BinaryImage,
                         RgbdImage)
 from visualization import Visualizer2D as vis
-from gqcnn.grasping import (Grasp2D, SuctionPoint2D,
-                            CrossEntropyRobustGraspingPolicy, RgbdImageState)
+from gqcnn.grasping import (Grasp2D, SuctionPoint2D, RgbdImageState,
+                            RobustGraspingPolicy,
+                            CrossEntropyRobustGraspingPolicy,
+                            FullyConvolutionalGraspingPolicyParallelJaw,
+                            FullyConvolutionalGraspingPolicySuction)
 from gqcnn.utils import GripperMode, NoValidGraspsException
 
 from geometry_msgs.msg import PoseStamped
@@ -77,17 +80,21 @@ class GraspPlanner(object):
         self.grasp_pose_publisher = grasp_pose_publisher
 
         # Set minimum input dimensions.
-        self.pad = max(
-            math.ceil(
-                np.sqrt(2) *
-                (float(self.cfg["policy"]["metric"]["crop_width"]) / 2)),
-            math.ceil(
-                np.sqrt(2) *
-                (float(self.cfg["policy"]["metric"]["crop_height"]) / 2)))
-        self.min_width = 2 * self.pad + self.cfg["policy"]["metric"][
-            "crop_width"]
-        self.min_height = 2 * self.pad + self.cfg["policy"]["metric"][
-            "crop_height"]
+        if self.cfg["policy"]["type"] in {"fully_conv_suction", "fully_conv_pj"}:
+            self.min_width = self.cfg["policy"]["gqcnn_recep_w"]
+            self.min_height = self.cfg["policy"]["gqcnn_recep_h"]
+        else:
+            pad = max(
+                math.ceil(
+                    np.sqrt(2) *
+                    (float(self.cfg["policy"]["metric"]["crop_width"]) / 2)),
+                math.ceil(
+                    np.sqrt(2) *
+                    (float(self.cfg["policy"]["metric"]["crop_height"]) / 2)))
+            self.min_width = 2 * pad + self.cfg["policy"]["metric"][
+                "crop_width"]
+            self.min_height = 2 * pad + self.cfg["policy"]["metric"][
+                "crop_height"]
 
     def read_images(self, req):
         """Reads images from a ROS service request.
@@ -361,6 +368,7 @@ if __name__ == "__main__":
     # Get configs.
     model_name = rospy.get_param("~model_name")
     model_dir = rospy.get_param("~model_dir")
+    fully_conv = rospy.get_param("~fully_conv")
     if model_dir.lower() == "default":
         model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                  "../models")
@@ -387,13 +395,22 @@ if __name__ == "__main__":
                 "Input data mode {} not supported!".format(input_data_mode))
 
     # Set config.
-    config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   "..", "cfg/examples/ros/gqcnn_suction.yaml")
+    if fully_conv:
+        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                       "..", "cfg/examples/ros/fc_gqcnn_suction.yaml")
+    else:
+        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                       "..", "cfg/examples/ros/gqcnn_suction.yaml")
     if (gripper_mode == GripperMode.LEGACY_PARALLEL_JAW
             or gripper_mode == GripperMode.PARALLEL_JAW):
-        config_filename = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "..",
-            "cfg/examples/ros/gqcnn_pj.yaml")
+        if fully_conv:
+            config_filename = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "..",
+                "cfg/examples/ros/fc_gqcnn_pj.yaml")
+        else:
+            config_filename = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "..",
+                "cfg/examples/ros/gqcnn_pj.yaml")
 
     # Read config.
     cfg = YamlConfig(config_filename)
@@ -407,7 +424,26 @@ if __name__ == "__main__":
 
     # Create a grasping policy.
     rospy.loginfo("Creating Grasping Policy")
-    grasping_policy = CrossEntropyRobustGraspingPolicy(policy_cfg)
+    if fully_conv:
+        # TODO(vsatish): We should really be doing this in some factory policy.
+        if policy_cfg["type"] == "fully_conv_suction":
+            grasping_policy = FullyConvolutionalGraspingPolicySuction(policy_cfg)
+        elif policy_cfg["type"] == "fully_conv_pj":
+            grasping_policy = FullyConvolutionalGraspingPolicyParallelJaw(policy_cfg)
+        else:
+            raise ValueError(
+                "Invalid fully-convolutional policy type: {}".format(
+                    policy_cfg["type"]))
+    else:
+        policy_type = "cem"
+        if "type" in policy_cfg:
+            policy_type = policy_cfg["type"]
+        if policy_type == "ranking":
+            grasping_policy = RobustGraspingPolicy(policy_cfg)
+        elif policy_type == "cem":
+            grasping_policy = CrossEntropyRobustGraspingPolicy(policy_cfg)
+        else:
+            raise ValueError("Invalid policy type: {}".format(policy_type))
 
     # Create a grasp planner.
     grasp_planner = GraspPlanner(cfg, cv_bridge, grasping_policy,
