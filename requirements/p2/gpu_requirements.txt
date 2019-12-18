@@ -7,7 +7,7 @@ numpy
 opencv-python
 scipy
 matplotlib<=2.2.0
-tensorflow-gpu<=1.13.1
+tensorflow-gpu<=1.15.0
 scikit-learn
 scikit-image<=0.14.2
 gputil
