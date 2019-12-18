@@ -80,7 +80,8 @@ class GraspPlanner(object):
         self.grasp_pose_publisher = grasp_pose_publisher
 
         # Set minimum input dimensions.
-        if self.cfg["policy"]["type"] in {"fully_conv_suction", "fully_conv_pj"}:
+        fully_conv_policy_types = {"fully_conv_suction", "fully_conv_pj"}
+        if self.cfg["policy"]["type"] in fully_conv_policy_types:
             self.min_width = self.cfg["policy"]["gqcnn_recep_w"]
             self.min_height = self.cfg["policy"]["gqcnn_recep_h"]
         else:
@@ -396,11 +397,17 @@ if __name__ == "__main__":
 
     # Set config.
     if fully_conv:
-        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       "..", "cfg/examples/ros/fc_gqcnn_suction.yaml")
+        config_filename = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "..",
+            "cfg/examples/ros/fc_gqcnn_suction.yaml"
+        )
     else:
-        config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       "..", "cfg/examples/ros/gqcnn_suction.yaml")
+        config_filename = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "..",
+            "cfg/examples/ros/gqcnn_suction.yaml"
+        )
     if (gripper_mode == GripperMode.LEGACY_PARALLEL_JAW
             or gripper_mode == GripperMode.PARALLEL_JAW):
         if fully_conv:
@@ -427,9 +434,11 @@ if __name__ == "__main__":
     if fully_conv:
         # TODO(vsatish): We should really be doing this in some factory policy.
         if policy_cfg["type"] == "fully_conv_suction":
-            grasping_policy = FullyConvolutionalGraspingPolicySuction(policy_cfg)
+            grasping_policy = \
+                FullyConvolutionalGraspingPolicySuction(policy_cfg)
         elif policy_cfg["type"] == "fully_conv_pj":
-            grasping_policy = FullyConvolutionalGraspingPolicyParallelJaw(policy_cfg)
+            grasping_policy = \
+                FullyConvolutionalGraspingPolicyParallelJaw(policy_cfg)
         else:
             raise ValueError(
                 "Invalid fully-convolutional policy type: {}".format(
