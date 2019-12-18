@@ -114,7 +114,7 @@ if __name__ == "__main__":
         "%s/grasp_planner_segmask" % (namespace), GQCNNGraspPlannerSegmask)
     cv_bridge = CvBridge()
 
-    # Setup sensor.
+    # Set up sensor.
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
 
     # Read images.
