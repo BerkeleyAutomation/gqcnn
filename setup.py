@@ -40,7 +40,7 @@ from setuptools.command.install import install
 import subprocess
 import sys
 
-TF_MAX_VERSION = "1.13.1"
+TF_MAX_VERSION = "1.15.0"
 
 # Set up logger.
 logging.basicConfig()  # Configure the root logger.
