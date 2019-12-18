@@ -398,16 +398,12 @@ if __name__ == "__main__":
     # Set config.
     if fully_conv:
         config_filename = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "..",
-            "cfg/examples/ros/fc_gqcnn_suction.yaml"
-        )
+            os.path.dirname(os.path.realpath(__file__)), "..",
+            "cfg/examples/ros/fc_gqcnn_suction.yaml")
     else:
         config_filename = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "..",
-            "cfg/examples/ros/gqcnn_suction.yaml"
-        )
+            os.path.dirname(os.path.realpath(__file__)), "..",
+            "cfg/examples/ros/gqcnn_suction.yaml")
     if (gripper_mode == GripperMode.LEGACY_PARALLEL_JAW
             or gripper_mode == GripperMode.PARALLEL_JAW):
         if fully_conv:
