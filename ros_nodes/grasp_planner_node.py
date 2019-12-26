@@ -80,8 +80,12 @@ class GraspPlanner(object):
         self.grasp_pose_publisher = grasp_pose_publisher
 
         # Set minimum input dimensions.
+        policy_type = "cem"
+        if "type" in self.cfg["policy"]:
+            policy_type = self.cfg["policy"]["type"]
+
         fully_conv_policy_types = {"fully_conv_suction", "fully_conv_pj"}
-        if self.cfg["policy"]["type"] in fully_conv_policy_types:
+        if policy_type in fully_conv_policy_types:
             self.min_width = self.cfg["policy"]["gqcnn_recep_w"]
             self.min_height = self.cfg["policy"]["gqcnn_recep_h"]
         else:
