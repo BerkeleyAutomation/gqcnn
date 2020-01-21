@@ -22,4 +22,4 @@
 # HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 # MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
-echo "Please contact Vishal Satish (vsatish@berkeley.edu) or Jeffrey Mahler (jmahler@berkeley.edu) for instructions on training Dex-Net 4.0 FC Suction."
+python tools/train.py data/training/dex-net_4.0_fc_suction --config_filename cfg/train_dex-net_4.0_fc_suction.yaml --name GQCNN-4.0-FC-Suction

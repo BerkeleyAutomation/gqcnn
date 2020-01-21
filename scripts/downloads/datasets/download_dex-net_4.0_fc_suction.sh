@@ -22,4 +22,12 @@
 # HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 # MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
-echo "Dex-Net 4.0 FC-GQ-CNN PJ dataset not yet publicly available. Please contact Vishal Satish (vsatish@berkeley.edu) or Jeffrey Mahler (jmahler@berkeley.edu) for access." 
+wget -O data/training/dexnet_4_fc_suction_aa https://berkeley.box.com/shared/static/51xm8pm4wz7bsr71jp8eikoupjzk1bjz
+wget -O data/training/dexnet_4_fc_suction_ab https://berkeley.box.com/shared/static/pp56ryq1oq7sklfodfnnl5nt2cho1p14
+wget -O data/training/dexnet_4_fc_suction_ac https://berkeley.box.com/shared/static/fcxvnabs6rwlo5gmvcg5eq0epjb3xhhx
+
+cd data/training
+cat dexnet_4_fc_suction_a* > dexnet_4_fc_suction.zip
+unzip dexnet_4_fc_suction.zip
+mv grasps dex-net_4.0_fc_suction
+cd ../..
