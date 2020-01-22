@@ -22,13 +22,12 @@
 # HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 # MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
-wget -O data/training/dexnet_4_pj_aa https://berkeley.box.com/shared/static/zs3f5dolx6fqaxdaylc4ninko670b107.0_pj_aa
-wget -O data/training/dexnet_4_pj_ab https://berkeley.box.com/shared/static/a8s87it90x51xn8t131wwy04s13bis98.0_pj_ab
-wget -O data/training/dexnet_4_pj_ac https://berkeley.box.com/shared/static/ehlntuubeo65tql0msv6qicux9mmxpf0.0_pj_ac
-wget -O data/training/dexnet_4_pj_ad https://berkeley.box.com/shared/static/uk35f58wk3mp6fvwvirjq34moag48gnq.0_pj_ad
-wget -O data/training/dexnet_4_pj_ae https://berkeley.box.com/shared/static/pem3aw3spdn741oxtzwhfxbeag5lnjz1.0_pj_ae
-wget -O data/training/dexnet_4_pj_af https://berkeley.box.com/shared/static/801ijee43vhcu2ct2uvrze0tvkp9ywin.0_pj_af
-wget -O data/training/dexnet_4_pj_ag https://berkeley.box.com/shared/static/lslp1ruevrnkc1ogjee6lhauvcl1owur.0_pj_ag
+wget -O data/training/dexnet_4_pj_aa https://berkeley.box.com/shared/static/goe0387s3g8sal2k9nt9iyrdl9zor9p8.0_pj_aa
+wget -O data/training/dexnet_4_pj_ab https://berkeley.box.com/shared/static/qp365658ur7mbieqrnp5hg3axoc0u1xm.0_pj_ab
+wget -O data/training/dexnet_4_pj_ac https://berkeley.box.com/shared/static/6aehw56g0jquky5dsww1mls6v5drs3wj.0_pj_ac
+wget -O data/training/dexnet_4_pj_ad https://berkeley.box.com/shared/static/8c4qc01k1wduijf6byd3f2amymdq7cyf.0_pj_ad
+wget -O data/training/dexnet_4_pj_ae https://berkeley.box.com/shared/static/u0m1yxss2gwara4r1xh1gxatpd0yf81n.0_pj_ae
+wget -O data/training/dexnet_4_pj_af https://berkeley.box.com/shared/static/y2zgao4epx163zc3re85tkrgq6jjb8a5.0_pj_af
 
 cd data/training
 cat dexnet_4_pj_a* > dexnet_4_pj.zip
