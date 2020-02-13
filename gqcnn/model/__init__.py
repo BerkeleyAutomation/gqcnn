@@ -60,6 +60,10 @@ def get_gqcnn_model(backend="tf", verbose=True):
     if backend == "tf":
         logger.info("Initializing GQ-CNN with Tensorflow as backend...")
         return GQCNNTF
+    elif backend == "openvino":
+        from .openvino import GQCNNOpenVINO
+        logger.info("Initializing GQ-CNN with OpenVINO as backend...")
+        return GQCNNOpenVINO
     else:
         raise ValueError("Invalid backend: {}".format(backend))
 

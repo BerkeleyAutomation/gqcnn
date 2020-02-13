@@ -928,7 +928,12 @@ class GQCnnQualityFunction(GraspQualityFunction):
         self._crop_width = config["crop_width"]
 
         # Init GQ-CNN
-        self._gqcnn = get_gqcnn_model().load(self._gqcnn_model_dir)
+
+        self._gqcnn = get_gqcnn_model().load(self._gqcnn_model_dir) \
+            if ("openvino" not in self._config or
+                self._config["openvino"] == "OFF") \
+            else get_gqcnn_model("openvino").load(
+                    self._gqcnn_model_dir, self._config["openvino"])
 
         # Open Tensorflow session for gqcnn.
         self._gqcnn.open_session()
