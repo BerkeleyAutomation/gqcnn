@@ -162,7 +162,7 @@ class FullyConvolutionalGraspingPolicy(with_metaclass(ABCMeta,
             # `argmax` is faster than `argpartition` for special case of single
             # sample.
             if self._sampling_method == SamplingMethod.TOP_K:
-                return np.argmax(preds_flat, axis=0)
+                return [np.argmax(preds_flat, axis=0)]
             elif self._sampling_method == SamplingMethod.UNIFORM:
                 pred_ind_flat = []
                 for i in range(preds_flat.shape[1]):
