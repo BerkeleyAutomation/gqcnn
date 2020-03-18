@@ -25,13 +25,13 @@ train_batch_size: 64
 val_batch_size: &val_batch_size 64
 
 # logging params
-num_epochs: 25        # number of epochs to train for
+num_epochs: 50        # number of epochs to train for
 eval_frequency: 5    # how often to get validation error (in epochs)
 save_frequency: 5    # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
 log_frequency: 1      # how often to log output (in steps)
 
-# train / val split params 
+# train / val split params
 train_pct: 0.8              # percentage of the data to use for training vs validation
 total_pct: 1.0              # percentage of all the files to use
 eval_total_train_error: 0   # whether or not to evaluate the total training error on each validataion
