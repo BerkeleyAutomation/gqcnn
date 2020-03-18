@@ -46,7 +46,6 @@ import time
 from past.builtins import xrange
 import cv2
 import numpy as np
-import scipy.misc as sm
 import scipy.stats as ss
 import tensorflow as tf
 
@@ -56,9 +55,9 @@ from autolab_core.constants import JSON_INDENT
 import autolab_core.utils as utils
 
 from ...utils import (TrainingMode, GripperMode, InputDepthMode,
-                      GeneralConstants, TrainStatsLogger, pose_dim,
-                      read_pose_data, weight_name_to_layer_name, is_py2,
-                      GQCNNTrainingStatus, GQCNNFilenames)
+                      GeneralConstants, TrainStatsLogger, GQCNNTrainingStatus,
+                      GQCNNFilenames, pose_dim, read_pose_data,
+                      weight_name_to_layer_name, is_py2, imresize)
 
 if is_py2():
     import Queue
@@ -1480,11 +1479,10 @@ class GQCNNTrainerTF(object):
                     ]).astype(np.float32)
                     for i in range(num_images):
                         for c in range(train_images_arr.shape[3]):
-                            resized_train_images_arr[i, :, :, c] = sm.imresize(
+                            resized_train_images_arr[i, :, :, c] = imresize(
                                 train_images_arr[i, :, :, c],
                                 rescale_factor,
-                                interp="bicubic",
-                                mode="F")
+                                interp="bicubic")
                     train_images_arr = resized_train_images_arr
 
                 # Add noises to images.
@@ -1583,10 +1581,9 @@ class GQCNNTrainerTF(object):
                                            size=self.gp_num_pix).reshape(
                                                self.gp_sample_height,
                                                self.gp_sample_width)
-                    gp_noise = sm.imresize(gp_noise,
-                                           self.gp_rescale_factor,
-                                           interp="bicubic",
-                                           mode="F")
+                    gp_noise = imresize(gp_noise,
+                                        self.gp_rescale_factor,
+                                        interp="bicubic")
                     train_image[train_image > 0] += gp_noise[train_image > 0]
                     image_arr[i, :, :, 0] = train_image
 
