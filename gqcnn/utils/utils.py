@@ -37,6 +37,7 @@ import os
 import sys
 
 import numpy as np
+import skimage.transform as skt
 
 from autolab_core import Logger
 from .enums import GripperMode
@@ -173,3 +174,60 @@ def weight_name_to_layer_name(weight_name):
     if type_name == "pose":
         return weight_name[:-6]
     return weight_name[:-1]
+
+
+def imresize(image, size, interp="nearest"):
+    """Wrapper over `skimage.transform.resize` to mimic `scipy.misc.imresize`.
+    Copied from https://github.com/BerkeleyAutomation/perception/blob/master/perception/image.py#L38.
+
+    Since `scipy.misc.imresize` has been removed in version 1.3.*, instead use
+    `skimage.transform.resize`. The "lanczos" and "cubic" interpolation methods
+    are not supported by `skimage.transform.resize`, however there is now
+    "biquadratic", "biquartic", and "biquintic".
+
+    Parameters
+    ----------
+    image : :obj:`numpy.ndarray`
+        The image to resize.
+
+    size : int, float, or tuple
+        * int   - Percentage of current size.
+        * float - Fraction of current size.
+        * tuple - Size of the output image.
+
+    interp : :obj:`str`, optional
+        Interpolation to use for re-sizing ("neartest", "bilinear",
+        "biquadratic", "bicubic", "biquartic", "biquintic"). Default is
+        "nearest".
+
+    Returns
+    -------
+    :obj:`np.ndarray`
+        The resized image.
+    """
+    skt_interp_map = {"nearest": 0, "bilinear": 1, "biquadratic": 2,
+                      "bicubic": 3, "biquartic": 4, "biquintic": 5}
+    if interp in ("lanczos", "cubic"):
+        raise ValueError("\"lanczos\" and \"cubic\""
+                         " interpolation are no longer supported.")
+    assert interp in skt_interp_map, ("Interpolation \"{}\" not"
+                                      " supported.".format(interp))
+
+    if isinstance(size, (tuple, list)):
+        output_shape = size
+    elif isinstance(size, (float)):
+        np_shape = np.asarray(image.shape).astype(np.float32)
+        np_shape[0:2] *= size
+        output_shape = tuple(np_shape.astype(int))
+    elif isinstance(size, (int)):
+        np_shape = np.asarray(image.shape).astype(np.float32)
+        np_shape[0:2] *= size / 100.0
+        output_shape = tuple(np_shape.astype(int))
+    else:
+        raise ValueError("Invalid type for size \"{}\".".format(type(size)))
+
+    return skt.resize(image,
+                      output_shape,
+                      order=skt_interp_map[interp],
+                      anti_aliasing=False,
+                      mode="constant")
