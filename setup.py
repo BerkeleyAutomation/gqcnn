@@ -141,9 +141,8 @@ class InstallCmd(install, object):
 
 
 requirements = [
-    "autolab-core", "autolab-perception", "visualization",
-    "numpy", "scipy", "matplotlib<=2.2.0", "opencv-python", "scikit-learn",
-    "psutil", "gputil"
+    "autolab-core", "autolab-perception", "visualization", "numpy", "scipy",
+    "matplotlib<=2.2.0", "opencv-python", "scikit-learn", "psutil", "gputil"
 ]
 
 if sys.version[0] == "2":
