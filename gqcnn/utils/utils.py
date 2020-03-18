@@ -178,7 +178,7 @@ def weight_name_to_layer_name(weight_name):
 
 def imresize(image, size, interp="nearest"):
     """Wrapper over `skimage.transform.resize` to mimic `scipy.misc.imresize`.
-    Copied from https://github.com/BerkeleyAutomation/perception/blob/master/perception/image.py#L38.
+    Copied from https://github.com/BerkeleyAutomation/perception/blob/master/perception/image.py#L38.  # noqa: E501
 
     Since `scipy.misc.imresize` has been removed in version 1.3.*, instead use
     `skimage.transform.resize`. The "lanczos" and "cubic" interpolation methods
@@ -205,12 +205,18 @@ def imresize(image, size, interp="nearest"):
     :obj:`np.ndarray`
         The resized image.
     """
-    skt_interp_map = {"nearest": 0, "bilinear": 1, "biquadratic": 2,
-                      "bicubic": 3, "biquartic": 4, "biquintic": 5}
+    skt_interp_map = {
+        "nearest": 0,
+        "bilinear": 1,
+        "biquadratic": 2,
+        "bicubic": 3,
+        "biquartic": 4,
+        "biquintic": 5
+    }
     if interp in ("lanczos", "cubic"):
-        raise ValueError("\"lanczos\" and \"cubic\""
+        raise ValueError("'lanczos' and 'cubic'"
                          " interpolation are no longer supported.")
-    assert interp in skt_interp_map, ("Interpolation \"{}\" not"
+    assert interp in skt_interp_map, ("Interpolation '{}' not"
                                       " supported.".format(interp))
 
     if isinstance(size, (tuple, list)):
@@ -224,7 +230,7 @@ def imresize(image, size, interp="nearest"):
         np_shape[0:2] *= size / 100.0
         output_shape = tuple(np_shape.astype(int))
     else:
-        raise ValueError("Invalid type for size \"{}\".".format(type(size)))
+        raise ValueError("Invalid type for size '{}'.".format(type(size)))
 
     return skt.resize(image,
                       output_shape,

@@ -36,8 +36,8 @@ from .utils import (is_py2, set_cuda_visible_devices, pose_dim, read_pose_data,
 
 __all__ = [
     "is_py2", "set_cuda_visible_devices", "pose_dim", "read_pose_data",
-    "reduce_shape", "weight_name_to_layer_name", "imresize",
-    "ImageMode", "TrainingMode", "GripperMode", "InputDepthMode",
-    "GeneralConstants", "GQCNNTrainingStatus", "NoValidGraspsException",
+    "reduce_shape", "weight_name_to_layer_name", "imresize", "ImageMode",
+    "TrainingMode", "GripperMode", "InputDepthMode", "GeneralConstants",
+    "GQCNNTrainingStatus", "NoValidGraspsException",
     "NoAntipodalPairsFoundException", "TrainStatsLogger", "GQCNNFilenames"
 ]

@@ -56,9 +56,8 @@ import autolab_core.utils as utils
 
 from ...utils import (TrainingMode, GripperMode, InputDepthMode,
                       GeneralConstants, TrainStatsLogger, GQCNNTrainingStatus,
-                      GQCNNFilenames,
-                      pose_dim, read_pose_data, weight_name_to_layer_name,
-                      is_py2, imresize)
+                      GQCNNFilenames, pose_dim, read_pose_data,
+                      weight_name_to_layer_name, is_py2, imresize)
 
 if is_py2():
     import Queue
@@ -1483,8 +1482,7 @@ class GQCNNTrainerTF(object):
                             resized_train_images_arr[i, :, :, c] = imresize(
                                 train_images_arr[i, :, :, c],
                                 rescale_factor,
-                                interp="bicubic"
-                            )
+                                interp="bicubic")
                     train_images_arr = resized_train_images_arr
 
                 # Add noises to images.
