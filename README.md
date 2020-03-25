@@ -1,4 +1,4 @@
-## **Python 2.x support has officially been dropped.**
+## Note: Python 2.x support has officially been dropped.
 
 # Berkeley AUTOLAB's GQCNN Package
 <p>
