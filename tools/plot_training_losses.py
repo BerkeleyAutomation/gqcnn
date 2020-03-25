@@ -34,10 +34,6 @@ model_dir : str
     Command line argument, the path to the model whose errors are to plotted.
     All plots and other metrics will be saved to this directory.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import sys
 

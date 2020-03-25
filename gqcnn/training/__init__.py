@@ -26,10 +26,6 @@ Factory functions to obtain GQCNNTrainer class based on chosen deep learning
 backend. Currently only Tensorflow is supported.
 Author: Vishal Satish
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from .tf import GQCNNTrainerTF
 
 

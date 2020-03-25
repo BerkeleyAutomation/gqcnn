@@ -29,15 +29,10 @@ Authors
 -------
 Jason Liu & Jeff Mahler
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from time import time
 
 import cv2
-from future.utils import with_metaclass
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -50,7 +45,7 @@ from .grasp import SuctionPoint2D
 from ..utils import GeneralConstants, GripperMode
 
 
-class GraspQualityFunction(with_metaclass(ABCMeta, object)):
+class GraspQualityFunction(ABC):
     """Abstract grasp quality class."""
 
     def __init__(self):

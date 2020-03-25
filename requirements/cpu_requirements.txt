@@ -4,9 +4,9 @@ visualization
 numpy
 opencv-python
 scipy
-matplotlib<=2.2.0
+matplotlib
 tensorflow<=1.15.0
 scikit-learn
-scikit-image<=0.14.2
+scikit-image
 gputil
 psutil
