@@ -10,9 +10,7 @@ ARG work_dir=/root/Workspace
 RUN apt-get update && apt-get install -y \
         build-essential \
         python3 \
-        python-dev \
         python3-dev \
-        python-tk \
         python3-tk \
         python-opengl \
         curl \
@@ -34,9 +32,6 @@ RUN curl -L http://download.osgeo.org/libspatialindex/spatialindex-src-1.8.5.tar
 
 # Install pip (`apt-get install python-pip` causes trouble w/ networkx).
 RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
-	python get-pip.py && \
-	rm get-pip.py
-RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
 	python3 get-pip.py && \
 	rm get-pip.py
 
@@ -50,14 +45,11 @@ WORKDIR ${work_dir}
 ADD docker/gqcnn.tar .
 
 # This is because `python setup.py develop` skips `install_requires` (I think).
-RUN python -m pip install -r gqcnn/requirements/p2/cpu_requirements.txt
-RUN python3 -m pip install -r gqcnn/requirements/p3/cpu_requirements.txt
+RUN python3 -m pip install -r gqcnn/requirements/cpu_requirements.txt
 
 # Install the library in editable mode because it's more versatile (in case we want to develop or if users want to modify things)
 # Keep the egg outside of the library in site-packages in case we want to mount the library (overwriting it) for development with docker
 ENV PYTHONPATH ${work_dir}/gqcnn
-WORKDIR /usr/local/lib/python2.7/site-packages/
-RUN python ${work_dir}/gqcnn/setup.py develop --docker
 WORKDIR /usr/local/lib/python3.5/site-packages/
 RUN python3 ${work_dir}/gqcnn/setup.py develop --docker
 

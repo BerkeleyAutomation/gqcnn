@@ -28,14 +28,9 @@ Author
 ------
 Vishal Satish
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod
 import os
 
-from future.utils import with_metaclass
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -49,9 +44,7 @@ from ...utils import GeneralConstants, NoValidGraspsException
 from .enums import SamplingMethod
 from .policy import GraspingPolicy, GraspAction
 
-
-class FullyConvolutionalGraspingPolicy(with_metaclass(ABCMeta,
-                                                      GraspingPolicy)):
+class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """Abstract grasp sampling policy class using Fully-Convolutional GQ-CNN
     network."""
 

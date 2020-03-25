@@ -28,24 +28,18 @@ Author
 ------
 Vishal Satish
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from abc import abstractmethod, ABCMeta
+from abc import ABC, abstractmethod
 import json
 import multiprocessing
 import os
 import sys
 
-from future.utils import with_metaclass
 import numpy as np
 
 from ..model import get_gqcnn_model
 from ..training import get_gqcnn_trainer
 from ..utils import GeneralConstants, GQCNNTrainingStatus
 from ..analysis import GQCNNAnalyzer
-
 
 class TrialStatus:
     PENDING = "pending"
@@ -54,7 +48,7 @@ class TrialStatus:
     EXCEPTION = "exception"
 
 
-class GQCNNTrialWithAnalysis(with_metaclass(ABCMeta, object)):
+class GQCNNTrialWithAnalysis(ABC):
     def __init__(self, analysis_cfg, train_cfg, dataset_dir, split_name,
                  output_dir, model_name, hyperparam_summary):
         self._analysis_cfg = analysis_cfg

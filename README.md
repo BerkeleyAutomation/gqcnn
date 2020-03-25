@@ -1,3 +1,5 @@
+## **Python 2.x support has officially been dropped.**
+
 # Berkeley AUTOLAB's GQCNN Package
 <p>
    <a href="https://travis-ci.org/BerkeleyAutomation/gqcnn/">
@@ -10,10 +12,7 @@
        <img alt="Software License" src="https://img.shields.io/badge/license-REGENTS-brightgreen.svg">
    </a>
    <a>
-       <img alt="Python 2 Version" src="https://img.shields.io/badge/python-2.7-yellow.svg">
-   </a>
-   <a>
-       <img alt="Python 2 Version" src="https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-yellowgreen.svg">
+       <img alt="Python 3 Versions" src="https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-yellow.svg">
    </a>
 </p>
 

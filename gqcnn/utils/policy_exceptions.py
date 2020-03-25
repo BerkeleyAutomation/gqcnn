@@ -28,11 +28,6 @@ Author
 ------
 Vishal Satish
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-
 class NoValidGraspsException(Exception):
     """Exception for when antipodal point pairs can be found in the depth
     image but none are valid grasps that can be executed."""
