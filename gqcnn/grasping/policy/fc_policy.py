@@ -44,6 +44,7 @@ from ...utils import GeneralConstants, NoValidGraspsException
 from .enums import SamplingMethod
 from .policy import GraspingPolicy, GraspAction
 
+
 class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     """Abstract grasp sampling policy class using Fully-Convolutional GQ-CNN
     network."""

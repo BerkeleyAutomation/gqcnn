@@ -32,6 +32,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+
 class GraspConstraintFn(ABC):
     """Abstract constraint functions for grasp sampling."""
 

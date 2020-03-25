@@ -36,6 +36,7 @@ from autolab_core import Point
 
 from .grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
 
+
 class Action(object):
     """Base action class.
 

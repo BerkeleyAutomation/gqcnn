@@ -41,6 +41,7 @@ from ..training import get_gqcnn_trainer
 from ..utils import GeneralConstants, GQCNNTrainingStatus
 from ..analysis import GQCNNAnalyzer
 
+
 class TrialStatus:
     PENDING = "pending"
     RUNNING = "running"

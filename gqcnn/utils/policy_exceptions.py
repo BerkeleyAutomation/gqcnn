@@ -28,6 +28,8 @@ Author
 ------
 Vishal Satish
 """
+
+
 class NoValidGraspsException(Exception):
     """Exception for when antipodal point pairs can be found in the depth
     image but none are valid grasps that can be executed."""

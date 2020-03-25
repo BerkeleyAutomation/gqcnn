@@ -28,6 +28,8 @@ Author
 ------
 Vishal Satish
 """
+
+
 class SamplingMethod(object):
     TOP_K = "top_k"
     UNIFORM = "uniform"

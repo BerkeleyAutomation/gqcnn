@@ -28,6 +28,8 @@ Author
 ------
 Vishal Satish
 """
+
+
 class TrialConstants(object):
     TRIAL_CPU_LOAD = 300  # Decrease to get more aggressize CPU utilization.
     TRIAL_GPU_LOAD = 33  # Decrease to get more aggressize GPU utilization.

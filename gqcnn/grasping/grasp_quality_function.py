@@ -44,6 +44,7 @@ from ..model import get_gqcnn_model, get_fc_gqcnn_model
 from .grasp import SuctionPoint2D
 from ..utils import GeneralConstants, GripperMode
 
+
 class GraspQualityFunction(ABC):
     """Abstract grasp quality class."""
 
