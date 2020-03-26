@@ -17,32 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -189,84 +191,84 @@ In the <cite>gqcnn</cite> package this is implemented as policies that map an RG
 <span id="id1"></span><h2>Sample Inputs<a class="headerlink" href="#sample-inputs" title="Permalink to this headline">¶</a></h2>
 <p>Sample inputs from our experimental setup are provided with the repo:</p>
 <ol class="arabic simple">
-<li><strong>data/examples/clutter/phoxi/dex-net_4.0</strong>: Set of example images from a PhotoNeo PhoXi S containing objects used in <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> experiments arranged in heaps.</li>
-<li><strong>data/examples/clutter/phoxi/fcgqcnn</strong>: Set of example images from a PhotoNeo PhoXi S containing objects in <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a> experiments arranged in heaps.</li>
-<li><strong>data/examples/single_object/primesense/</strong>: Set of example images from a Primesense Carmine containing objects used in <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a> experiments in singulation.</li>
-<li><strong>data/examples/clutter/primesense/</strong>: Set of example images from a Primesense Carmine containing objects used in <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a> experiments arranged in heaps.</li>
+<li><p><strong>data/examples/clutter/phoxi/dex-net_4.0</strong>: Set of example images from a PhotoNeo PhoXi S containing objects used in <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> experiments arranged in heaps.</p></li>
+<li><p><strong>data/examples/clutter/phoxi/fcgqcnn</strong>: Set of example images from a PhotoNeo PhoXi S containing objects in <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a> experiments arranged in heaps.</p></li>
+<li><p><strong>data/examples/single_object/primesense/</strong>: Set of example images from a Primesense Carmine containing objects used in <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a> experiments in singulation.</p></li>
+<li><p><strong>data/examples/clutter/primesense/</strong>: Set of example images from a Primesense Carmine containing objects used in <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a> experiments arranged in heaps.</p></li>
 </ol>
 <p><strong>**Note that when trying these sample inputs, you must make sure that the GQ-CNN model you are using was trained for the corresponding camera and input type (singulation/clutter). See the following section for more details.**</strong></p>
 </div>
 <div class="section" id="pre-trained-models">
 <span id="id2"></span><h2>Pre-trained Models<a class="headerlink" href="#pre-trained-models" title="Permalink to this headline">¶</a></h2>
 <p>Pre-trained parallel jaw and suction models for <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> are automatically downloaded with the <cite>gqcnn</cite> package installation. If you do wish to try out models for older results (or for our experimental <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>), all pre-trained models can be downloaded with:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/models/download_models.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/models/download_models.sh
 </pre></div>
 </div>
 <p>The models are:</p>
 <ol class="arabic simple">
-<li><strong>GQCNN-2.0</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a>, trained on images of objects in singulation with parameters for a Primesense Carmine.</li>
-<li><strong>GQCNN-2.1</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a>, a <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a> model fine-tuned on images of objects in clutter with parameters for a Primesense Carmine.</li>
-<li><strong>GQCNN-3.0</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_3">Dex-Net 3.0</a>, trained on images of objects in clutter with parameters for a Primesense Carmine.</li>
-<li><strong>GQCNN-4.0-PJ</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a>, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.</li>
-<li><strong>GQCNN-4.0-SUCTION</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a>, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.</li>
-<li><strong>FC-GQCNN-4.0-PJ</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.</li>
-<li><strong>FC-GQCNN-4.0-SUCTION</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.</li>
+<li><p><strong>GQCNN-2.0</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a>, trained on images of objects in singulation with parameters for a Primesense Carmine.</p></li>
+<li><p><strong>GQCNN-2.1</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a>, a <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a> model fine-tuned on images of objects in clutter with parameters for a Primesense Carmine.</p></li>
+<li><p><strong>GQCNN-3.0</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_3">Dex-Net 3.0</a>, trained on images of objects in clutter with parameters for a Primesense Carmine.</p></li>
+<li><p><strong>GQCNN-4.0-PJ</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a>, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.</p></li>
+<li><p><strong>GQCNN-4.0-SUCTION</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a>, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.</p></li>
+<li><p><strong>FC-GQCNN-4.0-PJ</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.</p></li>
+<li><p><strong>FC-GQCNN-4.0-SUCTION</strong>: For <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>, trained on images of objects in clutter with parameters for a PhotoNeo PhoXi S.</p></li>
 </ol>
 <p><strong>**Note that GQ-CNN models are sensitive to the parameters used during dataset generation, specifically 1) Gripper geometry, an ABB YuMi Parallel Jaw Gripper for all our pre-trained models 2) Camera intrinsics, either a Primesense Carmine or PhotoNeo Phoxi S for all our pre-trained models (see above for which one) 3) Distance between camera and workspace during rendering, 50-70cm for all our pre-trained models. Thus we cannot guarantee performance of our pre-trained models on other physical setups. If you have a specific use-case in mind, please reach out to us.**</strong> We are actively researching how to generate more robust datasets that can generalize across robots, cameras, and viewpoints!</p>
 </div>
 <div class="section" id="python-policy">
 <h2>Python Policy<a class="headerlink" href="#python-policy" title="Permalink to this headline">¶</a></h2>
 <p>The example Python policy can be queried on saved images using:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python examples/policy.py &lt;model_name&gt; --depth_image &lt;depth_image_filename&gt; --segmask &lt;segmask_filename&gt; --camera_intr &lt;camera_intr_filename&gt;
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python examples/policy.py &lt;model_name&gt; --depth_image &lt;depth_image_filename&gt; --segmask &lt;segmask_filename&gt; --camera_intr &lt;camera_intr_filename&gt;
 </pre></div>
 </div>
 <p>The args are:</p>
 <ol class="arabic simple">
-<li><strong>model_name</strong>: Name of the GQ-CNN model to use.</li>
-<li><strong>depth_image_filename</strong>: Path to a depth image (float array in .npy format).</li>
-<li><strong>segmask_filename</strong>: Path to an object segmentation mask (binary image in .png format).</li>
-<li><strong>camera_intr_filename</strong>: Path to a camera intrinsics file (.intr file generated with <a class="reference external" href="https://github.com/BerkeleyAutomation">BerkeleyAutomation’s</a> <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> package).</li>
+<li><p><strong>model_name</strong>: Name of the GQ-CNN model to use.</p></li>
+<li><p><strong>depth_image_filename</strong>: Path to a depth image (float array in .npy format).</p></li>
+<li><p><strong>segmask_filename</strong>: Path to an object segmentation mask (binary image in .png format).</p></li>
+<li><p><strong>camera_intr_filename</strong>: Path to a camera intrinsics file (.intr file generated with <a class="reference external" href="https://github.com/BerkeleyAutomation">BerkeleyAutomation’s</a> <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> package).</p></li>
 </ol>
 <p>To evaluate the pre-trained <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> <strong>parallel jaw</strong> network on sample images of objects in heaps run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python examples/policy.py GQCNN-4.0-PJ --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python examples/policy.py GQCNN-4.0-PJ --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 </pre></div>
 </div>
 <p>To evaluate the pre-trained <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> <strong>suction</strong> network on sample images of objects in heaps run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python examples/policy.py GQCNN-4.0-SUCTION --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python examples/policy.py GQCNN-4.0-SUCTION --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 </pre></div>
 </div>
 </div>
 <div class="section" id="ros-policy">
 <span id="id3"></span><h2>ROS Policy<a class="headerlink" href="#ros-policy" title="Permalink to this headline">¶</a></h2>
 <p>First start the grasp planning service:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ roslaunch gqcnn grasp_planning_service.launch model_name:=&lt;model_name&gt;
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ roslaunch gqcnn grasp_planning_service.launch model_name:=&lt;model_name&gt;
 </pre></div>
 </div>
 <p>The args are:</p>
 <ol class="arabic simple">
-<li><strong>model_name</strong>: Name of the GQ-CNN model to use. Default is <strong>GQCNN-4.0-PJ</strong>.</li>
-<li><strong>model_dir</strong>: Path to the directory where the GQ-CNN models are located. Default is <strong>models/</strong>. If you are using the provided <strong>download_models.sh</strong> script, you shouldn’t have to modify this.</li>
+<li><p><strong>model_name</strong>: Name of the GQ-CNN model to use. Default is <strong>GQCNN-4.0-PJ</strong>.</p></li>
+<li><p><strong>model_dir</strong>: Path to the directory where the GQ-CNN models are located. Default is <strong>models/</strong>. If you are using the provided <strong>download_models.sh</strong> script, you shouldn’t have to modify this.</p></li>
 </ol>
 <p>To start the grasp planning service with the pre-trained <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> <strong>parallel jaw</strong> network run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ roslaunch gqcnn grasp_planning_service.launch model_name:=GQCNN-4.0-PJ
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ roslaunch gqcnn grasp_planning_service.launch model_name:=GQCNN-4.0-PJ
 </pre></div>
 </div>
 <p>To start the grasp planning service with the pre-trained <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> <strong>suction</strong> network run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ roslaunch gqcnn grasp_planning_service.launch model_name:=GQCNN-4.0-SUCTION
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ roslaunch gqcnn grasp_planning_service.launch model_name:=GQCNN-4.0-SUCTION
 </pre></div>
 </div>
 <p>The example ROS policy can then be queried on saved images using:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python examples/policy_ros.py --depth_image &lt;depth_image_filename&gt; --segmask &lt;segmask_filename&gt; --camera_intr &lt;camera_intr_filename&gt;
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python examples/policy_ros.py --depth_image &lt;depth_image_filename&gt; --segmask &lt;segmask_filename&gt; --camera_intr &lt;camera_intr_filename&gt;
 </pre></div>
 </div>
 <p>The args are:</p>
 <ol class="arabic simple">
-<li><strong>depth_image_filename</strong>: Path to a depth image (float array in .npy format).</li>
-<li><strong>segmask_filename</strong>: Path to an object segmentation mask (binary image in .png format).</li>
-<li><strong>camera_intr_filename</strong>: Path to a camera intrinsics file (.intr file generated with <a class="reference external" href="https://github.com/BerkeleyAutomation">BerkeleyAutomation’s</a> <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> package).</li>
+<li><p><strong>depth_image_filename</strong>: Path to a depth image (float array in .npy format).</p></li>
+<li><p><strong>segmask_filename</strong>: Path to an object segmentation mask (binary image in .png format).</p></li>
+<li><p><strong>camera_intr_filename</strong>: Path to a camera intrinsics file (.intr file generated with <a class="reference external" href="https://github.com/BerkeleyAutomation">BerkeleyAutomation’s</a> <a class="reference external" href="https://github.com/BerkeleyAutomation/perception">perception</a> package).</p></li>
 </ol>
 <p>To query the policy on sample images of objects in heaps run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python examples/policy_ros.py --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python examples/policy_ros.py --depth_image data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy --segmask data/examples/clutter/phoxi/dex-net_4.0/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 </pre></div>
 </div>
 </div>
@@ -279,19 +281,19 @@ In the <cite>gqcnn</cite> package this is implemented as policies that map an RG
 <p>Our most recent research result, the <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>, combines novel fully convolutional network architectures with our prior work on GQ-CNNs to increase policy rate and reliability. Instead of relying on the <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-entropy_method">Cross Entropy Method (CEM)</a> to iteratively search over the policy action space for the best grasp, the FC-GQ-CNN instead densely and efficiently evaluates the entire action space in parallel. It is thus able to consider 5000x more grasps in 0.625s, resulting in a MPPH (Mean Picks Per Hour) of 296, compared to the prior 250 MPPH of <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a>.</p>
 <div class="figure align-center" id="id4">
 <a class="reference internal image-reference" href="../_images/fcgqcnn_arch_diagram1.png"><img alt="../_images/fcgqcnn_arch_diagram1.png" src="../_images/fcgqcnn_arch_diagram1.png" style="width: 100%;" /></a>
-<p class="caption"><span class="caption-text">FC-GQ-CNN architecture.</span></p>
+<p class="caption"><span class="caption-text">FC-GQ-CNN architecture.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
 </div>
 <p>You can download the pre-trained <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a> parallel jaw and suction models along with the other pre-trained models:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/models/download_models.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/models/download_models.sh
 </pre></div>
 </div>
 <p>Then run the Python policy with the <cite>--fully_conv</cite> flag.</p>
 <p>To evaluate the pre-trained <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a> <strong>parallel jaw</strong> network on sample images of objects in heaps run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python examples/policy.py FC-GQCNN-4.0-PJ --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python examples/policy.py FC-GQCNN-4.0-PJ --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 </pre></div>
 </div>
 <p>To evaluate the pre-trained <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a> <strong>suction</strong> network on sample images of objects in heaps run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python examples/policy.py FC-GQCNN-4.0-SUCTION --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python examples/policy.py FC-GQCNN-4.0-SUCTION --fully_conv --depth_image data/examples/clutter/phoxi/fcgqcnn/depth_0.npy --segmask data/examples/clutter/phoxi/fcgqcnn/segmask_0.png --camera_intr data/calib/phoxi/phoxi.intr
 </pre></div>
 </div>
 <div class="section" id="with-ros">
@@ -331,35 +333,16 @@ In the <cite>gqcnn</cite> package this is implemented as policies that map an RG
   
 
 
-  
-
-    
-    
-      <script type="text/javascript">
-          var DOCUMENTATION_OPTIONS = {
-              URL_ROOT:'../',
-              VERSION:'1.1.0',
-              LANGUAGE:'None',
-              COLLAPSE_INDEX:false,
-              FILE_SUFFIX:'.html',
-              HAS_SOURCE:  true,
-              SOURCELINK_SUFFIX: '.txt'
-          };
-      </script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

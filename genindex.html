@@ -18,32 +18,34 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -215,12 +217,6 @@
 </li>
         <li><a href="api/analysis.html#gqcnn.GQCNNAnalyzer.__init__">(gqcnn.GQCNNAnalyzer method)</a>
 </li>
-        <li><a href="api/policies.html#gqcnn.RgbdImageState.__init__">(gqcnn.RgbdImageState method)</a>
-</li>
-        <li><a href="api/policies.html#gqcnn.RobustGraspingPolicy.__init__">(gqcnn.RobustGraspingPolicy method)</a>
-</li>
-        <li><a href="api/policies.html#gqcnn.UniformRandomGraspingPolicy.__init__">(gqcnn.UniformRandomGraspingPolicy method)</a>
-</li>
         <li><a href="api/policies.html#gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy.__init__">(gqcnn.grasping.policy.fc_policy.FullyConvolutionalGraspingPolicy method)</a>
 </li>
         <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspAction.__init__">(gqcnn.grasping.policy.policy.GraspAction method)</a>
@@ -229,7 +225,13 @@
 </li>
         <li><a href="api/gqcnn.html#gqcnn.model.tf.GQCNNTF.__init__">(gqcnn.model.tf.GQCNNTF method)</a>
 </li>
+        <li><a href="api/policies.html#gqcnn.RgbdImageState.__init__">(gqcnn.RgbdImageState method)</a>
+</li>
+        <li><a href="api/policies.html#gqcnn.RobustGraspingPolicy.__init__">(gqcnn.RobustGraspingPolicy method)</a>
+</li>
         <li><a href="api/training.html#gqcnn.training.tf.GQCNNTrainerTF.__init__">(gqcnn.training.tf.GQCNNTrainerTF method)</a>
+</li>
+        <li><a href="api/policies.html#gqcnn.UniformRandomGraspingPolicy.__init__">(gqcnn.UniformRandomGraspingPolicy method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -255,23 +257,19 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.angle">angle (gqcnn.grasping.grasp.Grasp2D attribute)</a>
+</li>
+      <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.angle">angle() (gqcnn.grasping.grasp.SuctionPoint2D property)</a>
+</li>
+      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.approach_angle">approach_angle() (gqcnn.grasping.grasp.Grasp2D property)</a>
 
       <ul>
-        <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.angle">(gqcnn.grasping.grasp.SuctionPoint2D attribute)</a>
+        <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.approach_angle">(gqcnn.grasping.grasp.SuctionPoint2D property)</a>
 </li>
       </ul></li>
-      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.approach_angle">approach_angle (gqcnn.grasping.grasp.Grasp2D attribute)</a>
-
-      <ul>
-        <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.approach_angle">(gqcnn.grasping.grasp.SuctionPoint2D attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.axis">axis (gqcnn.grasping.grasp.SuctionPoint2D attribute)</a>
 </li>
-      </ul></li>
-      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.axis">axis (gqcnn.grasping.grasp.Grasp2D attribute)</a>
-
-      <ul>
-        <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.axis">(gqcnn.grasping.grasp.SuctionPoint2D attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.axis">axis() (gqcnn.grasping.grasp.Grasp2D property)</a>
 </li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -294,7 +292,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gqcnn.html#gqcnn.model.tf.GQCNNTF.close_session">close_session() (gqcnn.model.tf.GQCNNTF method)</a>
 </li>
-      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.config">config (gqcnn.grasping.policy.policy.GraspingPolicy attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.config">config() (gqcnn.grasping.policy.policy.GraspingPolicy property)</a>
 </li>
       <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.contact_normals">contact_normals (gqcnn.grasping.grasp.Grasp2D attribute)</a>
 </li>
@@ -320,7 +318,7 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.endpoints">endpoints (gqcnn.grasping.grasp.Grasp2D attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.endpoints">endpoints() (gqcnn.grasping.grasp.Grasp2D property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -330,24 +328,24 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gqcnn.html#gqcnn.model.tf.FCGQCNNTF">FCGQCNNTF (class in gqcnn.model.tf)</a>
 </li>
-      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.feature_vec">feature_vec (gqcnn.grasping.grasp.Grasp2D attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.feature_vec">feature_vec() (gqcnn.grasping.grasp.Grasp2D property)</a>
 
       <ul>
-        <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.feature_vec">(gqcnn.grasping.grasp.SuctionPoint2D attribute)</a>
+        <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.feature_vec">(gqcnn.grasping.grasp.SuctionPoint2D property)</a>
 </li>
       </ul></li>
       <li><a href="api/gqcnn.html#gqcnn.model.tf.GQCNNTF.featurize">featurize() (gqcnn.model.tf.GQCNNTF method)</a>
 </li>
-      <li><a href="api/gqcnn.html#gqcnn.model.tf.GQCNNTF.filters">filters (gqcnn.model.tf.GQCNNTF attribute)</a>
+      <li><a href="api/gqcnn.html#gqcnn.model.tf.GQCNNTF.filters">filters() (gqcnn.model.tf.GQCNNTF property)</a>
 </li>
       <li><a href="api/training.html#gqcnn.training.tf.GQCNNTrainerTF.finetune">finetune() (gqcnn.training.tf.GQCNNTrainerTF method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.frame">frame (gqcnn.grasping.grasp.Grasp2D attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.frame">frame() (gqcnn.grasping.grasp.Grasp2D property)</a>
 
       <ul>
-        <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.frame">(gqcnn.grasping.grasp.SuctionPoint2D attribute)</a>
+        <li><a href="api/policies.html#gqcnn.grasping.grasp.SuctionPoint2D.frame">(gqcnn.grasping.grasp.SuctionPoint2D property)</a>
 </li>
       </ul></li>
       <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.from_feature_vec">from_feature_vec() (gqcnn.grasping.grasp.Grasp2D static method)</a>
@@ -374,7 +372,7 @@
 </li>
       <li><a href="api/training.html#gqcnn.get_gqcnn_trainer">get_gqcnn_trainer() (in module gqcnn)</a>
 </li>
-      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.gqcnn">gqcnn (gqcnn.grasping.policy.policy.GraspingPolicy attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.gqcnn">gqcnn() (gqcnn.grasping.policy.policy.GraspingPolicy property)</a>
 </li>
       <li><a href="api/analysis.html#gqcnn.GQCNNAnalyzer">GQCNNAnalyzer (class in gqcnn)</a>
 </li>
@@ -386,11 +384,11 @@
 </li>
       <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D">Grasp2D (class in gqcnn.grasping.grasp)</a>
 </li>
-      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_constraint_fn">grasp_constraint_fn (gqcnn.grasping.policy.policy.GraspingPolicy attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_constraint_fn">grasp_constraint_fn() (gqcnn.grasping.policy.policy.GraspingPolicy property)</a>
 </li>
-      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_quality_fn">grasp_quality_fn (gqcnn.grasping.policy.policy.GraspingPolicy attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_quality_fn">grasp_quality_fn() (gqcnn.grasping.policy.policy.GraspingPolicy property)</a>
 </li>
-      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_sampler">grasp_sampler (gqcnn.grasping.policy.policy.GraspingPolicy attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspingPolicy.grasp_sampler">grasp_sampler() (gqcnn.grasping.policy.policy.GraspingPolicy property)</a>
 </li>
       <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspAction">GraspAction (class in gqcnn.grasping.policy.policy)</a>
 </li>
@@ -417,11 +415,11 @@
       <li><a href="api/policies.html#gqcnn.grasping.policy.policy.GraspAction.load">load() (gqcnn.grasping.policy.policy.GraspAction static method)</a>
 
       <ul>
-        <li><a href="api/policies.html#gqcnn.RgbdImageState.load">(gqcnn.RgbdImageState static method)</a>
-</li>
         <li><a href="api/gqcnn.html#gqcnn.model.tf.FCGQCNNTF.load">(gqcnn.model.tf.FCGQCNNTF static method)</a>
 </li>
         <li><a href="api/gqcnn.html#gqcnn.model.tf.GQCNNTF.load">(gqcnn.model.tf.GQCNNTF static method)</a>
+</li>
+        <li><a href="api/policies.html#gqcnn.RgbdImageState.load">(gqcnn.RgbdImageState static method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -514,7 +512,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.width_px">width_px (gqcnn.grasping.grasp.Grasp2D attribute)</a>
+      <li><a href="api/policies.html#gqcnn.grasping.grasp.Grasp2D.width_px">width_px() (gqcnn.grasping.grasp.Grasp2D property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -548,35 +546,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript">
-          var DOCUMENTATION_OPTIONS = {
-              URL_ROOT:'./',
-              VERSION:'1.1.0',
-              LANGUAGE:'None',
-              COLLAPSE_INDEX:false,
-              FILE_SUFFIX:'.html',
-              HAS_SOURCE:  true,
-              SOURCELINK_SUFFIX: '.txt'
-          };
-      </script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-    
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

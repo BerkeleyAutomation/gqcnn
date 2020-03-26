@@ -17,32 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -183,21 +185,21 @@
   <div class="section" id="analysis">
 <h1>Analysis<a class="headerlink" href="#analysis" title="Permalink to this headline">¶</a></h1>
 <p>It is helpful to check the training and validation loss and classification errors to ensure that the network has trained successfully. To analyze the performance of a trained GQ-CNN, run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python tools/analyze_gqcnn_performance.py &lt;model_name&gt;
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python tools/analyze_gqcnn_performance.py &lt;model_name&gt;
 </pre></div>
 </div>
 <p>The args are:</p>
 <ol class="arabic simple">
-<li><strong>model_name</strong>: Name of a trained model.</li>
+<li><p><strong>model_name</strong>: Name of a trained model.</p></li>
 </ol>
 <p>The script will store a detailed analysis in <cite>analysis/&lt;model_name&gt;/</cite>.</p>
 <p>To analyze the networks we just trained, run:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python tools/analyze_gqcnn_performance.py gqcnn_example_pj
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python tools/analyze_gqcnn_performance.py gqcnn_example_pj
 $ python tools/analyze_gqcnn_performance.py gqcnn_example_suction
 </pre></div>
 </div>
 <p>Below is the expected output for the <strong>parallel jaw</strong> network. Please keep in mind that the exact performance values may change due to randomization in the training dataset and random weight initialization:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ GQCNNAnalyzer INFO     TRAIN
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ GQCNNAnalyzer INFO     TRAIN
 $ GQCNNAnalyzer INFO     Original error: 36.812
 $ GQCNNAnalyzer INFO     Final error: 6.061
 $ GQCNNAnalyzer INFO     Orig loss: 0.763
@@ -212,7 +214,7 @@ $ GQCNNAnalyzer INFO     Normalized error: 0.233
 <a class="reference internal image-reference" href="../_images/pj_error_rate.png"><img alt="../_images/pj_error_rate.png" src="../_images/pj_error_rate.png" style="width: 49%;" /></a>
 <a class="reference internal image-reference" href="../_images/pj_roc.png"><img alt="../_images/pj_roc.png" src="../_images/pj_roc.png" style="width: 49%;" /></a>
 <p>Here is the expected output for the <strong>suction</strong> network:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ GQCNNAnalyzer INFO     TRAIN
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ GQCNNAnalyzer INFO     TRAIN
 $ GQCNNAnalyzer INFO     Original error: 17.844
 $ GQCNNAnalyzer INFO     Final error: 6.417
 $ GQCNNAnalyzer INFO     Orig loss: 0.476
@@ -256,35 +258,16 @@ $ GQCNNAnalyzer INFO     Normalized error: 0.383
   
 
 
-  
-
-    
-    
-      <script type="text/javascript">
-          var DOCUMENTATION_OPTIONS = {
-              URL_ROOT:'../',
-              VERSION:'1.1.0',
-              LANGUAGE:'None',
-              COLLAPSE_INDEX:false,
-              FILE_SUFFIX:'.html',
-              HAS_SOURCE:  true,
-              SOURCELINK_SUFFIX: '.txt'
-          };
-      </script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

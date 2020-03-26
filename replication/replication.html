@@ -17,34 +17,36 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Dex-Net 2.0" href="../benchmarks/benchmarks.html" />
     <link rel="prev" title="Overview" href="../tutorials/tutorial.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -205,16 +207,15 @@
 <p>Numerous publications in the larger <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/">Dex-Net</a> project utilize GQ-CNNs, particularly <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_2">Dex-Net 2.0</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_21">Dex-Net 2.1</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_3">Dex-Net 3.0</a>, <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a>, and <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a>. One of the goals of the <cite>gqcnn</cite> library is to provide the necessary code and instructions for replicating the results of these papers. Thus, we have provided a number of replication scripts under the <cite>scripts/</cite> directory.</p>
 <p>There are two ways to replicate results:</p>
 <ol class="arabic simple">
-<li><strong>Use a pre-trained model:</strong> Download a pre-trained GQ-CNN model and run an example policy.</li>
-<li><strong>Train from scratch:</strong> Download the raw dataset, train a GQ-CNN model, and run an example policy using the model you just trained.</li>
+<li><p><strong>Use a pre-trained model:</strong> Download a pre-trained GQ-CNN model and run an example policy.</p></li>
+<li><p><strong>Train from scratch:</strong> Download the raw dataset, train a GQ-CNN model, and run an example policy using the model you just trained.</p></li>
 </ol>
 <p><strong>We highly encourage method 1.</strong> Note that method 2 is computationally expensive as training takes roughly 24 hours on a Nvidia Titan Xp GPU. Furthermore, the raw datasets are fairly large in size.</p>
-<dl class="docutils">
-<dt>Please keep in mind that GQ-CNN models are sensitive to the following parameters used during dataset generation:</dt>
-<dd><ol class="first last arabic simple">
-<li>The robot gripper</li>
-<li>The depth camera</li>
-<li>The distance between the camera and workspace.</li>
+<dl class="simple">
+<dt>Please keep in mind that GQ-CNN models are sensitive to the following parameters used during dataset generation:</dt><dd><ol class="arabic simple">
+<li><p>The robot gripper</p></li>
+<li><p>The depth camera</p></li>
+<li><p>The distance between the camera and workspace.</p></li>
 </ol>
 </dd>
 </dl>
@@ -223,49 +224,49 @@
 <div class="section" id="using-a-pre-trained-model">
 <h2>Using a Pre-trained Model<a class="headerlink" href="#using-a-pre-trained-model" title="Permalink to this headline">¶</a></h2>
 <p>First download the pre-trained models.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/models/download_models.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/models/download_models.sh
 </pre></div>
 </div>
 <div class="section" id="dex-net-2-0">
 <h3>Dex-Net 2.0<a class="headerlink" href="#dex-net-2-0" title="Permalink to this headline">¶</a></h3>
 <p>Evaluate the pre-trained GQ-CNN model.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_2.0_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_2.0_examples.sh
 </pre></div>
 </div>
 </div>
 <div class="section" id="dex-net-2-1">
 <h3>Dex-Net 2.1<a class="headerlink" href="#dex-net-2-1" title="Permalink to this headline">¶</a></h3>
 <p>Evaluate the pre-trained GQ-CNN model.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_2.1_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_2.1_examples.sh
 </pre></div>
 </div>
 </div>
 <div class="section" id="dex-net-3-0">
 <h3>Dex-Net 3.0<a class="headerlink" href="#dex-net-3-0" title="Permalink to this headline">¶</a></h3>
 <p>Evaluate the pre-trained GQ-CNN model.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_3.0_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_3.0_examples.sh
 </pre></div>
 </div>
 </div>
 <div class="section" id="dex-net-4-0">
 <h3>Dex-Net 4.0<a class="headerlink" href="#dex-net-4-0" title="Permalink to this headline">¶</a></h3>
 <p>To evaluate the pre-trained <strong>parallel jaw</strong> GQ-CNN model.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_4.0_pj_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_4.0_pj_examples.sh
 </pre></div>
 </div>
 <p>To evaluate the pre-trained <strong>suction</strong> GQ-CNN model.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_4.0_suction_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_4.0_suction_examples.sh
 </pre></div>
 </div>
 </div>
 <div class="section" id="fc-gq-cnn">
 <h3>FC-GQ-CNN<a class="headerlink" href="#fc-gq-cnn" title="Permalink to this headline">¶</a></h3>
 <p>To evaluate the pre-trained <strong>parallel jaw</strong> FC-GQ-CNN model.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_4.0_fc_pj_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_4.0_fc_pj_examples.sh
 </pre></div>
 </div>
 <p>To evaluate the pre-trained <strong>suction</strong> FC-GQ-CNN model.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_4.0_fc_suction_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_4.0_fc_suction_examples.sh
 </pre></div>
 </div>
 </div>
@@ -275,99 +276,99 @@
 <div class="section" id="id1">
 <h3>Dex-Net 2.0<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>First download the appropriate dataset.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/datasets/download_dex-net_2.0.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/datasets/download_dex-net_2.0.sh
 </pre></div>
 </div>
 <p>Then train a GQ-CNN from scratch.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/training/train_dex-net_2.0.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/training/train_dex-net_2.0.sh
 </pre></div>
 </div>
 <p>Finally, evaluate the trained GQ-CNN.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_2.0_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_2.0_examples.sh
 </pre></div>
 </div>
 </div>
 <div class="section" id="id2">
 <h3>Dex-Net 2.1<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <p>First download the appropriate dataset.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/datasets/download_dex-net_2.1.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/datasets/download_dex-net_2.1.sh
 </pre></div>
 </div>
 <p>Then train a GQ-CNN from scratch.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/training/train_dex-net_2.1.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/training/train_dex-net_2.1.sh
 </pre></div>
 </div>
 <p>Finally, evaluate the trained GQ-CNN.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_2.1_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_2.1_examples.sh
 </pre></div>
 </div>
 </div>
 <div class="section" id="id3">
 <h3>Dex-Net 3.0<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <p>First download the appropriate dataset.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/datasets/download_dex-net_3.0.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/datasets/download_dex-net_3.0.sh
 </pre></div>
 </div>
 <p>Then train a GQ-CNN from scratch.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/training/train_dex-net_3.0.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/training/train_dex-net_3.0.sh
 </pre></div>
 </div>
 <p>Finally, evaluate the trained GQ-CNN.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_3.0_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_3.0_examples.sh
 </pre></div>
 </div>
 </div>
 <div class="section" id="id4">
 <h3>Dex-Net 4.0<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <p>To replicate the <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> <strong>parallel jaw</strong> results, first download the appropriate dataset.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/datasets/download_dex-net_4.0_pj.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/datasets/download_dex-net_4.0_pj.sh
 </pre></div>
 </div>
 <p>Then train a GQ-CNN from scratch.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/training/train_dex-net_4.0_pj.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/training/train_dex-net_4.0_pj.sh
 </pre></div>
 </div>
 <p>Finally, evaluate the trained GQ-CNN.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_4.0_pj_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_4.0_pj_examples.sh
 </pre></div>
 </div>
 <p>To replicate the <a class="reference external" href="https://berkeleyautomation.github.io/dex-net/#dexnet_4">Dex-Net 4.0</a> <strong>suction</strong> results, first download the appropriate dataset.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/datasets/download_dex-net_4.0_suction.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/datasets/download_dex-net_4.0_suction.sh
 </pre></div>
 </div>
 <p>Then train a GQ-CNN from scratch.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/training/train_dex-net_4.0_suction.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/training/train_dex-net_4.0_suction.sh
 </pre></div>
 </div>
 <p>Finally, evaluate the trained GQ-CNN.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_4.0_suction_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_4.0_suction_examples.sh
 </pre></div>
 </div>
 </div>
 <div class="section" id="id5">
 <h3>FC-GQ-CNN<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
 <p>To replicate the <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a> <strong>parallel jaw</strong> results, first download the appropriate dataset.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/datasets/download_dex-net_4.0_fc_pj.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/datasets/download_dex-net_4.0_fc_pj.sh
 </pre></div>
 </div>
 <p>Then train a FC-GQ-CNN from scratch.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/training/train_dex-net_4.0_fc_pj.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/training/train_dex-net_4.0_fc_pj.sh
 </pre></div>
 </div>
 <p>Finally, evaluate the trained FC-GQ-CNN.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_4.0_fc_pj_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_4.0_fc_pj_examples.sh
 </pre></div>
 </div>
 <p>To replicate the <a class="reference external" href="https://berkeleyautomation.github.io/fcgqcnn">FC-GQ-CNN</a> <strong>suction</strong> results, first download the appropriate dataset.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/downloads/datasets/download_dex-net_4.0_fc_suction.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/downloads/datasets/download_dex-net_4.0_fc_suction.sh
 </pre></div>
 </div>
 <p>Then train a FC-GQ-CNN from scratch.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/training/train_dex-net_4.0_fc_suction.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/training/train_dex-net_4.0_fc_suction.sh
 </pre></div>
 </div>
 <p>Finally, evaluate the trained FC-GQ-CNN.</p>
-<div class="highlight-default"><div class="highlight"><pre>$ ./scripts/policies/run_all_dex-net_4.0_fc_suction_examples.sh
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/policies/run_all_dex-net_4.0_fc_suction_examples.sh
 </pre></div>
 </div>
 </div>
@@ -385,7 +386,7 @@
         <a href="../benchmarks/benchmarks.html" class="btn btn-neutral float-right" title="Dex-Net 2.0" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../tutorials/tutorial.html" class="btn btn-neutral" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../tutorials/tutorial.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -411,35 +412,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript">
-          var DOCUMENTATION_OPTIONS = {
-              URL_ROOT:'../',
-              VERSION:'1.1.0',
-              LANGUAGE:'None',
-              COLLAPSE_INDEX:false,
-              FILE_SUFFIX:'.html',
-              HAS_SOURCE:  true,
-              SOURCELINK_SUFFIX: '.txt'
-          };
-      </script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
