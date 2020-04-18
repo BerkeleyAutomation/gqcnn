@@ -97,41 +97,46 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
     def _unpack_state(self, state):
         """Unpack information from the provided `RgbdImageState`."""
         # TODO(vsatish): Don't access raw depth data like this.
-        return (state.rgbd_im.depth, state.rgbd_im.depth._data,
-                state.segmask.raw_data, state.camera_intr)
+        return (state.rgbd_im.depth, state.segmask,
+                state.obj_segmask, state.camera_intr)
 
-    def _mask_predictions(self, preds, raw_segmask):
+    def _mask_predictions(self, preds, raw_segmasks):
         """Mask the given predictions with the given segmask, setting the rest
         to 0.0."""
-        preds_masked = np.zeros_like(preds)
-        raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h //
-                                          2:raw_segmask.shape[0] -
-                                          self._gqcnn_recep_h //
-                                          2, self._gqcnn_recep_w //
-                                          2:raw_segmask.shape[1] -
-                                          self._gqcnn_recep_w // 2, 0]
-        raw_segmask_downsampled = raw_segmask_cropped[::self._gqcnn_stride, ::
-                                                      self._gqcnn_stride]
-        if raw_segmask_downsampled.shape[0] != preds.shape[1]:
-            raw_segmask_downsampled_new = np.zeros(preds.shape[1:3])
-            raw_segmask_downsampled_new[:raw_segmask_downsampled.
-                                        shape[0], :raw_segmask_downsampled.
-                                        shape[1]] = raw_segmask_downsampled
-            raw_segmask_downsampled = raw_segmask_downsampled_new
-        nonzero_mask_ind = np.where(raw_segmask_downsampled > 0)
+        preds_masked = np.zeros(preds.shape + raw_segmasks.shape[-1:])
+        preds_rep = np.repeat(preds[..., None], raw_segmasks.shape[-1], axis=-1)
+        raw_segmasks_cropped = raw_segmasks[self._gqcnn_recep_h //
+                                            2:raw_segmasks.shape[0] -
+                                            self._gqcnn_recep_h //
+                                            2, self._gqcnn_recep_w //
+                                            2:raw_segmasks.shape[1] -
+                                            self._gqcnn_recep_w // 2]
+        raw_segmasks_downsampled = raw_segmasks_cropped[::self._gqcnn_stride, ::
+                                                        self._gqcnn_stride]
+        if raw_segmasks_downsampled.shape[0] != preds.shape[1]:
+            raw_segmasks_downsampled_new = np.zeros(preds.shape[1:3] +
+                                                    raw_segmasks_downsampled.shape[-1:])
+            raw_segmasks_downsampled_new[:raw_segmasks_downsampled.
+                                         shape[0], :raw_segmasks_downsampled.
+                                         shape[1]] = raw_segmasks_downsampled
+            raw_segmasks_downsampled = raw_segmasks_downsampled_new
+        nonzero_mask_ind = np.where(raw_segmasks_downsampled > 0)
         preds_masked[:, nonzero_mask_ind[0],
-                     nonzero_mask_ind[1]] = preds[:, nonzero_mask_ind[0],
-                                                  nonzero_mask_ind[1]]
+                     nonzero_mask_ind[1], :,
+                     nonzero_mask_ind[2]] = preds_rep[:, nonzero_mask_ind[0],
+                                                      nonzero_mask_ind[1], :,
+                                                      nonzero_mask_ind[2]]
         return preds_masked
 
     def _sample_predictions(self, preds, num_actions):
         """Sample predictions."""
-        dim2 = preds.shape[2]
         dim1 = preds.shape[1]
+        dim2 = preds.shape[2]
         dim3 = preds.shape[3]
-        preds_flat = np.ravel(preds)
+        dim4 = preds.shape[4]
+        preds_flat = preds.reshape(-1, dim4)
         pred_ind_flat = self._sample_predictions_flat(preds_flat, num_actions)
-        pred_ind = np.zeros((num_actions, len(preds.shape)), dtype=np.int32)
+        pred_ind = np.zeros((num_actions, len(preds.shape) - 1, dim4), dtype=np.int32)
         for idx in range(num_actions):
             pred_ind[idx, 0] = pred_ind_flat[idx] // (dim2 * dim1 * dim3)
             pred_ind[idx, 1] = (pred_ind_flat[idx] -
@@ -151,23 +156,40 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             # `argmax` is faster than `argpartition` for special case of single
             # sample.
             if self._sampling_method == SamplingMethod.TOP_K:
-                return [np.argmax(preds_flat)]
+                return [np.argmax(preds_flat, axis=0)]
             elif self._sampling_method == SamplingMethod.UNIFORM:
-                nonzero_ind = np.where(preds_flat > 0)[0]
-                return np.random.choice(nonzero_ind)
+                pred_ind_flat = []
+                for i in range(preds_flat.shape[1]):
+                    nonzero_ind = np.where(preds_flat[:, i] > 0)[0]
+                    if nonzero_ind.shape[0] > 0:
+                        pred_ind_flat.append(np.random.choice(nonzero_ind))
+                    else:
+                        pred_ind_flat.append(np.nan)
+                if np.all(np.isnan(pred_ind_flat)):
+                    raise NoValidGraspsException(
+                        "No grasps with nonzero quality")
+                return np.array(pred_ind_flat)
             else:
                 raise ValueError("Invalid sampling method: {}".format(
                     self._sampling_method))
         else:
             if self._sampling_method == "top_k":
                 return np.argpartition(preds_flat,
-                                       -1 * num_samples)[-1 * num_samples:]
+                                       -1 * num_samples,
+                                       axis=0)[-1 * num_samples:]
             elif self._sampling_method == "uniform":
-                nonzero_ind = np.where(preds_flat > 0)[0]
-                if nonzero_ind.shape[0] == 0:
+                pred_ind_flat = []
+                for i in range(preds_flat.shape[1]):
+                    nonzero_ind = np.where(preds_flat[:, i] > 0)[0]
+                    if nonzero_ind.shape[0] > 0:
+                        pred_ind_flat.append(np.random.choice(nonzero_ind, 
+                                                              size=num_samples))
+                    else:
+                        pred_ind_flat.append(np.full(num_samples, np.nan))
+                if np.all(np.isnan(pred_ind_flat)):
                     raise NoValidGraspsException(
                         "No grasps with nonzero quality")
-                return np.random.choice(nonzero_ind, size=num_samples)
+                return np.array(pred_ind_flat)
             else:
                 raise ValueError("Invalid sampling method: {}".format(
                     self._sampling_method))
@@ -197,7 +219,6 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
     def _visualize_2d(self,
                       actions,
-                      preds,
                       wrapped_depth_im,
                       num_actions,
                       scale,
@@ -260,11 +281,24 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
             self._state_counter += 1
 
         # Unpack the `RgbdImageState`.
-        wrapped_depth, raw_depth, raw_seg, camera_intr = self._unpack_state(
+        depth_im, mask, obj_mask, camera_intr = self._unpack_state(
             state)
+        
+        # Create segmask from object masks if they exist
+        # Note that the zero indices are background
+        if obj_mask is not None:
+            raw_segs = (np.repeat(obj_mask.data[..., None], 
+                                 obj_mask.num_segments - 1, 
+                                 axis=-1) 
+                            == np.arange(1, obj_mask.num_segments))
+        else:
+            raw_segs = np.ones(depth_im.shape, dtype=np.bool)
+        if mask is not None:
+            raw_segs = np.logical_and(raw_segs, mask.raw_data)
 
         # Predict.
-        images, depths = self._gen_images_and_depths(raw_depth, raw_seg)
+        images, depths = self._gen_images_and_depths(depth_im.raw_data, 
+                                                     np.any(raw_segs, axis=-1))
         preds = self._grasp_quality_fn.quality(images, depths)
 
         # Get success probablility predictions only (this is needed because the
@@ -274,7 +308,7 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         # Mask predicted success probabilities with the cropped and downsampled
         # object segmask so we only sample grasps on the objects.
         preds_success_only = self._mask_predictions(preds_success_only,
-                                                    raw_seg)
+                                                    raw_segs)
 
         # If we want to visualize more than one action, we have to sample more.
         # TODO(vsatish): If this is used with the "top_k" sampling method, the
@@ -297,33 +331,37 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
 
         # Filter grasps.
         if self._filter_grasps:
-            actions = sorted(actions,
-                             reverse=True,
-                             key=lambda action: action.q_value)
-            actions = [self._filter(actions)]
+            actions = [sorted(action_list,
+                       reverse=True,
+                       key=lambda action: action.q_value) 
+                       for action_list in actions]
+            actions = [[self._filter(action_list)] for action_list in actions]
 
         # Visualize.
         if self._vis_actions_3d:
             self._logger.info("Generating 3D Visualization...")
-            self._visualize_3d(actions, wrapped_depth, camera_intr,
-                               num_actions_to_sample)
+            for action_list in actions:
+                self._visualize_3d(action_list, depth_im, camera_intr,
+                                   num_actions_to_sample)
         if self._vis_actions_2d:
             self._logger.info("Generating 2D visualization...")
-            self._visualize_2d(actions,
-                               preds_success_only,
-                               wrapped_depth,
-                               num_actions_to_sample,
-                               self._vis_scale,
-                               self._vis_show_axis,
-                               output_dir=state_output_dir)
+            for i, action_list in enumerate(actions):
+                self._visualize_2d(action_list,
+                                   depth_im,
+                                   num_actions_to_sample,
+                                   self._vis_scale,
+                                   self._vis_show_axis,
+                                   output_dir=state_output_dir)
         if self._vis_affordance_map:
             self._visualize_affordance_map(preds_success_only,
-                                           wrapped_depth,
+                                           depth_im,
                                            self._vis_scale,
                                            output_dir=state_output_dir)
+        actions = [action_list[-1] if (self._filter_grasps or num_actions == 1
+                               ) else action_list[-(num_actions + 1):] 
+                   for action_list in actions]
 
-        return actions[-1] if (self._filter_grasps or num_actions == 1
-                               ) else actions[-(num_actions + 1):]
+        return actions[0] if len(actions) == 1 else actions
 
     def action_set(self, state, num_actions):
         """Plan a set of actions.
@@ -393,29 +431,32 @@ class FullyConvolutionalGraspingPolicyParallelJaw(
         """Generate the actions to be returned."""
         actions = []
         # TODO(vsatish): These should use the max angle instead.
-        ang_bin_width = GeneralConstants.PI / preds.shape[-1]
-        for i in range(num_actions):
-            im_idx = ind[i, 0]
-            h_idx = ind[i, 1]
-            w_idx = ind[i, 2]
-            ang_idx = ind[i, 3]
-            center = Point(
-                np.asarray([
-                    w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
-                    h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2
-                ]))
-            ang = GeneralConstants.PI / 2 - (ang_idx * ang_bin_width +
-                                             ang_bin_width / 2)
-            depth = depths[im_idx, 0]
-            grasp = Grasp2D(center,
-                            ang,
-                            depth,
-                            width=self._gripper_width,
-                            camera_intr=camera_intr)
-            grasp_action = GraspAction(grasp,
-                                       preds[im_idx, h_idx, w_idx, ang_idx],
-                                       DepthImage(images[im_idx]))
-            actions.append(grasp_action)
+        ang_bin_width = GeneralConstants.PI / preds.shape[-2]
+        for j in range(preds.shape[-1]):
+            actions_mask = []
+            for i in range(num_actions):
+                im_idx = ind[i, 0, j]
+                h_idx = ind[i, 1, j]
+                w_idx = ind[i, 2, j]
+                ang_idx = ind[i, 3, j]
+                center = Point(
+                    np.asarray([
+                        w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
+                        h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2
+                    ]))
+                ang = GeneralConstants.PI / 2 - (ang_idx * ang_bin_width +
+                                                ang_bin_width / 2)
+                depth = depths[im_idx, 0]
+                grasp = Grasp2D(center,
+                                ang,
+                                depth,
+                                width=self._gripper_width,
+                                camera_intr=camera_intr)
+                grasp_action = GraspAction(grasp,
+                                           preds[im_idx, h_idx, w_idx, ang_idx, j],
+                                           DepthImage(images[im_idx]))
+                actions_mask.append(grasp_action)
+            actions.append(actions_mask)
         return actions
 
     def _gen_images_and_depths(self, depth, segmask):
@@ -447,28 +488,31 @@ class FullyConvolutionalGraspingPolicySuction(FullyConvolutionalGraspingPolicy
         normal_cloud_im = point_cloud_im.normal_cloud_im()
 
         actions = []
-        for i in range(num_actions):
-            im_idx = ind[i, 0]
-            h_idx = ind[i, 1]
-            w_idx = ind[i, 2]
-            center = Point(
-                np.asarray([
-                    w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
-                    h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2
-                ]))
-            axis = -normal_cloud_im[center.y, center.x]
-            if np.linalg.norm(axis) == 0:
-                continue
-            depth = depth_im[center.y, center.x, 0]
-            if depth == 0.0:
-                continue
-            grasp = SuctionPoint2D(center,
-                                   axis=axis,
-                                   depth=depth,
-                                   camera_intr=camera_intr)
-            grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, 0],
-                                       DepthImage(images[im_idx]))
-            actions.append(grasp_action)
+        for j in range(preds.shape[-1]):
+            actions_mask = []
+            for i in range(num_actions):
+                im_idx = ind[i, 0, j]
+                h_idx = ind[i, 1, j]
+                w_idx = ind[i, 2, j]
+                center = Point(
+                    np.asarray([
+                        w_idx * self._gqcnn_stride + self._gqcnn_recep_w // 2,
+                        h_idx * self._gqcnn_stride + self._gqcnn_recep_h // 2
+                    ]))
+                axis = -normal_cloud_im[center.y, center.x]
+                if np.linalg.norm(axis) == 0:
+                    continue
+                depth = depth_im[center.y, center.x, 0]
+                if depth == 0.0:
+                    continue
+                grasp = SuctionPoint2D(center,
+                                    axis=axis,
+                                    depth=depth,
+                                    camera_intr=camera_intr)
+                grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx, 0, j],
+                                        DepthImage(images[im_idx]))
+                actions_mask.append(grasp_action)
+            actions.append(actions_mask)
         return actions
 
     def _visualize_affordance_map(self,
