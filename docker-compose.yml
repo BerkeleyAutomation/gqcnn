@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  gqcnn_app:
+    container_name: gqcnn_app
+    image: nwjbrandon/gqcnn_app
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+    ports:
+      - 5000:5000
