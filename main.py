@@ -21,17 +21,16 @@ from gqcnn.utils import GripperMode
 logger = Logger.get_logger("examples/policy.py")
 
 if __name__ == "__main__":
-    # Parse args.
     model_name = "GQCNN-4.0-PJ"
     depth_im_filename = "data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy"
     camera_intr_filename = "data/calib/phoxi/phoxi.intr"
     config_filename = "cfg/examples/gqcnn_pj.yaml"
-
     model_path = f"models/{model_name}"
+    model_config = f"{model_path}/config.json"
 
-    # Get configs.
-    model_config = json.load(open(os.path.join(model_path, "config.json"),
-                                  "r"))
+    with open(model_config, "r") as f:
+        model_config = json.load(f)
+
     gqcnn_config = model_config["gqcnn"]
     gripper_mode = gqcnn_config["gripper_mode"]
 
@@ -45,7 +44,6 @@ if __name__ == "__main__":
         policy_config["metric"]["gqcnn_model"] = model_path
         if not os.path.isabs(policy_config["metric"]["gqcnn_model"]):
             policy_config["metric"]["gqcnn_model"] = policy_config["metric"]["gqcnn_model"]
-
 
     # Setup sensor.
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
