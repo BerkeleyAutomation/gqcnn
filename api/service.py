@@ -79,9 +79,8 @@ def grasp_planning_service(is_vis=False):
     # Query policy.
     policy_start = time.time()
     action = policy(state)
-    logger.info("Planning took %.3f sec" % (time.time() - policy_start))
-    print(action.grasp.depth)
-    print(action.q_value)
+    time_lapse = time.time() - policy_start
+    logger.info("Planning took %.3f sec" % (time_lapse))
 
     if is_vis:
         # Vis final grasp.
@@ -100,4 +99,14 @@ def grasp_planning_service(is_vis=False):
             )
             vis.show()
 
+    # https://berkeleyautomation.github.io/gqcnn/api/policies.html#grasp2d
+    print(action.grasp.center)
+    return {
+        "time_lapse": time_lapse,
+        "q_value": action.q_value,
+        "angle": action.grasp.angle,
+        "depth": action.grasp.depth,
+        "width": action.grasp.width,
+        "approach_angle": action.grasp.approach_angle,
+    }
     return {"status": "ok"}
