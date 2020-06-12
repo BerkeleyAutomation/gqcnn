@@ -12,6 +12,7 @@ from perception import CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 
 from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState
+from api.exceptions import FileNotFoundException, FileInputException
 
 # Set up logger.
 logger = Logger.get_logger("examples/policy.py")
@@ -19,7 +20,7 @@ logger = Logger.get_logger("examples/policy.py")
 def heathcheck_service():
     return {"version": f"GQCNN App v0.1-{str(uuid.uuid4())}"}
 
-def grasp_planning_service():
+def grasp_planning_service(is_vis=False):
     model_name = "GQCNN-4.0-PJ"
     # depth_im_filename = "data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy"
     camera_intr_filename = "data/calib/phoxi/phoxi.intr"
@@ -28,9 +29,12 @@ def grasp_planning_service():
     model_config = f"{model_path}/config.json"
 
     if "file" in request.files:
-        depth_data = np.load(request.files["file"])
+        try:
+            depth_data = np.load(request.files["file"])
+        except:
+            raise FileInputException()
     else:
-        raise Exception("error")
+        raise FileNotFoundException()
 
     with open(model_config, "r") as f:
         model_config = json.load(f)
@@ -77,15 +81,16 @@ def grasp_planning_service():
     print(action.grasp.depth)
     print(action.q_value)
 
-    # Vis final grasp.
-    if policy_config["vis"]["final_grasp"]:
-        vis.figure(size=(10, 10))
-        vis.imshow(rgbd_im.depth,
-                   vmin=policy_config["vis"]["vmin"],
-                   vmax=policy_config["vis"]["vmax"])
-        vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
-        vis.title("Planned grasp at depth {0:.3f}m with Q={1:.3f}".format(
-            action.grasp.depth, action.q_value))
-        vis.show()
+    if is_vis:
+        # Vis final grasp.
+        if policy_config["vis"]["final_grasp"]:
+            vis.figure(size=(10, 10))
+            vis.imshow(rgbd_im.depth,
+                    vmin=policy_config["vis"]["vmin"],
+                    vmax=policy_config["vis"]["vmax"])
+            vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
+            vis.title("Planned grasp at depth {0:.3f}m with Q={1:.3f}".format(
+                action.grasp.depth, action.q_value))
+            vis.show()
     
     return {"status": "ok"}
