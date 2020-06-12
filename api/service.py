@@ -6,7 +6,7 @@ import os
 import time
 
 import numpy as np
-
+from flask import request
 from autolab_core import YamlConfig, Logger
 from perception import CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
@@ -21,11 +21,16 @@ def heathcheck_service():
 
 def grasp_planning_service():
     model_name = "GQCNN-4.0-PJ"
-    depth_im_filename = "data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy"
+    # depth_im_filename = "data/examples/clutter/phoxi/dex-net_4.0/depth_0.npy"
     camera_intr_filename = "data/calib/phoxi/phoxi.intr"
     config_filename = "cfg/examples/gqcnn_pj.yaml"
     model_path = f"models/{model_name}"
     model_config = f"{model_path}/config.json"
+
+    if "file" in request.files:
+        depth_data = np.load(request.files["file"])
+    else:
+        raise Exception("error")
 
     with open(model_config, "r") as f:
         model_config = json.load(f)
@@ -48,7 +53,7 @@ def grasp_planning_service():
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
 
     # Read images.
-    depth_data = np.load(depth_im_filename)
+    # depth_data = np.load(depth_im_filename)
     depth_im = DepthImage(depth_data, frame=camera_intr.frame)
     color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8), frame=camera_intr.frame)
 

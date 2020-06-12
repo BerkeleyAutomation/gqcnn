@@ -10,6 +10,6 @@ def heathcheck_service_api():
     return jsonify(heathcheck_service())
 
 
-@app_blueprint.route("/grasp-planning", methods=["GET"])
+@app_blueprint.route("/grasp-planning", methods=["POST"])
 def grasp_planning_api():
     return jsonify(grasp_planning_service())
