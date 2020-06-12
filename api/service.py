@@ -1,24 +1,24 @@
-import uuid
-# -*- coding: utf-8 -*-
-import argparse
 import json
 import os
 import time
+import uuid
 
 import numpy as np
+from autolab_core import Logger, YamlConfig
 from flask import request
-from autolab_core import YamlConfig, Logger
+from gqcnn.grasping import CrossEntropyRobustGraspingPolicy, RgbdImageState
 from perception import CameraIntrinsics, ColorImage, DepthImage, RgbdImage
 from visualization import Visualizer2D as vis
 
-from gqcnn.grasping import RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy, RgbdImageState
-from api.exceptions import FileNotFoundException, FileInputException
+from api.exceptions import FileInputException, FileNotFoundException
 
 # Set up logger.
 logger = Logger.get_logger("examples/policy.py")
 
+
 def heathcheck_service():
     return {"version": f"GQCNN App v0.1-{str(uuid.uuid4())}"}
+
 
 def grasp_planning_service(is_vis=False):
     model_name = "GQCNN-4.0-PJ"
@@ -39,9 +39,6 @@ def grasp_planning_service(is_vis=False):
     with open(model_config, "r") as f:
         model_config = json.load(f)
 
-    gqcnn_config = model_config["gqcnn"]
-    gripper_mode = gqcnn_config["gripper_mode"]
-
     # Read config.
     config = YamlConfig(config_filename)
     inpaint_rescale_factor = config["inpaint_rescale_factor"]
@@ -51,7 +48,9 @@ def grasp_planning_service(is_vis=False):
     if "gqcnn_model" in policy_config["metric"]:
         policy_config["metric"]["gqcnn_model"] = model_path
         if not os.path.isabs(policy_config["metric"]["gqcnn_model"]):
-            policy_config["metric"]["gqcnn_model"] = policy_config["metric"]["gqcnn_model"]
+            policy_config["metric"]["gqcnn_model"] = policy_config["metric"][
+                "gqcnn_model"
+            ]
 
     # Setup sensor.
     camera_intr = CameraIntrinsics.load(camera_intr_filename)
@@ -59,7 +58,10 @@ def grasp_planning_service(is_vis=False):
     # Read images.
     # depth_data = np.load(depth_im_filename)
     depth_im = DepthImage(depth_data, frame=camera_intr.frame)
-    color_im = ColorImage(np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8), frame=camera_intr.frame)
+    color_im = ColorImage(
+        np.zeros([depth_im.height, depth_im.width, 3]).astype(np.uint8),
+        frame=camera_intr.frame,
+    )
 
     # Optionally read a segmask.
     valid_px_mask = depth_im.invalid_pixel_mask().inverse()
@@ -85,12 +87,17 @@ def grasp_planning_service(is_vis=False):
         # Vis final grasp.
         if policy_config["vis"]["final_grasp"]:
             vis.figure(size=(10, 10))
-            vis.imshow(rgbd_im.depth,
-                    vmin=policy_config["vis"]["vmin"],
-                    vmax=policy_config["vis"]["vmax"])
+            vis.imshow(
+                rgbd_im.depth,
+                vmin=policy_config["vis"]["vmin"],
+                vmax=policy_config["vis"]["vmax"],
+            )
             vis.grasp(action.grasp, scale=2.5, show_center=False, show_axis=True)
-            vis.title("Planned grasp at depth {0:.3f}m with Q={1:.3f}".format(
-                action.grasp.depth, action.q_value))
+            vis.title(
+                "Planned grasp at depth {0:.3f}m with Q={1:.3f}".format(
+                    action.grasp.depth, action.q_value
+                )
+            )
             vis.show()
-    
+
     return {"status": "ok"}

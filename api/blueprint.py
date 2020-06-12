@@ -1,8 +1,7 @@
-from flask import Blueprint, jsonify
-from flask import request
+from flask import Blueprint, jsonify, request
 
-from api.service import heathcheck_service, grasp_planning_service
 from api.exceptions import ApiException
+from api.service import grasp_planning_service, heathcheck_service
 
 app_blueprint = Blueprint("app_blueprint", __name__)
 
