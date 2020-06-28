@@ -132,8 +132,11 @@ class GQCNNTrainerTF(object):
             Loss.
         """
         if self.cfg["loss"] == "l2":
+            #return (1.0 / self.train_batch_size) * tf.nn.l2_loss(
+            #    tf.subtract(tf.nn.sigmoid(self.train_net_output),
+            #                self.train_labels_node))
             return (1.0 / self.train_batch_size) * tf.nn.l2_loss(
-                tf.subtract(tf.nn.sigmoid(self.train_net_output),
+                tf.subtract(self.train_net_output,
                             self.train_labels_node))
         elif self.cfg["loss"] == "sparse":
             if self._angular_bins > 0:
@@ -490,7 +493,7 @@ class GQCNNTrainerTF(object):
                             self.merged_log_summaries,
                             feed_dict={
                                 self.minibatch_error_placeholder: train_error,
-                                self.minibatch_loss_placeholder: l,
+                                self.minibatch_loss_placeholder: ur_l, #l,
                                 self.learning_rate_placeholder: lr
                             }), step)
                     sys.stdout.flush()
@@ -1088,7 +1091,7 @@ class GQCNNTrainerTF(object):
         self.target_metric_name = self.cfg["target_metric_name"]
         self.metric_thresh = self.cfg["metric_thresh"]
         self.training_mode = self.cfg["training_mode"]
-        if self.training_mode != TrainingMode.CLASSIFICATION:
+        if self.training_mode != TrainingMode.CLASSIFICATION and self.training_mode != TrainingMode.REGRESSION:
             raise ValueError(
                 "Training mode '{}' not currently supported!".format(
                     self.training_mode))

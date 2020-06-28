@@ -1,9 +1,9 @@
 # general optimization params
-train_batch_size: 64
-val_batch_size: &val_batch_size 64
+train_batch_size: 256 # 64
+val_batch_size: &val_batch_size 256 # 64
 
 # logging params
-num_epochs: 100       # number of epochs to train for
+num_epochs: 60 # 100       # number of epochs to train for
 eval_frequency: 10    # how often to get validation error (in epochs)
 save_frequency: 10    # how often to save output (in epochs)
 vis_frequency: 10000  # how often to visualize filters (in epochs)
@@ -16,7 +16,7 @@ eval_total_train_error: 0   # whether or not to evaluate the total training erro
 max_files_eval: 1000        # the number of validation files to use in each eval
 
 # optimization params
-loss: sparse
+loss: l2 # sparse
 optimizer: momentum
 train_l2_regularizer: 0.0005
 base_lr: 0.01
@@ -28,7 +28,7 @@ drop_rate: 0.0
 max_global_grad_norm: 100000000000
 
 # input params
-training_mode: classification
+training_mode: regression # classification
 image_field_name: tf_depth_ims
 pose_field_name: grasps
 
