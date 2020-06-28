@@ -135,7 +135,7 @@ gqcnn:
         out_size: 64
       fc5:
         type: fc
-        out_size: 2
+        out_size: 1 # 2
 
   # architecture normalization constants
   radius: 2
