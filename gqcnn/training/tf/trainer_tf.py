@@ -494,7 +494,7 @@ class GQCNNTrainerTF(object):
                             self.merged_log_summaries,
                             feed_dict={
                                 self.minibatch_error_placeholder: train_error,
-                                self.minibatch_loss_placeholder: l,
+                                self.minibatch_loss_placeholder: ur_l, #l,
                                 self.learning_rate_placeholder: lr
                             }), step)
                     sys.stdout.flush()
