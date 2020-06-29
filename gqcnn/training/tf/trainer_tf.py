@@ -136,8 +136,11 @@ class GQCNNTrainerTF(object):
             Loss.
         """
         if self.cfg["loss"] == "l2":
+            #return (1.0 / self.train_batch_size) * tf.nn.l2_loss(
+            #    tf.subtract(tf.nn.sigmoid(self.train_net_output),
+            #                self.train_labels_node))
             return (1.0 / self.train_batch_size) * tf.nn.l2_loss(
-                tf.subtract(tf.nn.sigmoid(self.train_net_output),
+                tf.subtract(tf.squeeze(self.train_net_output),
                             self.train_labels_node))
         elif self.cfg["loss"] == "sparse":
             if self._angular_bins > 0:
@@ -299,7 +302,7 @@ class GQCNNTrainerTF(object):
             else:
                 self.gqcnn.add_softmax_to_output()
         elif self.training_mode == TrainingMode.REGRESSION:
-            self.gqcnn.add_sigmoid_to_output()
+            do_nothing = True # self.gqcnn.add_sigmoid_to_output()
         else:
             raise ValueError("Training mode: {} not supported !".format(
                 self.training_mode))
@@ -494,7 +497,7 @@ class GQCNNTrainerTF(object):
                             self.merged_log_summaries,
                             feed_dict={
                                 self.minibatch_error_placeholder: train_error,
-                                self.minibatch_loss_placeholder: l,
+                                self.minibatch_loss_placeholder: ur_l, #l,
                                 self.learning_rate_placeholder: lr
                             }), step)
                     sys.stdout.flush()
@@ -530,6 +533,10 @@ class GQCNNTrainerTF(object):
 
                     if self.train_pct < 1.0:
                         val_result = self._error_rate_in_batches()
+                        if self.training_mode == TrainingMode.REGRESSION:
+                            val_l = val_result.mse
+                        else:
+                            val_l = val_result.cross_entropy_loss
                         self.summary_writer.add_summary(
                             self.sess.run(
                                 self.merged_eval_summaries,
@@ -540,7 +547,7 @@ class GQCNNTrainerTF(object):
                         self.logger.info("Validation error: {}".format(
                             str(round(val_result.error_rate, 3))))
                         self.logger.info("Validation loss: {}".format(
-                            str(round(val_result.cross_entropy_loss, 3))))
+                            str(round(val_l, 3))))
                     sys.stdout.flush()
 
                     # Update the `TrainStatsLogger`.
@@ -551,7 +558,7 @@ class GQCNNTrainerTF(object):
                             train_error=None,
                             total_train_error=None,
                             val_eval_iter=step,
-                            val_loss=val_result.cross_entropy_loss,
+                            val_loss=val_l,
                             val_error=val_result.error_rate,
                             learning_rate=None)
                     else:
@@ -583,17 +590,25 @@ class GQCNNTrainerTF(object):
 
             # Get final errors and flush the stdout pipeline.
             final_val_result = self._error_rate_in_batches()
+            if self.training_mode == TrainingMode.REGRESSION:
+                final_val_l = final_val_result.mse
+            else:
+                final_val_l = final_val_result.cross_entropy_loss
             self.logger.info("Final validation error: {}".format(
                 str(round(final_val_result.error_rate, 3))))
             self.logger.info("Final validation loss: {}".format(
-                str(round(final_val_result.cross_entropy_loss, 3))))
+                str(round(final_val_l, 3))))
             if self.cfg["eval_total_train_error"]:
                 final_train_result = self._error_rate_in_batches(
                     validation_set=False)
+                if self.training_mode == TrainingMode.REGRESSION:
+                    final_train_l = final_train_result.mse
+                else:
+                    final_train_l = final_train_result.cross_entropy_loss
                 self.logger.info("Final training error: {}".format(
                     final_train_result.error_rate))
                 self.logger.info("Final training loss: {}".format(
-                    final_train_result.cross_entropy_loss))
+                    final_train_l))
             sys.stdout.flush()
 
             # Update the `TrainStatsLogger`.
@@ -603,7 +618,7 @@ class GQCNNTrainerTF(object):
                 train_error=None,
                 total_train_error=None,
                 val_eval_iter=step,
-                val_loss=final_val_result.cross_entropy_loss,
+                val_loss=final_val_l,
                 val_error=final_val_result.error_rate,
                 learning_rate=None)
 
@@ -1092,7 +1107,7 @@ class GQCNNTrainerTF(object):
         self.target_metric_name = self.cfg["target_metric_name"]
         self.metric_thresh = self.cfg["metric_thresh"]
         self.training_mode = self.cfg["training_mode"]
-        if self.training_mode != TrainingMode.CLASSIFICATION:
+        if self.training_mode != TrainingMode.CLASSIFICATION and self.training_mode != TrainingMode.REGRESSION:
             raise ValueError(
                 "Training mode '{}' not currently supported!".format(
                     self.training_mode))
@@ -1693,7 +1708,8 @@ class GQCNNTrainerTF(object):
                 predictions = predictions[pred_mask].reshape((-1, 2))
 
             # Update.
-            all_predictions.extend(predictions[:, 1].tolist())
+            #all_predictions.extend(predictions[:, 1].tolist())
+            all_predictions.extend(predictions[:, 0].tolist())
             all_labels.extend(labels.tolist())
 
         # Get learning result.
