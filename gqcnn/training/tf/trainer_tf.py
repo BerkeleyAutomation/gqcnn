@@ -126,6 +126,11 @@ class GQCNNTrainerTF(object):
         # Update cfg for saving.
         self.cfg["dataset_dir"] = self.dataset_dir
         self.cfg["split_name"] = self.split_name
+        self.im_channels = self.cfg['gqcnn']['im_channels']
+        self.im_width = self.cfg['gqcnn']['im_width']
+        self.im_height = self.cfg['gqcnn']['im_height']
+        self.gripper_mode = self.gqcnn.gripper_mode
+        self.pose_dim = pose_dim(self.gripper_mode)
 
     def _create_loss(self):
         """Creates a loss based on config file.
@@ -251,7 +256,7 @@ class GQCNNTrainerTF(object):
                 "training_status"] = GQCNNTrainingStatus.TRAINING
         self._optimize_weights()
 
-    def finetune(self, base_model_dir):
+    def finetune(self, base_model_dir, finetune_data_dict):
         """Perform fine-tuning.
 
         Parameters
@@ -260,9 +265,9 @@ class GQCNNTrainerTF(object):
             Path to the pre-trained base model to use.
         """
         with self.gqcnn.tf_graph.as_default():
-            self._finetune(base_model_dir)
+            self._finetune(base_model_dir, finetune_data_dict)
 
-    def _finetune(self, base_model_dir):
+    def _finetune(self, base_model_dir, finetune_data_dict):
         """Perform fine-tuning.
 
         Parameters
@@ -285,11 +290,13 @@ class GQCNNTrainerTF(object):
         if self.progress_dict is not None:
             self.progress_dict[
                 "training_status"] = GQCNNTrainingStatus.TRAINING
-        self._optimize_weights(finetune=True)
+        self._optimize_weights(finetune=True, finetune_data_dict=finetune_data_dict)
 
-    def _optimize_weights(self, finetune=False):
+    def _optimize_weights(self, finetune=False, finetune_data_dict=None):
         """Optimize the network weights."""
         start_time = time.time()
+        self.num_train = finetune_data_dict['images'].shape[0]
+        self.decay_step = self.decay_step_multiplier * self.num_train
 
         # Setup output.
         self.train_net_output = self.gqcnn.output
@@ -358,19 +365,20 @@ class GQCNNTrainerTF(object):
 
         # Now that everything in our graph is set up, we write the graph to the
         # summary event so it can be visualized in Tensorboard.
-        self.summary_writer.add_graph(self.gqcnn.tf_graph)
+        # self.summary_writer.add_graph(self.gqcnn.tf_graph)
 
         # Begin optimization loop.
         try:
-            # Start prefetch queue workers.
-            self.prefetch_q_workers = []
-            seed = self._seed
-            for i in range(self.num_prefetch_q_workers):
-                if self.num_prefetch_q_workers > 1 or not self._debug:
-                    seed = np.random.randint(GeneralConstants.SEED_SAMPLE_MAX)
-                p = mp.Process(target=self._load_and_enqueue, args=(seed, ))
-                p.start()
-                self.prefetch_q_workers.append(p)
+            if not finetune:
+                # Start prefetch queue workers.
+                self.prefetch_q_workers = []
+                seed = self._seed
+                for i in range(self.num_prefetch_q_workers):
+                    if self.num_prefetch_q_workers > 1 or not self._debug:
+                        seed = np.random.randint(GeneralConstants.SEED_SAMPLE_MAX)
+                    p = mp.Process(target=self._load_and_enqueue, args=(seed, ))
+                    p.start()
+                    self.prefetch_q_workers.append(p)
 
             # Init TF variables.
             init = tf.global_variables_initializer()
@@ -406,7 +414,14 @@ class GQCNNTrainerTF(object):
                             },
                             options=GeneralConstants.timeout_option)
                 else:
-                    images, poses, labels = self.prefetch_q.get()
+                    # You gonna be here
+                    if finetune:
+                        idxs = np.random.randint(self.num_train, size=self.train_batch_size)
+                        images = finetune_data_dict['images'][idxs]
+                        poses = finetune_data_dict['poses'][idxs]
+                        labels = finetune_data_dict['labels'][idxs]
+                    else:
+                        images, poses, labels = self.prefetch_q.get()
                     _, l, ur_l, lr, predictions, raw_net_output = \
                         self.sess.run(
                             [
@@ -489,14 +504,14 @@ class GQCNNTrainerTF(object):
                     self.logger.info("Minibatch error: {}".format(
                         str(round(train_error, 3))))
 
-                    self.summary_writer.add_summary(
-                        self.sess.run(
-                            self.merged_log_summaries,
-                            feed_dict={
-                                self.minibatch_error_placeholder: train_error,
-                                self.minibatch_loss_placeholder: l,
-                                self.learning_rate_placeholder: lr
-                            }), step)
+                    # self.summary_writer.add_summary(
+                    #     self.sess.run(
+                    #         self.merged_log_summaries,
+                    #         feed_dict={
+                    #             self.minibatch_error_placeholder: train_error,
+                    #             self.minibatch_loss_placeholder: l,
+                    #             self.learning_rate_placeholder: lr
+                    #         }), step)
                     sys.stdout.flush()
 
                     # Update the `TrainStatsLogger`.
@@ -508,62 +523,62 @@ class GQCNNTrainerTF(object):
                                                    val_error=None,
                                                    learning_rate=lr)
 
-                # Evaluate model.
-                if step % self.eval_frequency == 0 and step > 0:
-                    if self.cfg["eval_total_train_error"]:
-                        train_result = self._error_rate_in_batches(
-                            validation_set=False)
-                        self.logger.info("Training error: {}".format(
-                            str(round(train_result.error_rate, 3))))
+                # # Evaluate model.
+                # if step % self.eval_frequency == 0 and step > 0:
+                #     if self.cfg["eval_total_train_error"]:
+                #         train_result = self._error_rate_in_batches(
+                #             validation_set=False)
+                #         self.logger.info("Training error: {}".format(
+                #             str(round(train_result.error_rate, 3))))
 
-                        # Update the `TrainStatsLogger` and save.
-                        self.train_stats_logger.update(
-                            train_eval_iter=None,
-                            train_loss=None,
-                            train_error=None,
-                            total_train_error=train_result.error_rate,
-                            total_train_loss=train_result.cross_entropy_loss,
-                            val_eval_iter=None,
-                            val_error=None,
-                            learning_rate=None)
-                        self.train_stats_logger.log()
+                #         # Update the `TrainStatsLogger` and save.
+                #         self.train_stats_logger.update(
+                #             train_eval_iter=None,
+                #             train_loss=None,
+                #             train_error=None,
+                #             total_train_error=train_result.error_rate,
+                #             total_train_loss=train_result.cross_entropy_loss,
+                #             val_eval_iter=None,
+                #             val_error=None,
+                #             learning_rate=None)
+                #         self.train_stats_logger.log()
 
-                    if self.train_pct < 1.0:
-                        val_result = self._error_rate_in_batches()
-                        self.summary_writer.add_summary(
-                            self.sess.run(
-                                self.merged_eval_summaries,
-                                feed_dict={
-                                    self.val_error_placeholder: val_result.
-                                    error_rate
-                                }), step)
-                        self.logger.info("Validation error: {}".format(
-                            str(round(val_result.error_rate, 3))))
-                        self.logger.info("Validation loss: {}".format(
-                            str(round(val_result.cross_entropy_loss, 3))))
-                    sys.stdout.flush()
+                #     if self.train_pct < 1.0:
+                #         val_result = self._error_rate_in_batches()
+                #         self.summary_writer.add_summary(
+                #             self.sess.run(
+                #                 self.merged_eval_summaries,
+                #                 feed_dict={
+                #                     self.val_error_placeholder: val_result.
+                #                     error_rate
+                #                 }), step)
+                #         self.logger.info("Validation error: {}".format(
+                #             str(round(val_result.error_rate, 3))))
+                #         self.logger.info("Validation loss: {}".format(
+                #             str(round(val_result.cross_entropy_loss, 3))))
+                #     sys.stdout.flush()
 
-                    # Update the `TrainStatsLogger`.
-                    if self.train_pct < 1.0:
-                        self.train_stats_logger.update(
-                            train_eval_iter=None,
-                            train_loss=None,
-                            train_error=None,
-                            total_train_error=None,
-                            val_eval_iter=step,
-                            val_loss=val_result.cross_entropy_loss,
-                            val_error=val_result.error_rate,
-                            learning_rate=None)
-                    else:
-                        self.train_stats_logger.update(train_eval_iter=None,
-                                                       train_loss=None,
-                                                       train_error=None,
-                                                       total_train_error=None,
-                                                       val_eval_iter=step,
-                                                       learning_rate=None)
+                #     # Update the `TrainStatsLogger`.
+                #     if self.train_pct < 1.0:
+                #         self.train_stats_logger.update(
+                #             train_eval_iter=None,
+                #             train_loss=None,
+                #             train_error=None,
+                #             total_train_error=None,
+                #             val_eval_iter=step,
+                #             val_loss=val_result.cross_entropy_loss,
+                #             val_error=val_result.error_rate,
+                #             learning_rate=None)
+                #     else:
+                #         self.train_stats_logger.update(train_eval_iter=None,
+                #                                        train_loss=None,
+                #                                        train_error=None,
+                #                                        total_train_error=None,
+                #                                        val_eval_iter=step,
+                #                                        learning_rate=None)
 
-                    # Save everything!
-                    self.train_stats_logger.log()
+                #     # Save everything!
+                #     self.train_stats_logger.log()
 
                 # Save the model.
                 if step % self.save_frequency == 0 and step > 0:
@@ -582,36 +597,36 @@ class GQCNNTrainerTF(object):
                     self._launch_tensorboard()
 
             # Get final errors and flush the stdout pipeline.
-            final_val_result = self._error_rate_in_batches()
-            self.logger.info("Final validation error: {}".format(
-                str(round(final_val_result.error_rate, 3))))
-            self.logger.info("Final validation loss: {}".format(
-                str(round(final_val_result.cross_entropy_loss, 3))))
-            if self.cfg["eval_total_train_error"]:
-                final_train_result = self._error_rate_in_batches(
-                    validation_set=False)
-                self.logger.info("Final training error: {}".format(
-                    final_train_result.error_rate))
-                self.logger.info("Final training loss: {}".format(
-                    final_train_result.cross_entropy_loss))
-            sys.stdout.flush()
+            # final_val_result = self._error_rate_in_batches()
+            # self.logger.info("Final validation error: {}".format(
+            #     str(round(final_val_result.error_rate, 3))))
+            # self.logger.info("Final validation loss: {}".format(
+            #     str(round(final_val_result.cross_entropy_loss, 3))))
+            # if self.cfg["eval_total_train_error"]:
+            #     final_train_result = self._error_rate_in_batches(
+            #         validation_set=False)
+            #     self.logger.info("Final training error: {}".format(
+            #         final_train_result.error_rate))
+            #     self.logger.info("Final training loss: {}".format(
+            #         final_train_result.cross_entropy_loss))
+            # sys.stdout.flush()
 
             # Update the `TrainStatsLogger`.
-            self.train_stats_logger.update(
-                train_eval_iter=None,
-                train_loss=None,
-                train_error=None,
-                total_train_error=None,
-                val_eval_iter=step,
-                val_loss=final_val_result.cross_entropy_loss,
-                val_error=final_val_result.error_rate,
-                learning_rate=None)
+            # self.train_stats_logger.update(
+            #     train_eval_iter=None,
+            #     train_loss=None,
+            #     train_error=None,
+            #     total_train_error=None,
+            #     val_eval_iter=step,
+            #     val_loss=final_val_result.cross_entropy_loss,
+            #     val_error=final_val_result.error_rate,
+            #     learning_rate=None)
 
-            # Log & save everything!
-            self.train_stats_logger.log()
-            self.saver.save(
-                self.sess,
-                os.path.join(self.model_dir, GQCNNFilenames.FINAL_MODEL))
+            # # Log & save everything!
+            # self.train_stats_logger.log()
+            # self.saver.save(
+            #     self.sess,
+            #     os.path.join(self.model_dir, GQCNNFilenames.FINAL_MODEL))
 
         except Exception as e:
             self._cleanup()
@@ -1323,11 +1338,11 @@ class GQCNNTrainerTF(object):
 
         # Flush prefetch queue.
         # NOTE: This prevents a deadlock with the worker process queue buffers.
-        self._flush_prefetch_queue()
+        # self._flush_prefetch_queue()
 
         # Join prefetch queue worker processes.
-        for p in self.prefetch_q_workers:
-            p.join()
+        # for p in self.prefetch_q_workers:
+        #     p.join()
 
         # Close tensorboard if started.
         if self.tensorboard_has_launched:
@@ -1358,22 +1373,22 @@ class GQCNNTrainerTF(object):
         self._read_training_params()
 
         # Setup image and pose data files.
-        self._open_dataset()
+        # self._open_dataset()
 
         # Compute data parameters.
-        self._compute_data_params()
+        # self._compute_data_params()
 
         # Setup denoising and synthetic data parameters.
         self._setup_denoising_and_synthetic()
 
         # Compute means, std's, and normalization metrics.
-        self._compute_data_metrics()
+        # self._compute_data_metrics()
 
         # Setup Tensorflow session/placeholders/queue.
         self._setup_tensorflow()
 
         # Setup summaries for visualizing metrics in Tensorboard.
-        self._setup_summaries()
+        # self._setup_summaries()
 
     def _load_and_enqueue(self, seed):
         """Loads and enqueues a batch of images for training."""
