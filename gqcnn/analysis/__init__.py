@@ -22,10 +22,6 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from .analyzer import GQCNNAnalyzer
 
 __all__ = ["GQCNNAnalyzer"]

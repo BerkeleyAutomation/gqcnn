@@ -28,10 +28,6 @@ Author
 ------
 Vishal Satish & Jeff Mahler
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging
 import os
 from setuptools import setup, find_packages
@@ -142,13 +138,9 @@ class InstallCmd(install, object):
 
 requirements = [
     "autolab-core", "autolab-perception", "visualization", "numpy", "scipy",
-    "matplotlib<=2.2.0", "opencv-python", "scikit-learn", "psutil", "gputil"
+    "matplotlib", "opencv-python", "scikit-learn", "scikit-image", "psutil",
+    "gputil"
 ]
-
-if sys.version[0] == "2":
-    # The Python 2 installation for the latest version of meshrender
-    # is broken, and we don't know when it will be fixed.
-    requirements.append("meshrender==0.0.9")
 
 exec(
     open(
@@ -167,7 +159,6 @@ setup(
     keywords="robotics grasping vision deep learning",
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",

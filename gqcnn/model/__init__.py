@@ -25,10 +25,6 @@ MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 Factory functions to obtain `GQCNN`/`FCGQCNN` class based on backend.
 Author: Vishal Satish
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from .tf import GQCNNTF, FCGQCNNTF
 
 from autolab_core import Logger
