@@ -279,7 +279,8 @@ class GQCNNTrainerTF(object):
         self._setup()
 
         # Build network.
-        self.gqcnn.set_base_network(base_model_dir)
+        if base_model_dir != None:
+            self.gqcnn.set_base_network(base_model_dir)
         self.gqcnn.initialize_network(self.input_im_node, self.input_pose_node)
 
         # Optimize weights.
@@ -1345,7 +1346,7 @@ class GQCNNTrainerTF(object):
             self._close_tensorboard()
 
         # Close Tensorflow session.
-        self.gqcnn.close_session()
+        # self.gqcnn.close_session() # Don't close tensorflow session so can just keep training
 
     def _flush_prefetch_queue(self):
         """Flush prefetch queue."""
