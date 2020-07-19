@@ -309,6 +309,8 @@ class GraspingPolicy(with_metaclass(ABCMeta, Policy)):
         self._grasp_quality_fn = GraspQualityFunctionFactory.quality_function(
             metric_type, self._metric_config)
 
+        self.all_sampled_grasps, self.all_sampled_q_values, self.all_sampled_actions = [], [], []
+
     @property
     def config(self):
         """Returns the policy configuration parameters.
@@ -1029,6 +1031,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                           (time() - seed_set_start))
 
         # Iteratively refit and sample.
+        self.all_sampled_grasps, self.all_sampled_q_values = [], []
         for j in range(self._num_iters):
             self._logger.info("CEM iter %d" % (j))
 
@@ -1039,7 +1042,8 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                                               params=self._config)
             self._logger.info("Prediction took %.3f sec" %
                               (time() - predict_start))
-
+            self.all_sampled_grasps += grasps
+            self.all_sampled_q_values += q_values
             # Sort grasps.
             resample_start = time()
             q_values_and_indices = zip(q_values, np.arange(num_grasps))
@@ -1322,7 +1326,10 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
             image_arr, _ = self._grasp_quality_fn.grasps_to_tensors([grasp],
                                                                     state)
             image = DepthImage(image_arr[0, ...], frame=rgbd_im.frame)
-
+        self.all_sampled_actions = []
+        for idx in range(len(self.all_sampled_grasps)):
+            g, a = self.all_sampled_grasps[idx], self.all_sampled_q_values[idx]
+            self.all_sampled_actions.append(GraspAction(g, a, image))
         # Return action.
         action = GraspAction(grasp, q_value, image)
         return action
