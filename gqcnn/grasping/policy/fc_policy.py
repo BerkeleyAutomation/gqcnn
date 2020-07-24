@@ -346,10 +346,17 @@ class FullyConvolutionalGraspingPolicy(with_metaclass(ABCMeta,
         list of :obj:`gqcnn.GraspAction`
             The planned grasps.
         """
+        actions = [action for action in self._action(state, num_actions=num_actions)]
+        actions = sorted(actions,
+                         reverse=True,
+                         key=lambda action: action.q_value)
+        q_vals = []
+        for a in actions:
+            q_vals.append(a.q_value)
         return [
             action.grasp
-            for action in self._action(state, num_actions=num_actions)
-        ]
+            for action in actions
+        ], q_vals
 
 
 class FullyConvolutionalGraspingPolicyParallelJaw(
@@ -375,9 +382,12 @@ class FullyConvolutionalGraspingPolicyParallelJaw(
         if "depth_offset" in self._cfg:
             self._depth_offset = self._cfg["depth_offset"]
 
+    def _find_max_depth(self, min_depth=0.0):
+        return min_depth + 0.07
+
     def _sample_depths(self, raw_depth_im, raw_seg):
         """Sample depths from the raw depth image."""
-        max_depth = np.max(raw_depth_im) + self._depth_offset
+        #max_depth = np.max(raw_depth_im) + self._depth_offset
 
         # For sampling the min depth, we only sample from the portion of the
         # depth image in the object segmask because sometimes the rim of the
@@ -386,6 +396,7 @@ class FullyConvolutionalGraspingPolicyParallelJaw(
         raw_depth_im_segmented[np.where(raw_seg > 0)] = raw_depth_im[np.where(
             raw_seg > 0)]
         min_depth = np.min(raw_depth_im_segmented) + self._depth_offset
+        max_depth = self._find_max_depth(min_depth)
 
         depth_bin_width = (max_depth - min_depth) / self._num_depth_bins
         depths = np.zeros((self._num_depth_bins, 1))
