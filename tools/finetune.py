@@ -43,6 +43,8 @@ from gqcnn import utils as gqcnn_utils
 
 # Setup logger.
 logger = Logger.get_logger("tools/finetune.py")
+cpu_cores = [0,1,2,3] # Cores (numbered 0-11)
+os.system("taskset -pc {} {}".format(",".join(str(i) for i in cpu_cores), os.getpid()))
 
 if __name__ == "__main__":
     # Parse args.
