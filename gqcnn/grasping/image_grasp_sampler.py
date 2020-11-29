@@ -742,7 +742,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         else:
             depth_im_mask = depth_im.copy()
         if segmask is not None:
-            depth_im_mask = depth_im.mask_binary(segmask)
+            depth_im_mask = depth_im_mask.mask_binary(segmask)
         self._logger.debug("Filtering took %.3f sec" % (time() - filter_start))
 
         if visualize:
