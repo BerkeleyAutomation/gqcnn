@@ -1,0 +1,42 @@
+FROM ros:noetic-ros-core
+
+ARG cpu_or_gpu
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    software-properties-common \
+    build-essential \
+    curl \
+    libsm6 \
+    libxext6 \
+    libglib2.0-0 \
+    libxrender1 \
+    wget \
+    libpng-dev \
+    pkg-config \
+    libfreetype6-dev \
+    ros-noetic-cv-bridge \
+    freeglut3-dev \
+    unzip
+
+RUN add-apt-repository ppa:deadsnakes/ppa
+
+RUN apt-get update && apt-get -y install  \
+    python3.7 \
+    python3.7-dev \
+    python3-pip \
+    python3.7-tk
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1
+RUN python3.7 -m pip install --no-cache-dir --upgrade setuptools pip wheel numpy netifaces pyglet pycryptodomex crypto
+ 
+RUN /bin/bash -c "mkdir -p /root/catkin_ws/src"
+ENV CATKIN_WS /root/catkin_ws
+
+WORKDIR $CATKIN_WS
+
+COPY [ "gqcnn/", "$CATKIN_WS/src/gqcnn/" ]
+
+RUN python3 -m pip install --no-cache-dir -r $CATKIN_WS/src/gqcnn/requirements/${cpu_or_gpu}_requirements.txt
+
+RUN /bin/bash -c "source /opt/ros/noetic/setup.bash \
+    && catkin_make install -DCMAKE_INSTALL_PREFIX=/opt/ros/noetic/"

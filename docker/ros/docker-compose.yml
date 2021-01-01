@@ -1,0 +1,48 @@
+version: '3.4'
+
+services:
+  ros_master:
+    image: ros:kinetic-ros-core
+    network_mode: host
+    environment:
+      - ROS_MASTER_URI=${ROS_MASTER_URI}
+      - ROS_IP=${ROS_IP}
+    command: stdbuf -o L roscore
+
+  gqcnn:
+    image: gqcnn_${cpu_or_gpu}:latest
+    build:
+      args:
+        cpu_or_gpu: $cpu_or_gpu
+      context: ../../../
+      dockerfile: gqcnn/docker/ros/Dockerfile.ros
+    network_mode: host
+    environment:
+      - ROS_MASTER_URI=${ROS_MASTER_URI}
+      - ROS_IP=${ROS_IP}
+    volumes:
+      - ../../../gqcnn/:/root/catkin_ws/src/gqcnn/:ro
+    depends_on:
+      - ros_master
+    command: "bash -c 'source /root/catkin_ws/devel/setup.bash; roslaunch --wait gqcnn grasp_planning_service.launch model_name:=${MODEL};'"
+
+
+  #gqcnn_example:
+  #  image: gqcnn_${cpu_or_gpu}:latest
+  #  build:
+  #    args:
+  #      cpu_or_gpu: $cpu_or_gpu
+  #    context: ../../../
+  #    dockerfile: gqcnn/docker/ros/Dockerfile.ros
+  #  network_mode: host
+  #  environment:
+  #    - DISPLAY=$DISPLAY
+  #    - ROS_MASTER_URI=${ROS_MASTER_URI}
+  #    - ROS_IP=${ROS_IP}
+  #  volumes:
+  #    - ../../../gqcnn/:/root/catkin_ws/src/gqcnn/:ro
+  #    - /tmp/.X11-unix:/tmp/.X11-unix:ro
+  #    - $HOME/.Xauthority:/.Xauthority:ro
+  #  depends_on:
+  #    - gqcnn
+  #  command: "bash -c 'source /root/catkin_ws/devel/setup.bash; python3 /root/catkin_ws/src/gqcnn/examples/policy_ros.py'"
