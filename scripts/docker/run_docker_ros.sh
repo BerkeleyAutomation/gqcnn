@@ -31,12 +31,12 @@ function ctrl_c() {
 ctrl_c
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-echo $SCRIPT_DIR
+
 cd $SCRIPT_DIR
 cd ../../..
 source ./gqcnn/docker/ros/config.env
 
 xhost +local:docker
-#docker-compose -f gqcnn/docker/ros/docker-compose.yml build --no-cache --parellel
+#docker-compose -f gqcnn/docker/ros/docker-compose.yml build --no-cache --parallel
 docker-compose -f gqcnn/docker/ros/docker-compose.yml up
 xhost -local:docker
