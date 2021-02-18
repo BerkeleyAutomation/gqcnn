@@ -217,7 +217,7 @@ class SuctionQualityFunction(GraspQualityFunction):
     metrics for now)."""
 
     def __init__(self, config):
-        GraspQualityFunction.__init(self)
+        GraspQualityFunction.__init__(self)
 
         # Read parameters.
         self._window_size = config["window_size"]

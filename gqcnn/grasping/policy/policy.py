@@ -615,12 +615,14 @@ class RobustGraspingPolicy(GraspingPolicy):
         # Parse state.
         rgbd_im = state.rgbd_im
         camera_intr = state.camera_intr
+        camera_extr = state.camera_extr
         segmask = state.segmask
 
         # Sample grasps.
         grasps = self._grasp_sampler.sample(
             rgbd_im,
             camera_intr,
+            camera_extr,
             self._num_grasp_samples,
             segmask=segmask,
             visualize=self.config["vis"]["grasp_sampling"],

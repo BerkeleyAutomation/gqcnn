@@ -94,6 +94,7 @@ class ImageGraspSampler(with_metaclass(ABCMeta, object)):
     def sample(self,
                rgbd_im,
                camera_intr,
+               camera_extr,
                num_samples,
                segmask=None,
                seed=None,
@@ -133,6 +134,7 @@ class ImageGraspSampler(with_metaclass(ABCMeta, object)):
         sampling_start = time()
         grasps = self._sample(rgbd_im,
                               camera_intr,
+                              camera_extr,
                               num_samples,
                               segmask=segmask,
                               visualize=visualize,
@@ -147,6 +149,7 @@ class ImageGraspSampler(with_metaclass(ABCMeta, object)):
     def _sample(self,
                 rgbd_im,
                 camera_intr,
+                camera_extr,
                 num_samples,
                 segmask=None,
                 visualize=False,
@@ -664,6 +667,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
     def _sample(self,
                 image,
                 camera_intr,
+                camera_extr,
                 num_samples,
                 segmask=None,
                 visualize=False,
@@ -699,6 +703,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
         # Sample antipodal pairs in image space.
         grasps = self._sample_suction_points(depth_im,
                                              camera_intr,
+                                             camera_extr,
                                              num_samples,
                                              segmask=segmask,
                                              visualize=visualize,
@@ -708,6 +713,7 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
     def _sample_suction_points(self,
                                depth_im,
                                camera_intr,
+                               camera_extr,
                                num_samples,
                                segmask=None,
                                visualize=False,
@@ -798,7 +804,10 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
             # Keep if the angle between the camera optical axis and the suction
             # direction is less than a threshold.
-            dot = max(min(axis.dot(np.array([0, 0, 1])), 1.0), -1.0)
+#            dot = max(min(axis.dot(np.array([0, 0, 1])), 1.0), -1.0)
+            opt_axis = \
+                -1.0 * camera_extr.translation / np.linalg.norm(camera_extr.translation)
+            dot = max(min(axis.dot(opt_axis), 1.0), -1.0)
             psi = np.arccos(dot)
             if psi < self._max_suction_dir_optical_axis_angle:
 
