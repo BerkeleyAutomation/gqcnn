@@ -50,6 +50,7 @@ class TrialStatus:
 
 
 class GQCNNTrialWithAnalysis(ABC):
+
     def __init__(self, analysis_cfg, train_cfg, dataset_dir, split_name,
                  output_dir, model_name, hyperparam_summary):
         self._analysis_cfg = analysis_cfg
@@ -198,11 +199,13 @@ class GQCNNTrialWithAnalysis(ABC):
 
 
 class GQCNNTrainingAndAnalysisTrial(GQCNNTrialWithAnalysis):
+
     def _run(self, trainer):
         trainer.train()
 
 
 class GQCNNFineTuningAndAnalysisTrial(GQCNNTrialWithAnalysis):
+
     def __init__(self, analysis_cfg, train_cfg, dataset_dir, base_model_dir,
                  split_name, output_dir, model_name, hyperparam_summary):
         GQCNNTrialWithAnalysis.__init__(self, analysis_cfg, train_cfg,

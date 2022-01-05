@@ -39,7 +39,8 @@ import scipy.ndimage.filters as snf
 import scipy.spatial.distance as ssd
 import scipy.stats as ss
 
-from autolab_core import Point, RigidTransform, Logger, DepthImage, RgbdImage, GdImage
+from autolab_core import (Point, RigidTransform, Logger,
+                          DepthImage, RgbdImage, GdImage)
 from visualization import Visualizer2D as vis
 
 from .grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
@@ -558,8 +559,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
             for i in range(self._depth_samples_per_grasp):
                 # Get depth in the neighborhood of the center pixel.
                 depth_win = depth_im.data[grasp_center[0] -
-                                          self._h:grasp_center[0] +
-                                          self._h, grasp_center[1] -
+                                          self._h:grasp_center[0] + self._h,
+                                          grasp_center[1] -
                                           self._w:grasp_center[1] + self._w]
                 center_depth = np.min(depth_win)
                 if center_depth == 0 or np.isnan(center_depth):

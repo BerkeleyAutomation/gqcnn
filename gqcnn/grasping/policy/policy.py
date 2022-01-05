@@ -42,7 +42,9 @@ import scipy.stats as ss
 from sklearn.mixture import GaussianMixture
 
 import autolab_core.utils as utils
-from autolab_core import Point, Logger, BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
+from autolab_core import (Point, Logger, BinaryImage, ColorImage,
+                          DepthImage, RgbdImage, SegmentationImage,
+                          CameraIntrinsics)
 from visualization import Visualizer2D as vis
 
 from ..constraint_fn import GraspConstraintFnFactory
@@ -1238,7 +1240,7 @@ class CrossEntropyRobustGraspingPolicy(GraspingPolicy):
                     q_values=norm_q_values,
                     scale=2.0,
                     title=title,
-                    save_fname="final_sampled_grasps.png".format(j),
+                    save_fname="final_sampled_grasps.png",
                     save_path=state_output_dir)
             display_grasps_and_q_values = zip(grasps, q_values)
             display_grasps_and_q_values = sorted(display_grasps_and_q_values,
@@ -1545,6 +1547,7 @@ class CompositeGraspingPolicy(Policy):
 
 
 class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
+
     def __init__(self, policies, priority_list):
         # Check validity.
         for name in priority_list:
@@ -1613,6 +1616,7 @@ class PriorityCompositeGraspingPolicy(CompositeGraspingPolicy):
 
 
 class GreedyCompositeGraspingPolicy(CompositeGraspingPolicy):
+
     def __init__(self, policies):
         CompositeGraspingPolicy.__init__(self, policies)
 

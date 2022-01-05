@@ -48,6 +48,7 @@ GPU_STAT_SAMPLE_INTERVAL = 1.0
 
 
 class ResourceManager(object):
+
     def __init__(self,
                  trial_cpu_load,
                  trial_gpu_load,

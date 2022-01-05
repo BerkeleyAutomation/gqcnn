@@ -50,6 +50,7 @@ else:
 
 
 class GQCNNSearch(object):
+
     def __init__(self,
                  analysis_config,
                  train_configs,

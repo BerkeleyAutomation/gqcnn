@@ -878,21 +878,21 @@ class GQCNNTF(object):
                 end_ind = cur_ind + dim
 
                 if self._input_depth_mode == InputDepthMode.POSE_STREAM:
-                    self._input_im_arr[:dim, ...] = (
-                        image_arr[cur_ind:end_ind, ...] -
-                        self._im_mean) / self._im_std
+                    self._input_im_arr[:dim,
+                                       ...] = (image_arr[cur_ind:end_ind, ...]
+                                               - self._im_mean) / self._im_std
                     self._input_pose_arr[:dim, :] = (
                         pose_arr[cur_ind:end_ind, :] -
                         self._pose_mean) / self._pose_std
                 elif self._input_depth_mode == InputDepthMode.SUB:
                     self._input_im_arr[:dim, ...] = image_arr[cur_ind:end_ind,
                                                               ...]
-                    self._input_pose_arr[:dim, :] = pose_arr[cur_ind:
-                                                             end_ind, :]
+                    self._input_pose_arr[:dim, :] = pose_arr[
+                        cur_ind:end_ind, :]
                 elif self._input_depth_mode == InputDepthMode.IM_ONLY:
-                    self._input_im_arr[:dim, ...] = (
-                        image_arr[cur_ind:end_ind, ...] -
-                        self._im_mean) / self._im_std
+                    self._input_im_arr[:dim,
+                                       ...] = (image_arr[cur_ind:end_ind, ...]
+                                               - self._im_mean) / self._im_std
 
                 gqcnn_output = self._sess.run(
                     self._output_tensor,
@@ -1417,9 +1417,9 @@ class GQCNNTF(object):
                 self._input_depth_mode == InputDepthMode.IM_ONLY:
             extraneous_stream_msg = ("When using input depth mode '{}', only"
                                      " im stream is allowed!")
-            assert not ("pose_stream" in self._architecture
-                        or "merge_stream" in self._architecture
-                        ), extraneous_stream_msg.format(self._input_depth_mode)
+            assert not ("pose_stream" in self._architecture or "merge_stream"
+                        in self._architecture), extraneous_stream_msg.format(
+                            self._input_depth_mode)
             with tf.name_scope("im_stream"):
                 return self._build_im_stream(input_im_node,
                                              input_pose_node,

@@ -117,6 +117,7 @@ class DiscreteApproachGraspConstraintFn(GraspConstraintFn):
 
 
 class GraspConstraintFnFactory(object):
+
     @staticmethod
     def constraint_fn(fn_type, config):
         if fn_type == "none":

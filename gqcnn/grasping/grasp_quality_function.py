@@ -816,6 +816,7 @@ class GaussianCurvatureSuctionQualityFunction(SuctionQualityFunction):
 
 class DiscCurvatureSuctionQualityFunction(
         GaussianCurvatureSuctionQualityFunction):
+
     def __init__(self, config):
         """Create approach planarity suction metric."""
         self._radius = config["radius"]
@@ -848,6 +849,7 @@ class DiscCurvatureSuctionQualityFunction(
 
 class ComDiscCurvatureSuctionQualityFunction(
         DiscCurvatureSuctionQualityFunction):
+
     def __init__(self, config):
         """Create approach planarity suction metric."""
         self._curvature_pctile = config["curvature_pctile"]
@@ -911,6 +913,7 @@ class ComDiscCurvatureSuctionQualityFunction(
 
 
 class GQCnnQualityFunction(GraspQualityFunction):
+
     def __init__(self, config):
         """Create a GQCNN suction quality function."""
         GraspQualityFunction.__init__(self)
@@ -1067,6 +1070,7 @@ class GQCnnQualityFunction(GraspQualityFunction):
 
 
 class NoMagicQualityFunction(GraspQualityFunction):
+
     def __init__(self, config):
         """Create a quality that uses `nomagic_net` as a quality function."""
         from nomagic_submission import ConvNetModel
@@ -1154,8 +1158,8 @@ class NoMagicQualityFunction(GraspQualityFunction):
                                                        255))[1].tostring()
             im_decoded = cv2.imdecode(np.frombuffer(im_encoded, np.uint8),
                                       0) / 255.0
-            image_tensor[i, :, :, 0] = ((im_decoded - self._data_mean) /
-                                        self._data_std)
+            image_tensor[i, :, :,
+                         0] = ((im_decoded - self._data_mean) / self._data_std)
 
             if gripper_mode == GripperMode.PARALLEL_JAW:
                 pose_tensor[i] = grasp.depth
@@ -1230,6 +1234,7 @@ class NoMagicQualityFunction(GraspQualityFunction):
 
 
 class FCGQCnnQualityFunction(GraspQualityFunction):
+
     def __init__(self, config):
         """Grasp quality function using the fully-convolutional gqcnn."""
         GraspQualityFunction.__init__(self)

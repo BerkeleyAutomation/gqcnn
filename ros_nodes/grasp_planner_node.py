@@ -38,7 +38,8 @@ from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 import rospy
 
-from autolab_core import YamlConfig, CameraIntrinsics, ColorImage, DepthImage, BinaryImage, RgbdImage
+from autolab_core import (YamlConfig, CameraIntrinsics, ColorImage,
+                          DepthImage, BinaryImage, RgbdImage)
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import (Grasp2D, SuctionPoint2D, RgbdImageState,
                             RobustGraspingPolicy,
@@ -55,6 +56,7 @@ from gqcnn.msg import GQCNNGrasp
 
 
 class GraspPlanner(object):
+
     def __init__(self, cfg, cv_bridge, grasping_policy, grasp_pose_publisher):
         """
         Parameters
@@ -118,8 +120,8 @@ class GraspPlanner(object):
             raw_camera_info.K[1], raw_camera_info.height,
             raw_camera_info.width)
 
-        # Create wrapped BerkeleyAutomation/autolab_core RGB and depth images by
-        # unpacking the ROS images using ROS `CvBridge`
+        # Create wrapped BerkeleyAutomation/autolab_core RGB and depth images
+        # by unpacking the ROS images using ROS `CvBridge`
         try:
             color_im = ColorImage(self.cv_bridge.imgmsg_to_cv2(
                 raw_color, "rgb8"),

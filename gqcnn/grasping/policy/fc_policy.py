@@ -105,8 +105,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
         preds_masked = np.zeros_like(preds)
         raw_segmask_cropped = raw_segmask[self._gqcnn_recep_h //
                                           2:raw_segmask.shape[0] -
-                                          self._gqcnn_recep_h //
-                                          2, self._gqcnn_recep_w //
+                                          self._gqcnn_recep_h // 2,
+                                          self._gqcnn_recep_w //
                                           2:raw_segmask.shape[1] -
                                           self._gqcnn_recep_w // 2, 0]
         raw_segmask_downsampled = raw_segmask_cropped[::self._gqcnn_stride, ::
@@ -321,8 +321,8 @@ class FullyConvolutionalGraspingPolicy(GraspingPolicy):
                                            self._vis_scale,
                                            output_dir=state_output_dir)
 
-        return actions[-1] if (self._filter_grasps or num_actions == 1
-                               ) else actions[-(num_actions + 1):]
+        return actions[-1] if (self._filter_grasps or num_actions
+                               == 1) else actions[-(num_actions + 1):]
 
     def action_set(self, state, num_actions):
         """Plan a set of actions.
@@ -411,8 +411,8 @@ class FullyConvolutionalGraspingPolicyParallelJaw(
                             depth,
                             width=self._gripper_width,
                             camera_intr=camera_intr)
-            grasp_action = GraspAction(grasp,
-                                       preds[im_idx, h_idx, w_idx, ang_idx],
+            grasp_action = GraspAction(grasp, preds[im_idx, h_idx, w_idx,
+                                                    ang_idx],
                                        DepthImage(images[im_idx]))
             actions.append(grasp_action)
         return actions

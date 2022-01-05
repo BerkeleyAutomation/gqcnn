@@ -37,7 +37,10 @@ import numpy as np
 import pcl
 import skimage
 
-from autolab_core import PointCloud, RigidTransform, YamlConfig, Logger, BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage, SegmentationImage
+from autolab_core import (PointCloud, RigidTransform, YamlConfig,
+                          Logger, BinaryImage, CameraIntrinsics,
+                          ColorImage, DepthImage, RgbdImage,
+                          SegmentationImage)
 from visualization import Visualizer2D as vis
 
 from gqcnn import (RobustGraspingPolicy, CrossEntropyRobustGraspingPolicy,

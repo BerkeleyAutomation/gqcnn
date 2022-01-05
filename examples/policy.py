@@ -38,7 +38,8 @@ import time
 
 import numpy as np
 
-from autolab_core import YamlConfig, Logger, BinaryImage, CameraIntrinsics, ColorImage, DepthImage, RgbdImage
+from autolab_core import (YamlConfig, Logger, BinaryImage, CameraIntrinsics,
+                          ColorImage, DepthImage, RgbdImage)
 from visualization import Visualizer2D as vis
 
 from gqcnn.grasping import (RobustGraspingPolicy,

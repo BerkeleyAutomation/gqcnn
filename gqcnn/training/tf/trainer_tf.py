@@ -1517,8 +1517,9 @@ class GQCNNTrainerTF(object):
                         (train_label_arr.shape[0], self._angular_bins * 2))
                     for i in range(angles.shape[0]):
                         bins[i] = angles[i] // self._bin_width
-                        train_pred_mask_arr[
-                            i, int((angles[i] // self._bin_width) * 2)] = 1
+                        train_pred_mask_arr[i,
+                                            int((angles[i] //
+                                                 self._bin_width) * 2)] = 1
                         train_pred_mask_arr[
                             i, int((angles[i] // self._bin_width) * 2 + 1)] = 1
 
