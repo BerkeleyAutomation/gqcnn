@@ -42,9 +42,7 @@ import scipy.stats as ss
 from sklearn.mixture import GaussianMixture
 
 import autolab_core.utils as utils
-from autolab_core import Point, Logger
-from perception import (BinaryImage, ColorImage, DepthImage, RgbdImage,
-                        SegmentationImage, CameraIntrinsics)
+from autolab_core import Point, Logger, BinaryImage, ColorImage, DepthImage, RgbdImage, SegmentationImage, CameraIntrinsics
 from visualization import Visualizer2D as vis
 
 from ..constraint_fn import GraspConstraintFnFactory
@@ -67,13 +65,13 @@ class RgbdImageState(object):
         """
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
+        rgbd_im : :obj:`autolab_core.RgbdImage`
             An RGB-D image to plan grasps on.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the RGB-D camera.
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Segmentation mask for the image.
-        obj_segmask : :obj:`perception.SegmentationImage`
+        obj_segmask : :obj:`autolab_core.SegmentationImage`
             Segmentation mask for the different objects in the image.
         full_observed : :obj:`object`
             Representation of the fully observed state.
@@ -160,7 +158,7 @@ class GraspAction(object):
             2D grasp to wrap.
         q_value : float
             Grasp quality.
-        image : :obj:`perception.DepthImage`
+        image : :obj:`autolab_core.DepthImage`
             Depth image corresponding to grasp.
         policy_name : str
             Policy name.

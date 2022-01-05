@@ -174,7 +174,7 @@ def weight_name_to_layer_name(weight_name):
 
 def imresize(image, size, interp="nearest"):
     """Wrapper over `skimage.transform.resize` to mimic `scipy.misc.imresize`.
-    Copied from https://github.com/BerkeleyAutomation/perception/blob/master/perception/image.py#L38.  # noqa: E501
+    Copied from https://github.com/BerkeleyAutomation/autolab_core/blob/master/autolab_core/image.py#L32.  # noqa: E501
 
     Since `scipy.misc.imresize` has been removed in version 1.3.*, instead use
     `skimage.transform.resize`. The "lanczos" and "cubic" interpolation methods

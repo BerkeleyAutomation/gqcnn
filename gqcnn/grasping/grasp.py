@@ -30,8 +30,7 @@ Jeff Mahler
 """
 import numpy as np
 
-from autolab_core import Point, RigidTransform
-from perception import CameraIntrinsics
+from autolab_core import Point, RigidTransform, CameraIntrinsics
 
 
 class Grasp2D(object):
@@ -47,7 +46,7 @@ class Grasp2D(object):
         Depth of the grasp center in 3D space.
     width : float
         Distance between the jaws in meters.
-    camera_intr : :obj:`perception.CameraIntrinsics`
+    camera_intr : :obj:`autolab_core.CameraIntrinsics`
         Frame of reference for camera that the grasp corresponds to.
     contact_points : list of :obj:`numpy.ndarray`
         Pair of contact points in image space.
@@ -154,7 +153,7 @@ class Grasp2D(object):
             Feature vector, see `Grasp2D.feature_vec`.
         width : float
             Grasp opening width, in meters.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Frame of reference for camera that the grasp corresponds to.
         """
         # Read feature vec.
@@ -273,7 +272,7 @@ class SuctionPoint2D(object):
         Dormalized 3-vector representing the direction of the suction tip.
     depth : float
         Depth of the suction point in 3D space.
-    camera_intr : :obj:`perception.CameraIntrinsics`
+    camera_intr : :obj:`autolab_core.CameraIntrinsics`
         Frame of reference for camera that the suction point corresponds to.
     """
 
@@ -358,7 +357,7 @@ class SuctionPoint2D(object):
         ----------
         v : :obj:`numpy.ndarray`
             Feature vector, see `Grasp2D.feature_vec`.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Frame of reference for camera that the grasp corresponds to.
         depth : float
             Hard-set the depth for the suction grasp.
@@ -467,7 +466,7 @@ class MultiSuctionPoint2D(object):
     ----------
     pose : :obj:`autolab_core.RigidTransform`
         Pose in 3D camera space.
-    camera_intr : :obj:`perception.CameraIntrinsics`
+    camera_intr : :obj:`autolab_core.CameraIntrinsics`
         Frame of reference for camera that the suction point corresponds to.
     """
 
@@ -576,7 +575,7 @@ class MultiSuctionPoint2D(object):
         ----------
         v : :obj:`numpy.ndarray`
             Feature vector, see `Grasp2D.feature_vec`.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Frame of reference for camera that the grasp corresponds to.
         depth : float
             Hard-set the depth for the suction grasp.

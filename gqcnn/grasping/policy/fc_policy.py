@@ -34,8 +34,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from autolab_core import Point, Logger
-from perception import DepthImage
+from autolab_core import Point, Logger, DepthImage
 from visualization import Visualizer2D as vis
 
 from ...grasping import Grasp2D, SuctionPoint2D

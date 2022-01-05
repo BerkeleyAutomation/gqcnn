@@ -38,9 +38,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 import rospy
 
-from autolab_core import YamlConfig
-from perception import (CameraIntrinsics, ColorImage, DepthImage, BinaryImage,
-                        RgbdImage)
+from autolab_core import YamlConfig, CameraIntrinsics, ColorImage, DepthImage, BinaryImage, RgbdImage
 from visualization import Visualizer2D as vis
 from gqcnn.grasping import (Grasp2D, SuctionPoint2D, RgbdImageState,
                             RobustGraspingPolicy,
@@ -112,7 +110,7 @@ class GraspPlanner(object):
         # Get the raw camera info as ROS `CameraInfo`.
         raw_camera_info = req.camera_info
 
-        # Wrap the camera info in a BerkeleyAutomation/perception
+        # Wrap the camera info in a BerkeleyAutomation/autolab_core
         # `CameraIntrinsics` object.
         camera_intr = CameraIntrinsics(
             raw_camera_info.header.frame_id, raw_camera_info.K[0],
@@ -120,7 +118,7 @@ class GraspPlanner(object):
             raw_camera_info.K[1], raw_camera_info.height,
             raw_camera_info.width)
 
-        # Create wrapped BerkeleyAutomation/perception RGB and depth images by
+        # Create wrapped BerkeleyAutomation/autolab_core RGB and depth images by
         # unpacking the ROS images using ROS `CvBridge`
         try:
             color_im = ColorImage(self.cv_bridge.imgmsg_to_cv2(
@@ -247,7 +245,7 @@ class GraspPlanner(object):
             vis.show()
 
         # Aggregate color and depth images into a single
-        # BerkeleyAutomation/perception `RgbdImage`.
+        # BerkeleyAutomation/autolab_core `RgbdImage`.
         rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
 
         # Mask bounding box.
@@ -310,7 +308,7 @@ class GraspPlanner(object):
         Parameters
         ----------
         rgbd_image_state: :obj:`RgbdImageState`
-            `RgbdImageState` from BerkeleyAutomation/perception to encapsulate
+            `RgbdImageState` to encapsulate
             depth and color image along with camera intrinsics.
         grasping_policy: :obj:`GraspingPolicy`
             Grasping policy to use.

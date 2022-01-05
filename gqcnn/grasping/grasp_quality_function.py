@@ -37,8 +37,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import autolab_core.utils as utils
-from autolab_core import Point, PointCloud, RigidTransform, Logger
-from perception import DepthImage
+from autolab_core import Point, PointCloud, RigidTransform, Logger, DepthImage
 
 from ..model import get_gqcnn_model, get_fc_gqcnn_model
 from .grasp import SuctionPoint2D

@@ -35,10 +35,9 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from autolab_core import BinaryClassificationResult, TensorDataset, Logger
+from autolab_core import BinaryClassificationResult, TensorDataset, Logger, DepthImage
 from autolab_core.constants import JSON_INDENT
 import autolab_core.utils as utils
-from perception import DepthImage
 from visualization import Visualizer2D as vis2d
 
 from ..model import get_gqcnn_model

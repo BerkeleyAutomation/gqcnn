@@ -33,8 +33,8 @@ Jeff Mahler
 import argparse
 import os
 
-from autolab_core import RigidTransform, YamlConfig, Logger
-from perception import RgbdImage, RgbdSensorFactory
+from autolab_core import RigidTransform, YamlConfig, Logger, RgbdImage
+from perception import RgbdSensorFactory
 from visualization import Visualizer2D as vis
 
 from gqcnn.grasping import AntipodalDepthImageGraspSampler

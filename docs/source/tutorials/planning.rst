@@ -56,10 +56,11 @@ The args are:
 #. **model_name**: Name of the GQ-CNN model to use.
 #. **depth_image_filename**: Path to a depth image (float array in .npy format).
 #. **segmask_filename**: Path to an object segmentation mask (binary image in .png format). 
-#. **camera_intr_filename**: Path to a camera intrinsics file (.intr file generated with `BerkeleyAutomation's`_ `perception`_ package).
+#. **camera_intr_filename**: Path to a camera intrinsics file (.intr file generated with `BerkeleyAutomation's`_ `autolab_core`_ package).
+
 
 .. _BerkeleyAutomation's: https://github.com/BerkeleyAutomation
-.. _perception: https://github.com/BerkeleyAutomation/perception
+.. _autolab_core: https://github.com/BerkeleyAutomation/autolab_core
 
 To evaluate the pre-trained `Dex-Net 4.0`_ **parallel jaw** network on sample images of objects in heaps run: ::
 
@@ -98,7 +99,7 @@ The args are:
 
 #. **depth_image_filename**: Path to a depth image (float array in .npy format).
 #. **segmask_filename**: Path to an object segmentation mask (binary image in .png format).
-#. **camera_intr_filename**: Path to a camera intrinsics file (.intr file generated with `BerkeleyAutomation's`_ `perception`_ package).
+#. **camera_intr_filename**: Path to a camera intrinsics file (.intr file generated with `BerkeleyAutomation's`_ `autolab_core`_ package).
 
 To query the policy on sample images of objects in heaps run: ::
 

@@ -39,8 +39,7 @@ import scipy.ndimage.filters as snf
 import scipy.spatial.distance as ssd
 import scipy.stats as ss
 
-from autolab_core import Point, RigidTransform, Logger
-from perception import (DepthImage, RgbdImage, GdImage)
+from autolab_core import Point, RigidTransform, Logger, DepthImage, RgbdImage, GdImage
 from visualization import Visualizer2D as vis
 
 from .grasp import Grasp2D, SuctionPoint2D, MultiSuctionPoint2D
@@ -98,13 +97,13 @@ class ImageGraspSampler(ABC):
 
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
+        rgbd_im : :obj:`autolab_core.RgbdImage`
             RGB-D image to sample from.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the camera that captured the images.
         num_samples : int
             Number of grasps to sample.
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Binary image segmenting out the object of interest.
         seed : int
             Number to use in random seed (`None` if no seed).
@@ -152,13 +151,13 @@ class ImageGraspSampler(ABC):
 
         Parameters
         ----------
-        rgbd_im : :obj:`perception.RgbdImage`
+        rgbd_im : :obj:`autolab_core.RgbdImage`
             RGB-D image to sample from.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the camera that captured the images.
         num_samples : int
             Number of grasps to sample.
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Binary image segmenting out the object of interest.
         visualize : bool
             Whether or not to show intermediate samples (for debugging).
@@ -300,13 +299,13 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        image : :obj:`perception.RgbdImage` or :obj:`perception.DepthImage` or :obj:`perception.GdImage`  # noqa: E501
+        image : :obj:`autolab_core.RgbdImage` or :obj:`autolab_core.DepthImage` or :obj:`autolab_core.GdImage`  # noqa: E501
             RGB-D or Depth image to sample from.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the camera that captured the images.
         num_samples : int
             Number of grasps to sample
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Binary image segmenting out the object of interest.
         visualize : bool
             Whether or not to show intermediate samples (for debugging).
@@ -348,13 +347,13 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        depth_im : :obj:"perception.DepthImage"
+        depth_im : :obj:"autolab_core.DepthImage"
             Depth image to sample from.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the camera that captured the images.
         num_samples : int
             Number of grasps to sample.
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Binary image segmenting out the object of interest.
         visualize : bool
             Whether or not to show intermediate samples (for debugging).
@@ -667,13 +666,13 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        image : :obj:`perception.RgbdImage` or "perception.DepthImage"
+        image : :obj:`autolab_core.RgbdImage` or "autolab_core.DepthImage"
             RGB-D or D image to sample from.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the camera that captured the images.
         num_samples : int
             Number of grasps to sample.
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Binary image segmenting out the object of interest.
         visualize : bool
             Whether or not to show intermediate samples (for debugging).
@@ -713,13 +712,13 @@ class DepthImageSuctionPointSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        depth_im : :obj:"perception.DepthImage"
+        depth_im : :obj:"autolab_core.DepthImage"
             Depth image to sample from.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the camera that captured the images.
         num_samples : int
             Number of grasps to sample.
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Binary image segmenting out the object of interest.
         visualize : bool
             Whether or not to show intermediate samples (for debugging).
@@ -889,13 +888,13 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        image : :obj:`perception.RgbdImage` or `perception.DepthImage`
+        image : :obj:`autolab_core.RgbdImage` or `autolab_core.DepthImage`
             RGB-D or D image to sample from.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the camera that captured the images.
         num_samples : int
             Number of grasps to sample.
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Binary image segmenting out the object of interest.
         visualize : bool
             Whether or not to show intermediate samples (for debugging).
@@ -937,13 +936,13 @@ class DepthImageMultiSuctionPointSampler(ImageGraspSampler):
 
         Parameters
         ----------
-        depth_im : :obj:"perception.DepthImage"
+        depth_im : :obj:"autolab_core.DepthImage"
             Depth image to sample from.
-        camera_intr : :obj:`perception.CameraIntrinsics`
+        camera_intr : :obj:`autolab_core.CameraIntrinsics`
             Intrinsics of the camera that captured the images.
         num_samples : int
             Number of grasps to sample.
-        segmask : :obj:`perception.BinaryImage`
+        segmask : :obj:`autolab_core.BinaryImage`
             Binary image segmenting out the object of interest.
         visualize : bool
             Whether or not to show intermediate samples (for debugging).
