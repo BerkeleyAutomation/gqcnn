@@ -2,6 +2,12 @@
 
 This docker setup is tested on Ubunu20.04.
 
+you can directly run:
+
+`docker pull woodenheart777/gqcnn:cuda12.2`
+
+or you can build on your own following the instructions below
+
 make sure you are under directory yourworkspace/gqcnn/
 
 run
