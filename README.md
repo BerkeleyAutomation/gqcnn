@@ -1,4 +1,5 @@
 ## Note: Python 2.x support has officially been dropped.
+## Note: Unofficial Python 3.11 support is at the end of this README.
 
 # Berkeley AUTOLAB's GQCNN Package
 <p>
@@ -24,4 +25,26 @@ Please see the [docs](https://berkeleyautomation.github.io/gqcnn/) for installat
 
 ## Citation
 If you use any part of this code in a publication, please cite [the appropriate Dex-Net publication](https://berkeleyautomation.github.io/gqcnn/index.html#academic-use).
+
+*** 
+
+# Updated installation of GQCNN
+
+This repo has updated the codebase of GQCNN to newer versions and tested on Ubuntu20.04:
+
+python 3.11
+
+CUDA 12.2
+
+tensorflow 2.15.0.post1
+
+to set up the environment, use the dockerfile in [[docker/updated_gpu]]
+
+## Download the pretrained models for Dexnet:
+https://drive.google.com/file/d/1fbC0sGtVEUmAy7WPT_J-50IuIInMR9oO/view
+
+## Test Command
+Check the Makefile
+
+`make test_single_object`
 
