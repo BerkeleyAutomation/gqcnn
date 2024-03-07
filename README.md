@@ -38,10 +38,20 @@ CUDA 12.2
 
 tensorflow 2.15.0.post1
 
-to set up the environment, use the dockerfile in [docker/updated_gpu](docker/updated_gpu/README.md)
+to set up the environment, follow the README in [docker/updated_gpu](docker/updated_gpu/README.md)
 
 ## Download the pretrained models for Dexnet:
+The link provided in the official website is obsolete, use the link below:
+
 https://drive.google.com/file/d/1fbC0sGtVEUmAy7WPT_J-50IuIInMR9oO/view
+
+or you can download it from huggingface using:
+```bash
+wget --content-disposition https://huggingface.co/WoodenHeart0214/gqcnn/resolve/main/model_zoo.zip?download=true && \
+    unzip model_zoo.zip && \
+    rm model_zoo.zip && \
+    mv model_zoo models
+```
 
 ## Test Command
 Check the Makefile
