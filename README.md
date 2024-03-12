@@ -56,5 +56,5 @@ wget --content-disposition https://huggingface.co/WoodenHeart0214/gqcnn/resolve/
 ## Test Command
 Check the Makefile
 
-`make test_single_object`
+`make gqcnn_single_object`
 
