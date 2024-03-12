@@ -54,7 +54,8 @@ wget --content-disposition https://huggingface.co/WoodenHeart0214/gqcnn/resolve/
 ```
 
 ## Test Command
-Check the Makefile
 
-`make gqcnn_single_object`
+`. venv/bin/activate`
+
+`make gqcnn_single_object_docker`
 
