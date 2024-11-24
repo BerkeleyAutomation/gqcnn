@@ -137,9 +137,25 @@ class InstallCmd(install, object):
 
 
 requirements = [
-    "autolab-core", "autolab-perception", "visualization", "numpy", "scipy",
-    "matplotlib", "opencv-python", "scikit-learn", "scikit-image", "psutil",
-    "gputil"
+   "autolab-core",
+    "autolab-perception",
+    "visualization",
+    "numpy>=1.16.0,<=1.19.5",  # Last version supporting Python 3.6
+    "scipy>=1.2.0,<=1.5.4",    # Last version supporting Python 3.6
+    "matplotlib>=3.0.0,<=3.3.4",  # Last version supporting Python 3.6
+    "opencv-python==4.5.5.64",  # Known working version for Python 3.6
+    "scikit-learn>=0.20.0,<=0.24.2",  # Last version supporting Python 3.6
+    "scikit-image>=0.14.2,<=0.17.2",  # Last version supporting Python 3.6
+    "tensorflow>=1.13.1,<=1.15.0",  # Version compatible with tf.RunOptions
+    "psutil>=5.6.7",
+    "gputil>=1.4.0",
+    "pyglet<2.0.0",  # Last version supporting Python 3.6
+    "pyrender<1.0.0",  # Compatible with older pyglet
+    "urllib3<2.0.0",  # Fix requests warning
+    "chardet<4.0.0",  # Fix requests warning
+    "requests>=2.25.0,<2.28.0",  # Compatible with Python 3.6
+    "PyOpenGL>=3.1.0,<3.2.0",
+    "PyOpenGL-accelerate>=3.1.0,<3.2.0"
 ]
 
 exec(
