@@ -3,7 +3,7 @@ name: Bug/Performance Issue [Custom Images]
 about: You are testing your own images in software.
 title: 'Issue: Bug/Performance Issue [Custom Images]'
 labels: ''
-assignees: ''
+assignees: xjunx-cloud
 
 ---
 
